@@ -64,8 +64,8 @@ struct sequence_iface<detail::map_adaptor<Base, Func>>
         });
     }
 
-    static void move_at(...) = delete; // Use the base version of move_at
-    static void data(...) = delete; // we're not a contiguous sequence
+    static void move_at() = delete; // Use the base version of move_at
+    static void data() = delete; // we're not a contiguous sequence
 };
 
 inline constexpr auto map = detail::map_fn{};
