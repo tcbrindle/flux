@@ -1,0 +1,55 @@
+
+# Common CMake build directories
+build*/
+!build2/
+
+# QtCreator
+CMakeLists.txt.user
+
+# CLion
+.idea/
+cmake-build*/
+
+# VS Code
+.vscode/
+
+# VS
+.vs/
+CMakeSettings.json
+out/
+
+# conan
+.conan/test_package/build
+
+
+# Build2 stuff
+.bdep/
+
+# Local default options files.
+#
+.build2/local/
+
+# Compiler/linker output.
+#
+*.d
+*.t
+*.i
+*.i.*
+*.ii
+*.ii.*
+*.o
+*.obj
+*.gcm
+*.pcm
+*.ifc
+*.so
+*.dll
+*.a
+*.lib
+*.exp
+*.pdb
+*.ilk
+*.exe
+*.exe.dlls/
+*.exe.manifest
+*.pc

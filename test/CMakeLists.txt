@@ -1,0 +1,43 @@
+
+add_library(catch-main catch_main.cpp)
+target_compile_features(catch-main PUBLIC cxx_std_20)
+
+add_executable(test-libflux
+
+    test_concepts.cpp
+
+    test_all_any_none.cpp
+    test_bounds_checked.cpp
+    test_drop.cpp
+    test_drop_while.cpp
+    test_filter.cpp
+    test_find.cpp
+    test_map.cpp
+    test_reverse.cpp
+    test_split.cpp
+    test_take.cpp
+    test_take_while.cpp
+    test_view.cpp
+    test_zip.cpp
+
+    test_bitset.cpp
+    test_empty.cpp
+    test_istream.cpp
+    test_istreambuf.cpp
+    test_single.cpp
+    #hack_hack_hack.cpp
+)
+target_link_libraries(test-libflux flux catch-main)
+
+if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")
+    target_precompile_headers(test-libflux PRIVATE "catch.hpp")
+endif()
+
+if (CMAKE_COMPILER_IS_GNUCXX)
+    target_compile_options(test-libflux PRIVATE -Wall -Wextra -pedantic
+        -ftemplate-backtrace-limit=0
+        -fconcepts-diagnostics-depth=2)
+endif()
+
+include(Catch)
+catch_discover_tests(test-libflux)

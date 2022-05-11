@@ -1,0 +1,175 @@
+
+#include "catch.hpp"
+
+#include <flux/core/concepts.hpp>
+#include <flux/core/sequence_access.hpp>
+
+namespace {
+
+struct incomplete;
+
+struct indestructable {
+    ~indestructable() = delete;
+};
+
+struct nonmovable {
+    nonmovable() = default;
+    nonmovable(nonmovable&&) = delete;
+    nonmovable& operator=(nonmovable&&) = delete;
+};
+
+struct move_only {
+    move_only() = default;
+    move_only(move_only&&) = default;
+    move_only& operator=(move_only&&) = default;
+};
+
+struct abstract {
+    virtual void f() = 0;
+};
+
+enum class scoped_enum {};
+enum unscoped_enum {};
+
+enum class fwd_declared_enum;
+
+template <typename T = void>
+struct cant_instantiate {
+    static_assert(!std::same_as<T, void>);
+};
+
+template <typename T>
+struct dummy_impl {
+    static int first(T&);
+    static bool is_last(T&, int);
+    static int& inc(T&, int&);
+    static int read_at(T&, int);
+};
+
+template <typename Elem>
+struct minimal_seq_of {
+    int first();
+    bool is_last(int);
+    int& inc(int&);
+    Elem read_at(int);
+};
+
+template <typename Idx>
+struct minimal_with_idx {
+    Idx first();
+    bool is_last(Idx const&);
+    Idx& inc(Idx&);
+    int read_at(Idx const&);
+};
+
+} // end anon namespace
+
+template <>
+struct flux::sequence_iface<incomplete>
+    : dummy_impl<incomplete> {};
+
+template <>
+struct flux::sequence_iface<indestructable>
+    : dummy_impl<indestructable> {};
+
+template <>
+struct flux::sequence_iface<cant_instantiate<>>
+    : dummy_impl<cant_instantiate<>> {};
+
+static_assert(not flux::index<void>);
+static_assert(flux::ordered_index<void*>);
+//static_assert(not flux::index<incomplete>);
+static_assert(flux::ordered_index<incomplete*>);
+static_assert(not flux::index<indestructable>);
+static_assert(not flux::index<nonmovable>);
+static_assert(flux::index<move_only>);
+static_assert(not flux::regular_index<move_only>);
+static_assert(not flux::index<abstract>);
+static_assert(flux::ordered_index<scoped_enum>);
+static_assert(flux::ordered_index<unscoped_enum>);
+static_assert(flux::ordered_index<fwd_declared_enum>);
+static_assert(flux::index<cant_instantiate<>*>);
+
+static_assert(not flux::sequence<void>);
+static_assert(not flux::sequence<int>);
+static_assert(flux::sequence<incomplete>);
+static_assert(flux::sequence<indestructable>);
+static_assert(flux::sequence<cant_instantiate<>>);
+static_assert(flux::sequence<minimal_seq_of<int>>);
+static_assert(not flux::sequence<minimal_seq_of<void>>);
+static_assert(flux::sequence<minimal_seq_of<void*>>);
+static_assert(not flux::sequence<minimal_seq_of<incomplete>>);
+static_assert(flux::sequence<minimal_seq_of<incomplete*>>);
+static_assert(not flux::sequence<minimal_seq_of<indestructable>>);
+static_assert(flux::sequence<minimal_seq_of<indestructable&>>);
+static_assert(not flux::sequence<minimal_seq_of<abstract>>);
+static_assert(flux::sequence<minimal_seq_of<abstract&>>);
+
+static_assert(flux::multipass_sequence<minimal_with_idx<int>>);
+static_assert(flux::sequence<minimal_with_idx<move_only>>);
+static_assert(not flux::multipass_sequence<minimal_with_idx<move_only>>);
+
+namespace {
+    using ref_seq = minimal_seq_of<int&>;
+    using cref_seq = minimal_seq_of<int const&>;
+    using rref_seq = minimal_seq_of<int&&>;
+    using crref_seq = minimal_seq_of<int const&&>;
+    using val_seq = minimal_seq_of<int>;
+
+    using flux::element_t;
+    using flux::value_t;
+    using flux::rvalue_element_t;
+    using flux::common_element_t;
+    using std::same_as;
+
+    static_assert(same_as<element_t<ref_seq>, int&>);
+    static_assert(same_as<value_t<ref_seq>, int>);
+    static_assert(same_as<rvalue_element_t<ref_seq>, int&&>);
+    static_assert(same_as<common_element_t<ref_seq>, int&>);
+
+    static_assert(same_as<element_t<cref_seq>, int const&>);
+    static_assert(same_as<value_t<cref_seq>, int>);
+    static_assert(same_as<rvalue_element_t<cref_seq>, int const&&>);
+    static_assert(same_as<common_element_t<cref_seq>, int const&>);
+
+    static_assert(same_as<element_t<rref_seq>, int&&>);
+    static_assert(same_as<value_t<rref_seq>, int>);
+    static_assert(same_as<rvalue_element_t<rref_seq>, int&&>);
+    static_assert(same_as<common_element_t<rref_seq>, int const&>); // Yes, really
+
+    static_assert(same_as<element_t<crref_seq>, int const&&>);
+    static_assert(same_as<value_t<crref_seq>, int>);
+    static_assert(same_as<rvalue_element_t<crref_seq>, int const&&>);
+    static_assert(same_as<common_element_t<crref_seq>, int const&>); // Yes, really
+
+    static_assert(same_as<element_t<val_seq>, int>);
+    static_assert(same_as<value_t<val_seq>, int>);
+    static_assert(same_as<rvalue_element_t<val_seq>, int>);
+    static_assert(same_as<common_element_t<val_seq>, int>);
+}
+
+namespace {
+
+struct Base {};
+struct Derived1 : Base {};
+struct Derived2 : Base {};
+
+}
+
+template <>
+struct flux::sequence_iface<Base>
+    : dummy_impl<Base> {};
+
+static_assert(flux::sequence<Base>);
+static_assert(not flux::sequence<Derived1>);
+
+template <>
+struct flux::sequence_iface<Derived2>
+    : flux::sequence_iface<Base> {};
+
+static_assert(flux::sequence<Derived2>);
+
+
+
+
+
