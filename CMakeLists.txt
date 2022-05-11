@@ -10,7 +10,12 @@ target_sources(flux INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/include/flux.hpp
 )
 
-target_compile_features(flux INTERFACE cxx_std_20)
+if (MSVC)
+    target_compile_features(flux INTERFACE cxx_std_23)
+else()
+    target_compile_features(flux INTERFACE cxx_std_20)
+endif()
+
 target_include_directories(flux INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 #set(CMAKE_CXX_FLAGS_DEBUG "-Og ${CMAKE_CXX_FLAGS_DEBUG}")

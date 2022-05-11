@@ -4,6 +4,7 @@
 #include <flux.hpp>
 
 #include <algorithm>
+#include <array>
 #include <list>
 
 #include "test_utils.hpp"

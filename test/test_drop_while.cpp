@@ -5,6 +5,8 @@
 
 #include "test_utils.hpp"
 
+#include <array>
+
 namespace {
 
 constexpr bool test_drop_while()

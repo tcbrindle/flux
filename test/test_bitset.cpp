@@ -10,6 +10,7 @@
 
 #include "test_utils.hpp"
 
+#include <array>
 #include <iostream>
 
 namespace {
@@ -36,7 +37,7 @@ constexpr bool test_bitset()
         uint32_t x = 0;
         FLUX_FOR(bool bit, flux::reverse(std::as_const(b))) {
             x <<= 1;
-            x |= bit;
+            x |= uint32_t(bit);
         }
 
         STATIC_CHECK(x == 0xCAFEBABE);

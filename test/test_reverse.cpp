@@ -5,6 +5,7 @@
 
 #include "test_utils.hpp"
 
+#include <array>
 #include <list>
 
 namespace {

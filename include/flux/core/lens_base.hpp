@@ -17,8 +17,8 @@ template <sequence Seq>
 using bounds_t = bounds<index_t<Seq>>;
 
 template <typename Derived>
-    requires std::is_class_v<Derived> &&
-             std::same_as<Derived, std::remove_cv_t<Derived>>
+    /*requires std::is_class_v<Derived>&&
+             std::same_as<Derived, std::remove_cv_t<Derived>>*/
 struct lens_base {
 private:
     constexpr auto derived() -> Derived& { return static_cast<Derived&>(*this); }

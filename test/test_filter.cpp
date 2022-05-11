@@ -5,6 +5,7 @@
 
 #include <flux.hpp>
 
+#include <array>
 #include <iostream>
 
 namespace {

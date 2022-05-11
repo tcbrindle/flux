@@ -3,6 +3,7 @@
 
 #include "test_utils.hpp"
 
+#include <array>
 #include <iostream>
 #include <list>
 

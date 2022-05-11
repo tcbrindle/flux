@@ -6,6 +6,7 @@
 
 #include "test_utils.hpp"
 
+#include <array>
 #include <iostream>
 #include <string>
 #include <string_view>

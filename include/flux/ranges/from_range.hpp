@@ -4,25 +4,8 @@
 #include <flux/core/concepts.hpp>
 
 #include <ranges>
-#include <span>
 
 namespace flux {
-
-namespace detail {
-
-template <typename>
-inline constexpr bool is_span = false;
-
-template <typename T, std::size_t N>
-inline constexpr bool is_span<std::span<T, N>> = true;
-
-template <typename>
-inline constexpr bool is_string_view = false;
-
-template <typename CharT, typename Traits>
-inline constexpr bool is_string_view<std::basic_string_view<CharT, Traits>> = true;
-
-}
 
 template <typename R>
     requires (!detail::derived_from_lens_base<R> && std::ranges::input_range<R>)
@@ -115,26 +98,13 @@ struct sequence_iface<R> {
     template <decays_to<R> Self>
     static constexpr auto slice(Self& self, index_t<Self> from)
     {
-        if constexpr (detail::is_span<R>) {
-            return std::span(std::move(from), std::ranges::end(self));
-        } else if constexpr (detail::is_string_view<R>) {
-            return std::basic_string_view(std::move(from), std::ranges::end(self));
-        } else {
-            return std::ranges::subrange(std::move(from),
-                                         std::ranges::end(self));
-        }
+        return std::ranges::subrange(std::move(from), std::ranges::end(self));
     }
 
     template <decays_to<R> Self>
     static constexpr auto slice(Self&, index_t<Self> from, index_t<Self> to)
     {
-        if constexpr (detail::is_span<R>) {
-            return std::span(std::move(from), std::move(to));
-        } else if constexpr (detail::is_string_view<R>) {
-            return std::basic_string_view(std::move(from), std::move(to));
-        } else {
-            return std::ranges::subrange(std::move(from), std::move(to));
-        }
+        return std::ranges::subrange(std::move(from), std::move(to));
     }
 
     template <decays_to<R> Self>

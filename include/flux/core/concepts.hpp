@@ -271,7 +271,6 @@ concept infinite_sequence =
 
 
 template <typename D>
-    requires std::is_class_v<D> && std::same_as<D, std::remove_cv_t<D>>
 struct lens_base;
 
 namespace detail {
