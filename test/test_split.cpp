@@ -37,7 +37,7 @@ constexpr bool test_split()
         static_assert(flux::multipass_sequence<S const>);
         static_assert(flux::contiguous_sequence<flux::element_t<S const>>);
 
-        STATIC_CHECK(check_equal(split,
+        STATIC_CHECK(check_equal(std::move(split).map(to_string_view),
                 std::array{"the"sv, "quick"sv, "brown"sv, "fox"sv}));
     }
 
