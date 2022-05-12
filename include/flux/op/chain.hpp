@@ -70,8 +70,8 @@ private:
     template <typename Self>
     using index_type = std::variant<index_t<const_like_t<Self, Bases>>...>;
 
-    template <std::size_t N, typename Self, std::size_t... I>
-    static constexpr auto first_impl(Self& self, std::index_sequence<I...> iseq)
+    template <std::size_t N, typename Self>
+    static constexpr auto first_impl(Self& self)
         -> index_type<Self>
     {
         auto& base = std::get<N>(self.bases_);
@@ -81,16 +81,15 @@ private:
             if (!flux::is_last(base, idx)) {
                 return index_type<Self>(std::in_place_index<N>, std::move(idx));
             } else {
-                return first_impl<N+1>(self, iseq);
+                return first_impl<N+1>(self);
             }
         } else {
             return index_type<Self>(std::in_place_index<N>, std::move(idx));
         }
     }
 
-    template <std::size_t N, typename Self, std::size_t... Idx>
-    static constexpr auto inc_impl(Self& self, index_type<Self>& idx,
-                                   std::index_sequence<Idx...> iseq)
+    template <std::size_t N, typename Self>
+    static constexpr auto inc_impl(Self& self, index_type<Self>& idx)
             -> index_type<Self>&
     {
         if constexpr (N < End) {
@@ -99,11 +98,11 @@ private:
                 auto& base_idx = std::get<N>(idx);
                 flux::inc(base, base_idx);
                 if (flux::is_last(base, base_idx)) {
-                    idx = first_impl<N + 1>(self, iseq);
+                    idx = first_impl<N + 1>(self);
                 }
                 return idx;
             } else {
-                return inc_impl<N+1>(self, idx, iseq);
+                return inc_impl<N+1>(self, idx);
             }
         } else {
             flux::inc(std::get<N>(self.bases_), std::get<N>(idx));
@@ -111,9 +110,8 @@ private:
         }
     }
 
-    template <std::size_t N, typename Self, std::size_t... Idx>
-    static constexpr auto dec_impl(Self& self, index_type<Self>& idx,
-                                   std::index_sequence<Idx...> iseq)
+    template <std::size_t N, typename Self>
+    static constexpr auto dec_impl(Self& self, index_type<Self>& idx)
         -> index_type<Self>&
     {
         if constexpr (N > 0) {
@@ -124,13 +122,13 @@ private:
                 if (base_idx == flux::first(base)) {
                     idx = index_type<Self>(std::in_place_index<N-1>,
                                            flux::last(std::get<N-1>(self.bases_)));
-                    return dec_impl<N-1>(self, idx, iseq);
+                    return dec_impl<N-1>(self, idx);
                 } else {
                     flux::dec(base, base_idx);
                     return idx;
                 }
             } else {
-                return dec_impl<N-1>(self, idx, iseq);
+                return dec_impl<N-1>(self, idx);
             }
         } else {
             flux::dec(std::get<0>(self.bases_), std::get<0>(idx));
@@ -138,34 +136,32 @@ private:
         }
     }
 
-    template <std::size_t N, typename Self, std::size_t... Idx>
+    template <std::size_t N, typename Self>
     static constexpr auto read_impl(Self& self,
-                                    index_type<Self> const& idx,
-                                    std::index_sequence<Idx...> iseq)
+                                    index_type<Self> const& idx)
         -> std::common_reference_t<element_t<const_like_t<Self, Bases>>...>
     {
         if constexpr (N < End) {
             if (idx.index() == N) {
                 return flux::read_at(std::get<N>(self.bases_), std::get<N>(idx));
             } else {
-                return read_impl<N+1>(self, idx, iseq);
+                return read_impl<N+1>(self, idx);
             }
         } else {
             return flux::read_at(std::get<N>(self.bases_), std::get<N>(idx));
         }
     }
 
-    template <std::size_t N, typename Self, std::size_t... Idx>
+    template <std::size_t N, typename Self>
     static constexpr auto move_impl(Self& self,
-                                    index_type<Self> const& idx,
-                                    std::index_sequence<Idx...> iseq)
+                                    index_type<Self> const& idx)
         -> std::common_reference_t<rvalue_element_t<const_like_t<Self, Bases>>...>
     {
         if constexpr (N < End) {
             if (idx.index() == N) {
                 return flux::move_at(std::get<N>(self.bases_), std::get<N>(idx));
             } else {
-                return move_impl<N+1>(self, idx, iseq);
+                return move_impl<N+1>(self, idx);
             }
         } else {
             return flux::move_at(std::get<N>(self.bases_), std::get<N>(idx));
@@ -173,9 +169,8 @@ private:
     }
 
 
-    template <std::size_t N, typename Self, std::size_t... Idx>
-    static constexpr auto for_each_while_impl(Self& self, auto& pred,
-                                              std::index_sequence<Idx...> iseq)
+    template <std::size_t N, typename Self>
+    static constexpr auto for_each_while_impl(Self& self, auto& pred)
         -> index_type<Self>
     {
         if constexpr (N < End) {
@@ -184,7 +179,7 @@ private:
             if (!flux::is_last(base, base_idx)) {
                 return index_type<Self>(std::in_place_index<N>, std::move(base_idx));
             } else {
-                return for_each_while_impl<N+1>(self, pred, iseq);
+                return for_each_while_impl<N+1>(self, pred);
             }
         } else {
             return index_type<Self>(std::in_place_index<N>,
@@ -192,15 +187,14 @@ private:
         }
     }
 
-    template <std::size_t N, typename Self, std::size_t... Idx>
+    template <std::size_t N, typename Self>
     static constexpr auto distance_impl(Self& self,
                                         index_type<Self> const& from,
-                                        index_type<Self> const& to,
-                                        std::index_sequence<Idx...> iseq)
+                                        index_type<Self> const& to)
     {
         if constexpr (N < End) {
             if (N < from.index()) {
-                return distance_impl<N+1>(self, from, to, iseq);
+                return distance_impl<N+1>(self, from, to);
             }
 
             assert(N == from.index());
@@ -211,7 +205,7 @@ private:
                 auto dist_to_end = flux::distance(std::get<N>(self.bases_),
                                                   std::get<N>(from),
                                                   flux::last(std::get<N>(self.bases_)));
-                auto remaining = distance_impl<N+1>(self, first_impl<N+1>(self, iseq), to, iseq);
+                auto remaining = distance_impl<N+1>(self, first_impl<N+1>(self), to);
                 return dist_to_end + remaining;
             }
         } else {
@@ -220,14 +214,15 @@ private:
         }
     }
 
-    template <std::size_t N, typename Self, std::size_t... Idx>
-    static constexpr auto inc_ra_impl(Self& self, index_type<Self>& idx,
-                                      distance_type offset, std::index_sequence<Idx...> iseq)
+    template <std::size_t N, typename Self>
+    static constexpr auto inc_ra_impl(Self& self,
+                                      index_type<Self>& idx,
+                                      distance_type offset)
         -> index_type<Self>&
     {
         if constexpr (N < End) {
             if (N < idx.index()) {
-                return inc_ra_impl<N+1>(self, idx, offset, iseq);
+                return inc_ra_impl<N+1>(self, idx, offset);
             }
 
             assert(idx.index() == N);
@@ -238,9 +233,9 @@ private:
                 flux::inc(base, base_idx, offset);
                 return idx;
             } else {
-                idx = first_impl<N+1>(self, iseq);
+                idx = first_impl<N+1>(self);
                 offset -= dist;
-                return inc_ra_impl<N+1>(self, idx, offset, iseq);
+                return inc_ra_impl<N+1>(self, idx, offset);
             }
         } else {
             assert(idx.index() == N);
@@ -253,7 +248,7 @@ public:
     template <typename Self>
     static constexpr auto first(Self& self) -> index_type<Self>
     {
-        return first_impl<0>(self, std::index_sequence_for<Bases...>{});
+        return first_impl<0>(self);
     }
 
     template <typename Self>
@@ -267,21 +262,21 @@ public:
     static constexpr auto read_at(Self& self, index_type<Self> const& idx)
         -> std::common_reference_t<element_t<const_like_t<Self, Bases>>...>
     {
-        return read_impl<0>(self, idx, std::index_sequence_for<Bases...>{});
+        return read_impl<0>(self, idx);
     }
 
     template <typename Self>
     static constexpr auto move_at(Self& self, index_type<Self> const& idx)
         -> std::common_reference_t<rvalue_element_t<const_like_t<Self, Bases>>...>
     {
-        return move_impl<0>(self, idx, std::index_sequence_for<Bases...>{});
+        return move_impl<0>(self, idx);
     }
 
     template <typename Self>
     static constexpr auto inc(Self& self, index_type<Self>& idx)
         -> index_type<Self>&
     {
-        return inc_impl<0>(self, idx, std::index_sequence_for<Bases...>{});
+        return inc_impl<0>(self, idx);
     }
 
     template <typename Self>
@@ -290,7 +285,7 @@ public:
         requires (bidirectional_sequence<const_like_t<Self, Bases>> && ...) &&
                  (bounded_sequence<const_like_t<Self,Bases>> &&...)
     {
-        return dec_impl<sizeof...(Bases) - 1>(self, idx, std::index_sequence_for<Bases...>{});
+        return dec_impl<sizeof...(Bases) - 1>(self, idx);
     }
 
     template <typename Self>
@@ -312,7 +307,7 @@ public:
     template <typename Self>
     static constexpr auto for_each_while(Self& self, auto&& pred)
     {
-        return for_each_while_impl<0>(self, pred, std::index_sequence_for<Bases...>{});
+        return for_each_while_impl<0>(self, pred);
     }
 
     template <typename Self>
@@ -324,9 +319,9 @@ public:
                  (bounded_sequence<const_like_t<Self, Bases>> && ...)
     {
         if (from.index() <= to.index()) {
-            return distance_impl<0>(self, from, to, std::index_sequence_for<Bases...>{});
+            return distance_impl<0>(self, from, to);
         } else {
-            return -distance_impl<0>(self, to, from, std::index_sequence_for<Bases...>{});
+            return -distance_impl<0>(self, to, from);
         }
     }
 
@@ -336,7 +331,7 @@ public:
         requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
                  (bounded_sequence<const_like_t<Self, Bases>> && ...)
     {
-        return inc_ra_impl<0>(self, idx, offset, std::index_sequence_for<Bases...>{});
+        return inc_ra_impl<0>(self, idx, offset);
     }
 
 };
