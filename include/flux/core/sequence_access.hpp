@@ -308,7 +308,11 @@ struct is_empty_fn {
     [[nodiscard]]
     constexpr auto operator()(Seq& seq) const -> bool
     {
-        return is_last(seq, first(seq));
+        if constexpr (sized_sequence<Seq>) {
+            return flux::size(seq) == 0;
+        } else {
+            return is_last(seq, first(seq));
+        }
     }
 };
 

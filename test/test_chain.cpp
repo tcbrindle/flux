@@ -27,6 +27,16 @@ constexpr bool test_chain()
         static_assert(flux::random_access_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(flux::sized_sequence<S>);
+        static_assert(std::same_as<flux::element_t<S>, int&>);
+        static_assert(std::same_as<flux::value_t<S>, int>);
+        static_assert(std::same_as<flux::rvalue_element_t<S>, int&&>);
+
+        static_assert(flux::random_access_sequence<S const>);
+        static_assert(flux::bounded_sequence<S const>);
+        static_assert(flux::sized_sequence<S const>);
+        static_assert(std::same_as<flux::element_t<S const>, int&>);
+        static_assert(std::same_as<flux::value_t<S const>, int>);
+        static_assert(std::same_as<flux::rvalue_element_t<S const>, int&&>);
 
         STATIC_CHECK(flux::size(seq) == 9);
         STATIC_CHECK(check_equal(seq, {0, 1, 2, 3, 4, 5, 6, 7, 8}));
@@ -42,6 +52,29 @@ constexpr bool test_chain()
         STATIC_CHECK(seq[idx] == 4);
     }
 
+    // Const iteration works as expected
+    {
+        auto seq = flux::chain(std::array{1, 2, 3}, std::array{4, 5, 6});
+
+        using S = decltype(seq);
+
+        static_assert(flux::random_access_sequence<S>);
+        static_assert(flux::bounded_sequence<S>);
+        static_assert(flux::sized_sequence<S>);
+        static_assert(std::same_as<flux::element_t<S>, int&>);
+        static_assert(std::same_as<flux::value_t<S>, int>);
+        static_assert(std::same_as<flux::rvalue_element_t<S>, int&&>);
+
+        static_assert(flux::random_access_sequence<S const>);
+        static_assert(flux::bounded_sequence<S const>);
+        static_assert(flux::sized_sequence<S const>);
+        static_assert(std::same_as<flux::element_t<S const>, int const&>);
+        static_assert(std::same_as<flux::value_t<S const>, int>);
+        static_assert(std::same_as<flux::rvalue_element_t<S const>, int const&&>);
+
+        STATIC_CHECK(check_equal(std::as_const(seq), {1, 2, 3, 4, 5, 6}));
+    }
+
     // Chaining single-pass sequences works as expected
     {
         int arr1[] = {0, 1, 2};
@@ -54,6 +87,22 @@ constexpr bool test_chain()
 
         static_assert(flux::sequence<S>);
         static_assert(!flux::multipass_sequence<S>);
+
+        STATIC_CHECK(check_equal(seq, {0, 1, 2, 3, 4, 5}));
+    }
+
+    // Non-const-iterable sequences can be chained
+    {
+        int arr1[] = {0, 1, 2};
+        int arr2[] = {3, 4, 5};
+        auto yes = [](int) { return true; };
+
+        auto seq = flux::chain(flux::filter(arr1, yes), flux::filter(arr2, yes));
+
+        using S = decltype(seq);
+
+        static_assert(flux::bidirectional_sequence<S>);
+        static_assert(not flux::sequence<S const>);
 
         STATIC_CHECK(check_equal(seq, {0, 1, 2, 3, 4, 5}));
     }
@@ -81,6 +130,10 @@ constexpr bool test_chain()
 
         STATIC_CHECK(flux::size(seq) == 9);
         STATIC_CHECK(check_equal(seq, {0, 1, 2, 3, 4, 5, 6, 7, 8}));
+
+        auto seq2 = flux::chain(flux::empty<int>, flux::empty<int>, flux::empty<int>);
+        STATIC_CHECK(seq2.size() == 0);
+        STATIC_CHECK(seq2.is_last(seq2.first()));
     }
 
     // We can sort across RA sequences
