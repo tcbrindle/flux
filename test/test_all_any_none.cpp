@@ -32,20 +32,3 @@ TEST_CASE("all with vector")
 
     REQUIRE(req);
 }
-
-TEST_CASE("write to??")
-{
-    /*int arr[][3] = {
-        {1, 2, 3},
-        {4, 5, 6},
-        {7, 8, 9}
-    };*/
-    std::vector<std::vector<int>> arr = {
-        {1, 2, 3},
-        {4, 5, 6},
-        {7, 8, 9}
-    };
-
-
-    flux::write_to(arr, std::cout) << std::endl;
-}

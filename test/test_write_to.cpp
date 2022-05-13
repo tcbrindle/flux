@@ -1,0 +1,48 @@
+
+#include "catch.hpp"
+
+#include <flux/op/write_to.hpp>
+#include <flux/ranges.hpp>
+#include <flux/source/istream.hpp>
+
+#include <sstream>
+#include <vector>
+
+TEST_CASE("write to")
+{
+    SECTION("Basic write_to")
+    {
+        std::vector vec{1, 2, 3, 4, 5};
+
+        std::ostringstream oss;
+
+        flux::write_to(vec, oss);
+
+        REQUIRE(oss.str() == "[1, 2, 3, 4, 5]");
+    }
+
+    SECTION("Nested sequences")
+    {
+        std::vector<std::vector<std::vector<int>>> vec{
+            { {1, 2}, {3, 4} },
+            { {5, 6}, {7, 8} },
+            { {9, 10}, {11, 12} }
+        };
+
+        std::ostringstream oss;
+
+        flux::from(vec).write_to(oss);
+
+        REQUIRE(oss.str() == "[[[1, 2], [3, 4]], [[5, 6], [7, 8]], [[9, 10], [11, 12]]]");
+    }
+
+    SECTION("Reading and writing streams")
+    {
+        std::istringstream iss("1 2 3 4 5");
+        std::ostringstream oss;
+
+        flux::from_istream<int>(iss).write_to(oss) << "\n";
+
+        REQUIRE(oss.str() == "[1, 2, 3, 4, 5]\n");
+    }
+}

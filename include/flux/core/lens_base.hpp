@@ -216,6 +216,8 @@ public:
         requires predicate_for<Pred, Derived, Proj>
     [[nodiscard]]
     constexpr auto none(Pred pred, Proj proj = {});
+
+    auto write_to(std::ostream& os) -> std::ostream&;
 };
 
 
