@@ -187,6 +187,10 @@ public:
     [[nodiscard]]
     constexpr auto any(Pred pred, Proj proj = {});
 
+    template <typename Value, typename Proj = std::identity>
+        requires std::equality_comparable_with<projected_t<Proj, Derived>, Value const&>
+    constexpr auto contains(Value const& value, Proj proj = {}) -> bool;
+
     /// Returns the index of `value` in the sequence
     template <typename Value, typename Proj = std::identity>
         requires std::equality_comparable_with<projected_t<Proj, Derived>, Value const&>
