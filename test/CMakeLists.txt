@@ -13,6 +13,7 @@ add_executable(test-libflux
     test_drop_while.cpp
     test_filter.cpp
     test_find.cpp
+    test_generator.cpp
     test_map.cpp
     test_reverse.cpp
     test_split.cpp
