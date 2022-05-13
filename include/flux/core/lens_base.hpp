@@ -221,6 +221,11 @@ public:
     [[nodiscard]]
     constexpr auto none(Pred pred, Proj proj = {});
 
+    template <typename Iter>
+        requires std::weakly_incrementable<Iter> &&
+                 std::indirectly_writable<Iter, element_t<Derived>>
+    constexpr auto output_to(Iter iter) -> Iter;
+
     auto write_to(std::ostream& os) -> std::ostream&;
 };
 

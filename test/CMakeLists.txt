@@ -17,6 +17,7 @@ add_executable(test-libflux
     test_find.cpp
     test_generator.cpp
     test_map.cpp
+    test_output_to.cpp
     test_reverse.cpp
     test_split.cpp
     test_take.cpp

@@ -2,7 +2,8 @@
 #ifndef FLUX_OP_SLICE_HPP_INCLUDED
 #define FLUX_OP_SLICE_HPP_INCLUDED
 
-#include <flux/core/lens_base.hpp>
+#include <flux/core.hpp>
+#include <flux/op/from.hpp>
 
 namespace flux {
 

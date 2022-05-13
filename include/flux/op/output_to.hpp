@@ -1,0 +1,66 @@
+
+#ifndef FLUX_OP_OUTPUT_TO_HPP_INCLUDED
+#define FLUX_OP_OUTPUT_TO_HPP_INCLUDED
+
+#include <flux/op/for_each.hpp>
+
+#include <cstring>
+#include <iterator>
+
+namespace flux {
+
+namespace detail {
+
+struct output_to_fn {
+private:
+    template <typename Seq, typename Iter>
+    static constexpr auto impl(Seq& seq, Iter& iter) -> Iter
+    {
+        flux::for_each(seq, [&iter](auto&& elem) {
+            *iter = FLUX_FWD(elem);
+            ++iter;
+        });
+        return iter;
+    }
+
+public:
+    template <sequence Seq, std::weakly_incrementable Iter>
+        requires std::indirectly_writable<Iter, element_t<Seq>>
+    constexpr auto operator()(Seq&& seq, Iter iter) const -> Iter
+    {
+        constexpr bool can_memcpy =
+            contiguous_sequence<Seq> &&
+            sized_sequence<Seq> &&
+            std::contiguous_iterator<Iter> &&
+            std::is_trivially_copyable_v<value_t<Seq>>;
+
+        if constexpr (can_memcpy) {
+            if (std::is_constant_evaluated()) {
+                return impl(seq, iter);
+            } else {
+                std::memmove(std::to_address(iter), flux::data(seq),
+                             flux::size(seq) * sizeof(value_t<Seq>));
+                return iter + flux::size(seq);
+            }
+        } else {
+            return impl(seq, iter);
+        }
+    }
+};
+
+}
+
+inline constexpr auto output_to = detail::output_to_fn{};
+
+template <typename D>
+template <typename Iter>
+    requires std::weakly_incrementable<Iter> &&
+             std::indirectly_writable<Iter, element_t<D>>
+constexpr auto lens_base<D>::output_to(Iter iter) -> Iter
+{
+    return flux::output_to(derived(), std::move(iter));
+}
+
+}
+
+#endif
