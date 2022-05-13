@@ -9,6 +9,8 @@
 #include <flux/op/chain.hpp>
 #include <flux/op/drop.hpp>
 #include <flux/op/drop_while.hpp>
+#include <flux/op/for_each.hpp>
+#include <flux/op/for_each_while.hpp>
 #include <flux/op/filter.hpp>
 #include <flux/op/find.hpp>
 #include <flux/op/from.hpp>

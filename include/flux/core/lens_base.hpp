@@ -187,11 +187,6 @@ public:
     [[nodiscard]]
     constexpr auto any(Pred pred, Proj proj = {});
 
-    template <typename Pred, typename Proj = std::identity>
-        requires predicate_for<Pred, Derived, Proj>
-    [[nodiscard]]
-    constexpr auto none(Pred pred, Proj proj = {});
-
     /// Returns the index of `value` in the sequence
     template <typename Value, typename Proj = std::identity>
         requires std::equality_comparable_with<projected_t<Proj, Derived>, Value const&>
@@ -207,6 +202,20 @@ public:
         requires predicate_for<Pred, Derived, Proj>
     [[nodiscard]]
     constexpr auto find_if_not(Pred pred, Proj proj = {});
+
+    template <typename Func, typename Proj = std::identity>
+        requires std::invocable<Func&, projected_t<Proj, Derived>>
+    constexpr auto for_each(Func func, Proj proj = {}) -> Func;
+
+    template <typename Pred>
+        requires std::invocable<Pred&, element_t<Derived>> &&
+                 detail::boolean_testable<std::invoke_result_t<Pred&, element_t<Derived>>>
+    constexpr auto for_each_while(Pred pred);
+
+    template <typename Pred, typename Proj = std::identity>
+        requires predicate_for<Pred, Derived, Proj>
+    [[nodiscard]]
+    constexpr auto none(Pred pred, Proj proj = {});
 };
 
 
