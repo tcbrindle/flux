@@ -42,34 +42,34 @@ template <typename Base>
 struct sequence_iface<detail::bounds_checked_adaptor<Base>>
     : detail::passthrough_iface_base<Base>
 {
-    static constexpr auto read_at(auto& self, auto const& idx)
-        -> decltype(flux::checked_read_at(self.base_, idx))
+    static constexpr auto read_at(auto& self, auto const& cur)
+        -> decltype(flux::checked_read_at(self.base_, cur))
     {
-        return flux::checked_read_at(self.base_, idx);
+        return flux::checked_read_at(self.base_, cur);
     }
 
-    static constexpr auto inc(auto& self, auto& idx)
-        -> decltype(flux::checked_inc(self.base_, idx))
+    static constexpr auto inc(auto& self, auto& cur)
+        -> decltype(flux::checked_inc(self.base_, cur))
     {
-        return flux::checked_inc(self.base_, idx);
+        return flux::checked_inc(self.base_, cur);
     }
 
-    static constexpr auto dec(auto& self, auto& idx)
-        -> decltype(flux::checked_dec(self.base_, idx))
+    static constexpr auto dec(auto& self, auto& cur)
+        -> decltype(flux::checked_dec(self.base_, cur))
     {
-        return flux::checked_dec(self.base_, idx);
+        return flux::checked_dec(self.base_, cur);
     }
 
-    static constexpr auto inc(auto& self, auto& idx, auto offset)
-        -> decltype(flux::checked_inc(self.base_, idx, offset))
+    static constexpr auto inc(auto& self, auto& cur, auto offset)
+        -> decltype(flux::checked_inc(self.base_, cur, offset))
     {
-        return flux::checked_inc(self.base_, idx, offset);
+        return flux::checked_inc(self.base_, cur, offset);
     }
 
-    static constexpr auto move_at(auto& self, auto const& idx)
-        -> decltype(flux::checked_move_at(self.base_, idx))
+    static constexpr auto move_at(auto& self, auto const& cur)
+        -> decltype(flux::checked_move_at(self.base_, cur))
     {
-        return flux::checked_move_at(self.base_, idx);
+        return flux::checked_move_at(self.base_, cur);
     }
 
     static constexpr auto slice(auto& self, auto first, auto last)

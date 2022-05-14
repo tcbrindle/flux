@@ -59,19 +59,20 @@ struct sequence_iface<detail::split_adaptor<Base, Pattern>>
 {
 private:
     template <typename Self, typename B = detail::const_like_t<Self, Base>>
-    struct index_type {
-        index_t<B> cur;
+    struct cursor_type {
+        cursor_t<B> cur;
         bounds_t<B> next;
         bool trailing_empty = false;
 
-        friend bool operator==(index_type const&, index_type const&) = default;
+        friend bool operator==(cursor_type const&,
+                               cursor_type const&) = default;
     };
 
-    static constexpr auto find_next(auto& self, auto const& idx)
+    static constexpr auto find_next(auto& self, auto const& from)
     {
         if constexpr (detail::is_single_seq<decltype(self.pattern_)>) {
-            // auto cur = self.base_[{idx, last}].find(self.pattern_.value());
-            auto cur = flux::find(flux::slice(self.base_, idx, flux::last),
+            // auto cur = self.base_[{cur, last}].find(self.pattern_.value());
+            auto cur = flux::find(flux::slice(self.base_, from, flux::last),
                                   self.pattern_.value());
             if (flux::is_last(self.base_, cur)) {
                 return bounds{cur, cur};
@@ -79,7 +80,7 @@ private:
                 return bounds{cur, flux::next(self.base_, cur)};
             }
         } else {
-            return flux::search(flux::slice(self.base_, idx, flux::last),
+            return flux::search(flux::slice(self.base_, from, flux::last),
                                 self.pattern_);
         }
     }
@@ -93,40 +94,40 @@ public:
         requires sequence<decltype(self.base_)>
     {
         auto bounds = flux::search(self.base_, self.pattern_);
-        return index_type<Self>(flux::first(self.base_), std::move(bounds));
+        return cursor_type<Self>(flux::first(self.base_), std::move(bounds));
     }
 
     template <typename Self>
-    static constexpr auto is_last(Self& self, index_type<Self> const& idx)
+    static constexpr auto is_last(Self& self, cursor_type<Self> const& cur)
         requires sequence<decltype(self.base_)>
     {
-        return flux::is_last(self.base_, idx.cur) && !idx.trailing_empty;
+        return flux::is_last(self.base_, cur.cur) && !cur.trailing_empty;
     }
 
     template <typename Self>
-    static constexpr auto read_at(Self& self, index_type<Self> const& idx)
+    static constexpr auto read_at(Self& self, cursor_type<Self> const& cur)
         requires sequence<decltype(self.base_)>
     {
-        return flux::slice(self.base_, idx.cur, idx.next.from);
+        return flux::slice(self.base_, cur.cur, cur.next.from);
     }
 
     template <typename Self>
-    static constexpr auto inc(Self& self, index_type<Self>& idx) -> index_type<Self>&
+    static constexpr auto inc(Self& self, cursor_type<Self>& cur) -> cursor_type<Self>&
         requires sequence<decltype(self.base_)>
     {
-        idx.cur = idx.next.from;
-        if (!flux::is_last(self.base_, idx.cur)) {
-            idx.cur = idx.next.to;
-            if (flux::is_last(self.base_, idx.cur)) {
-                idx.trailing_empty = true;
-                idx.next = {idx.cur, idx.cur};
+        cur.cur = cur.next.from;
+        if (!flux::is_last(self.base_, cur.cur)) {
+            cur.cur = cur.next.to;
+            if (flux::is_last(self.base_, cur.cur)) {
+                cur.trailing_empty = true;
+                cur.next = {cur.cur, cur.cur};
             } else {
-                idx.next = find_next(self, idx.cur);
+                cur.next = find_next(self, cur.cur);
             }
         } else {
-            idx.trailing_empty = false;
+            cur.trailing_empty = false;
         }
-        return idx;
+        return cur;
     }
 };
 

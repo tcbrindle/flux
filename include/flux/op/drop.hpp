@@ -16,7 +16,7 @@ struct drop_adaptor : lens_base<drop_adaptor<Base>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     distance_t<Base> count_;
-    std::optional<index_t<Base>> cached_first_;
+    std::optional<cursor_t<Base>> cached_first_;
 
     friend struct sequence_iface<drop_adaptor>;
 
@@ -54,7 +54,7 @@ struct sequence_iface<detail::drop_adaptor<Base>>
 
     static constexpr auto first(self_t& self)
     {
-        if constexpr (std::copy_constructible<index_t<Base>>) {
+        if constexpr (std::copy_constructible<cursor_t<Base>>) {
             if (!self.cached_first_) {
                 self.cached_first_ = flux::next(self.base_, flux::first(self.base()), self.count_);
             }

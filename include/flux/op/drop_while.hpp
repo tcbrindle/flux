@@ -16,7 +16,7 @@ struct drop_while_adaptor : lens_base<drop_while_adaptor<Base, Pred>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Pred pred_;
-    std::optional<index_t<Base>> cached_first_{};
+    std::optional<cursor_t<Base>> cached_first_{};
 
     friend struct sequence_iface<drop_while_adaptor>;
     friend struct passthrough_iface_base<Base>;
@@ -49,7 +49,7 @@ struct sequence_iface<detail::drop_while_adaptor<Base, Pred>>
 
     static constexpr auto first(self_t& self)
     {
-        if constexpr (std::copy_constructible<index_t<Base>>) {
+        if constexpr (std::copy_constructible<cursor_t<Base>>) {
             if (!self.cached_first_) {
                 self.cached_first_ = flux::for_each_while(self.base_, self.pred_);
             }

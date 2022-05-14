@@ -14,9 +14,9 @@ struct ints {
 
     static constexpr int first() { return 0; }
     static constexpr bool is_last(int) { return false; }
-    constexpr int read_at(int idx) const { return from + idx; }
-    static constexpr int& inc(int& idx, int o = 1) { return idx += o; }
-    static constexpr int& dec(int& idx) { return --idx; }
+    constexpr int read_at(int cur) const { return from + cur; }
+    static constexpr int& inc(int& cur, int o = 1) { return cur += o; }
+    static constexpr int& dec(int& cur) { return --cur; }
     static constexpr int distance(int from, int to) { return to - from; }
 };
 
@@ -66,11 +66,11 @@ constexpr bool test_take_while()
     {
         int arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-        auto idx = flux::from(arr)
+        auto cur = flux::from(arr)
                      .take_while([](int i) { return i < 5; })
                      .find(99);
 
-        STATIC_CHECK(idx == flux::next(arr, flux::first(arr), 5));
+        STATIC_CHECK(cur == flux::next(arr, flux::first(arr), 5));
     }
 
     {

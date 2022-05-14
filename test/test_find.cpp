@@ -38,25 +38,25 @@ constexpr bool test_find()
     {
         int const ints[] = {0, 1, 2, 3, 4, 5};
 
-        auto idx = flux::find(ints, 3);
-        if (idx != 3) {
+        auto cur = flux::find(ints, 3);
+        if (cur != 3) {
             return false;
         }
 
-        idx = flux::find(ints, 99);
-        if (!flux::is_last(ints, idx)) {
+        cur = flux::find(ints, 99);
+        if (!flux::is_last(ints, cur)) {
             return false;
         }
 
         auto lens = flux::from(ints);
 
-        idx = lens.find(3);
-        if (idx != 3) {
+        cur = lens.find(3);
+        if (cur != 3) {
             return false;
         }
 
-        idx = lens.find(99);
-        if (!lens.is_last(idx)) {
+        cur = lens.find(99);
+        if (!lens.is_last(cur)) {
             return false;
         }
     }
@@ -64,13 +64,13 @@ constexpr bool test_find()
     {
         S ss[] = { S{1}, S{2}, S{3}, S{4}, S{5} };
 
-        auto idx = flux::find(ss, 3, &S::i_);
-        if (idx != 2) {
+        auto cur = flux::find(ss, 3, &S::i_);
+        if (cur != 2) {
             return false;
         }
 
-        idx = flux::find(ss, 99, &S::i_);
-        if (!flux::is_last(ss, idx)) {
+        cur = flux::find(ss, 99, &S::i_);
+        if (!flux::is_last(ss, cur)) {
             return false;
         }
     }

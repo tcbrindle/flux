@@ -13,7 +13,7 @@ struct find_fn {
     template <sequence Seq, typename Value, typename Proj = std::identity>
         requires std::equality_comparable_with<projected_t<Proj, Seq>, Value const&>
     constexpr auto operator()(Seq&& seq, Value const& value,
-                              Proj proj = {}) const -> index_t<Seq>
+                              Proj proj = {}) const -> cursor_t<Seq>
     {
         return for_each_while(seq, [&](auto&& elem) {
             return std::invoke(proj, FLUX_FWD(elem)) != value;
@@ -25,7 +25,7 @@ struct find_if_fn {
     template <sequence Seq, typename Pred, typename Proj = std::identity>
         requires std::predicate<Pred&, projected_t<Proj, Seq>>
     constexpr auto operator()(Seq&& seq, Pred pred, Proj proj = {}) const
-        -> index_t<Seq>
+        -> cursor_t<Seq>
     {
         return for_each_while(seq, [&](auto&& elem) {
             return !std::invoke(pred, std::invoke(proj, FLUX_FWD(elem)));
@@ -37,7 +37,7 @@ struct find_if_not_fn {
     template <sequence Seq, typename Pred, typename Proj = std::identity>
         requires std::predicate<Pred&, projected_t<Proj, Seq>>
     constexpr auto operator()(Seq&& seq, Pred pred, Proj proj = {}) const
-        -> index_t<Seq>
+        -> cursor_t<Seq>
     {
         return for_each_while(seq, [&](auto&& elem) {
             return std::invoke(pred, std::invoke(proj, FLUX_FWD(elem)));

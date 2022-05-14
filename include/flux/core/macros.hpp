@@ -18,9 +18,9 @@
 
 #define FLUX_FOR(_flux_var_decl_, ...)                    \
     if (auto&& _flux_seq_ = __VA_ARGS__; true)           \
-        for (auto _flux_idx_ = ::flux::first(_flux_seq_);   \
-             !::flux::is_last(_flux_seq_, _flux_idx_);     \
-              ::flux::inc(_flux_seq_, _flux_idx_))         \
-            if (_flux_var_decl_ = ::flux::read_at(_flux_seq_, _flux_idx_); true)
+        for (auto _flux_cur_ = ::flux::first(_flux_seq_);   \
+             !::flux::is_last(_flux_seq_, _flux_cur_);     \
+              ::flux::inc(_flux_seq_, _flux_cur_))         \
+            if (_flux_var_decl_ = ::flux::read_at(_flux_seq_, _flux_cur_); true)
 
 #endif // FLUX_CORE_MACROS_HPP_INCLUDED

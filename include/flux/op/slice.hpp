@@ -9,35 +9,36 @@ namespace flux {
 
 namespace detail {
 
-template <index Idx, bool Bounded>
+template <cursor Cur, bool Bounded>
 struct slice_data {
-    Idx first;
-    Idx last;
+    Cur first;
+    Cur last;
 };
 
-template <index Idx>
-struct slice_data<Idx, false> {
-    Idx first;
+template <cursor Cur>
+struct slice_data<Cur, false> {
+    Cur first;
 };
 
 template <lens Base, bool Bounded>
-    requires (!Bounded || regular_index<index_t<Base>>)
+    requires (!Bounded || regular_cursor<cursor_t<Base>>)
 struct subsequence : lens_base<subsequence<Base, Bounded>>
 {
 private:
     Base* base_;
-    FLUX_NO_UNIQUE_ADDRESS slice_data<index_t<Base>, Bounded> data_;
+    FLUX_NO_UNIQUE_ADDRESS slice_data<cursor_t<Base>, Bounded> data_;
 
     friend struct sequence_iface<subsequence>;
 
 public:
-    constexpr subsequence(Base& base, index_t<Base>&& from, index_t<Base>&& to)
+    constexpr subsequence(Base& base, cursor_t<Base>&& from,
+                          cursor_t<Base>&& to)
         requires Bounded
         : base_(std::addressof(base)),
           data_{std::move(from), std::move(to)}
     {}
 
-    constexpr subsequence(Base& base, index_t<Base>&& from)
+    constexpr subsequence(Base& base, cursor_t<Base>&& from)
         requires (!Bounded)
         : base_(std::addressof(base)),
           data_{std::move(from)}
@@ -47,21 +48,22 @@ public:
 };
 
 template <sequence Seq>
-subsequence(Seq&, index_t<Seq>, index_t<Seq>) -> subsequence<Seq, true>;
+subsequence(Seq&, cursor_t<Seq>, cursor_t<Seq>) -> subsequence<Seq, true>;
 
 template <sequence Seq>
-subsequence(Seq&, index_t<Seq>) -> subsequence<Seq, false>;
+subsequence(Seq&, cursor_t<Seq>) -> subsequence<Seq, false>;
 
 template <typename Seq>
 concept has_overloaded_slice =
-    requires (Seq& seq, index_t<Seq> idx) {
-        { iface_t<Seq>::slice(seq, std::move(idx)) } -> sequence;
-        { iface_t<Seq>::slice(seq, std::move(idx), std::move(idx)) } -> sequence;
+    requires (Seq& seq, cursor_t<Seq> cur) {
+        { iface_t<Seq>::slice(seq, std::move(cur)) } -> sequence;
+        { iface_t<Seq>::slice(seq, std::move(cur), std::move(cur)) } -> sequence;
     };
 
 struct slice_fn {
     template <sequence Seq>
-    constexpr auto operator()(Seq& seq, index_t<Seq> from, index_t<Seq> to) const
+    constexpr auto operator()(Seq& seq, cursor_t<Seq> from,
+                              cursor_t<Seq> to) const
         -> sequence auto
     {
         if constexpr (has_overloaded_slice<Seq>) {
@@ -72,7 +74,7 @@ struct slice_fn {
     }
 
     template <sequence Seq>
-    constexpr auto operator()(Seq& seq, index_t<Seq> from, last_fn) const
+    constexpr auto operator()(Seq& seq, cursor_t<Seq> from, last_fn) const
         -> sequence auto
     {
         if constexpr (has_overloaded_slice<Seq>) {
@@ -93,7 +95,7 @@ struct sequence_iface<subsequence<Base, Bounded>>
 {
     using self_t = subsequence<Base, Bounded>;
 
-    static constexpr auto first(self_t& self) -> index_t<Base>
+    static constexpr auto first(self_t& self) -> cursor_t<Base>
     {
         if constexpr (std::copy_constructible<decltype(self.data_.first)>) {
             return self.data_.first;
@@ -102,15 +104,15 @@ struct sequence_iface<subsequence<Base, Bounded>>
         }
     }
 
-    static constexpr bool is_last(self_t& self, index_t<Base> const& idx) {
+    static constexpr bool is_last(self_t& self, cursor_t<Base> const& cur) {
         if constexpr (Bounded) {
-            return idx == self.data_.last;
+            return cur == self.data_.last;
         } else {
-            return flux::is_last(*self.base_, idx);
+            return flux::is_last(*self.base_, cur);
         }
     }
 
-    static constexpr auto last(self_t& self) -> index_t<Base>
+    static constexpr auto last(self_t& self) -> cursor_t<Base>
         requires (Bounded || bounded_sequence<Base>)
     {
         if constexpr (Bounded) {
@@ -136,14 +138,14 @@ inline constexpr auto slice = detail::slice_fn{};
 #if 0
 template <typename Derived>
 template <std::same_as<Derived> D>
-constexpr auto lens_base<Derived>::slice(index_t<D> from, index_t<D> to) &
+constexpr auto lens_base<Derived>::slice(cursor_t<D> from, cursor_t<D> to) &
 {
     return flux::slice(derived(), std::move(from), std::move(to));
 }
 
 template <typename Derived>
 template <std::same_as<Derived> D>
-constexpr auto lens_base<Derived>::slice_from(index_t<D> from) &
+constexpr auto lens_base<Derived>::slice_from(cursor_t<D> from) &
 {
     return flux::slice(derived(), std::move(from));
 }

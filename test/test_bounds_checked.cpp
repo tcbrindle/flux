@@ -57,52 +57,52 @@ TEST_CASE("bounds_checked")
 
         SECTION("Can read from in-bounds indices")
         {
-            auto idx = seq.first();
-            REQUIRE(seq[idx] == 0);
-            REQUIRE(seq.move_at(idx) == 0);
+            auto cur = seq.first();
+            REQUIRE(seq[cur] == 0);
+            REQUIRE(seq.move_at(cur) == 0);
         }
 
         SECTION("Can advance within bounds")
         {
-            auto idx = seq.first();
-            for (; !seq.is_last(idx); seq.inc(idx)) {}
-            REQUIRE(seq.is_last(idx));
+            auto cur = seq.first();
+            for (; !seq.is_last(cur); seq.inc(cur)) {}
+            REQUIRE(seq.is_last(cur));
         }
 
         SECTION("Advancing past the end is an error")
         {
-            auto idx = seq.last();
-            REQUIRE_THROWS_AS(seq.inc(idx), std::out_of_range);
+            auto cur = seq.last();
+            REQUIRE_THROWS_AS(seq.inc(cur), std::out_of_range);
         }
 
         SECTION("Reading past the end is an error")
         {
-            auto idx = seq.last();
-            REQUIRE_THROWS_AS(seq[idx], std::out_of_range);
-            REQUIRE_THROWS_AS(seq.move_at(idx), std::out_of_range);
+            auto cur = seq.last();
+            REQUIRE_THROWS_AS(seq[cur], std::out_of_range);
+            REQUIRE_THROWS_AS(seq.move_at(cur), std::out_of_range);
         }
 
         SECTION("Can decrement within bounds")
         {
-            auto idx = seq.last();
-            while(seq.dec(idx) != seq.first()) {}
-            REQUIRE(idx == seq.first());
+            auto cur = seq.last();
+            while(seq.dec(cur) != seq.first()) {}
+            REQUIRE(cur == seq.first());
         }
 
         SECTION("Decrementing before the start is an error")
         {
-            auto idx = seq.first();
-            REQUIRE_THROWS_AS(seq.dec(idx), std::out_of_range);
+            auto cur = seq.first();
+            REQUIRE_THROWS_AS(seq.dec(cur), std::out_of_range);
         }
 
         SECTION("Random access jumps out of bounds are an error")
         {
-            auto idx = seq.first();
-            REQUIRE_THROWS_AS(seq.inc(idx, 100), std::out_of_range);
+            auto cur = seq.first();
+            REQUIRE_THROWS_AS(seq.inc(cur, 100), std::out_of_range);
             // Advancing to the end of the range (but no further) is okay
-            REQUIRE(seq.is_last(flux::next(seq, idx, seq.size())));
+            REQUIRE(seq.is_last(flux::next(seq, cur, seq.size())));
 
-            REQUIRE_THROWS_AS(seq.inc(idx, -100), std::out_of_range);
+            REQUIRE_THROWS_AS(seq.inc(cur, -100), std::out_of_range);
 
             REQUIRE(flux::next(seq, seq.last(), -seq.size()) == seq.first());
         }
@@ -150,12 +150,12 @@ TEST_CASE("bounds_checked")
 
         auto seq = flux::bounds_checked(flux::from_istream<int>(iss));
 
-        auto idx = seq.first();
-        REQUIRE(seq[idx] == 1); seq.inc(idx);
-        REQUIRE(seq[idx] == 2); seq.inc(idx);
-        REQUIRE(seq[idx] == 3); seq.inc(idx);
+        auto cur = seq.first();
+        REQUIRE(seq[cur] == 1); seq.inc(cur);
+        REQUIRE(seq[cur] == 2); seq.inc(cur);
+        REQUIRE(seq[cur] == 3); seq.inc(cur);
 
-        REQUIRE_THROWS_AS(seq[idx], std::out_of_range);
-        REQUIRE_THROWS_AS(seq.inc(idx), std::out_of_range);
+        REQUIRE_THROWS_AS(seq[cur], std::out_of_range);
+        REQUIRE_THROWS_AS(seq.inc(cur), std::out_of_range);
     }
 }

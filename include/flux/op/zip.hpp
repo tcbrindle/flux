@@ -59,15 +59,15 @@ private:
     using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
 
     template <std::size_t I>
-    static constexpr decltype(auto) read_at_(auto& self, auto const& idx)
+    static constexpr decltype(auto) read_at_(auto& self, auto const& cur)
     {
-        return flux::read_at(std::get<I>(self.bases_), std::get<I>(idx));
+        return flux::read_at(std::get<I>(self.bases_), std::get<I>(cur));
     }
 
     template <std::size_t I>
-    static constexpr decltype(auto) move_at_(auto& self, auto const& idx)
+    static constexpr decltype(auto) move_at_(auto& self, auto const& cur)
     {
-        return flux::move_at(std::get<I>(self.bases_), std::get<I>(idx));
+        return flux::move_at(std::get<I>(self.bases_), std::get<I>(cur));
     }
 
 public:
@@ -84,57 +84,58 @@ public:
     }
 
     template <typename Self>
-    static constexpr bool is_last(Self& self, index_t<Self> const& idx)
+    static constexpr bool is_last(Self& self, cursor_t<Self> const& cur)
     {
-        return [&self, &idx]<std::size_t... I>(std::index_sequence<I...>) {
-            return (flux::is_last(std::get<I>(self.bases_), std::get<I>(idx)) || ...);
+        return [&self, &cur]<std::size_t... I>(std::index_sequence<I...>) {
+            return (flux::is_last(std::get<I>(self.bases_), std::get<I>(cur)) || ...);
         }(std::index_sequence_for<Bases...>{});
     }
 
     template <typename Self>
-    static constexpr auto read_at(Self& self, index_t<Self> const& idx)
+    static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
     {
         return [&]<std::size_t... I>(std::index_sequence<I...>) {
-            return tuple_t<decltype(read_at_<I>(self, idx))...> {
-                read_at_<I>(self, idx)...
+            return tuple_t<decltype(read_at_<I>(self, cur))...> {
+                read_at_<I>(self, cur)...
             };
         }(std::index_sequence_for<Bases...>{});
     }
 
     template <typename Self>
-    static constexpr auto& inc(Self& self, index_t<Self>& idx)
+    static constexpr auto& inc(Self& self, cursor_t<Self>& cur)
     {
         [&]<std::size_t... I>(std::index_sequence<I...>) {
-            (flux::inc(std::get<I>(self.bases_), std::get<I>(idx)), ...);
+            (flux::inc(std::get<I>(self.bases_), std::get<I>(cur)), ...);
         }(std::index_sequence_for<Bases...>{});
 
-        return idx;
+        return cur;
     }
 
     template <typename Self>
-    static constexpr auto& dec(Self& self, index_t<Self>& idx)
+    static constexpr auto& dec(Self& self, cursor_t<Self>& cur)
         requires (bidirectional_sequence<const_like_t<Self, Bases>> && ...)
     {
         [&]<std::size_t... I>(std::index_sequence<I...>) {
-            (flux::dec(std::get<I>(self.bases_), std::get<I>(idx)), ...);
+            (flux::dec(std::get<I>(self.bases_), std::get<I>(cur)), ...);
         }(std::index_sequence_for<Bases...>{});
 
-        return idx;
+        return cur;
     }
 
     template <typename Self>
-    static constexpr auto& inc(Self& self, index_t<Self>& idx, distance_t<Self> offset)
+    static constexpr auto& inc(Self& self, cursor_t<Self>& cur, distance_t<Self> offset)
         requires (random_access_sequence<const_like_t<Self, Bases>> && ...)
     {
         [&]<std::size_t... I>(std::index_sequence<I...>) {
-            (flux::inc(std::get<I>(self.bases_), std::get<I>(idx), offset), ...);
+            (flux::inc(std::get<I>(self.bases_), std::get<I>(cur), offset), ...);
         }(std::index_sequence_for<Bases...>{});
 
-        return idx;
+        return cur;
     }
 
     template <typename Self>
-    static constexpr auto distance(Self& self, index_t<Self> const& from, index_t<Self> const& to)
+    static constexpr auto distance(Self& self, cursor_t<Self> const& from,
+                                   cursor_t<Self> const& to)
         requires (random_access_sequence<const_like_t<Self, Bases>> && ...)
     {
         return [&]<std::size_t... I>(std::index_sequence<I...>) {
@@ -149,8 +150,8 @@ public:
         requires (random_access_sequence<const_like_t<Self, Bases>> && ...)
             && (sized_sequence<const_like_t<Self, Bases>> && ...)
     {
-        auto idx = first(self);
-        return inc(self, idx, size(self));
+        auto cur = first(self);
+        return inc(self, cur, size(self));
     }
 
     template <typename Self>
@@ -163,11 +164,11 @@ public:
     }
 
     template <typename Self>
-    static constexpr auto move_at(Self& self, index_t<Self> const& idx)
+    static constexpr auto move_at(Self& self, cursor_t<Self> const& cur)
     {
         return [&]<std::size_t... I>(std::index_sequence<I...>) {
-            return tuple_t<decltype(move_at_<I>(self, idx))...>{
-                move_at_<I>(self, idx)...
+            return tuple_t<decltype(move_at_<I>(self, cur))...>{
+                move_at_<I>(self, cur)...
             };
         }(std::index_sequence_for<Bases...>{});
     }

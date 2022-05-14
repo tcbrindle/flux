@@ -44,40 +44,40 @@ template <typename T, typename CharT, typename Traits>
 struct sequence_iface<detail::istream_adaptor<T, CharT, Traits>>
 {
 private:
-    struct index_type {
-        index_type(index_type&&) = default;
-        index_type& operator=(index_type&&) = default;
+    struct cursor_type {
+        cursor_type(cursor_type&&) = default;
+        cursor_type& operator=(cursor_type&&) = default;
     private:
         friend struct sequence_iface;
-        explicit index_type() = default;
+        explicit cursor_type() = default;
     };
 
     using self_t = detail::istream_adaptor<T, CharT, Traits>;
 
 public:
-    static auto first(self_t& self) -> index_type
+    static auto first(self_t& self) -> cursor_type
     {
-        index_type idx{};
-        inc(self, idx);
-        return idx;
+        cursor_type cur{};
+        inc(self, cur);
+        return cur;
     }
 
-    static auto is_last(self_t& self, index_type const&) -> bool
+    static auto is_last(self_t& self, cursor_type const&) -> bool
     {
         return !(self.is_ && static_cast<bool>(*self.is_));
     }
 
-    static auto read_at(self_t& self, index_type const&) -> T const&
+    static auto read_at(self_t& self, cursor_type const&) -> T const&
     {
         return self.val_;
     }
 
-    static auto inc(self_t& self, index_type& idx) -> index_type&
+    static auto inc(self_t& self, cursor_type& cur) -> cursor_type&
     {
         if (!(self.is_ && (*self.is_ >> self.val_))) {
             self.is_ = nullptr;
         }
-        return idx;
+        return cur;
     }
 };
 

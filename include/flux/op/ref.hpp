@@ -81,7 +81,7 @@ template <sequence Base>
 struct passthrough_iface_base {
 
     template <typename Self>
-    using index_t = decltype(flux::first(FLUX_DECLVAL(Self&).base()));
+    using cursor_t = decltype(flux::first(FLUX_DECLVAL(Self&).base()));
 
     using value_type = value_t<Base>;
     using distance_type = distance_t<Base>;
@@ -96,42 +96,42 @@ struct passthrough_iface_base {
     }
 
     template <typename Self>
-    static constexpr auto is_last(Self& self, index_t<Self> const& idx)
-        -> decltype(flux::is_last(self.base(), idx))
+    static constexpr auto is_last(Self& self, cursor_t<Self> const& cur)
+        -> decltype(flux::is_last(self.base(), cur))
     {
-        return flux::is_last(self.base(), idx);
+        return flux::is_last(self.base(), cur);
     }
 
     template <typename Self>
-    static constexpr auto read_at(Self& self, index_t<Self> const& idx)
-        -> decltype(flux::read_at(self.base(), idx))
+    static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
+        -> decltype(flux::read_at(self.base(), cur))
     {
-        return flux::read_at(self.base(), idx);
+        return flux::read_at(self.base(), cur);
     }
 
     template <typename Self>
-    static constexpr auto inc(Self& self, index_t<Self>& idx)
-        -> decltype(flux::inc(self.base(), idx))
+    static constexpr auto inc(Self& self, cursor_t<Self>& cur)
+        -> decltype(flux::inc(self.base(), cur))
     {
-        return flux::inc(self.base(), idx);
+        return flux::inc(self.base(), cur);
     }
 
     template <typename Self>
-    static constexpr auto dec(Self& self, index_t<Self>& idx)
-        -> decltype(flux::dec(self.base(), idx))
+    static constexpr auto dec(Self& self, cursor_t<Self>& cur)
+        -> decltype(flux::dec(self.base(), cur))
     {
-        return flux::dec(self.base(), idx);
+        return flux::dec(self.base(), cur);
     }
 
     template <typename Self>
-    static constexpr auto inc(Self& self, index_t<Self>& idx, distance_type dist)
-        -> decltype(flux::inc(self.base(), idx, dist))
+    static constexpr auto inc(Self& self, cursor_t<Self>& cur, distance_type dist)
+        -> decltype(flux::inc(self.base(), cur, dist))
     {
-        return flux::inc(self.base(), idx, dist);
+        return flux::inc(self.base(), cur, dist);
     }
 
     template <typename Self>
-    static constexpr auto distance(Self& self, index_t<Self> const& from, index_t<Self> const& to)
+    static constexpr auto distance(Self& self, cursor_t<Self> const& from, cursor_t<Self> const& to)
         -> decltype(flux::distance(self.base(), from, to))
         requires random_access_sequence<decltype(self.base())>
     {
@@ -159,10 +159,10 @@ struct passthrough_iface_base {
     }
 
     template <typename Self>
-    static constexpr auto move_at(Self& self, auto const& idx)
-        -> decltype(flux::move_at(self.base(), idx))
+    static constexpr auto move_at(Self& self, auto const& cur)
+        -> decltype(flux::move_at(self.base(), cur))
     {
-        return flux::move_at(self.base(), idx);
+        return flux::move_at(self.base(), cur);
     }
 
     template <typename Self>
@@ -173,14 +173,14 @@ struct passthrough_iface_base {
     }
 
     template <typename Self>
-    static constexpr auto slice(Self& self, index_t<Self> from, index_t<Self> to)
+    static constexpr auto slice(Self& self, cursor_t<Self> from, cursor_t<Self> to)
         -> decltype(iface_t<decltype(self.base())>::slice(self.base(), std::move(from), std::move(to)))
     {
         return iface_t<decltype(self.base())>::slice(self.base(), std::move(from), std::move(to));
     }
 
     template <typename Self>
-    static constexpr auto slice(Self& self, index_t<Self> from)
+    static constexpr auto slice(Self& self, cursor_t<Self> from)
         -> decltype(iface_t<decltype(self.base())>::slice(self.base(), std::move(from)))
     {
         return iface_t<decltype(self.base())>::slice(self.base(), std::move(from));

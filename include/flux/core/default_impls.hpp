@@ -93,43 +93,44 @@ struct sequence_iface<std::reference_wrapper<Seq>> {
 
     static constexpr bool disable_multipass = !multipass_sequence<Seq>;
 
-    static constexpr auto first(self_t self) -> index_t<Seq>
+    static constexpr auto first(self_t self) -> cursor_t<Seq>
     {
          return flux::first(self.get());
     }
 
-    static constexpr bool is_last(self_t self, index_t<Seq> const& idx)
+    static constexpr bool is_last(self_t self, cursor_t<Seq> const& cur)
     {
-        return flux::is_last(self.get(), idx);
+        return flux::is_last(self.get(), cur);
     }
 
-    static constexpr auto read_at(self_t self, index_t<Seq> const& idx)
+    static constexpr auto read_at(self_t self, cursor_t<Seq> const& cur)
         -> decltype(auto)
     {
-        return flux::read_at(self.get(), idx);
+        return flux::read_at(self.get(), cur);
     }
 
-    static constexpr auto inc(self_t self, index_t<Seq>& idx)
-        -> index_t<Seq>&
+    static constexpr auto inc(self_t self, cursor_t<Seq>& cur)
+        -> cursor_t<Seq>&
     {
-        return flux::inc(self.get(), idx);
+        return flux::inc(self.get(), cur);
     }
 
-    static constexpr auto dec(self_t self, index_t<Seq>& idx)
-        -> index_t<Seq>&
+    static constexpr auto dec(self_t self, cursor_t<Seq>& cur)
+        -> cursor_t<Seq>&
         requires bidirectional_sequence<Seq>
     {
-        return flux::dec(self.get(), idx);
+        return flux::dec(self.get(), cur);
     }
 
-    static constexpr auto inc(self_t self, index_t<Seq>& idx, distance_type offset)
-        -> index_t<Seq>&
+    static constexpr auto inc(self_t self, cursor_t<Seq>& cur, distance_type offset)
+        -> cursor_t<Seq>&
         requires random_access_sequence<Seq>
     {
-        return flux::inc(self.get(), idx,  offset);
+        return flux::inc(self.get(), cur,  offset);
     }
 
-    static constexpr auto distance(self_t self, index_t<Seq> const& from, index_t<Seq> const& to)
+    static constexpr auto distance(self_t self, cursor_t<Seq> const& from,
+                                   cursor_t<Seq> const& to)
         -> distance_type
         requires random_access_sequence<Seq>
     {
@@ -142,7 +143,7 @@ struct sequence_iface<std::reference_wrapper<Seq>> {
         return flux::data(self.get());
     }
 
-    static constexpr auto last(self_t self) -> index_t<Seq>
+    static constexpr auto last(self_t self) -> cursor_t<Seq>
         requires bounded_sequence<Seq>
     {
         return flux::last(self.get());
@@ -154,10 +155,10 @@ struct sequence_iface<std::reference_wrapper<Seq>> {
         return flux::size(self.get());
     }
 
-    static constexpr auto move_at(self_t self, index_t<Seq> const& idx)
+    static constexpr auto move_at(self_t self, cursor_t<Seq> const& cur)
         -> rvalue_element_t<Seq>
     {
-        return flux::move_at(self.get(), idx);
+        return flux::move_at(self.get(), cur);
     }
 };
 

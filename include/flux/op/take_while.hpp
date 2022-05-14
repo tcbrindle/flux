@@ -49,7 +49,7 @@ struct sequence_iface<detail::take_while_adaptor<Base, Pred>>
 
     static constexpr bool is_infinite = false;
 
-    static constexpr bool is_last(self_t& self, index_t<Base> const& idx)
+    static constexpr bool is_last(self_t& self, cursor_t<Base> const& idx)
     {
         if (flux::is_last(self.base_, idx) ||
             !std::invoke(self.pred_, flux::read_at(self.base_, idx))) {
@@ -59,11 +59,11 @@ struct sequence_iface<detail::take_while_adaptor<Base, Pred>>
         }
     }
 
-    static constexpr bool is_last(self_t const& self, index_t<Base const> const& idx)
+    static constexpr bool is_last(self_t const& self, cursor_t<Base const> const& cur)
         requires std::predicate<Pred const&, element_t<Base const>>
     {
-        if (flux::is_last(self.base_, idx) ||
-            !std::invoke(self.pred_, flux::read_at(self.base_, idx))) {
+        if (flux::is_last(self.base_, cur) ||
+            !std::invoke(self.pred_, flux::read_at(self.base_, cur))) {
             return true;
         } else {
             return false;

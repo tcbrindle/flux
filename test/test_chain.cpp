@@ -41,15 +41,15 @@ constexpr bool test_chain()
         STATIC_CHECK(flux::size(seq) == 9);
         STATIC_CHECK(check_equal(seq, {0, 1, 2, 3, 4, 5, 6, 7, 8}));
 
-        auto idx1 = seq.next(seq.first());
-        auto idx2 = seq.prev(seq.last());
+        auto cur1 = seq.next(seq.first());
+        auto cur2 = seq.prev(seq.last());
 
-        STATIC_CHECK(seq.distance(idx1, idx2) == 7);
+        STATIC_CHECK(seq.distance(cur1, cur2) == 7);
 
         // Make sure we're really multipass, not pretending
-        auto idx = seq.find(4);
-        (void) seq.next(idx);
-        STATIC_CHECK(seq[idx] == 4);
+        auto cur = seq.find(4);
+        (void) seq.next(cur);
+        STATIC_CHECK(seq[cur] == 4);
     }
 
     // Const iteration works as expected

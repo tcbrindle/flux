@@ -16,24 +16,24 @@ struct search_fn {
         auto hfirst = flux::first(h);
 
         while(true) {
-            auto idx1 = hfirst;
-            auto idx2 = flux::first(n);
+            auto cur1 = hfirst;
+            auto cur2 = flux::first(n);
 
             while (true) {
-                if (is_last(n, idx2)) {
-                    return {std::move(hfirst), std::move(idx1)};
+                if (is_last(n, cur2)) {
+                    return {std::move(hfirst), std::move(cur1)};
                 }
 
-                if (is_last(h, idx1)) {
-                    return {idx1, idx1};
+                if (is_last(h, cur1)) {
+                    return {cur1, cur1};
                 }
 
-                if (read_at(h, idx1) != read_at(n, idx2)) {
+                if (read_at(h, cur1) != read_at(n, cur2)) {
                     break;
                 }
 
-                inc(h, idx1);
-                inc(n, idx2);
+                inc(h, cur1);
+                inc(n, cur2);
             }
 
             inc(h, hfirst);

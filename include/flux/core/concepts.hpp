@@ -19,18 +19,18 @@ template <typename From, typename To>
 concept decays_to = std::same_as<std::remove_cvref_t<From>, To>;
 
 /*
- * Index concepts
+ * Cursor concepts
  */
-template <typename Idx>
-concept index = std::movable<Idx>;
+template <typename Cur>
+concept cursor = std::movable<Cur>;
 
-template <typename Idx>
-concept regular_index = index<Idx> && std::regular<Idx>;
+template <typename Cur>
+concept regular_cursor = cursor<Cur> && std::regular<Cur>;
 
-template <typename Idx>
-concept ordered_index =
-    regular_index<Idx> &&
-    std::totally_ordered<Idx>;
+template <typename Cur>
+concept ordered_cursor =
+    regular_cursor<Cur> &&
+    std::totally_ordered<Cur>;
 
 /*
  * Sequence concepts and associated types
@@ -47,10 +47,10 @@ using iface_t = sequence_iface<std::remove_cvref_t<T>>;
 } // namespace detail
 
 template <typename Seq>
-using index_t = decltype(detail::iface_t<Seq>::first(FLUX_DECLVAL(Seq&)));
+using cursor_t = decltype(detail::iface_t<Seq>::first(FLUX_DECLVAL(Seq&)));
 
 template <typename Seq>
-using element_t = decltype(detail::iface_t<Seq>::read_at(FLUX_DECLVAL(Seq&), FLUX_DECLVAL(index_t<Seq> const&)));
+using element_t = decltype(detail::iface_t<Seq>::read_at(FLUX_DECLVAL(Seq&), FLUX_DECLVAL(cursor_t<Seq> const&)));
 
 namespace detail {
 
@@ -89,14 +89,14 @@ struct rvalue_element_type {
 };
 
 template <typename Seq>
-concept has_move_at = requires (Seq& seq, index_t<Seq> const& idx) {
-   { iface_t<Seq>::move_at(seq, idx) };
+concept has_move_at = requires (Seq& seq, cursor_t<Seq> const& cur) {
+   { iface_t<Seq>::move_at(seq, cur) };
 };
 
 template <has_element_type T>
     requires has_move_at<T>
 struct rvalue_element_type<T> {
-    using type = decltype(iface_t<T>::move_at(FLUX_DECLVAL(T&), FLUX_DECLVAL(index_t<T> const&)));
+    using type = decltype(iface_t<T>::move_at(FLUX_DECLVAL(T&), FLUX_DECLVAL(cursor_t<T> const&)));
 };
 
 } // namespace detail
@@ -131,14 +131,14 @@ concept can_reference = requires { typename with_ref<T>; };
 template <typename Seq, typename Iface = sequence_iface<std::remove_cvref_t<Seq>>>
 concept sequence_impl =
     requires (Seq& seq) {
-        { Iface::first(seq) } -> index;
+        { Iface::first(seq) } -> cursor;
     } &&
-    requires (Seq& seq, index_t<Seq> const& idx) {
-        { Iface::is_last(seq, idx) } -> boolean_testable;
-        { Iface::read_at(seq, idx) } -> can_reference;
+    requires (Seq& seq, cursor_t<Seq> const& cur) {
+        { Iface::is_last(seq, cur) } -> boolean_testable;
+        { Iface::read_at(seq, cur) } -> can_reference;
     } &&
-    requires (Seq& seq, index_t<Seq>& idx) {
-        { Iface::inc(seq, idx) } -> std::same_as<index_t<Seq>&>;
+    requires (Seq& seq, cursor_t<Seq>& cur) {
+        { Iface::inc(seq, cur) } -> std::same_as<cursor_t<Seq>&>;
     } &&
     std::signed_integral<distance_t<Seq>> &&
     std::common_reference_with<element_t<Seq>&&, rvalue_element_t<Seq>&&>;
@@ -165,7 +165,7 @@ inline constexpr bool disable_multipass<T> = T::disable_multipass;
 
 template <typename Seq>
 concept multipass_sequence =
-    sequence<Seq> && regular_index<index_t<Seq>> &&
+    sequence<Seq> && regular_cursor<cursor_t<Seq>> &&
     !detail::disable_multipass<detail::iface_t<Seq>>;
 
 namespace detail {
@@ -173,8 +173,8 @@ namespace detail {
 template <typename Seq, typename Iface = sequence_iface<std::remove_cvref_t<Seq>>>
 concept bidirectional_sequence_impl =
     multipass_sequence<Seq> &&
-    requires (Seq& seq, index_t<Seq>& idx) {
-        { Iface::dec(seq, idx) } -> std::same_as<index_t<Seq>&>;
+    requires (Seq& seq, cursor_t<Seq>& cur) {
+        { Iface::dec(seq, cur) } -> std::same_as<cursor_t<Seq>&>;
     };
 
 } // namespace detail
@@ -186,12 +186,12 @@ namespace detail {
 
 template <typename Seq, typename Iface = sequence_iface<std::remove_cvref_t<Seq>>>
 concept random_access_sequence_impl =
-    bidirectional_sequence<Seq> && ordered_index<index_t<Seq>> &&
-    requires (Seq& seq, index_t<Seq>& idx, distance_t<Seq> offset) {
-        { Iface::inc(seq, idx, offset) } -> std::same_as<index_t<Seq>&>;
+    bidirectional_sequence<Seq> && ordered_cursor<cursor_t<Seq>> &&
+    requires (Seq& seq, cursor_t<Seq>& cur, distance_t<Seq> offset) {
+        { Iface::inc(seq, cur, offset) } -> std::same_as<cursor_t<Seq>&>;
     } &&
-    requires (Seq& seq, index_t<Seq> const& idx) {
-        { Iface::distance(seq, idx, idx) } -> std::convertible_to<distance_t<Seq>>;
+    requires (Seq& seq, cursor_t<Seq> const& cur) {
+        { Iface::distance(seq, cur, cur) } -> std::convertible_to<distance_t<Seq>>;
     };
 
 } // namespace detail
@@ -221,7 +221,7 @@ template <typename Seq, typename Iface = sequence_iface<std::remove_cvref_t<Seq>
 concept bounded_sequence_impl =
     sequence<Seq> &&
     requires (Seq& seq) {
-        { Iface::last(seq) } -> std::same_as<index_t<Seq>>;
+        { Iface::last(seq) } -> std::same_as<cursor_t<Seq>>;
     };
 
 } // namespace detail
@@ -325,44 +325,45 @@ struct sequence_iface {
     }
 
     template <decays_to<T> Self>
-    static constexpr auto is_last(Self& self, index_t<Self> const& idx)
-        -> decltype(self.is_last(idx))
+    static constexpr auto is_last(Self& self, cursor_t<Self> const& cur)
+        -> decltype(self.is_last(cur))
     {
-        return self.is_last(idx);
+        return self.is_last(cur);
     }
 
     template <decays_to<T> Self>
-    static constexpr auto read_at(Self& self, index_t<Self> const& idx)
-        -> decltype(self.read_at(idx))
+    static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
+        -> decltype(self.read_at(cur))
     {
-        return self.read_at(idx);
+        return self.read_at(cur);
     }
 
     template <decays_to<T> Self>
-    static constexpr auto inc(Self& self, index_t<Self>& idx)
-        -> decltype(self.inc(idx))
+    static constexpr auto inc(Self& self, cursor_t<Self>& cur)
+        -> decltype(self.inc(cur))
     {
-        return self.inc(idx);
+        return self.inc(cur);
     }
 
     /* bidirectional sequence interface */
     template <decays_to<T> Self>
-    static constexpr auto dec(Self& self, index_t<Self>& idx)
-        -> decltype(self.dec(idx))
+    static constexpr auto dec(Self& self, cursor_t<Self>& cur)
+        -> decltype(self.dec(cur))
     {
-        return self.dec(idx);
+        return self.dec(cur);
     }
 
     /* random-access sequence interface */
     template <decays_to<T> Self>
-    static constexpr auto inc(Self& self, index_t<Self>& idx, distance_t<Self> offset)
-        -> decltype(self.inc(idx, offset))
+    static constexpr auto inc(Self& self, cursor_t<Self>& cur, distance_t<Self> offset)
+        -> decltype(self.inc(cur, offset))
     {
-        return self.inc(idx, offset);
+        return self.inc(cur, offset);
     }
 
     template <decays_to<T> Self>
-    static constexpr auto distance(Self& self, index_t<Self> const& from, index_t<Self> const& to)
+    static constexpr auto distance(Self& self, cursor_t<Self> const& from,
+                                   cursor_t<Self> const& to)
         -> decltype(self.distance(from, to))
     {
         return self.distance(from, to);
@@ -391,10 +392,10 @@ struct sequence_iface {
 
     /* other customisation points */
     template <decays_to<T> Self>
-    static constexpr auto move_at(Self& self, index_t<Self> const& idx)
-        -> decltype(self.move_at(idx))
+    static constexpr auto move_at(Self& self, cursor_t<Self> const& cur)
+        -> decltype(self.move_at(cur))
     {
-        return self.move_at(idx);
+        return self.move_at(cur);
     }
 
     template <decays_to<T> Self, typename Pred>

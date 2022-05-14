@@ -5,16 +5,16 @@
 
 namespace flux {
 
-template <index Idx>
+template <cursor Cur>
 struct bounds {
-    FLUX_NO_UNIQUE_ADDRESS Idx from;
-    FLUX_NO_UNIQUE_ADDRESS Idx to;
+    FLUX_NO_UNIQUE_ADDRESS Cur from;
+    FLUX_NO_UNIQUE_ADDRESS Cur to;
 
     friend bool operator==(bounds const&, bounds const&) = default;
 };
 
 template <sequence Seq>
-using bounds_t = bounds<index_t<Seq>>;
+using bounds_t = bounds<cursor_t<Seq>>;
 
 template <typename Derived>
     /*requires std::is_class_v<Derived>&&
@@ -32,51 +32,51 @@ public:
      * Basic iteration functions
      */
 
-    /// Returns an index pointing to the first element of the sequence
+    /// Returns a cursor pointing to the first element of the sequence
     [[nodiscard]]
     constexpr auto first() { return flux::first(derived()); }
 
-    /// Returns true if `idx` points to the end of the sequence
+    /// Returns true if `cur` points to the end of the sequence
     ///
-    /// @param idx The index to test
+    /// @param cur The cursor to test
     template <std::same_as<Derived> D = Derived>
     [[nodiscard]]
-    constexpr bool is_last(index_t<D> const& idx) { return flux::is_last(derived(), idx); }
+    constexpr bool is_last(cursor_t<D> const& cur) { return flux::is_last(derived(), cur); }
 
-    /// Increments the given index
+    /// Increments the given cursor
     ///
-    /// @param idx the index to increment
+    /// @param cur the cursor to increment
     template <std::same_as<Derived> D = Derived>
-    constexpr auto& inc(index_t<D>& idx) { return flux::inc(derived(), idx); }
+    constexpr auto& inc(cursor_t<D>& cur) { return flux::inc(derived(), cur); }
 
-    /// Returns the element at the given index
-    template <std::same_as<Derived> D = Derived>
-    [[nodiscard]]
-    constexpr decltype(auto) read_at(index_t<D> const& idx) { return flux::read_at(derived(), idx); }
-
-    /// Returns an rvalue version of the element at the given index
+    /// Returns the element at the given cursor
     template <std::same_as<Derived> D = Derived>
     [[nodiscard]]
-    constexpr decltype(auto) move_at(index_t<D> const& idx) { return flux::move_at(derived(), idx); }
+    constexpr decltype(auto) read_at(cursor_t<D> const& cur) { return flux::read_at(derived(), cur); }
 
-    /// Returns the element at the given index
+    /// Returns an rvalue version of the element at the given cursor
     template <std::same_as<Derived> D = Derived>
     [[nodiscard]]
-    constexpr decltype(auto) operator[](index_t<D> const& idx) { return flux::read_at(derived(), idx); }
+    constexpr decltype(auto) move_at(cursor_t<D> const& cur) { return flux::move_at(derived(), cur); }
 
-    /// Returns an index pointing to one past the last element of the sequence
+    /// Returns the element at the given cursor
+    template <std::same_as<Derived> D = Derived>
+    [[nodiscard]]
+    constexpr decltype(auto) operator[](cursor_t<D> const& cur) { return flux::read_at(derived(), cur); }
+
+    /// Returns an cursor pointing to one past the last element of the sequence
     [[nodiscard]]
     constexpr auto last() requires bounded_sequence<Derived> { return flux::last(derived()); }
 
-    /// Decrements the given index
+    /// Decrements the given cursor
     template <std::same_as<Derived> D = Derived>
         requires bidirectional_sequence<Derived>
-    constexpr auto& dec(index_t<D>& idx) { return flux::dec(derived(), idx); }
+    constexpr auto& dec(cursor_t<D>& cur) { return flux::dec(derived(), cur); }
 
-    /// Increments the given index by `offset` places
+    /// Increments the given cursor by `offset` places
     template <std::same_as<Derived> D = Derived>
         requires random_access_sequence<Derived>
-    constexpr auto& inc(index_t<D>& idx, distance_t<D> offset) { return flux::inc(derived(), idx, offset); }
+    constexpr auto& inc(cursor_t<D>& cur, distance_t<D> offset) { return flux::inc(derived(), cur, offset); }
 
     /// Returns the number of times `from` must be incremented to reach `to`
     ///
@@ -84,7 +84,7 @@ public:
     template <std::same_as<Derived> D = Derived>
         requires multipass_sequence<Derived>
     [[nodiscard]]
-    constexpr auto distance(index_t<D> const& from, index_t<D> const& to)
+    constexpr auto distance(cursor_t<D> const& from, cursor_t<D> const& to)
     {
         return flux::distance(derived(), from, to);
     }
@@ -105,12 +105,12 @@ public:
 
     template <std::same_as<Derived> D = Derived>
     [[nodiscard]]
-    constexpr auto next(index_t<D> idx) { return flux::next(derived(), idx); }
+    constexpr auto next(cursor_t<D> cur) { return flux::next(derived(), cur); }
 
     template <std::same_as<Derived> D = Derived>
         requires bidirectional_sequence<Derived>
     [[nodiscard]]
-    constexpr auto prev(index_t<D> idx) { return flux::prev(derived(), idx); }
+    constexpr auto prev(cursor_t<D> cur) { return flux::prev(derived(), cur); }
 
     /*
      * Adaptors
@@ -191,7 +191,7 @@ public:
         requires std::equality_comparable_with<projected_t<Proj, Derived>, Value const&>
     constexpr auto contains(Value const& value, Proj proj = {}) -> bool;
 
-    /// Returns the index of `value` in the sequence
+    /// Returns a cursor pointing to the first occurrence of `value` in the sequence
     template <typename Value, typename Proj = std::identity>
         requires std::equality_comparable_with<projected_t<Proj, Derived>, Value const&>
     [[nodiscard]]

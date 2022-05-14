@@ -74,11 +74,11 @@ template <typename T>
 struct sequence_iface<experimental::generator<T>>
 {
 private:
-    struct index_type {
-        index_type(index_type&&) = default;
-        index_type& operator=(index_type&&) = default;
+    struct cursor_type {
+        cursor_type(cursor_type&&) = default;
+        cursor_type& operator=(cursor_type&&) = default;
     private:
-        index_type() = default;
+        cursor_type() = default;
         friend struct sequence_iface;
     };
 
@@ -87,21 +87,21 @@ private:
 public:
     static auto first(self_t& self) {
         self.coro_.resume();
-        return index_type{};
+        return cursor_type{};
     }
 
-    static auto is_last(self_t& self, index_type const&) -> bool
+    static auto is_last(self_t& self, cursor_type const&) -> bool
     {
         return self.coro_.done();
     }
 
-    static auto inc(self_t& self, index_type& idx) -> index_type&
+    static auto inc(self_t& self, cursor_type& cur) -> cursor_type&
     {
         self.coro_.resume();
-        return idx;
+        return cur;
     }
 
-    static auto read_at(self_t& self, index_type const&) -> decltype(auto)
+    static auto read_at(self_t& self, cursor_type const&) -> decltype(auto)
     {
         return static_cast<typename self_t::yielded_type>(*self.coro_.promise().ptr_);
     }

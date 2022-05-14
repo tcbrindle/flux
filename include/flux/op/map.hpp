@@ -51,10 +51,10 @@ struct sequence_iface<detail::map_adaptor<Base, Func>>
     using value_type = std::remove_cvref_t<std::invoke_result_t<Func&, element_t<Base>>>;
 
     template <typename Self>
-    static constexpr auto read_at(Self& self, index_t<Self> const& idx)
-        -> decltype(std::invoke(self.func_, flux::read_at(self.base_, idx)))
+    static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
+        -> decltype(std::invoke(self.func_, flux::read_at(self.base_, cur)))
     {
-        return std::invoke(self.func_, flux::read_at(self.base_, idx));
+        return std::invoke(self.func_, flux::read_at(self.base_, cur));
     }
 
     static constexpr auto for_each_while(auto& self, auto&& pred)

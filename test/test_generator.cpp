@@ -84,8 +84,8 @@ TEST_CASE("generator")
         static_assert(std::same_as<flux::rvalue_element_t<G>, std::unique_ptr<int>&&>);
 
         int i = 0;
-        for (auto idx = gen.first(); !gen.is_last(idx); gen.inc(idx)) {
-            CHECK(*gen[idx] == i++);
+        for (auto cur = gen.first(); !gen.is_last(cur); gen.inc(cur)) {
+            CHECK(*gen[cur] == i++);
         }
         CHECK(i == 5);
     }
@@ -118,12 +118,12 @@ TEST_CASE("generator")
     {
         auto triples = pythagorean_triples().take(5);
 
-        auto idx = triples.first();
+        auto cur = triples.first();
 
-        CHECK((triples[idx] == std::tuple{3, 4, 5}));
-        CHECK((triples[triples.inc(idx)] == std::tuple{6, 8, 10}));
-        CHECK((triples[triples.inc(idx)] == std::tuple{5, 12, 13}));
-        CHECK((triples[triples.inc(idx)] == std::tuple{9, 12, 15}));
-        CHECK((triples[triples.inc(idx)] == std::tuple{8, 15, 17}));
+        CHECK((triples[cur] == std::tuple{3, 4, 5}));
+        CHECK((triples[triples.inc(cur)] == std::tuple{6, 8, 10}));
+        CHECK((triples[triples.inc(cur)] == std::tuple{5, 12, 13}));
+        CHECK((triples[triples.inc(cur)] == std::tuple{9, 12, 15}));
+        CHECK((triples[triples.inc(cur)] == std::tuple{8, 15, 17}));
     }
 }

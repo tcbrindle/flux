@@ -37,7 +37,7 @@ private:
     class iterator {
         using S = std::conditional_t<IsConst, Base const, Base>;
         S* base_ = nullptr;
-        index_t<S> idx_{};
+        cursor_t<S> cur_{};
 
     public:
         using value_type = value_t<S>;
@@ -45,31 +45,32 @@ private:
         using element_type = value_t<S>;
         using iterator_concept = decltype(get_iterator_tag<S>());
 
-        iterator() requires std::default_initializable<index_t<S>> = default;
+        iterator() requires std::default_initializable<cursor_t<S>> = default;
 
-        constexpr iterator(S& base, index_t<S> idx)
+        constexpr iterator(S& base, cursor_t<S> cur)
             : base_(std::addressof(base)),
-              idx_(std::move(idx))
+              cur_(std::move(cur))
         {}
 
         constexpr iterator(iterator<!IsConst> other)
-            requires IsConst && std::convertible_to<index_t<Base>, index_t<S>>
+            requires IsConst && std::convertible_to<cursor_t<Base>,
+                            cursor_t<S>>
             : base_(other.base_),
-              idx_(std::move(other.idx_))
+              cur_(std::move(other.cur_))
         {}
 
         constexpr auto operator*() const -> element_t<S>
         {
-            return flux::read_at(*base_, idx_);
+            return flux::read_at(*base_, cur_);
         }
 
         constexpr auto operator++() -> iterator&
         {
-            flux::inc(*base_, idx_);
+            flux::inc(*base_, cur_);
             return *this;
         }
 
-        constexpr void operator++(int) { flux::inc(*base_, idx_); }
+        constexpr void operator++(int) { flux::inc(*base_, cur_); }
 
         constexpr auto operator++(int) -> iterator
             requires multipass_sequence<S>
@@ -82,7 +83,7 @@ private:
         constexpr auto operator--() -> iterator&
             requires bidirectional_sequence<S>
         {
-            flux::dec(*base_, idx_);
+            flux::dec(*base_, cur_);
             return *this;
         }
 
@@ -97,14 +98,14 @@ private:
         constexpr auto operator+=(difference_type n) -> iterator&
             requires random_access_sequence<S>
         {
-            flux::inc(*base_, idx_, n);
+            flux::inc(*base_, cur_, n);
             return *this;
         }
 
         constexpr auto operator-=(difference_type n) -> iterator&
             requires random_access_sequence<S>
         {
-            flux::inc(*base_, idx_, -n);
+            flux::inc(*base_, cur_, -n);
             return *this;
         }
 
@@ -119,12 +120,12 @@ private:
         constexpr auto operator->() const -> std::add_pointer_t<element_t<S>>
             requires contiguous_sequence<S>
         {
-            return flux::data(*base_) + flux::distance(*base_, flux::first(*base_), idx_);
+            return flux::data(*base_) + flux::distance(*base_, flux::first(*base_), cur_);
         }
 
         friend constexpr bool operator==(iterator const& self, std::default_sentinel_t)
         {
-            return flux::is_last(*self.base_, self.idx_);
+            return flux::is_last(*self.base_, self.cur_);
         }
 
         friend bool operator==(iterator const&, iterator const&)
@@ -138,21 +139,21 @@ private:
         friend constexpr auto operator+(iterator self, difference_type n) -> iterator
             requires random_access_sequence<S>
         {
-            flux::inc(*self.base_, self.idx_, n);
+            flux::inc(*self.base_, self.cur_, n);
             return self;
         }
 
         friend constexpr auto operator+(difference_type n, iterator self) -> iterator
             requires random_access_sequence<S>
         {
-            flux::inc(*self.base_, self.idx_, n);
+            flux::inc(*self.base_, self.cur_, n);
             return self;
         }
 
         friend constexpr auto operator-(iterator self, difference_type n) -> iterator
             requires random_access_sequence<S>
         {
-            flux::inc(*self.base_, self.idx_, -n);
+            flux::inc(*self.base_, self.cur_, -n);
             return self;
         }
 
@@ -160,19 +161,19 @@ private:
             -> difference_type
             requires random_access_sequence<S>
         {
-            return flux::distance(*lhs.base_, rhs.idx_, lhs.idx_);
+            return flux::distance(*lhs.base_, rhs.cur_, lhs.cur_);
         }
 
         friend constexpr auto iter_move(iterator const& self)
             -> rvalue_element_t<S>
         {
-            return flux::move_at(*self.base_, self.idx_);
+            return flux::move_at(*self.base_, self.cur_);
         }
 
         friend constexpr void iter_swap(iterator const& lhs, iterator const& rhs)
             requires element_swappable_with<S, S>
         {
-            flux::swap_with(*lhs.base_, lhs.idx_, *rhs.base_, rhs.idx_);
+            flux::swap_with(*lhs.base_, lhs.cur_, *rhs.base_, rhs.cur_);
         }
     };
 
@@ -198,7 +199,7 @@ public:
     {
         // Ranges requires sentinels to be copy-constructible
         if constexpr (bounded_sequence<Base> &&
-                      std::copy_constructible<index_t<Base>>) {
+                      std::copy_constructible<cursor_t<Base>>) {
             return iterator<false>(base_, flux::last(base_));
         } else {
             return std::default_sentinel;
@@ -209,7 +210,7 @@ public:
         requires sequence<Base const>
     {
         if constexpr (bounded_sequence<Base const> &&
-                      std::copy_constructible<index_t<Base const>>) {
+                      std::copy_constructible<cursor_t<Base const>>) {
             return iterator<true>(base_, flux::last(base_));
         } else {
             return std::default_sentinel;

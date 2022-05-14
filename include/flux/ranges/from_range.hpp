@@ -25,44 +25,45 @@ struct sequence_iface<R> {
 
     template <decays_to<R> Self>
         requires std::ranges::range<Self>
-    static constexpr bool is_last(Self& self, index_t<Self> const& idx)
+    static constexpr bool is_last(Self& self, cursor_t<Self> const& cur)
     {
-        return idx == std::ranges::end(self);
+        return cur == std::ranges::end(self);
     }
 
     template <decays_to<R> Self>
-    static constexpr auto read_at(Self&, index_t<Self> const& idx)
+    static constexpr auto read_at(Self&, cursor_t<Self> const& cur)
         -> decltype(auto)
     {
-        return *idx;
+        return *cur;
     }
 
     template <decays_to<R> Self>
-    static constexpr auto inc(Self&, index_t<Self>& idx)
-        -> index_t<Self>&
+    static constexpr auto inc(Self&, cursor_t<Self>& cur)
+        -> cursor_t<Self>&
     {
-        return ++idx;
+        return ++cur;
     }
 
     template <decays_to<R> Self>
-        requires std::bidirectional_iterator<index_t<Self>>
-    static constexpr auto dec(Self&, index_t<Self>& idx)
-        -> index_t<Self>&
+        requires std::bidirectional_iterator<cursor_t<Self>>
+    static constexpr auto dec(Self&, cursor_t<Self>& cur)
+        -> cursor_t<Self>&
     {
-        return --idx;
+        return --cur;
     }
 
     template <decays_to<R> Self>
-        requires std::random_access_iterator<index_t<Self>>
-    static constexpr auto inc(Self&, index_t<Self>& idx, distance_t<Self> offset)
-        -> index_t<Self>&
+        requires std::random_access_iterator<cursor_t<Self>>
+    static constexpr auto inc(Self&, cursor_t<Self>& cur, distance_t<Self> offset)
+        -> cursor_t<Self>&
     {
-        return idx += offset;
+        return cur += offset;
     }
 
     template <decays_to<R> Self>
-        requires std::random_access_iterator<index_t<Self>>
-    static constexpr auto distance(Self&, index_t<Self> const& from, index_t<Self> const& to)
+        requires std::random_access_iterator<cursor_t<Self>>
+    static constexpr auto distance(Self&, cursor_t<Self> const& from,
+                                   cursor_t<Self> const& to)
     {
         return to - from;
     }
@@ -76,7 +77,7 @@ struct sequence_iface<R> {
 
     template <decays_to<R> Self>
         requires std::ranges::common_range<Self>
-    static constexpr auto last(Self& self) -> index_t<Self>
+    static constexpr auto last(Self& self) -> cursor_t<Self>
     {
         return std::ranges::end(self);
     }
@@ -89,20 +90,20 @@ struct sequence_iface<R> {
     }
 
     template <decays_to<R> Self>
-    static constexpr auto move_at(Self&, index_t<Self> const& idx)
+    static constexpr auto move_at(Self&, cursor_t<Self> const& cur)
         -> decltype(auto)
     {
-        return std::ranges::iter_move(idx);
+        return std::ranges::iter_move(cur);
     }
 
     template <decays_to<R> Self>
-    static constexpr auto slice(Self& self, index_t<Self> from)
+    static constexpr auto slice(Self& self, cursor_t<Self> from)
     {
         return std::ranges::subrange(std::move(from), std::ranges::end(self));
     }
 
     template <decays_to<R> Self>
-    static constexpr auto slice(Self&, index_t<Self> from, index_t<Self> to)
+    static constexpr auto slice(Self&, cursor_t<Self> from, cursor_t<Self> to)
     {
         return std::ranges::subrange(std::move(from), std::move(to));
     }

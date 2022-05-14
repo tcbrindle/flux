@@ -13,13 +13,13 @@ struct swap_elements_fn {
         requires element_swappable_with<Seq1&, Seq2&>
     constexpr void operator()(Seq1&& seq1, Seq2&& seq2) const
     {
-        auto idx1 = flux::first(seq1);
-        auto idx2 = flux::first(seq2);
+        auto cur1 = flux::first(seq1);
+        auto cur2 = flux::first(seq2);
 
-        while (!flux::is_last(seq1, idx1) && !flux::is_last(seq2, idx2)) {
-            flux::swap_with(seq1, idx1, seq2, idx2);
-            flux::inc(seq1, idx1);
-            flux::inc(seq2, idx2);
+        while (!flux::is_last(seq1, cur1) && !flux::is_last(seq2, cur2)) {
+            flux::swap_with(seq1, cur1, seq2, cur2);
+            flux::inc(seq1, cur1);
+            flux::inc(seq2, cur2);
         }
     }
 };

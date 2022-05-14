@@ -41,32 +41,32 @@ template <detail::derives_from_streambuf Streambuf>
 struct sequence_iface<Streambuf>
 {
 private:
-    struct index_type {
-        index_type(index_type&&) = default;
-        index_type& operator=(index_type&&) = default;
+    struct cursor_type {
+        cursor_type(cursor_type&&) = default;
+        cursor_type& operator=(cursor_type&&) = default;
     private:
         friend struct sequence_iface;
-        index_type() = default;
+        cursor_type() = default;
     };
 
     using traits_type = typename Streambuf::traits_type;
     using char_type = typename Streambuf::char_type;
 
 public:
-    static auto first(Streambuf&) -> index_type { return {}; }
+    static auto first(Streambuf&) -> cursor_type { return {}; }
 
-    static auto is_last(Streambuf& self, index_type const&) -> bool
+    static auto is_last(Streambuf& self, cursor_type const&) -> bool
     {
         return self.sgetc() == traits_type::eof();
     }
 
-    static auto inc(Streambuf& self, index_type& idx) -> index_type&
+    static auto inc(Streambuf& self, cursor_type& cur) -> cursor_type&
     {
         self.sbumpc();
-        return idx;
+        return cur;
     }
 
-    static auto read_at(Streambuf& self, index_type const&) -> char_type
+    static auto read_at(Streambuf& self, cursor_type const&) -> char_type
     {
         return traits_type::to_char_type(self.sgetc());
     }

@@ -46,7 +46,7 @@ constexpr bool test_filter()
         static_assert(flux::sequence<F>);
         static_assert(flux::bidirectional_sequence<F>);
         static_assert(flux::bounded_sequence<F>);
-        static_assert(not flux::ordered_index<F>);
+        static_assert(not flux::ordered_cursor<F>);
         static_assert(not flux::sized_sequence<F>);
 
         static_assert(not flux::sequence<F const>);

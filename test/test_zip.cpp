@@ -112,10 +112,10 @@ constexpr bool test_zip()
         static_assert(flux::random_access_sequence<Z>);
         static_assert(flux::sized_sequence<Z>);
 
-        auto idx1 = flux::next(zipped, flux::first(zipped), 2);
-        auto idx2 = flux::next(zipped, flux::first(zipped), 3);
+        auto cur1 = flux::next(zipped, flux::first(zipped), 2);
+        auto cur2 = flux::next(zipped, flux::first(zipped), 3);
 
-        flux::swap_at(zipped, idx1, idx2);
+        flux::swap_at(zipped, cur1, cur2);
 
         STATIC_CHECK(check_equal(arr1, {1, 2, 4, 3, 5}));
         STATIC_CHECK(check_equal(arr2, {100, 200, 400, 300, 500}));

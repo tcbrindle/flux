@@ -62,9 +62,9 @@ constexpr bool test_map()
     {
         int arr[] = {0, 1, 2, 3, 4};
 
-        auto idx = flux::from(arr).map([](int i) { return i * 2; }).find(4);
+        auto cur = flux::from(arr).map([](int i) { return i * 2; }).find(4);
 
-        STATIC_CHECK(idx == 2);
+        STATIC_CHECK(cur == 2);
     }
 
     {

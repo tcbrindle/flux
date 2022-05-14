@@ -58,53 +58,54 @@ struct sequence_iface<detail::single_sequence<T>>
 private:
     using self_t = detail::single_sequence<T>;
 
-    enum class index_type : bool { valid, done };
+    enum class cursor_type : bool { valid, done };
 
 public:
 
-    static constexpr auto first(self_t const&) { return index_type::valid; }
+    static constexpr auto first(self_t const&) { return cursor_type::valid; }
 
-    static constexpr auto last(self_t const&) { return index_type::done; }
+    static constexpr auto last(self_t const&) { return cursor_type::done; }
 
-    static constexpr bool is_last(self_t const&, index_type idx)
+    static constexpr bool is_last(self_t const&, cursor_type cur)
     {
-        return idx == index_type::done;
+        return cur == cursor_type::done;
     }
 
-    static constexpr auto read_at(auto& self, index_type idx) -> auto&
+    static constexpr auto read_at(auto& self, cursor_type cur) -> auto&
     {
-        assert(idx == index_type::valid);
+        assert(cur == cursor_type::valid);
         return self.obj_;
     }
 
-    static constexpr auto inc(self_t const&, index_type& idx) -> index_type&
+    static constexpr auto inc(self_t const&, cursor_type& cur) -> cursor_type&
     {
-        assert(idx == index_type::valid);
-        idx = index_type::done;
-        return idx;
+        assert(cur == cursor_type::valid);
+        cur = cursor_type::done;
+        return cur;
     }
 
-    static constexpr auto dec(self_t const&, index_type& idx) -> index_type&
+    static constexpr auto dec(self_t const&, cursor_type& cur) -> cursor_type&
     {
-        assert(idx == index_type::done);
-        idx = index_type::valid;
-        return idx;
+        assert(cur == cursor_type::done);
+        cur = cursor_type::valid;
+        return cur;
     }
 
-    static constexpr auto inc(self_t const&, index_type& idx, std::ptrdiff_t off)
-        -> index_type&
+    static constexpr auto inc(self_t const&, cursor_type& cur, std::ptrdiff_t off)
+        -> cursor_type&
     {
         if (off > 0) {
-            assert(idx == index_type::valid && off == 1);
-            idx = index_type::done;
+            assert(cur == cursor_type::valid && off == 1);
+            cur = cursor_type::done;
         } else if (off < 0) {
-            assert(idx == index_type::done && off == -1);
-            idx = index_type::valid;
+            assert(cur == cursor_type::done && off == -1);
+            cur = cursor_type::valid;
         }
-        return idx;
+        return cur;
     }
 
-    static constexpr auto distance(self_t const&, index_type from, index_type to)
+    static constexpr auto distance(self_t const&, cursor_type from,
+                                   cursor_type to)
         -> std::ptrdiff_t
     {
         return static_cast<int>(to) - static_cast<int>(from);
@@ -119,7 +120,7 @@ public:
 
     static constexpr auto for_each_while(auto& self, auto&& pred)
     {
-        return std::invoke(pred, self.obj_) ? index_type::done : index_type::valid;
+        return std::invoke(pred, self.obj_) ? cursor_type::done : cursor_type::valid;
     }
 
 };

@@ -14,7 +14,7 @@ struct first_fn {
     template <sequence Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq& seq) const
-        noexcept(noexcept(iface_t<Seq>::first(seq))) -> index_t<Seq>
+        noexcept(noexcept(iface_t<Seq>::first(seq))) -> cursor_t<Seq>
     {
         return iface_t<Seq>::first(seq);
     }
@@ -23,55 +23,54 @@ struct first_fn {
 struct is_last_fn {
     template <sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq& seq, index_t<Seq> const& idx) const
-        noexcept(noexcept(iface_t<Seq>::is_last(seq, idx))) -> bool
+    constexpr auto operator()(Seq& seq, cursor_t<Seq> const& cur) const
+        noexcept(noexcept(iface_t<Seq>::is_last(seq, cur))) -> bool
     {
-        return iface_t<Seq>::is_last(seq, idx);
+        return iface_t<Seq>::is_last(seq, cur);
     }
 };
 
 struct unchecked_read_at_fn {
     template <sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq& seq, index_t<Seq> const& idx) const
-        noexcept(noexcept(iface_t<Seq>::read_at(seq, idx))) -> element_t<Seq>
+    constexpr auto operator()(Seq& seq, cursor_t<Seq> const& cur) const
+        noexcept(noexcept(iface_t<Seq>::read_at(seq, cur))) -> element_t<Seq>
     {
-        return iface_t<Seq>::read_at(seq, idx);
+        return iface_t<Seq>::read_at(seq, cur);
     }
 };
 
 struct unchecked_inc_fn {
     template <sequence Seq>
-    constexpr auto operator()(Seq& seq, index_t<Seq>& idx) const
-        noexcept(noexcept(iface_t<Seq>::inc(seq, idx))) -> index_t<Seq>&
+    constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur) const
+        noexcept(noexcept(iface_t<Seq>::inc(seq, cur))) -> cursor_t<Seq>&
     {
-        return iface_t<Seq>::inc(seq, idx);
+        return iface_t<Seq>::inc(seq, cur);
     }
 
     template <random_access_sequence Seq>
-    constexpr auto operator()(Seq& seq, index_t<Seq>& idx,
+    constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur,
                               distance_t<Seq> offset) const
-        noexcept(noexcept(iface_t<Seq>::inc(seq, idx, offset))) -> index_t<Seq>&
+        noexcept(noexcept(iface_t<Seq>::inc(seq, cur, offset))) -> cursor_t<Seq>&
     {
-        return iface_t<Seq>::inc(seq, idx, offset);
+        return iface_t<Seq>::inc(seq, cur, offset);
     }
 };
 
 struct unchecked_dec_fn {
     template <bidirectional_sequence Seq>
-    constexpr auto operator()(Seq& seq, index_t<Seq>& idx) const
-        noexcept(noexcept(iface_t<Seq>::dec(seq, idx))) -> index_t<Seq>&
+    constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur) const
+        noexcept(noexcept(iface_t<Seq>::dec(seq, cur))) -> cursor_t<Seq>&
     {
-        return iface_t<Seq>::dec(seq, idx);
+        return iface_t<Seq>::dec(seq, cur);
     }
 };
 
 struct distance_fn {
     template <multipass_sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq& seq,
-                              index_t<Seq> const& from,
-                              index_t<Seq> const& to) const
+    constexpr auto operator()(Seq& seq, cursor_t<Seq> const& from,
+                                            cursor_t<Seq> const& to) const
         -> distance_t<Seq>
     {
         if constexpr (random_access_sequence<Seq>) {
@@ -102,7 +101,7 @@ struct last_fn {
     template <bounded_sequence Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq& seq) const
-        noexcept(noexcept(iface_t<Seq>::last(seq))) -> index_t<Seq>
+        noexcept(noexcept(iface_t<Seq>::last(seq))) -> cursor_t<Seq>
     {
         return iface_t<Seq>::last(seq);
     }
@@ -125,16 +124,16 @@ struct size_fn {
 struct unchecked_move_at_fn {
     template <sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq& seq, index_t<Seq> const& idx) const
+    constexpr auto operator()(Seq& seq, cursor_t<Seq> const& cur) const
         -> rvalue_element_t<Seq>
     {
-        if constexpr (requires { iface_t<Seq>::move_at(seq, idx); }) {
-            return iface_t<Seq>::move_at(seq, idx);
+        if constexpr (requires { iface_t<Seq>::move_at(seq, cur); }) {
+            return iface_t<Seq>::move_at(seq, cur);
         } else {
             if constexpr (std::is_lvalue_reference_v<element_t<Seq>>) {
-                return std::move(unchecked_read_at_fn{}(seq, idx));
+                return std::move(unchecked_read_at_fn{}(seq, cur));
             } else {
-                return unchecked_read_at_fn{}(seq, idx);
+                return unchecked_read_at_fn{}(seq, cur);
             }
         }
     }
@@ -143,10 +142,10 @@ struct unchecked_move_at_fn {
 struct check_bounds_fn {
     template <typename Seq>
     [[nodiscard]]
-    constexpr bool operator()(Seq& seq, index_t<Seq> const& idx) const
+    constexpr bool operator()(Seq& seq, cursor_t<Seq> const& cur) const
     {
         if constexpr (random_access_sequence<Seq>) {
-            distance_t<Seq> dist = distance_fn{}(seq, first_fn{}(seq), idx);
+            distance_t<Seq> dist = distance_fn{}(seq, first_fn{}(seq), cur);
             if (dist < distance_t<Seq>{0}) {
                 return false;
             }
@@ -156,7 +155,7 @@ struct check_bounds_fn {
                 }
             }
         }
-        return !is_last_fn{}(seq, idx);
+        return !is_last_fn{}(seq, cur);
     }
 };
 
@@ -165,67 +164,67 @@ inline constexpr auto check_bounds = check_bounds_fn{};
 struct checked_read_at_fn {
     template <sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq& seq, index_t<Seq> const& idx) const
-        -> decltype(unchecked_read_at_fn{}(seq, idx))
+    constexpr auto operator()(Seq& seq, cursor_t<Seq> const& cur) const
+        -> decltype(unchecked_read_at_fn{}(seq, cur))
     {
-        if (!check_bounds(seq, idx)) {
-            throw std::out_of_range("Read via an out-of-bounds index");
+        if (!check_bounds(seq, cur)) {
+            throw std::out_of_range("Read via an out-of-bounds cursor");
         }
-        return unchecked_read_at_fn{}(seq, idx);
+        return unchecked_read_at_fn{}(seq, cur);
     }
 };
 
 struct checked_move_at_fn {
     template <sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq& seq, index_t<Seq> const& idx) const
-            -> decltype(unchecked_move_at_fn{}(seq, idx))
+    constexpr auto operator()(Seq& seq, cursor_t<Seq> const& cur) const
+            -> decltype(unchecked_move_at_fn{}(seq, cur))
     {
-        if (!check_bounds(seq, idx)) {
-            throw std::out_of_range("Read via an out-of-bounds index");
+        if (!check_bounds(seq, cur)) {
+            throw std::out_of_range("Read via an out-of-bounds cursor");
         }
-        return unchecked_move_at_fn{}(seq, idx);
+        return unchecked_move_at_fn{}(seq, cur);
     }
 };
 
 struct checked_inc_fn {
     template <sequence Seq>
-    constexpr auto operator()(Seq& seq, index_t<Seq>& idx) const
-        -> index_t<Seq>&
+    constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur) const
+        -> cursor_t<Seq>&
     {
-        if (!check_bounds(seq, idx)) {
-            throw std::out_of_range("Increment would result in an out-of-bounds index");
+        if (!check_bounds(seq, cur)) {
+            throw std::out_of_range("Increment would result in an out-of-bounds cursor");
         }
-        return unchecked_inc_fn{}(seq, idx);
+        return unchecked_inc_fn{}(seq, cur);
     }
 
     template <random_access_sequence Seq>
-    constexpr auto operator()(Seq& seq, index_t<Seq>& idx, distance_t<Seq> offset) const
-        -> index_t<Seq>&
+    constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur, distance_t<Seq> offset) const
+        -> cursor_t<Seq>&
     {
-        const auto dist = distance_fn{}(seq, first_fn{}(seq), idx);
+        const auto dist = distance_fn{}(seq, first_fn{}(seq), cur);
         if (dist + offset < 0) {
-            throw std::out_of_range("Increment with offset would result in an out-of-bounds index");
+            throw std::out_of_range("Increment with offset would result in an out-of-bounds cursor");
         }
         if constexpr (sized_sequence<Seq>) {
             if (dist + offset > size_fn{}(seq)) {
-                throw std::out_of_range("Increment with offset would result in an out-of-bounds index");
+                throw std::out_of_range("Increment with offset would result in an out-of-bounds cursor");
             }
         }
 
-        return unchecked_inc_fn{}(seq, idx, offset);
+        return unchecked_inc_fn{}(seq, cur, offset);
     }
 };
 
 struct checked_dec_fn {
     template <bidirectional_sequence Seq>
-    constexpr auto operator()(Seq& seq, index_t<Seq>& idx) const
-        -> index_t<Seq>&
+    constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur) const
+        -> cursor_t<Seq>&
     {
-        if (idx == first_fn{}(seq)) {
-            throw std::out_of_range("Decrement would result in a before-the-start index");
+        if (cur == first_fn{}(seq)) {
+            throw std::out_of_range("Decrement would result in a before-the-start cursor");
         }
-        return unchecked_dec_fn{}(seq, idx);
+        return unchecked_dec_fn{}(seq, cur);
     }
 };
 
@@ -257,37 +256,37 @@ namespace detail {
 struct next_fn {
     template <sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq& seq, index_t<Seq> idx) const
-        noexcept(noexcept(inc(seq, idx)))
-        -> index_t<Seq>
+    constexpr auto operator()(Seq& seq, cursor_t<Seq> cur) const
+        noexcept(noexcept(inc(seq, cur)))
+        -> cursor_t<Seq>
     {
-        return inc(seq, idx);
+        return inc(seq, cur);
     }
 
     template <sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq& seq, index_t<Seq> idx, distance_t<Seq> offset) const
-        -> index_t<Seq>
+    constexpr auto operator()(Seq& seq, cursor_t<Seq> cur, distance_t<Seq> offset) const
+        -> cursor_t<Seq>
     {
         if constexpr (random_access_sequence<Seq>) {
-            return inc(seq, idx, offset);
+            return inc(seq, cur, offset);
         } else if constexpr (bidirectional_sequence<Seq>) {
             const auto zero = distance_t<Seq>{0};
             if (offset > zero) {
                 while (offset-- > zero) {
-                    inc(seq, idx);
+                    inc(seq, cur);
                 }
             } else {
                 while (offset++ < zero) {
-                    dec(seq, idx);
+                    dec(seq, cur);
                 }
             }
-            return idx;
+            return cur;
         } else {
             while (offset-- > distance_t<Seq>{0}) {
-                inc(seq, idx);
+                inc(seq, cur);
             }
-            return idx;
+            return cur;
         }
     }
 };
@@ -295,11 +294,11 @@ struct next_fn {
 struct prev_fn {
     template <sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq& seq, index_t<Seq> idx) const
-        noexcept(noexcept(dec(seq, idx)))
-        -> index_t<Seq>
+    constexpr auto operator()(Seq& seq, cursor_t<Seq> cur) const
+        noexcept(noexcept(dec(seq, cur)))
+        -> cursor_t<Seq>
     {
-        return dec(seq, idx);
+        return dec(seq, cur);
     }
 };
 
@@ -329,24 +328,25 @@ concept element_swappable_with =
 
 struct swap_with_fn {
     template <sequence Seq1, sequence Seq2>
-    constexpr void operator()(Seq1& seq1, index_t<Seq1> const& idx1,
-                              Seq2& seq2, index_t<Seq2> const& idx2) const
+    constexpr void operator()(Seq1& seq1, cursor_t<Seq1> const& cur1,
+                              Seq2& seq2, cursor_t<Seq2> const& cur2) const
         requires (std::swappable_with<element_t<Seq1>, element_t<Seq2>> ||
                   element_swappable_with<Seq1, Seq2>)
     {
         if constexpr (std::swappable_with<element_t<Seq1>, element_t<Seq2>>) {
-            return std::ranges::swap(read_at(seq1, idx1), read_at(seq2, idx2));
+            return std::ranges::swap(read_at(seq1, cur1), read_at(seq2, cur2));
         } else {
-            value_t<Seq1> temp(move_at(seq1, idx1));
-            read_at(seq1, idx1) = move_at(seq2, idx2);
-            read_at(seq2, idx2) = std::move(temp);
+            value_t<Seq1> temp(move_at(seq1, cur1));
+            read_at(seq1, cur1) = move_at(seq2, cur2);
+            read_at(seq2, cur2) = std::move(temp);
         }
     }
 };
 
 struct swap_at_fn {
     template <sequence Seq>
-    constexpr void operator()(Seq& seq, index_t<Seq> const& first, index_t<Seq> const& second) const
+    constexpr void operator()(Seq& seq, cursor_t<Seq> const& first,
+                              cursor_t<Seq> const& second) const
         requires requires { swap_with_fn{}(seq, first, seq, second); }
     {
         return swap_with_fn{}(seq, first, seq, second);

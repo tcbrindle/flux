@@ -9,23 +9,23 @@ namespace flux {
 
 namespace detail {
 
-template <typename BaseIdx>
-struct rev_idx {
-    BaseIdx base_idx;
+template <typename BaseCur>
+struct rev_cur {
+    BaseCur base_cur;
 
-    friend bool operator==(rev_idx const&, rev_idx const&)
-        requires std::equality_comparable<BaseIdx>
+    friend bool operator==(rev_cur const&, rev_cur const&)
+        requires std::equality_comparable<BaseCur>
         = default;
 
-    friend std::strong_ordering operator<=>(rev_idx const& lhs, rev_idx const& rhs)
-        requires std::three_way_comparable<BaseIdx>
+    friend std::strong_ordering operator<=>(rev_cur const& lhs, rev_cur const& rhs)
+        requires std::three_way_comparable<BaseCur>
     {
         return rhs <=> lhs;
     }
 };
 
 template <typename B>
-rev_idx(B&&) -> rev_idx<std::remove_cvref_t<B>>;
+rev_cur(B&&) -> rev_cur<std::remove_cvref_t<B>>;
 
 template <lens Base>
     requires bidirectional_sequence<Base> &&
@@ -77,47 +77,47 @@ struct sequence_iface<detail::reverse_adaptor<Base>>
 
     static constexpr auto first(auto& self)
     {
-        return detail::rev_idx(flux::last(self.base_));
+        return detail::rev_cur(flux::last(self.base_));
     }
 
     static constexpr auto last(auto& self)
     {
-        return detail::rev_idx(flux::first(self.base_));
+        return detail::rev_cur(flux::first(self.base_));
     }
 
-    static constexpr auto is_last(auto& self, auto const& idx) -> bool
+    static constexpr auto is_last(auto& self, auto const& cur) -> bool
     {
-        return idx.base_idx == flux::first(self.base_);
+        return cur.base_cur == flux::first(self.base_);
     }
 
-    static constexpr auto read_at(auto& self, auto const& idx) -> decltype(auto)
+    static constexpr auto read_at(auto& self, auto const& cur) -> decltype(auto)
     {
-        return flux::read_at(self.base_, flux::prev(self.base_, idx.base_idx));
+        return flux::read_at(self.base_, flux::prev(self.base_, cur.base_cur));
     }
 
-    static constexpr auto inc(auto& self, auto& idx) -> auto&
+    static constexpr auto inc(auto& self, auto& cur) -> auto&
     {
-        flux::dec(self.base_, idx.base_idx);
-        return idx;
+        flux::dec(self.base_, cur.base_cur);
+        return cur;
     }
 
-    static constexpr auto dec(auto& self, auto& idx) -> auto&
+    static constexpr auto dec(auto& self, auto& cur) -> auto&
     {
-        flux::inc(self.base_, idx.base_idx);
-        return idx;
+        flux::inc(self.base_, cur.base_cur);
+        return cur;
     }
 
-    static constexpr auto inc(auto& self, auto& idx, auto dist) -> auto&
+    static constexpr auto inc(auto& self, auto& cur, auto dist) -> auto&
         requires random_access_sequence<decltype(self.base_)>
     {
-        flux::inc(self.base_, idx.base_idx, -dist);
-        return idx;
+        flux::inc(self.base_, cur.base_cur, -dist);
+        return cur;
     }
 
     static constexpr auto distance(auto& self, auto const& from, auto const& to)
         requires random_access_sequence<decltype(self.base_)>
     {
-        return -flux::distance(self.base_, from.base_idx, to.base_idx);
+        return -flux::distance(self.base_, from.base_cur, to.base_cur);
     }
 
     // FIXME: GCC11 ICE
@@ -129,24 +129,24 @@ struct sequence_iface<detail::reverse_adaptor<Base>>
     }
 #endif
 
-    static constexpr auto move_at(auto& self, auto const& idx) -> decltype(auto)
+    static constexpr auto move_at(auto& self, auto const& cur) -> decltype(auto)
     {
-        return flux::move_at(self.base_, idx.base_idx);
+        return flux::move_at(self.base_, cur.base_cur);
     }
 
     static constexpr auto for_each_while(auto& self, auto&& pred)
     {
-        auto idx = flux::last(self.base_);
+        auto cur = flux::last(self.base_);
         const auto end = flux::first(self.base_);
 
-        while (idx != end) {
-            if (!std::invoke(pred, flux::read_at(self.base_, flux::prev(self.base_, idx)))) {
+        while (cur != end) {
+            if (!std::invoke(pred, flux::read_at(self.base_, flux::prev(self.base_, cur)))) {
                 break;
             }
-            flux::dec(self.base_, idx);
+            flux::dec(self.base_, cur);
         }
 
-        return detail::rev_idx(idx);
+        return detail::rev_cur(cur);
     }
 };
 

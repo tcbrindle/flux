@@ -12,17 +12,17 @@ struct for_each_while_fn {
     template <sequence Seq, typename Pred>
         requires std::invocable<Pred&, element_t<Seq>> &&
                  boolean_testable<std::invoke_result_t<Pred&, element_t<Seq>>>
-    constexpr auto operator()(Seq&& seq, Pred pred) const -> index_t<Seq>
+    constexpr auto operator()(Seq&& seq, Pred pred) const -> cursor_t<Seq>
     {
         if constexpr (requires { iface_t<Seq>::for_each_while(seq, std::move(pred)); }) {
             return iface_t<Seq>::for_each_while(seq, std::move(pred));
         } else {
-            auto idx = first(seq);
-            while (!is_last(seq, idx)) {
-                if (!std::invoke(pred, read_at(seq, idx))) { break; }
-                inc(seq, idx);
+            auto cur = first(seq);
+            while (!is_last(seq, cur)) {
+                if (!std::invoke(pred, read_at(seq, cur))) { break; }
+                inc(seq, cur);
             }
-            return idx;
+            return cur;
         }
     }
 };

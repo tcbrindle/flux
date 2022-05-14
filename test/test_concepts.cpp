@@ -76,19 +76,19 @@ template <>
 struct flux::sequence_iface<cant_instantiate<>>
     : dummy_impl<cant_instantiate<>> {};
 
-static_assert(not flux::index<void>);
-static_assert(flux::ordered_index<void*>);
-//static_assert(not flux::index<incomplete>);
-static_assert(flux::ordered_index<incomplete*>);
-static_assert(not flux::index<indestructable>);
-static_assert(not flux::index<nonmovable>);
-static_assert(flux::index<move_only>);
-static_assert(not flux::regular_index<move_only>);
-static_assert(not flux::index<abstract>);
-static_assert(flux::ordered_index<scoped_enum>);
-static_assert(flux::ordered_index<unscoped_enum>);
-static_assert(flux::ordered_index<fwd_declared_enum>);
-static_assert(flux::index<cant_instantiate<>*>);
+static_assert(not flux::cursor<void>);
+static_assert(flux::ordered_cursor<void*>);
+//static_assert(not flux::cursor<incomplete>);
+static_assert(flux::ordered_cursor<incomplete*>);
+static_assert(not flux::cursor<indestructable>);
+static_assert(not flux::cursor<nonmovable>);
+static_assert(flux::cursor<move_only>);
+static_assert(not flux::regular_cursor<move_only>);
+static_assert(not flux::cursor<abstract>);
+static_assert(flux::ordered_cursor<scoped_enum>);
+static_assert(flux::ordered_cursor<unscoped_enum>);
+static_assert(flux::ordered_cursor<fwd_declared_enum>);
+static_assert(flux::cursor<cant_instantiate<>*>);
 
 static_assert(not flux::sequence<void>);
 static_assert(not flux::sequence<int>);

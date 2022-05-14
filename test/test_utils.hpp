@@ -13,17 +13,17 @@ inline constexpr struct {
 private:
     static constexpr bool impl(flux::lens auto seq1, flux::lens auto seq2)
     {
-        auto idx1 = seq1.first();
-        auto idx2 = seq2.first();
+        auto cur1 = seq1.first();
+        auto cur2 = seq2.first();
 
-        while (!seq1.is_last(idx1) && !seq2.is_last(idx2)) {
-            if (seq1[idx1] != seq2[idx2]) { return false; }
+        while (!seq1.is_last(cur1) && !seq2.is_last(cur2)) {
+            if (seq1[cur1] != seq2[cur2]) { return false; }
 
-            seq1.inc(idx1);
-            seq2.inc(idx2);
+            seq1.inc(cur1);
+            seq2.inc(cur2);
         }
 
-        return seq1.is_last(idx1) == seq2.is_last(idx2);
+        return seq1.is_last(cur1) == seq2.is_last(cur2);
     }
 
 public:
@@ -47,16 +47,16 @@ struct single_pass_only : flux::lens_base<single_pass_only<Base>> {
 private:
     Base base_;
 
-    struct index_type {
-        flux::index_t<Base> base_idx;
+    struct cursor_type {
+        flux::cursor_t<Base> base_cur;
 
-        constexpr explicit(false) index_type(flux::index_t<Base>&& base_idx)
-            : base_idx(std::move(base_idx))
+        constexpr explicit(false) cursor_type(flux::cursor_t<Base>&& base_cur)
+            : base_cur(std::move(base_cur))
         {
         }
 
-        index_type(index_type&&) = default;
-        index_type& operator=(index_type&&) = default;
+        cursor_type(cursor_type&&) = default;
+        cursor_type& operator=(cursor_type&&) = default;
     };
 
     friend struct flux::sequence_iface<single_pass_only>;
@@ -76,35 +76,35 @@ template <typename Base>
 struct flux::sequence_iface<single_pass_only<Base>>
 {
     using self_t = single_pass_only<Base>;
-    using index_t = typename single_pass_only<Base>::index_type;
+    using cursor_t = typename single_pass_only<Base>::cursor_type;
 
     static constexpr bool disable_multipass = true;
 
     static constexpr auto first(self_t& self)
     {
-        return index_t(self.base_.first());
+        return cursor_t(self.base_.first());
     }
 
-    static constexpr auto is_last(self_t& self, index_t const& idx)
+    static constexpr auto is_last(self_t& self, cursor_t const& cur)
     {
-        return self.base_.is_last(idx.base_idx);
+        return self.base_.is_last(cur.base_cur);
     }
 
-    static constexpr auto& inc(self_t& self, index_t& idx)
+    static constexpr auto& inc(self_t& self, cursor_t& cur)
     {
-        self.base_.inc(idx.base_idx);
-        return idx;
+        self.base_.inc(cur.base_cur);
+        return cur;
     }
 
-    static constexpr decltype(auto) read_at(self_t& self, index_t const& idx)
+    static constexpr decltype(auto) read_at(self_t& self, cursor_t const& cur)
     {
-        return self.base_.read_at(idx.base_idx);
+        return self.base_.read_at(cur.base_cur);
     }
 
     static constexpr auto last(self_t& self)
         requires bounded_sequence<Base>
     {
-        return index_t(self.base_.last());
+        return cursor_t(self.base_.last());
     }
 
     static constexpr auto size(self_t& self)

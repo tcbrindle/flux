@@ -70,10 +70,10 @@ constexpr bool test_split()
         static_assert(
             flux::contiguous_sequence<flux::element_t<decltype(split)>>);
 
-        auto idx = split.first();
-        STATIC_CHECK(check_equal(split[idx], flux::single(0)));
-        split.inc(idx);
-        STATIC_CHECK(check_equal(split[idx], flux::single(99)));
+        auto cur = split.first();
+        STATIC_CHECK(check_equal(split[cur], flux::single(0)));
+        split.inc(cur);
+        STATIC_CHECK(check_equal(split[cur], flux::single(99)));
     }
 
     // String splitting
