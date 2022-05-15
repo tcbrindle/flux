@@ -7,6 +7,7 @@
 #include <flux/op/all_any_none.hpp>
 #include <flux/op/bounds_checked.hpp>
 #include <flux/op/chain.hpp>
+#include <flux/op/count.hpp>
 #include <flux/op/drop.hpp>
 #include <flux/op/drop_while.hpp>
 #include <flux/op/for_each.hpp>

@@ -10,6 +10,8 @@ add_executable(test-libflux
     test_bounds_checked.cpp
     test_chain.cpp
     test_contains.cpp
+    test_count.cpp
+    test_count_if.cpp
     test_drop.cpp
     test_drop_while.cpp
     test_for_each.cpp

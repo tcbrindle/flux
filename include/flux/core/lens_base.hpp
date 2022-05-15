@@ -191,6 +191,18 @@ public:
         requires std::equality_comparable_with<projected_t<Proj, Derived>, Value const&>
     constexpr auto contains(Value const& value, Proj proj = {}) -> bool;
 
+    /// Returns the number of elements in the sequence
+    constexpr auto count();
+
+    /// Returns the number of elements in the sequence which are equal to `value`
+    template <typename Value, typename Proj = std::identity>
+        requires std::equality_comparable_with<projected_t<Proj, Derived>, Value const&>
+    constexpr auto count(Value const& value, Proj proj = {});
+
+    template <typename Pred, typename Proj = std::identity>
+        requires predicate_for<Pred, Derived, Proj>
+    constexpr auto count_if(Pred pred, Proj proj = {});
+
     /// Returns a cursor pointing to the first occurrence of `value` in the sequence
     template <typename Value, typename Proj = std::identity>
         requires std::equality_comparable_with<projected_t<Proj, Derived>, Value const&>
