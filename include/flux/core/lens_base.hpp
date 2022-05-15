@@ -121,6 +121,10 @@ public:
      * Adaptors
      */
 
+    constexpr auto cache_last() &&
+            requires bounded_sequence<Derived> ||
+                     (multipass_sequence<Derived> && not infinite_sequence<Derived>);
+
     template <std::same_as<Derived> D = Derived>
     constexpr auto drop(distance_t<D> count) &&;
 
@@ -232,6 +236,10 @@ public:
         requires std::invocable<Pred&, element_t<Derived>> &&
                  detail::boolean_testable<std::invoke_result_t<Pred&, element_t<Derived>>>
     constexpr auto for_each_while(Pred pred);
+
+    constexpr auto inplace_reverse()
+        requires bounded_sequence<Derived> &&
+                 detail::element_swappable_with<Derived, Derived>;
 
     template <typename Pred, typename Proj = std::identity>
         requires predicate_for<Pred, Derived, Proj>
