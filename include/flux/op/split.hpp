@@ -29,14 +29,17 @@ public:
 };
 
 struct split_fn {
-    template <multipass_sequence Seq, multipass_sequence Pattern>
-        requires std::equality_comparable_with<element_t<Seq>, element_t<Pattern>>
+    template <adaptable_sequence Seq, adaptable_sequence Pattern>
+        requires multipass_sequence<Seq> &&
+                 multipass_sequence<Pattern> &&
+                 std::equality_comparable_with<element_t<Seq>, element_t<Pattern>>
     constexpr auto operator()(Seq&& seq, Pattern&& pattern) const
     {
         return split_adaptor(flux::from(FLUX_FWD(seq)), flux::from(FLUX_FWD(pattern)));
     }
 
-    template <multipass_sequence Seq>
+    template <adaptable_sequence Seq>
+        requires multipass_sequence<Seq>
     constexpr auto operator()(Seq&& seq, value_t<Seq> delim) const
     {
         return (*this)(FLUX_FWD(seq), flux::single(std::move(delim)));

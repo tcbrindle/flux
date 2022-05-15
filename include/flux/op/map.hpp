@@ -34,7 +34,7 @@ public:
 
 struct map_fn {
 
-    template <sequence Seq, typename Func>
+    template <adaptable_sequence Seq, typename Func>
         requires std::regular_invocable<Func&, element_t<Seq>>
     constexpr auto operator()(Seq&& seq, Func func) const
     {

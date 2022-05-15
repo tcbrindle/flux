@@ -28,7 +28,7 @@ public:
 };
 
 struct bounds_checked_fn {
-    template <sequence Seq>
+    template <adaptable_sequence Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const
     {

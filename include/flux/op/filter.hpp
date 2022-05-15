@@ -35,7 +35,7 @@ public:
 
 
 struct filter_fn {
-    template <sequence Seq, typename Pred>
+    template <adaptable_sequence Seq, typename Pred>
         requires std::predicate<Pred&, element_t<Seq>&>
     constexpr auto operator()(Seq&& seq, Pred pred) const
     {

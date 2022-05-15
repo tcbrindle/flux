@@ -44,7 +44,7 @@ public:
 
 struct take_fn {
 
-    template <sequence Seq>
+    template <adaptable_sequence Seq>
     constexpr auto operator()(Seq&& seq, distance_t<Seq> count) const
     {
         if constexpr (random_access_sequence<Seq> && std::is_lvalue_reference_v<Seq>) {

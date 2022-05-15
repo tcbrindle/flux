@@ -269,6 +269,21 @@ concept infinite_sequence =
     sequence<Seq> &&
     detail::is_infinite_seq<detail::iface_t<Seq>>;
 
+namespace detail {
+
+template <typename T, typename R = std::remove_cvref_t<T>>
+constexpr bool is_ilist = false;
+
+template <typename T, typename E>
+constexpr bool is_ilist<T, std::initializer_list<E>> = true;
+
+}
+
+template <typename Seq>
+concept adaptable_sequence =
+    sequence<Seq> &&
+    (std::is_lvalue_reference_v<Seq> ||
+        (std::movable<std::remove_reference_t<Seq>> && !detail::is_ilist<Seq>));
 
 template <typename D>
 struct lens_base;

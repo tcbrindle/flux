@@ -1,8 +1,7 @@
 
 #include "catch.hpp"
 
-#include <flux/core/concepts.hpp>
-#include <flux/core/sequence_access.hpp>
+#include <flux.hpp>
 
 namespace {
 
@@ -48,10 +47,10 @@ struct dummy_impl {
 
 template <typename Elem>
 struct minimal_seq_of {
-    int first();
-    bool is_last(int);
-    int& inc(int&);
-    Elem read_at(int);
+    static int first();
+    static bool is_last(int);
+    static int& inc(int&);
+    Elem read_at(int) const;
 };
 
 template <typename Idx>
@@ -169,7 +168,66 @@ struct flux::sequence_iface<Derived2>
 
 static_assert(flux::sequence<Derived2>);
 
+// Adaptable sequence tests
+namespace {
+    struct movable_seq {
+        static int first();
+        static bool is_last(int);
+        static int& inc(int&);
+        static int read_at(int);
+    };
 
+    struct move_only_seq {
+        move_only_seq() = default;
+        move_only_seq(move_only_seq&&) = default;
+        move_only_seq& operator=(move_only_seq&&) = default;
 
+        static int first();
+        static bool is_last(int);
+        static int& inc(int&);
+        static int read_at(int);
+    };
+
+    struct unmovable_seq {
+        unmovable_seq() = default;
+        unmovable_seq(unmovable_seq&&) = delete;
+        unmovable_seq& operator=(unmovable_seq&&) = delete;
+
+        static int first();
+        static bool is_last(int);
+        static int& inc(int&);
+        static int read_at(int);
+    };
+
+    static_assert(flux::sequence<movable_seq>);
+    static_assert(flux::adaptable_sequence<movable_seq>);
+    static_assert(flux::adaptable_sequence<movable_seq&>);
+    static_assert(flux::adaptable_sequence<movable_seq const&>);
+    static_assert(flux::adaptable_sequence<movable_seq&&>);
+    static_assert(not flux::adaptable_sequence<movable_seq const&&>);
+
+    static_assert(flux::sequence<move_only_seq>);
+    static_assert(flux::adaptable_sequence<move_only_seq>);
+    static_assert(flux::adaptable_sequence<move_only_seq&>);
+    static_assert(flux::adaptable_sequence<move_only_seq const&>);
+    static_assert(flux::adaptable_sequence<move_only_seq&&>);
+    static_assert(not flux::adaptable_sequence<move_only_seq const&&>);
+
+    static_assert(flux::sequence<unmovable_seq>);
+    static_assert(not flux::adaptable_sequence<unmovable_seq>);
+    static_assert(flux::adaptable_sequence<unmovable_seq&>);
+    static_assert(flux::adaptable_sequence<unmovable_seq const&>);
+    static_assert(not flux::adaptable_sequence<unmovable_seq&&>);
+    static_assert(not flux::adaptable_sequence<unmovable_seq const&&>);
+
+    using ilist_t = std::initializer_list<int>;
+
+    static_assert(flux::sequence<ilist_t>);
+    static_assert(not flux::adaptable_sequence<ilist_t>);
+    static_assert(flux::adaptable_sequence<ilist_t&>);
+    static_assert(flux::adaptable_sequence<ilist_t const&>);
+    static_assert(not flux::adaptable_sequence<ilist_t&&>);
+    static_assert(not flux::adaptable_sequence<ilist_t const&&>);
+}
 
 

@@ -37,7 +37,7 @@ concept chainable =
     requires { typename std::common_type_t<value_t<Seqs>...>; };
 
 struct chain_fn {
-    template <sequence... Seqs>
+    template <adaptable_sequence... Seqs>
         requires (sizeof...(Seqs) >= 1) &&
                  chainable<Seqs...>
     constexpr auto operator()(Seqs&&... seqs) const

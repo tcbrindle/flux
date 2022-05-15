@@ -35,7 +35,7 @@ public:
 };
 
 struct zip_fn {
-    template <sequence... Seqs>
+    template <adaptable_sequence... Seqs>
     constexpr auto operator()(Seqs&&... seqs) const
     {
         if constexpr (sizeof...(Seqs) == 0) {

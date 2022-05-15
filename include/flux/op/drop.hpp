@@ -31,7 +31,7 @@ public:
 };
 
 struct drop_fn {
-    template <sequence Seq>
+    template <adaptable_sequence Seq>
     constexpr auto operator()(Seq&& seq, distance_t<Seq> count) const
     {
         return drop_adaptor(flux::from(FLUX_FWD(seq)), count);

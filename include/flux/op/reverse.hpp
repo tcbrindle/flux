@@ -53,8 +53,9 @@ template <typename Base>
 inline constexpr bool is_reverse_adaptor<reverse_adaptor<Base>> = true;
 
 struct reverse_fn {
-    template <bidirectional_sequence Seq>
-        requires bounded_sequence<Seq>
+    template <adaptable_sequence Seq>
+        requires bidirectional_sequence<Seq> &&
+                 bounded_sequence<Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const
         -> lens auto

@@ -10,8 +10,7 @@ namespace flux {
 namespace detail {
 
 struct from_fn {
-    template <sequence Seq>
-        requires (std::is_lvalue_reference_v<Seq> || std::movable<Seq>)
+    template <adaptable_sequence Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const -> lens auto
     {
