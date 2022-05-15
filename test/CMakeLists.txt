@@ -15,6 +15,7 @@ add_executable(test-libflux
     test_count_if.cpp
     test_drop.cpp
     test_drop_while.cpp
+    test_equal.cpp
     test_for_each.cpp
     test_filter.cpp
     test_find.cpp

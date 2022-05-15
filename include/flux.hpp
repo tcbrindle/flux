@@ -15,6 +15,7 @@
 #include <flux/op/count.hpp>
 #include <flux/op/drop.hpp>
 #include <flux/op/drop_while.hpp>
+#include <flux/op/equal.hpp>
 #include <flux/op/for_each.hpp>
 #include <flux/op/for_each_while.hpp>
 #include <flux/op/filter.hpp>
