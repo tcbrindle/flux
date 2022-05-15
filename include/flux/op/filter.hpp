@@ -1,5 +1,10 @@
 
-#pragma once
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_OP_FILTER_HPP_INCLUDED
+#define FLUX_OP_FILTER_HPP_INCLUDED
 
 #include <flux/core.hpp>
 #include <flux/op/for_each_while.hpp>
@@ -135,4 +140,7 @@ constexpr auto lens_base<D>::filter(Pred pred) &&
 }
 
 
-}
+} // namespace flux
+
+#endif // FLUX_OP_FILTER_HPP_INCLUDED
+
