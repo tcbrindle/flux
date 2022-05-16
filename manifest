@@ -1,0 +1,12 @@
+: 1
+name: libflux
+version: 0.1.0-a.0.z
+summary: Algorithms library for C++20
+license: BSL-1.0 ; Boost Software License 1.0.
+description-file: README.md
+url: https://github.com/tcbrindle/libflux
+email: t.c.brindle@gmail.com
+build-error-email: t.c.brindle@gmail.com
+builds: gcc-11+ msvc-16.10+
+depends: * build2 >= 0.14.0
+depends: * bpkg >= 0.14.0

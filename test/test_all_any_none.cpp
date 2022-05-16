@@ -3,13 +3,11 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
+#include "catch.hpp"
+
 #include <flux/op/all_any_none.hpp>
 
 #include <flux/ranges/from_range.hpp>
-
-#include <flux/op/write_to.hpp>
-
-#include <iostream>
 
 namespace {
 

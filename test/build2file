@@ -1,0 +1,3 @@
+import libs = libflux%lib{flux}
+
+exe{test-libflux}: {hxx ixx txx cxx}{**} $libs testscript{**}

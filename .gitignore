@@ -21,6 +21,8 @@ out/
 # conan
 .conan/test_package/build
 
+# Stuff I want to ignore
+junk/
 
 # Build2 stuff
 .bdep/
