@@ -28,11 +28,16 @@ set(CMAKE_CXX_EXTENSIONS Off)
 
 #option(FLUX_BUILD_EXAMPLES "Build libflux examples" On)
 option(FLUX_BUILD_TESTS "Build libflux tests" On)
+option(FLUX_BUILD_BENCHMARKS "Build libflux benchmarks" Off)
 
 
 #if (${FLUX_BUILD_EXAMPLES})
 #    add_subdirectory(example)
 #endif()
+
+if (${FLUX_BUILD_BENCHMARKS})
+    add_subdirectory(benchmark)
+endif()
 
 if (${FLUX_BUILD_TESTS})
     enable_testing()

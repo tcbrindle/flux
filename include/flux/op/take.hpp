@@ -161,21 +161,6 @@ struct sequence_iface<detail::take_adaptor<Base>> {
     {
         return flux::move_at(self.base_, cur.base_cur);
     }
-
-    template <typename Self>
-    static constexpr auto for_each_while(Self& self, auto&& pred)
-    {
-        auto count = self.count_;
-        auto cur = flux::for_each_while(self.base_, [&pred, &count](auto&& elem) {
-            if (count > 0) {
-                --count;
-                return std::invoke(pred, FLUX_FWD(elem));
-            } else {
-                return false;
-            }
-        });
-        return cursor_t<Self>{.base_cur = std::move(cur), .length = count};
-    }
 };
 
 inline constexpr auto take = detail::take_fn{};
