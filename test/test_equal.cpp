@@ -8,6 +8,8 @@
 
 #include "test_utils.hpp"
 
+#include <array>
+
 namespace {
 
 struct S {
