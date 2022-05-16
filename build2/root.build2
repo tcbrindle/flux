@@ -2,7 +2,7 @@
 #
 #cxx.internal.scope = current
 
-cxx.std = latest
+cxx.std = experimental
 
 using cxx
 
