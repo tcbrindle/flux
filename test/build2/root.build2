@@ -1,4 +1,4 @@
-cxx.std = latest
+cxx.std = experimental
 
 using cxx
 
