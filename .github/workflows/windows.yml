@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         platform: [Win32, x64]
-        build_type: [Debug, Release]
+        build_type: [Debug]
 
     steps:
     - uses: actions/checkout@v2
