@@ -54,19 +54,6 @@ constexpr bool test_take_while()
         STATIC_CHECK(check_equal(seq, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}));
     }
 
-    // Check with mutable predicate
-    {
-        int arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-        int count = 0;
-        auto mutable_only = flux::take_while(arr, [count](int) mutable { return ++count <= 5; });
-
-        using M = decltype(mutable_only);
-        static_assert(flux::contiguous_sequence<M>);
-        static_assert(not flux::sequence<M const>);
-
-        STATIC_CHECK(check_equal(mutable_only, {0, 1, 2, 3, 4}));
-    }
-
     {
         int arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
