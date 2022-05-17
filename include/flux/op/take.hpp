@@ -54,7 +54,7 @@ struct take_fn {
         if constexpr (random_access_sequence<Seq> && std::is_lvalue_reference_v<Seq>) {
             auto first = flux::first(seq);
             auto last = flux::next(seq, first, count);
-            return flux::slice(FLUX_FWD(seq), std::move(first), std::move(last));
+            return flux::slice(seq, std::move(first), std::move(last));
         } else {
             return take_adaptor(flux::from(FLUX_FWD(seq)), count);
         }
@@ -129,7 +129,7 @@ struct sequence_iface<detail::take_adaptor<Base>> {
         requires random_access_sequence<Base>
     {
         return std::min(flux::distance(self.base_, from.base_cur, to.base_cur),
-                        to.length - from.length);
+                        from.length - to.length);
     }
 
     template <typename Self>
