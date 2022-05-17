@@ -245,7 +245,7 @@ inline constexpr auto data = detail::data_fn{};
 inline constexpr auto last = detail::last_fn{};
 inline constexpr auto size = detail::size_fn{};
 inline constexpr auto checked_read_at = detail::checked_read_at_fn{};
-inline constexpr auto checked_move_at = detail::checked_read_at_fn{};
+inline constexpr auto checked_move_at = detail::checked_move_at_fn{};
 inline constexpr auto checked_inc = detail::checked_inc_fn{};
 inline constexpr auto checked_dec = detail::checked_dec_fn{};
 
