@@ -75,7 +75,7 @@ public:
         return cur == cursor_type::done;
     }
 
-    static constexpr auto read_at(auto& self, cursor_type cur) -> auto&
+    static constexpr auto read_at(auto& self, [[maybe_unused]] cursor_type cur) -> auto&
     {
         assert(cur == cursor_type::valid);
         return self.obj_;
