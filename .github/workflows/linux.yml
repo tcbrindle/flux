@@ -11,14 +11,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        build_type: [Debug, Release]
+        build_type: [Debug]
         os: [ubuntu-20.04]
         include:
           - cxx: g++-11
-            build_type: Debug
-            install: brew install gcc@11
-          - cxx: g++-11
-            build_type: Release
             install: brew install gcc@11
 
     steps:
