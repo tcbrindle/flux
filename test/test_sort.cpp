@@ -12,6 +12,7 @@
 #include <functional>
 #include <iostream>
 #include <span>
+#include <numeric>
 
 namespace {
 
