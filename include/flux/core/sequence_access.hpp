@@ -154,9 +154,7 @@ struct check_bounds_fn {
                 return false;
             }
             if constexpr (sized_sequence<Seq>) {
-                if (dist >= size_fn{}(seq)) {
-                    return false;
-                }
+                return dist < size_fn{}(seq);
             }
         }
         return !is_last_fn{}(seq, cur);
