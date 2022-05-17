@@ -75,8 +75,8 @@ public:
 
     constexpr Base& base() & noexcept { return base_; }
     constexpr Base const& base() const& noexcept { return base_; }
-    constexpr Base&& base() && noexcept { return base_; }
-    constexpr Base const&& base() const&& noexcept { return base_; }
+    constexpr Base&& base() && noexcept { return std::move(base_); }
+    constexpr Base const&& base() const&& noexcept { return std::move(base_); }
 
     friend struct sequence_iface<owning_adaptor>;
 };
