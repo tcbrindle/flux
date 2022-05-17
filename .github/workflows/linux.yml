@@ -16,10 +16,10 @@ jobs:
         include:
           - cxx: g++-11
             build_type: Debug
-            install: sudo apt install g++-11
+            install: brew install gcc@11
           - cxx: g++-11
             build_type: Release
-            install: sudo apt install g++-11
+            install: brew install gcc@11
 
     steps:
     - uses: actions/checkout@v2
