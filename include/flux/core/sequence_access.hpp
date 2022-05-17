@@ -249,11 +249,17 @@ inline constexpr auto checked_move_at = detail::checked_move_at_fn{};
 inline constexpr auto checked_inc = detail::checked_inc_fn{};
 inline constexpr auto checked_dec = detail::checked_dec_fn{};
 
+#ifdef FLUX_ENABLE_BOUNDS_CHECKING
+inline constexpr auto read_at = checked_read_at;
+inline constexpr auto move_at = checked_move_at;
+inline constexpr auto inc = checked_inc;
+inline constexpr auto dec = checked_dec;
+#else
 inline constexpr auto read_at = unchecked_read_at;
 inline constexpr auto move_at = unchecked_move_at;
 inline constexpr auto inc = unchecked_inc;
 inline constexpr auto dec = unchecked_dec;
-
+#endif
 
 namespace detail {
 
