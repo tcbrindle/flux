@@ -178,31 +178,32 @@ constexpr void sort3(Seq& seq, Cur a, Cur b, Cur c, Comp& comp)
     sort2(seq, a, b, comp);
 }
 
-#if 0
-template <typename I>
-constexpr void swap_offsets(I first, I last, unsigned char* offsets_l,
+
+template <typename Seq, typename Cur = cursor_t<Seq>>
+constexpr void swap_offsets(Seq& seq, Cur const first, Cur const last,
+                            unsigned char* offsets_l,
                             unsigned char* offsets_r, int num, bool use_swaps)
 {
-    using T = iter_value_t<I>;
+    using T = value_t<Seq>;
     if (use_swaps) {
         // This case is needed for the descending distribution, where we need
         // to have proper swapping for pdqsort to remain O(n).
         for (int i = 0; i < num; ++i) {
-            nano::iter_swap(first + offsets_l[i], last - offsets_r[i]);
+            swap_at(seq, next(seq, first, offsets_l[i]), next(seq, last, -offsets_r[i]));
         }
     } else if (num > 0) {
-        I l = first + offsets_l[0];
-        I r = last - offsets_r[0];
-        T tmp(nano::iter_move(l));
-        *l = nano::iter_move(r);
+        Cur l = next(seq, first, offsets_l[0]);
+        Cur r = next(seq, last, -offsets_r[0]);
+        T tmp(move_at(seq, l));
+        read_at(seq, l) = move_at(seq, r);
 
         for (int i = 1; i < num; ++i) {
-            l = first + offsets_l[i];
-            *r = nano::iter_move(l);
-            r = last - offsets_r[i];
-            *l = nano::iter_move(r);
+            l = next(seq, first, offsets_l[i]);
+            read_at(seq, r) = move_at(seq, l);
+            r = next(seq, last, -offsets_r[i]);
+            read_at(seq, l) = move_at(seq, r);
         }
-        *r = std::move(tmp);
+        read_at(seq, r) = std::move(tmp);
     }
 }
 
@@ -212,32 +213,29 @@ constexpr void swap_offsets(I first, I last, unsigned char* offsets_l,
 // already was correctly partitioned. Assumes the pivot is a median of at least
 // 3 elements and that [begin, end) is at least insertion_sort_threshold long.
 // Uses branchless partitioning.
-template <typename I, typename Comp, typename Pred>
-constexpr std::pair<I, bool> partition_right_branchless(I begin, I end,
-                                                        Comp& comp, Pred& pred)
+template <typename Seq, typename Cur = cursor_t<Seq>, typename Comp>
+constexpr std::pair<Cur, bool>
+partition_right_branchless(Seq& seq, Cur const begin, Cur const end, Comp& comp)
 {
-    using T = iter_value_t<I>;
+    using T = value_t<Seq>;
 
     // Move pivot into local for speed.
-    T pivot(nano::iter_move(begin));
-    I first = begin;
-    I last = end;
+    T pivot(move_at(seq, begin));
+    Cur first = begin;
+    Cur last = end;
 
     // Find the first element greater than or equal than the pivot (the median
     // of 3 guarantees this exists).
-    while (std::invoke(comp, std::invoke(pred, *++first),
-                        std::invoke(pred, pivot)))
+    while (comp(read_at(seq, inc(seq, first)), pivot))
         ;
 
     // Find the first element strictly smaller than the pivot. We have to guard
     // this search if there was no element before *first.
-    if (first - 1 == begin) {
-        while (first < last && !std::invoke(comp, std::invoke(pred, *--last),
-                                             std::invoke(pred, pivot)))
+    if (prev(seq, first) == begin) {
+        while (first < last && !comp(read_at(seq, dec(seq, last)), pivot))
             ;
     } else {
-        while (!std::invoke(comp, std::invoke(pred, *--last),
-                             std::invoke(pred, pivot)))
+        while (!comp(read_at(seq, dec(seq, last)), pivot))
             ;
     }
 
@@ -245,8 +243,8 @@ constexpr std::pair<I, bool> partition_right_branchless(I begin, I end,
     // same element, the passed in sequence already was correctly partitioned.
     bool already_partitioned = first >= last;
     if (!already_partitioned) {
-        nano::iter_swap(first, last);
-        ++first;
+        swap_at(seq, first, last);
+        inc(seq, first);
     }
 
     // The following branchless partitioning is derived from "BlockQuicksort:
@@ -260,80 +258,64 @@ constexpr std::pair<I, bool> partition_right_branchless(I begin, I end,
     unsigned char* offsets_r = offsets_r_storage;
     int num_l = 0, num_r = 0, start_l = 0, start_r = 0;
 
-    while (last - first > 2 * pdqsort_block_size) {
+    while (distance(seq, first, last) > 2 * pdqsort_block_size) {
         // Fill up offset blocks with elements that are on the wrong side.
         if (num_l == 0) {
             start_l = 0;
-            I it = first;
+            Cur cur = first;
             for (unsigned char i = 0; i < pdqsort_block_size;) {
                 offsets_l[num_l] = i++;
-                num_l += !std::invoke(comp, std::invoke(pred, *it),
-                                       std::invoke(pred, pivot));
-                ++it;
+                num_l += !comp(read_at(seq, cur), pivot);
+                inc(seq, cur);
                 offsets_l[num_l] = i++;
-                num_l += !std::invoke(comp, std::invoke(pred, *it),
-                                       std::invoke(pred, pivot));
-                ++it;
+                num_l += !comp(read_at(seq, cur), pivot);
+                inc(seq, cur);
                 offsets_l[num_l] = i++;
-                num_l += !std::invoke(comp, std::invoke(pred, *it),
-                                       std::invoke(pred, pivot));
-                ++it;
+                num_l += !comp(read_at(seq, cur), pivot);
+                inc(seq, cur);
                 offsets_l[num_l] = i++;
-                num_l += !std::invoke(comp, std::invoke(pred, *it),
-                                       std::invoke(pred, pivot));
-                ++it;
+                num_l += !comp(read_at(seq, cur), pivot);
+                inc(seq, cur);
                 offsets_l[num_l] = i++;
-                num_l += !std::invoke(comp, std::invoke(pred, *it),
-                                       std::invoke(pred, pivot));
-                ++it;
+                num_l += !comp(read_at(seq, cur), pivot);
+                inc(seq, cur);
                 offsets_l[num_l] = i++;
-                num_l += !std::invoke(comp, std::invoke(pred, *it),
-                                       std::invoke(pred, pivot));
-                ++it;
+                num_l += !comp(read_at(seq, cur), pivot);
+                inc(seq, cur);
                 offsets_l[num_l] = i++;
-                num_l += !std::invoke(comp, std::invoke(pred, *it),
-                                       std::invoke(pred, pivot));
-                ++it;
+                num_l += !comp(read_at(seq, cur), pivot);
+                inc(seq, cur);
                 offsets_l[num_l] = i++;
-                num_l += !std::invoke(comp, std::invoke(pred, *it),
-                                       std::invoke(pred, pivot));
-                ++it;
+                num_l += !comp(read_at(seq, cur), pivot);
+                inc(seq, cur);
             }
         }
         if (num_r == 0) {
             start_r = 0;
-            I it = last;
+            Cur cur = last;
             for (unsigned char i = 0; i < pdqsort_block_size;) {
                 offsets_r[num_r] = ++i;
-                num_r += std::invoke(comp, std::invoke(pred, *--it),
-                                      std::invoke(pred, pivot));
+                num_r += comp(read_at(seq, dec(seq, cur)), pivot);
                 offsets_r[num_r] = ++i;
-                num_r += std::invoke(comp, std::invoke(pred, *--it),
-                                      std::invoke(pred, pivot));
+                num_r += comp(read_at(seq, dec(seq, cur)), pivot);
                 offsets_r[num_r] = ++i;
-                num_r += std::invoke(comp, std::invoke(pred, *--it),
-                                      std::invoke(pred, pivot));
+                num_r += comp(read_at(seq, dec(seq, cur)), pivot);
                 offsets_r[num_r] = ++i;
-                num_r += std::invoke(comp, std::invoke(pred, *--it),
-                                      std::invoke(pred, pivot));
+                num_r += comp(read_at(seq, dec(seq, cur)), pivot);
                 offsets_r[num_r] = ++i;
-                num_r += std::invoke(comp, std::invoke(pred, *--it),
-                                      std::invoke(pred, pivot));
+                num_r += comp(read_at(seq, dec(seq, cur)), pivot);
                 offsets_r[num_r] = ++i;
-                num_r += std::invoke(comp, std::invoke(pred, *--it),
-                                      std::invoke(pred, pivot));
+                num_r += comp(read_at(seq, dec(seq, cur)), pivot);
                 offsets_r[num_r] = ++i;
-                num_r += std::invoke(comp, std::invoke(pred, *--it),
-                                      std::invoke(pred, pivot));
+                num_r += comp(read_at(seq, dec(seq, cur)), pivot);
                 offsets_r[num_r] = ++i;
-                num_r += std::invoke(comp, std::invoke(pred, *--it),
-                                      std::invoke(pred, pivot));
+                num_r += comp(read_at(seq, dec(seq, cur)), pivot);
             }
         }
 
         // Swap elements and update block sizes and first/last boundaries.
-        int num = (nano::min)(num_l, num_r);
-        swap_offsets(first, last, offsets_l + start_l, offsets_r + start_r, num,
+        int num = (std::min)(num_l, num_r);
+        swap_offsets(seq, first, last, offsets_l + start_l, offsets_r + start_r, num,
                      num_l == num_r);
         num_l -= num;
         num_r -= num;
@@ -345,8 +327,8 @@ constexpr std::pair<I, bool> partition_right_branchless(I begin, I end,
             last -= pdqsort_block_size;
     }
 
-    iter_difference_t<I> l_size = 0, r_size = 0;
-    iter_difference_t<I> unknown_left =
+    distance_t<Seq> l_size = 0, r_size = 0;
+    distance_t<Seq> unknown_left =
         (last - first) - ((num_r || num_l) ? pdqsort_block_size : 0);
     if (num_r) {
         // Handle leftover block by assigning the unknown elements to the other
@@ -365,26 +347,24 @@ constexpr std::pair<I, bool> partition_right_branchless(I begin, I end,
     // Fill offset buffers if needed.
     if (unknown_left && !num_l) {
         start_l = 0;
-        I it = first;
+        Cur cur = first;
         for (unsigned char i = 0; i < l_size;) {
             offsets_l[num_l] = i++;
-            num_l += !std::invoke(comp, std::invoke(pred, *it),
-                                   std::invoke(pred, pivot));
-            ++it;
+            num_l += !comp(read_at(seq, cur), pivot);
+            inc(seq, cur);
         }
     }
     if (unknown_left && !num_r) {
         start_r = 0;
-        I it = last;
+        Cur cur = last;
         for (unsigned char i = 0; i < r_size;) {
             offsets_r[num_r] = ++i;
-            num_r += std::invoke(comp, std::invoke(pred, *--it),
-                                  std::invoke(pred, pivot));
+            num_r += comp(read_at(seq, dec(seq, cur)), pivot);
         }
     }
 
-    int num = (nano::min)(num_l, num_r);
-    swap_offsets(first, last, offsets_l + start_l, offsets_r + start_r, num,
+    int num = (std::min)(num_l, num_r);
+    swap_offsets(seq, first, last, offsets_l + start_l, offsets_r + start_r, num,
                  num_l == num_r);
     num_l -= num;
     num_r -= num;
@@ -399,25 +379,27 @@ constexpr std::pair<I, bool> partition_right_branchless(I begin, I end,
     // last elements.
     if (num_l) {
         offsets_l += start_l;
-        while (num_l--)
-            nano::iter_swap(first + offsets_l[num_l], --last);
+        while (num_l--) {
+            swap_at(seq, next(seq, first, offsets_l[num_l]), dec(seq, last));
+        }
         first = last;
     }
     if (num_r) {
         offsets_r += start_r;
-        while (num_r--)
-            nano::iter_swap(last - offsets_r[num_r], first), ++first;
+        while (num_r--) {
+            swap_at(seq, next(seq, last, -offsets_r[num_r]), first);
+            inc(seq, first);
+        }
         last = first;
     }
 
     // Put the pivot in the right place.
-    I pivot_pos = first - 1;
-    *begin = nano::iter_move(pivot_pos);
-    *pivot_pos = std::move(pivot);
+    Cur pivot_pos = prev(seq, first);
+    read_at(seq, begin) = move_at(seq, pivot_pos);
+    read_at(seq, pivot_pos) = std::move(pivot);
 
     return std::make_pair(std::move(pivot_pos), already_partitioned);
 }
-#endif
 
 // Partitions [begin, end) around pivot *begin using comparison function comp.
 // Elements equal to the pivot are put in the right-hand partition. Returns the
@@ -560,13 +542,13 @@ constexpr void pdqsort_loop(Seq& seq, Cur begin, Cur end, Comp& comp,
         }
 
         // Partition and get results.
-        /*
-        std::pair<I, bool> part_result =
-            Branchless ? partition_right_branchless(begin, end, comp, proj)
-                       : partition_right(begin, end, comp, proj);
-        I pivot_pos = part_result.first;
-        bool already_partitioned = part_result.second;*/
-        auto [pivot_pos, already_partitioned] = partition_right(seq, begin, end, comp);
+        auto [pivot_pos, already_partitioned] = [&] {
+            if constexpr (Branchless) {
+                return partition_right_branchless(seq, begin, end, comp);
+            } else {
+                return partition_right(seq, begin, end, comp);
+            }
+        }();
 
         // Check for a highly unbalanced partition.
         diff_t l_size = distance(seq, begin, pivot_pos);
@@ -632,13 +614,11 @@ constexpr void pdqsort(Seq& seq, Comp& comp, Proj& proj)
     if (is_empty(seq)) {
         return;
     }
-    /*
+
     constexpr bool Branchless =
-         is_default_compare_v<std::remove_const_t<Comp>>&&
-         std::same_as<Proj, identity> &&
-         std::is_arithmetic_v<iter_value_t<I>>::value
-*/
-    constexpr bool Branchless = false;
+         is_default_compare_v<std::remove_const_t<Comp>> &&
+         std::same_as<Proj, std::identity> &&
+         std::is_arithmetic_v<value_t<Seq>>;
 
     auto comparator = [&comp, &proj](auto&& lhs, auto&& rhs) {
         if constexpr (std::same_as<Proj, std::identity>) {
