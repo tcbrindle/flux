@@ -39,7 +39,7 @@ struct take_while_fn {
         requires std::predicate<Pred&, element_t<Seq>&>
     constexpr auto operator()(Seq&& seq, Pred pred) const
     {
-        return take_while_adaptor(flux::from(seq), std::move(pred));
+        return take_while_adaptor(flux::from(FLUX_FWD(seq)), std::move(pred));
     }
 };
 
@@ -53,18 +53,9 @@ struct sequence_iface<detail::take_while_adaptor<Base, Pred>>
 
     static constexpr bool is_infinite = false;
 
-    static constexpr bool is_last(self_t& self, cursor_t<Base> const& idx)
-    {
-        if (flux::is_last(self.base_, idx) ||
-            !std::invoke(self.pred_, flux::read_at(self.base_, idx))) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    static constexpr bool is_last(self_t const& self, cursor_t<Base const> const& cur)
-        requires std::predicate<Pred const&, element_t<Base const>>
+    template <typename Self>
+    static constexpr bool is_last(Self& self, cursor_t<Self> const& cur)
+        requires std::predicate<decltype((self.pred_)), element_t<decltype(self.base_)>>
     {
         if (flux::is_last(self.base_, cur) ||
             !std::invoke(self.pred_, flux::read_at(self.base_, cur))) {

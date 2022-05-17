@@ -24,7 +24,7 @@ struct slice_data<Cur, false> {
     Cur first;
 };
 
-template <lens Base, bool Bounded>
+template <sequence Base, bool Bounded>
     requires (!Bounded || regular_cursor<cursor_t<Base>>)
 struct subsequence : lens_base<subsequence<Base, Bounded>>
 {
