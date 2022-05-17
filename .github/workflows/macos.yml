@@ -14,7 +14,7 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        build_type: [Debug Release]
+        build_type: [Debug, Release]
         include:
           - cxx: g++-11
             install: brew install gcc@11
