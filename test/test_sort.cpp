@@ -40,8 +40,6 @@ std::mt19937 gen{};
 struct Int {
     int i;
     Int& operator++() { ++i; return *this; }
-
-    auto operator<=>(Int const&) const = default;
 };
 
 void test_sort(int sz) {
@@ -50,8 +48,23 @@ void test_sort(int sz) {
     std::shuffle(ptr, ptr + sz, gen);
 
     flux::sort(span_seq(ptr, sz));
+//    std::ranges::sort(std::span(ptr, sz));
 
     CHECK(std::is_sorted(ptr, ptr + sz));
+    delete[] ptr;
+}
+
+void test_sort_projected(int sz)
+{
+    auto* ptr = new Int[sz];
+    std::iota(ptr, ptr + sz, Int{0});
+    std::shuffle(ptr, ptr + sz, gen);
+
+    flux::sort(span_seq(ptr, sz), {}, &Int::i);
+
+    CHECK(std::is_sorted(ptr, ptr + sz, [](Int lhs, Int rhs) {
+        return lhs.i < rhs.i;
+    }));
     delete[] ptr;
 }
 
@@ -68,4 +81,10 @@ TEST_CASE("sort")
     test_sort(100'000);
     test_sort(1'000'000);
  //   test_sort(10'000'000);
+
+    test_sort_projected(0);
+    test_sort_projected(1);
+    test_sort_projected(10);
+    test_sort_projected(100);
+    test_sort_projected(100'000);
 }

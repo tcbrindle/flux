@@ -60,8 +60,8 @@ constexpr int log2(T n)
 }
 
 // Sorts [begin, end) using insertion sort with the given comparison function.
-template <sequence Seq, typename Comp, typename Proj, typename Cur = cursor_t<Seq>>
-constexpr void insertion_sort(Seq& seq, Cur const begin, Cur const end, Comp& comp, Proj& proj)
+template <sequence Seq, typename Comp, typename Cur = cursor_t<Seq>>
+constexpr void insertion_sort(Seq& seq, Cur const begin, Cur const end, Comp& comp)
 {
     using T = value_t<Seq>;
 
@@ -75,18 +75,15 @@ constexpr void insertion_sort(Seq& seq, Cur const begin, Cur const end, Comp& co
 
         // Compare first so we can avoid 2 moves for an element already
         // positioned correctly.
-        if (std::invoke(comp, std::invoke(proj, read_at(seq, sift)),
-                         std::invoke(proj, read_at(seq, sift_1)))) {
+        if (comp(read_at(seq, sift), read_at(seq, sift_1))) {
             T tmp = move_at(seq, sift);
 
             do {
                 read_at(seq, sift) = move_at(seq, sift_1);
                 dec(seq, sift);
-            } while (sift != begin &&
-                     std::invoke(comp, std::invoke(proj, tmp),
-                                  std::invoke(proj, read_at(seq, dec(seq, sift_1)))));
+            } while (sift != begin && comp(tmp, read_at(seq, dec(seq, sift_1))));
 
-              read_at(seq, sift) = std::move(tmp);
+            read_at(seq, sift) = std::move(tmp);
         }
     }
 }
@@ -95,9 +92,9 @@ constexpr void insertion_sort(Seq& seq, Cur const begin, Cur const end, Comp& co
 // Assumes
 // *(begin - 1) is an element smaller than or equal to any element in [begin,
 // end).
-template <sequence Seq, typename Comp, typename Proj, typename Cur = cursor_t<Seq>>
+template <sequence Seq, typename Comp, typename Cur = cursor_t<Seq>>
 constexpr void unguarded_insertion_sort(Seq& seq, Cur const begin, Cur const end,
-                                        Comp& comp, Proj& proj)
+                                        Comp& comp)
 {
     using T = value_t<Seq>;
 
@@ -111,15 +108,13 @@ constexpr void unguarded_insertion_sort(Seq& seq, Cur const begin, Cur const end
 
         // Compare first so we can avoid 2 moves for an element already
         // positioned correctly.
-        if (std::invoke(comp, std::invoke(proj, read_at(seq, sift)),
-                         std::invoke(proj, read_at(seq, sift_1)))) {
+        if (comp(read_at(seq, sift), read_at(seq, sift_1))) {
             T tmp = move_at(seq, sift);
 
             do {
                 read_at(seq, sift) = move_at(seq, sift_1);
                 dec(seq, sift);
-            } while (std::invoke(comp, std::invoke(proj, tmp),
-                                  std::invoke(proj, read_at(seq, dec(seq, sift_1)))));
+            } while (comp(tmp, read_at(seq, dec(seq, sift_1))));
 
             read_at(seq, sift) = std::move(tmp);
         }
@@ -129,8 +124,8 @@ constexpr void unguarded_insertion_sort(Seq& seq, Cur const begin, Cur const end
 // Attempts to use insertion sort on [begin, end). Will return false if more
 // than partial_insertion_sort_limit elements were moved, and abort sorting.
 // Otherwise it will successfully sort and return true.
-template <sequence Seq, typename Comp, typename Proj, typename Cur = cursor_t<Seq>>
-constexpr bool partial_insertion_sort(Seq& seq, Cur const begin, Cur const end, Comp& comp, Proj& proj)
+template <sequence Seq, typename Comp, typename Cur = cursor_t<Seq>>
+constexpr bool partial_insertion_sort(Seq& seq, Cur const begin, Cur const end, Comp& comp)
 {
     using T = value_t<Seq>;
 
@@ -150,16 +145,13 @@ constexpr bool partial_insertion_sort(Seq& seq, Cur const begin, Cur const end, 
 
         // Compare first so we can avoid 2 moves for an element already
         // positioned correctly.
-        if (std::invoke(comp, std::invoke(proj, read_at(seq, sift)),
-                         std::invoke(proj, read_at(seq, sift_1)))) {
+        if (comp(read_at(seq, sift), read_at(seq, sift_1))) {
             T tmp = move_at(seq, sift);
 
             do {
                 read_at(seq, sift) = move_at(seq, sift_1);
                 dec(seq, sift);
-            } while (sift != begin &&
-                     std::invoke(comp, std::invoke(proj, tmp),
-                                  std::invoke(proj, read_at(seq, dec(seq, sift_1)))));
+            } while (sift != begin && comp(tmp, read_at(seq, dec(seq, sift_1))));
 
             read_at(seq, sift) = std::move(tmp);
             limit += distance(seq, sift, cur);
@@ -169,21 +161,21 @@ constexpr bool partial_insertion_sort(Seq& seq, Cur const begin, Cur const end, 
     return true;
 }
 
-template <sequence Seq, typename Comp, typename Proj>
-constexpr void sort2(Seq& seq, cursor_t<Seq> a, cursor_t<Seq> b, Comp& comp, Proj& proj)
+template <sequence Seq, typename Comp>
+constexpr void sort2(Seq& seq, cursor_t<Seq> a, cursor_t<Seq> b, Comp& comp)
 {
-    if (std::invoke(comp, std::invoke(proj, read_at(seq, b)), std::invoke(proj, read_at(seq, a)))) {
+    if (comp(read_at(seq, b), read_at(seq, a))) {
         swap_at(seq, a, b);
     }
 }
 
 // Sorts the elements *a, *b and *c using comparison function comp.
-template <sequence Seq, typename Comp, typename Proj, typename Cur = cursor_t<Seq>>
-constexpr void sort3(Seq& seq, Cur a, Cur b, Cur c, Comp& comp, Proj& proj)
+template <sequence Seq, typename Comp, typename Cur = cursor_t<Seq>>
+constexpr void sort3(Seq& seq, Cur a, Cur b, Cur c, Comp& comp)
 {
-    sort2(seq, a, b, comp, proj);
-    sort2(seq, b, c, comp, proj);
-    sort2(seq, a, b, comp, proj);
+    sort2(seq, a, b, comp);
+    sort2(seq, b, c, comp);
+    sort2(seq, a, b, comp);
 }
 
 #if 0
@@ -432,9 +424,9 @@ constexpr std::pair<I, bool> partition_right_branchless(I begin, I end,
 // position of the pivot after partitioning and whether the passed sequence
 // already was correctly partitioned. Assumes the pivot is a median of at least
 // 3 elements and that [begin, end) is at least insertion_sort_threshold long.
-template <sequence Seq, typename Comp, typename Proj, typename Cur = cursor_t<Seq>>
+template <sequence Seq, typename Comp, typename Cur = cursor_t<Seq>>
 constexpr std::pair<cursor_t<Seq>, bool>
-partition_right(Seq& seq, Cur const begin, Cur const end, Comp& comp, Proj& proj)
+partition_right(Seq& seq, Cur const begin, Cur const end, Comp& comp)
 {
     using T = value_t<Seq>;
 
@@ -446,19 +438,16 @@ partition_right(Seq& seq, Cur const begin, Cur const end, Comp& comp, Proj& proj
 
     // Find the first element greater than or equal than the pivot (the median
     // of 3 guarantees this exists).
-    while (std::invoke(comp, std::invoke(proj, read_at(seq, inc(seq, first))),
-                        std::invoke(proj, pivot))) {
+    while (comp(read_at(seq, inc(seq, first)), pivot)) {
     }
 
     // Find the first element strictly smaller than the pivot. We have to guard
     // this search if there was no element before *first.
     if (prev(seq, first) == begin) {
-        while (first < last && !std::invoke(comp, std::invoke(proj, read_at(seq, dec(seq, last))),
-                                             std::invoke(proj, pivot))) {
+        while (first < last && !comp(read_at(seq, dec(seq, last)), pivot)) {
         }
     } else {
-        while (!std::invoke(comp, std::invoke(proj, read_at(seq, dec(seq, last))),
-                             std::invoke(proj, pivot))) {
+        while (!comp(read_at(seq, dec(seq, last)), pivot)) {
         }
     }
 
@@ -471,11 +460,9 @@ partition_right(Seq& seq, Cur const begin, Cur const end, Comp& comp, Proj& proj
     // iteration is special-cased above.
     while (first < last) {
         swap_at(seq, first, last);
-        while (std::invoke(comp, std::invoke(proj, read_at(seq, inc(seq, first))),
-                            std::invoke(proj, pivot)))
+        while (comp(read_at(seq, inc(seq, first)), pivot))
             ;
-        while (!std::invoke(comp, std::invoke(proj, read_at(seq, dec(seq, last))),
-                             std::invoke(proj, pivot)))
+        while (!comp(read_at(seq, dec(seq, last)), pivot))
             ;
     }
 
@@ -492,8 +479,8 @@ partition_right(Seq& seq, Cur const begin, Cur const end, Comp& comp, Proj& proj
 // sequence already was partitioned. Since this is rarely used (the many equal
 // case), and in that case pdqsort already has O(n) performance, no block
 // quicksort is applied here for simplicity.
-template <sequence Seq, typename Comp, typename Proj, typename Cur = cursor_t<Seq>>
-constexpr cursor_t<Seq> partition_left(Seq& seq, Cur const begin, Cur const end, Comp& comp, Proj& proj)
+template <sequence Seq, typename Comp, typename Cur = cursor_t<Seq>>
+constexpr cursor_t<Seq> partition_left(Seq& seq, Cur const begin, Cur const end, Comp& comp)
 {
     using T = value_t<Seq>;
 
@@ -501,27 +488,22 @@ constexpr cursor_t<Seq> partition_left(Seq& seq, Cur const begin, Cur const end,
     cursor_t<Seq> first = begin;
     cursor_t<Seq> last = end;
 
-    while (std::invoke(comp, std::invoke(proj, pivot),
-                        std::invoke(proj, read_at(seq, dec(seq, last)))))
+    while (comp(pivot, read_at(seq, dec(seq, last))))
         ;
 
     if (next(seq, last) == end) {
-        while (first < last && !std::invoke(comp, std::invoke(proj, pivot),
-                                             std::invoke(proj, read_at(seq, inc(seq, first)))))
+        while (first < last && !comp(pivot, read_at(seq, inc(seq, first))))
             ;
     } else {
-        while (!std::invoke(comp, std::invoke(proj, pivot),
-                             std::invoke(proj, read_at(seq, inc(seq, first)))))
+        while (!comp(pivot, read_at(seq, inc(seq, first))))
             ;
     }
 
     while (first < last) {
         swap_at(seq, first, last);
-        while (std::invoke(comp, std::invoke(proj, pivot),
-                            std::invoke(proj, read_at(seq, dec(seq, last)))))
+        while (comp(pivot, read_at(seq, dec(seq, last))))
             ;
-        while (!std::invoke(comp, std::invoke(proj, pivot),
-                             std::invoke(proj, read_at(seq, inc(seq, first)))))
+        while (!comp(pivot, read_at(seq, inc(seq, first))))
             ;
     }
 
@@ -532,9 +514,9 @@ constexpr cursor_t<Seq> partition_left(Seq& seq, Cur const begin, Cur const end,
     return pivot_pos;
 }
 
-template <bool Branchless, typename Seq, typename Comp, typename Proj,
+template <bool Branchless, typename Seq, typename Comp,
           typename Cur = cursor_t<Seq>>
-constexpr void pdqsort_loop(Seq& seq, Cur begin, Cur end, Comp& comp, Proj& proj,
+constexpr void pdqsort_loop(Seq& seq, Cur begin, Cur end, Comp& comp,
                             int bad_allowed, bool leftmost = true)
 {
     //using diff_t = iter_difference_t<I>
@@ -547,9 +529,9 @@ constexpr void pdqsort_loop(Seq& seq, Cur begin, Cur end, Comp& comp, Proj& proj
         // Insertion sort is faster for small arrays.
         if (size < pdqsort_insertion_sort_threshold) {
             if (leftmost) {
-                insertion_sort(seq, begin, end, comp, proj);
+                insertion_sort(seq, begin, end, comp);
             } else {
-                unguarded_insertion_sort(seq, begin, end, comp, proj);
+                unguarded_insertion_sort(seq, begin, end, comp);
             }
             return;
         }
@@ -557,13 +539,13 @@ constexpr void pdqsort_loop(Seq& seq, Cur begin, Cur end, Comp& comp, Proj& proj
         // Choose pivot as median of 3 or pseudomedian of 9.
         diff_t s2 = size / 2;
         if (size > pdqsort_ninther_threshold) {
-            sort3(seq, begin, next(seq, begin, s2), prev(seq, end), comp, proj);
-            sort3(seq, next(seq, begin), next(seq, begin, s2 - 1), next(seq, end, -2), comp, proj);
-            sort3(seq, next(seq, begin, 2), next(seq, begin, s2 + 1), next(seq, end, -3), comp, proj);
-            sort3(seq, next(seq, begin, s2 - 1), next(seq, begin, s2), next(seq, begin, s2 + 1), comp, proj);
+            sort3(seq, begin, next(seq, begin, s2), prev(seq, end), comp);
+            sort3(seq, next(seq, begin), next(seq, begin, s2 - 1), next(seq, end, -2), comp);
+            sort3(seq, next(seq, begin, 2), next(seq, begin, s2 + 1), next(seq, end, -3), comp);
+            sort3(seq, next(seq, begin, s2 - 1), next(seq, begin, s2), next(seq, begin, s2 + 1), comp);
             swap_at(seq, begin, next(seq, begin, s2));
         } else {
-            sort3(seq, next(seq, begin, s2), begin, prev(seq, end), comp, proj);
+            sort3(seq, next(seq, begin, s2), begin, prev(seq, end), comp);
         }
 
         // If *(begin - 1) is the end of the right partition of a previous
@@ -572,9 +554,8 @@ constexpr void pdqsort_loop(Seq& seq, Cur begin, Cur end, Comp& comp, Proj& proj
         // *(begin - 1) we change strategy, putting equal elements in the left
         // partition, greater elements in the right partition. We do not have to
         // recurse on the left partition, since it's sorted (all equal).
-        if (!leftmost && !std::invoke(comp, std::invoke(proj, read_at(seq, prev(seq, begin))),
-                                       std::invoke(proj, read_at(seq, begin)))) {
-            begin = next(seq, partition_left(seq, begin, end, comp, proj));
+        if (!leftmost && !comp(read_at(seq, prev(seq, begin)), read_at(seq, begin))) {
+            begin = next(seq, partition_left(seq, begin, end, comp));
             continue;
         }
 
@@ -585,7 +566,7 @@ constexpr void pdqsort_loop(Seq& seq, Cur begin, Cur end, Comp& comp, Proj& proj
                        : partition_right(begin, end, comp, proj);
         I pivot_pos = part_result.first;
         bool already_partitioned = part_result.second;*/
-        auto [pivot_pos, already_partitioned] = partition_right(seq, begin, end, comp, proj);
+        auto [pivot_pos, already_partitioned] = partition_right(seq, begin, end, comp);
 
         // Check for a highly unbalanced partition.
         diff_t l_size = distance(seq, begin, pivot_pos);
@@ -599,8 +580,8 @@ constexpr void pdqsort_loop(Seq& seq, Cur begin, Cur end, Comp& comp, Proj& proj
             // guarantee O(n log n).
             if (--bad_allowed == 0) {
                 auto view = flux::view(slice(seq, begin, end));
-                std::ranges::make_heap(view, comp, proj);
-                std::ranges::sort_heap(view, comp, proj);
+                std::ranges::make_heap(view, comp);
+                std::ranges::sort_heap(view, comp);
                 return;
             }
 
@@ -631,14 +612,14 @@ constexpr void pdqsort_loop(Seq& seq, Cur begin, Cur end, Comp& comp, Proj& proj
             // If we were decently balanced and we tried to sort an already
             // partitioned sequence try to use insertion sort.
             if (already_partitioned &&
-                partial_insertion_sort(seq, begin, pivot_pos, comp, proj) &&
-                partial_insertion_sort(seq, pivot_pos + 1, end, comp, proj))
+                partial_insertion_sort(seq, begin, pivot_pos, comp) &&
+                partial_insertion_sort(seq, pivot_pos + 1, end, comp))
                 return;
         }
 
         // Sort the left partition first using recursion and do tail recursion
         // elimination for the right-hand partition.
-        detail::pdqsort_loop<Branchless>(seq, begin, pivot_pos, comp, proj,
+        detail::pdqsort_loop<Branchless>(seq, begin, pivot_pos, comp,
                                          bad_allowed, leftmost);
         begin = next(seq, pivot_pos);
         leftmost = false;
@@ -658,11 +639,20 @@ constexpr void pdqsort(Seq& seq, Comp& comp, Proj& proj)
          std::is_arithmetic_v<iter_value_t<I>>::value
 */
     constexpr bool Branchless = false;
+
+    auto comparator = [&comp, &proj](auto&& lhs, auto&& rhs) {
+        if constexpr (std::same_as<Proj, std::identity>) {
+            return std::invoke(comp, FLUX_FWD(lhs), FLUX_FWD(rhs));
+        } else {
+            return std::invoke(comp, std::invoke(proj, FLUX_FWD(lhs)),
+                               std::invoke(proj, FLUX_FWD(rhs)));
+        }
+    };
+
     detail::pdqsort_loop<Branchless>(seq,
                                      first(seq),
                                      last(seq),
-                                     comp,
-                                     proj,
+                                     comparator,
                                      detail::log2(size(seq)));
 }
 

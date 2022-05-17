@@ -13,7 +13,8 @@ struct sort_fn {
     template <random_access_sequence Seq, typename Cmp = std::less<>,
               typename Proj = std::identity>
         requires bounded_sequence<Seq> &&
-                 element_swappable_with<Seq, Seq>
+                 element_swappable_with<Seq, Seq> &&
+                 std::predicate<Cmp&, projected_t<Proj, Seq>, projected_t<Proj, Seq>>
     constexpr auto operator()(Seq&& seq, Cmp cmp = {}, Proj proj = {}) const
     {
         detail::pdqsort(seq, cmp, proj);
