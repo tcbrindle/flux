@@ -1,5 +1,6 @@
 
 cmake_minimum_required(VERSION 3.3)
+cmake_policy(SET CMP0092 NEW)
 
 project(libflux CXX)
 
@@ -12,17 +13,12 @@ target_sources(flux INTERFACE
 
 if (MSVC)
     target_compile_features(flux INTERFACE cxx_std_23)
+    target_compile_options(flux INTERFACE /permissive-)
 else()
     target_compile_features(flux INTERFACE cxx_std_20)
 endif()
 
 target_include_directories(flux INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-
-#set(CMAKE_CXX_FLAGS_DEBUG "-Og ${CMAKE_CXX_FLAGS_DEBUG}")
-
-if (MSVC)
-    target_compile_options(flux INTERFACE /permissive-)
-endif()
 
 set(CMAKE_CXX_EXTENSIONS Off)
 
