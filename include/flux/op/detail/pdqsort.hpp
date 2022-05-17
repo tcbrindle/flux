@@ -13,7 +13,8 @@
 
 #include <flux/core.hpp>
 #include <flux/op/slice.hpp>
-#include <flux/ranges/view.hpp>
+
+#include <flux/op/detail/heap_ops.hpp>
 
 namespace flux {
 
@@ -561,9 +562,10 @@ constexpr void pdqsort_loop(Seq& seq, Cur begin, Cur end, Comp& comp,
             // If we had too many bad partitions, switch to heapsort to
             // guarantee O(n log n).
             if (--bad_allowed == 0) {
-                auto view = flux::view(slice(seq, begin, end));
-                std::ranges::make_heap(view, comp);
-                std::ranges::sort_heap(view, comp);
+                auto subseq = flux::slice(seq, begin, end);
+                auto id = std::identity{};
+                detail::make_heap(subseq, comp, id);
+                detail::sort_heap(subseq, comp, id);
                 return;
             }
 
