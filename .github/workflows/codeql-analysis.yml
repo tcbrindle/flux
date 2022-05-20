@@ -73,7 +73,7 @@ jobs:
         ${{matrix.install}}
         cmake -E make_directory ${{runner.workspace}}/build
         cd ${{runner.workspace}}/build
-        cmake ${GITHUB_WORKSPACE} -GNinja
+        cmake ${GITHUB_WORKSPACE} -DCMAKE_CXX_COMPILER=g++-11
         cmake --build .
       
 
