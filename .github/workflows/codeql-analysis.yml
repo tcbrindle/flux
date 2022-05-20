@@ -36,7 +36,7 @@ jobs:
         # CodeQL supports [ 'cpp', 'csharp', 'go', 'java', 'javascript', 'python', 'ruby' ]
         # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
         include:
-          - install: brew install gcc@11
+          - install: brew install gcc@11 ninja
 
     steps:
     - name: Checkout repository
@@ -73,7 +73,7 @@ jobs:
         ${{matrix.install}}
         cmake -E make_directory ${{runner.workspace}}/build
         cd ${{runner.workspace}}/build
-        cmake ${GITHUB_WORKSPACE} -DCMAKE_CXX_COMPILER=g++-11
+        cmake ${GITHUB_WORKSPACE} -GNinja -DCMAKE_CXX_COMPILER=g++-11
         cmake --build .
       
 
