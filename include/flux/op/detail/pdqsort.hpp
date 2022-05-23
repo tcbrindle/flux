@@ -349,7 +349,7 @@ partition_right_branchless(Seq& seq, Cur const begin, Cur const end, Comp& comp)
     if (unknown_left && !num_l) {
         start_l = 0;
         Cur cur = first;
-        for (unsigned char i = 0; i < l_size;) {
+        for (unsigned char i = 0; static_cast<distance_t<Seq>>(i) < l_size;) {
             offsets_l[num_l] = i++;
             num_l += !comp(read_at(seq, cur), pivot);
             inc(seq, cur);
@@ -358,7 +358,7 @@ partition_right_branchless(Seq& seq, Cur const begin, Cur const end, Comp& comp)
     if (unknown_left && !num_r) {
         start_r = 0;
         Cur cur = last;
-        for (unsigned char i = 0; i < r_size;) {
+        for (unsigned char i = 0; static_cast<distance_t<Seq>>(i) < r_size;) {
             offsets_r[num_r] = ++i;
             num_r += comp(read_at(seq, dec(seq, cur)), pivot);
         }
