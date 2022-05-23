@@ -1,0 +1,41 @@
+
+name: "Codecov"
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  run:
+    name: Codecov
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@master
+
+    - name: Build
+      run: |
+        brew install gcc@11 lcov ninja
+        cmake -E make_directory ${{runner.workspace}}/build
+        cd ${{runner.workspace}}/build
+        cmake ${GITHUB_WORKSPACE} -GNinja -DCMAKE_CXX_COMPILER=g++-11 -DCMAKE_CXX_FLAGS="--coverage" -DCMAKE_EXE_LINKER_FLAGS="--coverage"
+        cmake --build .
+
+    - name: Run tests
+      working-directory: ${{runner.workspace}}/build
+      run: ctest
+
+    - name: Generate coverage report
+      working-directory: ${{runner.workspace}}/build/test/CMakeFiles/test-libflux.dir
+      run: |
+        lcov --directory . --capture --gcov gcov-11 --output-file coverage.info
+        lcov --remove coverage.info '/usr/local/*' '*/test/*' --output-file coverage.info
+
+    - name: Upload coverage repport
+      uses: codecov/codecov-action@v2
+      with:
+        files: ${{runner.workspace}}/build/test/CMakeFiles/test-libflux.dir/coverage.info
+
