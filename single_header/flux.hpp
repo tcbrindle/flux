@@ -639,9 +639,7 @@ struct check_bounds_fn {
                 return false;
             }
             if constexpr (sized_sequence<Seq>) {
-                if (dist >= size_fn{}(seq)) {
-                    return false;
-                }
+                return dist < size_fn{}(seq);
             }
         }
         return !is_last_fn{}(seq, cur);
@@ -730,15 +728,21 @@ inline constexpr auto data = detail::data_fn{};
 inline constexpr auto last = detail::last_fn{};
 inline constexpr auto size = detail::size_fn{};
 inline constexpr auto checked_read_at = detail::checked_read_at_fn{};
-inline constexpr auto checked_move_at = detail::checked_read_at_fn{};
+inline constexpr auto checked_move_at = detail::checked_move_at_fn{};
 inline constexpr auto checked_inc = detail::checked_inc_fn{};
 inline constexpr auto checked_dec = detail::checked_dec_fn{};
 
+#ifdef FLUX_ENABLE_BOUNDS_CHECKING
+inline constexpr auto read_at = checked_read_at;
+inline constexpr auto move_at = checked_move_at;
+inline constexpr auto inc = checked_inc;
+inline constexpr auto dec = checked_dec;
+#else
 inline constexpr auto read_at = unchecked_read_at;
 inline constexpr auto move_at = unchecked_move_at;
 inline constexpr auto inc = unchecked_inc;
 inline constexpr auto dec = unchecked_dec;
-
+#endif
 
 namespace detail {
 
@@ -1521,8 +1525,8 @@ public:
 
     constexpr Base& base() & noexcept { return base_; }
     constexpr Base const& base() const& noexcept { return base_; }
-    constexpr Base&& base() && noexcept { return base_; }
-    constexpr Base const&& base() const&& noexcept { return base_; }
+    constexpr Base&& base() && noexcept { return std::move(base_); }
+    constexpr Base const&& base() const&& noexcept { return std::move(base_); }
 
     friend struct sequence_iface<owning_adaptor>;
 };
@@ -1556,28 +1560,28 @@ struct passthrough_iface_base {
     static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
         -> decltype(flux::read_at(self.base(), cur))
     {
-        return flux::read_at(self.base(), cur);
+        return flux::unchecked_read_at(self.base(), cur);
     }
 
     template <typename Self>
     static constexpr auto inc(Self& self, cursor_t<Self>& cur)
         -> decltype(flux::inc(self.base(), cur))
     {
-        return flux::inc(self.base(), cur);
+        return flux::unchecked_inc(self.base(), cur);
     }
 
     template <typename Self>
     static constexpr auto dec(Self& self, cursor_t<Self>& cur)
         -> decltype(flux::dec(self.base(), cur))
     {
-        return flux::dec(self.base(), cur);
+        return flux::unchecked_dec(self.base(), cur);
     }
 
     template <typename Self>
     static constexpr auto inc(Self& self, cursor_t<Self>& cur, distance_type dist)
         -> decltype(flux::inc(self.base(), cur, dist))
     {
-        return flux::inc(self.base(), cur, dist);
+        return flux::unchecked_inc(self.base(), cur, dist);
     }
 
     template <typename Self>
@@ -1612,7 +1616,7 @@ struct passthrough_iface_base {
     static constexpr auto move_at(Self& self, auto const& cur)
         -> decltype(flux::move_at(self.base(), cur))
     {
-        return flux::move_at(self.base(), cur);
+        return flux::unchecked_move_at(self.base(), cur);
     }
 
     template <typename Self>
@@ -1723,7 +1727,7 @@ struct slice_data<Cur, false> {
     Cur first;
 };
 
-template <lens Base, bool Bounded>
+template <sequence Base, bool Bounded>
     requires (!Bounded || regular_cursor<cursor_t<Base>>)
 struct subsequence : lens_base<subsequence<Base, Bounded>>
 {
@@ -2672,6 +2676,58 @@ constexpr auto lens_base<D>::drop_while(Pred pred) &&
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
+#ifndef FLUX_OP_EQUAL_HPP_INCLUDED
+#define FLUX_OP_EQUAL_HPP_INCLUDED
+
+
+
+namespace flux {
+
+namespace detail {
+
+struct equal_fn {
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::equal_to<>,
+              typename Proj1 = std::identity, typename Proj2 = std::identity>
+        requires std::predicate<Cmp&, projected_t<Proj1, Seq1>, projected_t<Proj2, Seq2>>
+    constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {},
+                              Proj1 proj1 = {}, Proj2 proj2 = {}) const -> bool
+    {
+        if constexpr (sized_sequence<Seq1> && sized_sequence<Seq2>) {
+            if (flux::size(seq1) != flux::size(seq2)) {
+                return false;
+            }
+        }
+
+        auto cur1 = flux::first(seq1);
+        auto cur2 = flux::first(seq2);
+
+        while (!flux::is_last(seq1, cur1) && !flux::is_last(seq2, cur2)) {
+            if (!std::invoke(cmp, std::invoke(proj1, flux::read_at(seq1, cur1)),
+                             std::invoke(proj2, flux::read_at(seq2, cur2)))) {
+                break;
+            }
+            flux::inc(seq1, cur1);
+            flux::inc(seq2, cur2);
+        }
+
+        return flux::is_last(seq1, cur1) == flux::is_last(seq2, cur2);
+    }
+
+};
+
+} // namespace detail
+
+inline constexpr auto equal = detail::equal_fn{};
+
+} // namespace flux
+
+#endif // FLUX_OP_EQUAL_HPP_INCLUDED
+
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
 #ifndef FLUX_OP_FOR_EACH_HPP_INCLUDED
 #define FLUX_OP_FOR_EACH_HPP_INCLUDED
 
@@ -3391,7 +3447,7 @@ public:
         return cur == cursor_type::done;
     }
 
-    static constexpr auto read_at(auto& self, cursor_type cur) -> auto&
+    static constexpr auto read_at(auto& self, [[maybe_unused]] cursor_type cur) -> auto&
     {
         assert(cur == cursor_type::valid);
         return self.obj_;
@@ -3769,7 +3825,7 @@ struct take_fn {
         if constexpr (random_access_sequence<Seq> && std::is_lvalue_reference_v<Seq>) {
             auto first = flux::first(seq);
             auto last = flux::next(seq, first, count);
-            return flux::slice(FLUX_FWD(seq), std::move(first), std::move(last));
+            return flux::slice(seq, std::move(first), std::move(last));
         } else {
             return take_adaptor(flux::from(FLUX_FWD(seq)), count);
         }
@@ -3844,7 +3900,7 @@ struct sequence_iface<detail::take_adaptor<Base>> {
         requires random_access_sequence<Base>
     {
         return std::min(flux::distance(self.base_, from.base_cur, to.base_cur),
-                        to.length - from.length);
+                        from.length - to.length);
     }
 
     template <typename Self>
@@ -3875,21 +3931,6 @@ struct sequence_iface<detail::take_adaptor<Base>> {
         -> decltype(auto)
     {
         return flux::move_at(self.base_, cur.base_cur);
-    }
-
-    template <typename Self>
-    static constexpr auto for_each_while(Self& self, auto&& pred)
-    {
-        auto count = self.count_;
-        auto cur = flux::for_each_while(self.base_, [&pred, &count](auto&& elem) {
-            if (count > 0) {
-                --count;
-                return std::invoke(pred, FLUX_FWD(elem));
-            } else {
-                return false;
-            }
-        });
-        return cursor_t<Self>{.base_cur = std::move(cur), .length = count};
     }
 };
 
@@ -3946,7 +3987,7 @@ struct take_while_fn {
         requires std::predicate<Pred&, element_t<Seq>&>
     constexpr auto operator()(Seq&& seq, Pred pred) const
     {
-        return take_while_adaptor(flux::from(seq), std::move(pred));
+        return take_while_adaptor(flux::from(FLUX_FWD(seq)), std::move(pred));
     }
 };
 
@@ -3960,18 +4001,9 @@ struct sequence_iface<detail::take_while_adaptor<Base, Pred>>
 
     static constexpr bool is_infinite = false;
 
-    static constexpr bool is_last(self_t& self, cursor_t<Base> const& idx)
-    {
-        if (flux::is_last(self.base_, idx) ||
-            !std::invoke(self.pred_, flux::read_at(self.base_, idx))) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    static constexpr bool is_last(self_t const& self, cursor_t<Base const> const& cur)
-        requires std::predicate<Pred const&, element_t<Base const>>
+    template <typename Self>
+    static constexpr bool is_last(Self& self, cursor_t<Self> const& cur)
+        requires std::predicate<decltype((self.pred_)), element_t<decltype(self.base_)>>
     {
         if (flux::is_last(self.base_, cur) ||
             !std::invoke(self.pred_, flux::read_at(self.base_, cur))) {
@@ -4009,6 +4041,64 @@ constexpr auto lens_base<D>::take_while(Pred pred) &&
 } // namespace flux
 
 #endif
+
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_OP_WRITE_TO_HPP_INCLUDED
+#define FLUX_OP_WRITE_TO_HPP_INCLUDED
+
+
+
+#include <iosfwd>
+
+namespace flux {
+
+namespace write_to_detail {
+
+struct fn {
+
+    template <sequence Seq>
+    auto operator()(Seq&& seq, std::ostream& os) const
+        -> std::ostream&
+    {
+        bool first = true;
+        os << '[';
+
+        flux::for_each(FLUX_FWD(seq), [&os, &first](auto&& elem) {
+            if (first) {
+                first = false;
+            } else {
+                os << ", ";
+            }
+
+            if constexpr (sequence<element_t<Seq>>) {
+                fn{}(FLUX_FWD(elem), os);
+            } else {
+                os << FLUX_FWD(elem);
+            }
+        });
+
+        os << ']';
+        return os;
+    }
+};
+
+} // namespace write_to_detail
+
+inline constexpr auto write_to = write_to_detail::fn{};
+
+template <typename Derived>
+auto lens_base<Derived>::write_to(std::ostream& os) -> std::ostream&
+{
+    return flux::write_to(derived(), os);
+}
+
+} // namespace flux
+
+#endif // FLUX_OP_WRITE_TO_HPP_INCLUDED
 
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
