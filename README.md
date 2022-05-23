@@ -3,5 +3,6 @@
 [![windows](https://github.com/tcbrindle/libflux/actions/workflows/windows.yml/badge.svg)](https://github.com/tcbrindle/libflux/actions/workflows/windows.yml)
 [![macos](https://github.com/tcbrindle/libflux/actions/workflows/macos.yml/badge.svg)](https://github.com/tcbrindle/libflux/actions/workflows/macos.yml)
 [![linux](https://github.com/tcbrindle/libflux/actions/workflows/linux.yml/badge.svg)](https://github.com/tcbrindle/libflux/actions/workflows/linux.yml)
+[![codecov](https://codecov.io/gh/tcbrindle/libflux/branch/main/graph/badge.svg?token=5YCV2ZG1YT)](https://codecov.io/gh/tcbrindle/libflux)
 
 # `libflux` #
