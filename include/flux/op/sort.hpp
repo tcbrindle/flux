@@ -25,6 +25,17 @@ struct sort_fn {
 
 inline constexpr auto sort = detail::sort_fn{};
 
+template <typename D>
+template <typename Cmp, typename Proj>
+    requires random_access_sequence<D> &&
+             bounded_sequence<D> &&
+             detail::element_swappable_with<D, D> &&
+             std::predicate<Cmp&, projected_t<Proj, D>, projected_t<Proj, D>>
+constexpr void lens_base<D>::sort(Cmp cmp, Proj proj)
+{
+    return flux::sort(derived(), std::move(cmp), std::move(proj));
+}
+
 } // namespace flux
 
 #endif // FLUX_OP_SORT_HPP_INCLUDED

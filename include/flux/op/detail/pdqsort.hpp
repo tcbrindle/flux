@@ -597,7 +597,7 @@ constexpr void pdqsort_loop(Seq& seq, Cur begin, Cur end, Comp& comp,
             // partitioned sequence try to use insertion sort.
             if (already_partitioned &&
                 partial_insertion_sort(seq, begin, pivot_pos, comp) &&
-                partial_insertion_sort(seq, pivot_pos + 1, end, comp))
+                partial_insertion_sort(seq, flux::next(seq, pivot_pos), end, comp))
                 return;
         }
 

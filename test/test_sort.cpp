@@ -8,11 +8,14 @@
 
 #include <algorithm>
 #include <array>
+#include <deque>
 #include <iostream>
 #include <memory>
 #include <numeric>
 #include <random>
 #include <span>
+#include <string>
+#include <string_view>
 
 
 namespace {
@@ -59,6 +62,22 @@ constexpr bool test_sort_contexpr()
         });
 
         STATIC_CHECK(std::is_sorted(arr.crbegin(), arr.crend()));
+    }
+
+    {
+        using namespace std::string_view_literals;
+        std::array arr = {
+            "alpha"sv,
+            "bravo"sv,
+            "charlie"sv,
+            "delta"sv
+        };
+
+        flux::zip(std::array{3, 2, 4, 1}, arr)
+            .sort(std::ranges::greater{},
+                  [](auto const& elem) { return std::get<0>(elem); });
+
+        STATIC_CHECK(check_equal(arr, {"charlie"sv, "alpha"sv, "bravo"sv, "delta"sv}));
     }
 
     return true;
@@ -155,10 +174,29 @@ void test_heapsort(int sz)
     delete[] ptr;
 }
 
+void test_adapted_deque_sort(int sz)
+{
+    std::deque<std::string> deque(sz);
+    std::generate(deque.begin(), deque.end(), [i = 0]() mutable {
+        return std::to_string(i++);
+    });
+    std::shuffle(deque.begin(), deque.end(), gen);
+
+    CHECK(not std::is_sorted(deque.cbegin(), deque.cend())); // seems unlikely, anyway
+
+    flux::from(deque)
+        .take(sz/2)
+        .sort();
+
+    CHECK(std::is_sorted(deque.cbegin(), deque.cbegin() + sz/2));
+}
+
 }
 
 TEST_CASE("sort")
 {
+    CHECK(test_sort_contexpr());
+
     test_sort(0);
     test_sort(1);
     test_sort(10);
@@ -173,6 +211,8 @@ TEST_CASE("sort")
     test_sort_projected(10);
     test_sort_projected(100);
     test_sort_projected(100'000);
+
+    test_adapted_deque_sort(100'000);
 
     // Test our heapsort implementation, because I don't know how to
     // synthesise a test case in which pqdsort hits this
