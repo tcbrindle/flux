@@ -54,7 +54,7 @@ struct take_fn {
         if constexpr (random_access_sequence<Seq> && std::is_lvalue_reference_v<Seq>) {
             auto first = flux::first(seq);
             auto last = flux::next(seq, first, count);
-            return flux::slice(seq, std::move(first), std::move(last));
+            return flux::from(flux::slice(seq, std::move(first), std::move(last)));
         } else {
             return take_adaptor(flux::from(FLUX_FWD(seq)), count);
         }
