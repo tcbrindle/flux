@@ -254,6 +254,9 @@ public:
     template <typename Container, typename... Args>
     constexpr auto to(Args&&... args) -> Container;
 
+    template <template <typename...> typename Container, typename... Args>
+    constexpr auto to(Args&&... args);
+
     auto write_to(std::ostream& os) -> std::ostream&;
 };
 

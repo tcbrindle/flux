@@ -28,6 +28,9 @@ struct my_allocator : std::allocator<T> {};
 template <typename T, typename A = std::allocator<T>>
 struct test_vector {
 
+    using value_type = T;
+    using allocator_type = A;
+
     test_vector() = default;
 
     template <flux::sequence Seq>
@@ -50,6 +53,8 @@ private:
     std::vector<T, A> vec_;
 };
 
+template <flux::sequence Seq, typename A>
+test_vector(flux::from_sequence_t, Seq&&, A const&) -> test_vector<flux::value_t<Seq>, A>;
 
 }
 
@@ -172,6 +177,134 @@ TEST_CASE("to")
                 std::istringstream iss{"5 4 3 2 1"};
                 auto set = flux::from_istream<int>(iss)
                               .to<std::set<int, std::less<>, A>>(A{});
+                CHECK(check_equal(set, {1, 2, 3, 4, 5}));
+            }
+        }
+    }
+
+    SECTION("...using CTAD")
+    {
+        SECTION("vector->vector construction")
+        {
+            std::vector<int> vec1{1, 2, 3, 4, 5};
+            auto vec2 = flux::to<std::vector>(vec1);
+
+            using V = decltype(vec2);
+            static_assert(std::same_as<typename V::value_type, int>);
+            static_assert(std::same_as<typename V::allocator_type, std::allocator<int>>);
+
+            CHECK(vec1 == vec2);
+        }
+
+        SECTION("vector->vector construction with allocator")
+        {
+            std::vector<int> vec1{1, 2, 3, 4, 5};
+            auto vec2 = flux::to<std::vector>(vec1, my_allocator<int>{});
+
+            using V = decltype(vec2);
+            static_assert(std::same_as<typename V::value_type, int>);
+            static_assert(std::same_as<typename V::allocator_type, my_allocator<int>>);
+
+            CHECK(std::ranges::equal(vec1, vec2));
+        }
+
+        SECTION("zipped sequence to map")
+        {
+            auto zipped = flux::zip(std::array{1, 2, 3},
+                                   std::vector<std::string>{"1", "2", "3"});
+
+            auto map = flux::to<std::map>(zipped);
+
+            using M = decltype(map);
+
+            static_assert(std::same_as<typename M::key_type, int>);
+            static_assert(std::same_as<typename M::mapped_type, std::string>);
+
+            const auto reqd = std::map<int, std::string>{
+                {1, "1"}, {2, "2"}, {3, "3"}
+            };
+
+            CHECK(map == reqd);
+        }
+
+        SECTION("from_sequence construction")
+        {
+            std::vector<int> vec1{1, 2, 3, 4, 5};
+
+            auto vec2 = flux::to<test_vector>(vec1);
+
+            using V = decltype(vec2);
+            static_assert(std::same_as<typename V::value_type, int>);
+
+            CHECK(std::ranges::equal(vec1, vec2));
+        }
+
+        SECTION("from_sequence construction with allocator")
+        {
+            std::vector<int> vec1{1, 2, 3, 4, 5};
+
+            auto vec2 = flux::to<test_vector>(vec1, my_allocator<int>{});
+
+            using V = decltype(vec2);
+            static_assert(std::same_as<typename V::value_type, int>);
+            static_assert(std::same_as<typename V::allocator_type, my_allocator<int>>);
+
+            CHECK(std::ranges::equal(vec1, vec2));
+        }
+
+        SECTION("view construction")
+        {
+            auto seq = flux::filter(std::vector{1, 2, 3, 4, 5},
+                                    [](int i) { return i % 2 != 0; });
+
+            auto vec2 = flux::to<std::vector>(seq);
+
+            using V = decltype(vec2);
+            static_assert(std::same_as<typename V::value_type, int>);
+
+            CHECK(check_equal(vec2, {1, 3, 5}));
+        }
+
+        SECTION("view construction with allocator")
+        {
+            auto seq = flux::filter(std::vector{1, 2, 3, 4, 5},
+                                    [](int i) { return i % 2 != 0; });
+
+            auto vec2 = flux::to<std::vector>(seq, my_allocator<int>{});
+
+            using V = decltype(vec2);
+            static_assert(std::same_as<typename V::value_type, int>);
+            static_assert(std::same_as<typename V::allocator_type, my_allocator<int>>);
+
+            CHECK(check_equal(vec2, {1, 3, 5}));
+        }
+
+        SECTION("fallback construction")
+        {
+            SECTION("...to vector")
+            {
+                std::vector<int> vec1{1, 2, 3, 4, 5};
+                auto vec2 = single_pass_only(flux::from(vec1)).to<std::vector>();
+                using V = decltype(vec2);
+                static_assert(std::same_as<typename V::value_type, int>);
+                CHECK(vec1 == vec2);
+            }
+
+            SECTION("...to list")
+            {
+                std::istringstream iss{"1 2 3 4 5"};
+                auto list = flux::from_istream<int>(iss).to<std::list>();
+                using L = decltype(list);
+                static_assert(std::same_as<typename L::value_type, int>);
+                CHECK(check_equal(list, {1, 2, 3, 4, 5}));
+            }
+
+            SECTION("...to set")
+            {
+                std::istringstream iss{"5 4 3 2 1"};
+                auto set = flux::from_istream<int>(iss).to<std::set>();
+                using S = decltype(set);
+                static_assert(std::same_as<typename S::value_type, int>);
                 CHECK(check_equal(set, {1, 2, 3, 4, 5}));
             }
         }
