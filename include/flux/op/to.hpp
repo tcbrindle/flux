@@ -1,0 +1,120 @@
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_OP_TO_HPP_INCLUDED
+#define FLUX_OP_TO_HPP_INCLUDED
+
+#include <flux/core.hpp>
+#include <flux/op/output_to.hpp>
+#include <flux/ranges/view.hpp>
+
+namespace flux {
+
+struct from_sequence_t {
+    explicit from_sequence_t() = default;
+};
+
+inline constexpr auto from_sequence = from_sequence_t{};
+
+namespace detail {
+
+template <typename C, typename Seq, typename... Args>
+concept direct_sequence_constructible =
+    std::constructible_from<C, Seq, Args...>;
+
+template <typename C, typename Seq, typename... Args>
+concept from_sequence_constructible =
+    std::constructible_from<C, from_sequence_t, Seq, Args...>;
+
+template <sequence Seq>
+using view_t = decltype(flux::view(FLUX_DECLVAL(Seq)));
+
+template <sequence Seq>
+using common_iterator_t =
+    std::ranges::iterator_t<decltype(std::views::common(FLUX_DECLVAL(view_t<Seq>)))>;
+
+template <typename C, typename Seq, typename... Args>
+concept direct_view_constructible =
+    std::constructible_from<C, view_t<Seq>, Args...>;
+
+template <typename C, typename Seq, typename... Args>
+concept cpp17_range_constructible =
+    std::constructible_from<C, common_iterator_t<Seq>, common_iterator_t<Seq>, Args...>;
+
+template <typename C, typename Elem>
+concept container_insertable =
+    requires (C& c, Elem&& elem) {
+        requires (requires { c.push_back(FLUX_FWD(elem)); } ||
+                  requires { c.insert(c.end(), FLUX_FWD(elem)); });
+    };
+
+template <typename C, typename Seq, typename... Args>
+concept container_convertible =
+    direct_sequence_constructible<C, Seq, Args...> ||
+    from_sequence_constructible<C, Seq, Args...> ||
+    direct_view_constructible<C, Seq, Args...> ||
+    cpp17_range_constructible<C, Seq, Args...> ||
+    (  std::constructible_from<C, Args...> &&
+        container_insertable<C, element_t<Seq>>);
+
+template <typename C>
+concept reservable_container =
+    std::ranges::sized_range<C> &&
+    requires (C& c, std::ranges::range_size_t<C> sz) {
+        c.reserve(sz);
+        { c.max_size() } -> std::same_as<std::ranges::range_size_t<C>>;
+        { c.capacity() } -> std::same_as<std::ranges::range_size_t<C>>;
+    };
+
+template <typename Elem, typename C>
+constexpr auto make_inserter(C& c)
+{
+    if constexpr (requires { c.push_back(FLUX_DECLVAL(Elem)); }) {
+        return std::back_inserter(c);
+    } else {
+        return std::inserter(c, c.end());
+    }
+}
+
+} // namespace detail
+
+template <typename Container, sequence Seq, typename... Args>
+    requires detail::container_convertible<Container, Seq, Args...>
+constexpr auto to(Seq&& seq, Args&&... args) -> Container
+{
+    if constexpr (detail::direct_sequence_constructible<Container, Seq, Args...>) {
+        return Container(FLUX_FWD(seq), FLUX_FWD(args)...);
+    } else if constexpr (detail::from_sequence_constructible<Container, Seq, Args...>) {
+        return Container(from_sequence, FLUX_FWD(seq), FLUX_FWD(args)...);
+    } else if constexpr (detail::direct_view_constructible<Container, Seq, Args...>) {
+        return Container(flux::view(FLUX_FWD(seq)), FLUX_FWD(args)...);
+    } else if constexpr (detail::cpp17_range_constructible<Container, Seq, Args...>) {
+        auto view_ = std::views::common(flux::view(FLUX_FWD(seq)));
+        return Container(view_.begin(), view_.end(), FLUX_FWD(args)...);
+    } else {
+        auto c = Container(FLUX_FWD(args)...);
+        if constexpr (sized_sequence<Seq> && detail::reservable_container<Container>) {
+            c.reserve(flux::size(seq));
+        }
+        flux::output_to(seq, detail::make_inserter<element_t<Seq>>(c));
+        return c;
+    }
+}
+
+template <template <typename...> typename Container,
+          sequence Seq, typename... Args>
+constexpr auto to(Seq&& seq, Args&&... args);
+
+
+template <typename D>
+template <typename Container, typename... Args>
+constexpr auto lens_base<D>::to(Args&&... args) -> Container
+{
+    return flux::to<Container>(derived(), FLUX_FWD(args)...);
+}
+
+} // namespace flux
+
+#endif // FLUX_OP_TO_HPP_INCLUDED

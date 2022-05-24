@@ -26,6 +26,7 @@ add_executable(test-libflux
     test_split.cpp
     test_take.cpp
     test_take_while.cpp
+    test_to.cpp
     test_view.cpp
     test_write_to.cpp
     test_zip.cpp

@@ -251,6 +251,9 @@ public:
                  std::indirectly_writable<Iter, element_t<Derived>>
     constexpr auto output_to(Iter iter) -> Iter;
 
+    template <typename Container, typename... Args>
+    constexpr auto to(Args&&... args) -> Container;
+
     auto write_to(std::ostream& os) -> std::ostream&;
 };
 
