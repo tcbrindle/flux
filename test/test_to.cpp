@@ -23,7 +23,21 @@
 namespace {
 
 template <typename T>
-struct my_allocator : std::allocator<T> {};
+struct my_allocator {
+    using value_type = T;
+    using is_always_equal = std::true_type;
+
+    my_allocator() = default;
+
+    template <typename U>
+    my_allocator(my_allocator<U> const&) {}
+
+    T* allocate(std::size_t n) { return static_cast<T*>(std::malloc(n * sizeof(T))); }
+    void deallocate(T* p, std::size_t) { std::free(p); }
+
+    friend constexpr bool operator==(my_allocator const&, my_allocator const) { return true;  }
+
+};
 
 template <typename T, typename A = std::allocator<T>>
 struct test_vector {
