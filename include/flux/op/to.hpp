@@ -7,6 +7,7 @@
 #define FLUX_OP_TO_HPP_INCLUDED
 
 #include <flux/core.hpp>
+#include <flux/op/map.hpp>
 #include <flux/op/output_to.hpp>
 #include <flux/ranges/view.hpp>
 
@@ -30,6 +31,9 @@ concept from_sequence_constructible =
 
 template <sequence Seq>
 using view_t = decltype(flux::view(FLUX_DECLVAL(Seq)));
+
+template <typename C>
+using container_value_t = typename C::value_type; // Let's just assume it exists
 
 template <sequence Seq>
 using common_iterator_t =
@@ -128,25 +132,34 @@ using deduced_container_t = typename decltype(deduce_container_type<C, Seq, Args
 } // namespace detail
 
 template <typename Container, sequence Seq, typename... Args>
-    requires detail::container_convertible<Container, Seq, Args...>
+    requires (std::convertible_to<element_t<Seq>, detail::container_value_t<Container>> &&
+                 detail::container_convertible<Container, Seq, Args...>) ||
+             sequence<element_t<Seq>>
 constexpr auto to(Seq&& seq, Args&&... args) -> Container
 {
-    if constexpr (detail::direct_sequence_constructible<Container, Seq, Args...>) {
-        return Container(FLUX_FWD(seq), FLUX_FWD(args)...);
-    } else if constexpr (detail::from_sequence_constructible<Container, Seq, Args...>) {
-        return Container(from_sequence, FLUX_FWD(seq), FLUX_FWD(args)...);
-    } else if constexpr (detail::direct_view_constructible<Container, Seq, Args...>) {
-        return Container(flux::view(FLUX_FWD(seq)), FLUX_FWD(args)...);
-    } else if constexpr (detail::cpp17_range_constructible<Container, Seq, Args...>) {
-        auto view_ = std::views::common(flux::view(FLUX_FWD(seq)));
-        return Container(view_.begin(), view_.end(), FLUX_FWD(args)...);
-    } else {
-        auto c = Container(FLUX_FWD(args)...);
-        if constexpr (sized_sequence<Seq> && detail::reservable_container<Container>) {
-            c.reserve(flux::size(seq));
+    if constexpr (std::convertible_to<element_t<Seq>, detail::container_value_t<Container>>) {
+        if constexpr (detail::direct_sequence_constructible<Container, Seq, Args...>) {
+            return Container(FLUX_FWD(seq), FLUX_FWD(args)...);
+        } else if constexpr (detail::from_sequence_constructible<Container, Seq, Args...>) {
+            return Container(from_sequence, FLUX_FWD(seq), FLUX_FWD(args)...);
+        } else if constexpr (detail::direct_view_constructible<Container, Seq, Args...>) {
+            return Container(flux::view(FLUX_FWD(seq)), FLUX_FWD(args)...);
+        } else if constexpr (detail::cpp17_range_constructible<Container, Seq, Args...>) {
+            auto view_ = std::views::common(flux::view(FLUX_FWD(seq)));
+            return Container(view_.begin(), view_.end(), FLUX_FWD(args)...);
+        } else {
+            auto c = Container(FLUX_FWD(args)...);
+            if constexpr (sized_sequence<Seq> && detail::reservable_container<Container>) {
+                c.reserve(flux::size(seq));
+            }
+            flux::output_to(seq, detail::make_inserter<element_t<Seq>>(c));
+            return c;
         }
-        flux::output_to(seq, detail::make_inserter<element_t<Seq>>(c));
-        return c;
+    } else {
+        static_assert(sequence<element_t<Seq>>);
+        return flux::to<Container>(flux::map(FLUX_FWD(seq), [](auto&& elem) {
+            return flux::to<detail::container_value_t<Container>>(FLUX_FWD(elem));
+        }), FLUX_FWD(args)...);
     }
 }
 

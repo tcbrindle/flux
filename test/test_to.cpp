@@ -7,6 +7,7 @@
 
 #include <flux/op/to.hpp>
 #include <flux/op/filter.hpp>
+#include <flux/op/split.hpp>
 #include <flux/op/zip.hpp>
 #include <flux/ranges/from_range.hpp>
 #include <flux/source/istream.hpp>
@@ -144,7 +145,7 @@ TEST_CASE("to")
             CHECK(check_equal(vec2, {1, 3, 5}));
         }
 
-        SECTION("fallback construction")
+        SECTION("insert construction")
         {
             SECTION("...to vector")
             {
@@ -168,7 +169,7 @@ TEST_CASE("to")
             }
         }
 
-        SECTION("fallback construction with allocator")
+        SECTION("insert construction with allocator")
         {
             using A = my_allocator<int>;
 
@@ -193,6 +194,27 @@ TEST_CASE("to")
                               .to<std::set<int, std::less<>, A>>(A{});
                 CHECK(check_equal(set, {1, 2, 3, 4, 5}));
             }
+        }
+
+        SECTION("recursive to() calls")
+        {
+            std::string const str = "The quick brown fox";
+            auto vec = flux::split(str, ' ').to<std::vector<std::string>>();
+
+            CHECK(check_equal(vec, {"The", "quick", "brown", "fox"}));
+        }
+
+        SECTION("recursive to() calls with allocator")
+        {
+            using Alloc = my_allocator<std::string>;
+
+            std::string const str = "The quick brown fox";
+            auto vec = flux::split(str, ' ').to<std::vector<std::string, Alloc>>(Alloc{});
+
+            using V = decltype(vec);
+            static_assert(std::same_as<typename V::allocator_type, Alloc>);
+
+            CHECK(check_equal(vec, {"The", "quick", "brown", "fox"}));
         }
     }
 
@@ -293,7 +315,7 @@ TEST_CASE("to")
             CHECK(check_equal(vec2, {1, 3, 5}));
         }
 
-        SECTION("fallback construction")
+        SECTION("insert construction")
         {
             SECTION("...to vector")
             {
