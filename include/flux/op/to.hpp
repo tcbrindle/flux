@@ -78,6 +78,53 @@ constexpr auto make_inserter(C& c)
     }
 }
 
+template <template <typename...> typename C, typename Seq, typename... Args>
+using ctad_direct_seq = decltype(C(FLUX_DECLVAL(Seq), FLUX_DECLVAL(Args)...));
+
+template <template <typename...> typename C, typename Seq, typename... Args>
+using ctad_from_seq = decltype((C(from_sequence, FLUX_DECLVAL(Seq), FLUX_DECLVAL(Args)...)));
+
+template <template <typename...> typename C, typename Seq, typename... Args>
+using ctad_from_view = decltype(C(FLUX_DECLVAL(view_t<Seq>), FLUX_DECLVAL(Args)...));
+
+template <template <typename...> typename C, typename Seq, typename... Args>
+using ctad_from_iters = decltype(C(FLUX_DECLVAL(common_iterator_t<Seq>), FLUX_DECLVAL(common_iterator_t<Seq>), FLUX_DECLVAL(Args)...));
+
+template <template <typename...> typename C, typename Seq, typename... Args>
+concept can_deduce_container_type =
+    requires { typename ctad_direct_seq<C, Seq, Args...>; } ||
+    requires { typename ctad_from_seq<C, Seq, Args...>; } ||
+    requires { typename ctad_from_view<C, Seq, Args...>; } ||
+    requires { typename ctad_from_iters<C, Seq, Args...>; } ||
+    ( sizeof...(Args) == 0 && requires { typename C<value_t<Seq>>; });
+
+template <typename T>
+struct type_t { using type = T; };
+
+template <template <typename...> typename C, typename Seq, typename... Args>
+    requires can_deduce_container_type<C, Seq, Args...>
+consteval auto deduce_container_type()
+{
+    if constexpr (requires { typename ctad_direct_seq<C, Seq, Args...>; }) {
+        return type_t<decltype(C(FLUX_DECLVAL(Seq), FLUX_DECLVAL(Args)...))>{};
+    } else if constexpr (requires { typename ctad_from_seq<C, Seq, Args...>; }) {
+        return type_t<decltype((C(from_sequence, FLUX_DECLVAL(Seq), FLUX_DECLVAL(Args)...)))>{};
+    } else if constexpr (requires { typename ctad_from_view<C, Seq, Args...>; }) {
+        return type_t<decltype(C(FLUX_DECLVAL(view_t<Seq>), FLUX_DECLVAL(Args)...))>{};
+    } else if constexpr (requires { typename ctad_from_iters<C, Seq, Args...>; }) {
+        using I = common_iterator_t<Seq>;
+        return type_t<decltype(C(FLUX_DECLVAL(I), FLUX_DECLVAL(I), FLUX_DECLVAL(Args)...))>{};
+    } else {
+        static_assert(requires { typename C<value_t<Seq>>; });
+        return type_t<C<value_t<Seq>>>{};
+    }
+}
+
+template <template <typename...> typename C, typename Seq, typename... Args>
+    requires can_deduce_container_type<C, Seq, Args...>
+using deduced_container_t = typename decltype(deduce_container_type<C, Seq, Args...>())::type;
+
+
 } // namespace detail
 
 template <typename Container, sequence Seq, typename... Args>
@@ -103,14 +150,27 @@ constexpr auto to(Seq&& seq, Args&&... args) -> Container
     }
 }
 
-template <template <typename...> typename Container,
-          sequence Seq, typename... Args>
-constexpr auto to(Seq&& seq, Args&&... args);
+template <template <typename...> typename Container, sequence Seq, typename... Args>
+    requires detail::can_deduce_container_type<Container, Seq, Args...> &&
+             detail::container_convertible<
+                 detail::deduced_container_t<Container, Seq, Args...>, Seq, Args...>
+constexpr auto to(Seq&& seq, Args&&... args)
+{
+    using C_ = detail::deduced_container_t<Container, Seq, Args...>;
+    return flux::to<C_>(FLUX_FWD(seq), FLUX_FWD(args)...);
+}
 
 
 template <typename D>
 template <typename Container, typename... Args>
 constexpr auto lens_base<D>::to(Args&&... args) -> Container
+{
+    return flux::to<Container>(derived(), FLUX_FWD(args)...);
+}
+
+template <typename D>
+template <template <typename...> typename Container, typename... Args>
+constexpr auto lens_base<D>::to(Args&&... args)
 {
     return flux::to<Container>(derived(), FLUX_FWD(args)...);
 }
