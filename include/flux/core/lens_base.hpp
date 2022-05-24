@@ -212,6 +212,10 @@ public:
         requires predicate_for<Pred, Derived, Proj>
     constexpr auto count_if(Pred pred, Proj proj = {});
 
+    template <typename Value>
+        requires writable_sequence_of<Derived, Value const&>
+    constexpr auto fill(Value const& value) -> void;
+
     /// Returns a cursor pointing to the first occurrence of `value` in the sequence
     template <typename Value, typename Proj = std::identity>
         requires std::equality_comparable_with<projected_t<Proj, Derived>, Value const&>

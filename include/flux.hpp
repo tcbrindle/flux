@@ -16,10 +16,11 @@
 #include <flux/op/drop.hpp>
 #include <flux/op/drop_while.hpp>
 #include <flux/op/equal.hpp>
-#include <flux/op/for_each.hpp>
-#include <flux/op/for_each_while.hpp>
+#include <flux/op/fill.hpp>
 #include <flux/op/filter.hpp>
 #include <flux/op/find.hpp>
+#include <flux/op/for_each.hpp>
+#include <flux/op/for_each_while.hpp>
 #include <flux/op/from.hpp>
 #include <flux/op/inplace_reverse.hpp>
 #include <flux/op/map.hpp>
