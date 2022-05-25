@@ -11,5 +11,6 @@
 #include <flux/core/lens_base.hpp>
 #include <flux/core/macros.hpp>
 #include <flux/core/sequence_access.hpp>
+#include <flux/core/simple_sequence_base.hpp>
 
 #endif // FLUX_CORE_HPP_INCLUDED

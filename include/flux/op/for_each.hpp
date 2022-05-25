@@ -15,7 +15,8 @@ namespace detail {
 struct for_each_fn {
 
     template <sequence Seq, typename Func, typename Proj = std::identity>
-        requires std::invocable<Func&, projected_t<Proj, Seq>>
+        requires (std::invocable<Func&, projected_t<Proj, Seq>> &&
+                  !infinite_sequence<Seq>)
     constexpr auto operator()(Seq&& seq, Func func, Proj proj = {}) const -> Func
     {
         (void) flux::for_each_while(FLUX_FWD(seq), [&](auto&& elem) {
