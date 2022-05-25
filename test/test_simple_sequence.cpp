@@ -86,6 +86,17 @@ constexpr bool test_simple_sequence()
         STATIC_CHECK(sum == 45);
     }
 
+    // Check that we can restart iteration
+    {
+        std::array<int, 5> arr{1, 2, 3, 4, 5};
+        auto iter = array_iterator(arr);
+
+        auto cur = iter.find(3);
+        auto slice = flux::slice(iter, std::move(cur), flux::last);
+
+        STATIC_CHECK(check_equal(slice, {3, 4, 5}));
+    }
+
     return true;
 }
 static_assert(test_simple_sequence());
