@@ -5,6 +5,7 @@ target_compile_features(catch-main PUBLIC cxx_std_20)
 add_executable(test-libflux
 
     test_concepts.cpp
+    test_simple_sequence.cpp
 
     test_all_any_none.cpp
     test_bounds_checked.cpp
@@ -37,7 +38,6 @@ add_executable(test-libflux
     test_istream.cpp
     test_istreambuf.cpp
     test_single.cpp
-    #hack_hack_hack.cpp
 )
 target_link_libraries(test-libflux flux catch-main)
 
