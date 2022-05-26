@@ -22,8 +22,9 @@ add_executable(test-libflux
     test_equal.cpp
     test_fill.cpp
     test_filter.cpp
-    test_for_each.cpp
     test_find.cpp
+    test_for_each.cpp
+    test_fold.cpp
     test_generator.cpp
     test_map.cpp
     test_output_to.cpp
