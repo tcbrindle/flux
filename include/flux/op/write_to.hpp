@@ -12,12 +12,13 @@
 
 namespace flux {
 
-namespace write_to_detail {
+namespace detail {
 
-struct fn {
+struct write_to_fn {
 
-    template <sequence Seq>
-    auto operator()(Seq&& seq, std::ostream& os) const
+    template <sequence Seq, typename OStream>
+        requires std::derived_from<OStream, std::ostream>
+    auto operator()(Seq&& seq, OStream& os) const
         -> std::ostream&
     {
         bool first = true;
@@ -31,7 +32,7 @@ struct fn {
             }
 
             if constexpr (sequence<element_t<Seq>>) {
-                fn{}(FLUX_FWD(elem), os);
+                write_to_fn{}(FLUX_FWD(elem), os);
             } else {
                 os << FLUX_FWD(elem);
             }
@@ -42,9 +43,9 @@ struct fn {
     }
 };
 
-} // namespace write_to_detail
+} // namespace detail
 
-inline constexpr auto write_to = write_to_detail::fn{};
+inline constexpr auto write_to = detail::write_to_fn{};
 
 template <typename Derived>
 auto lens_base<Derived>::write_to(std::ostream& os) -> std::ostream&
