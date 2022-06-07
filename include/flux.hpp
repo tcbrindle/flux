@@ -29,6 +29,7 @@
 #include <flux/op/slice.hpp>
 #include <flux/op/split.hpp>
 #include <flux/op/split_string.hpp>
+#include <flux/op/sort.hpp>
 #include <flux/op/swap_elements.hpp>
 #include <flux/op/take.hpp>
 #include <flux/op/take_while.hpp>

@@ -182,7 +182,7 @@ public:
     constexpr auto view() const&& requires sequence<Derived const>;
 
     /*
-     * Folds of various kinds
+     * Algorithms
      */
 
     /// Returns `true` if every element of the sequence satisfies the predicate
@@ -254,6 +254,13 @@ public:
         requires std::weakly_incrementable<Iter> &&
                  std::indirectly_writable<Iter, element_t<Derived>>
     constexpr auto output_to(Iter iter) -> Iter;
+
+    template <typename Cmp = std::less<>, typename Proj = std::identity>
+        requires random_access_sequence<Derived> &&
+                 bounded_sequence<Derived> &&
+                 detail::element_swappable_with<Derived, Derived> &&
+                 std::predicate<Cmp&, projected_t<Proj, Derived>, projected_t<Proj, Derived>>
+    constexpr void sort(Cmp cmp = {}, Proj proj = {});
 
     template <typename Container, typename... Args>
     constexpr auto to(Args&&... args) -> Container;
