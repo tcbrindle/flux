@@ -10,6 +10,7 @@ add_executable(test-libflux
     test_all_any_none.cpp
     test_bounds_checked.cpp
     test_cache_last.cpp
+    test_cartesian_product_with.cpp
     test_chain.cpp
     test_contains.cpp
     test_count.cpp
