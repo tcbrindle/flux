@@ -44,6 +44,9 @@ struct cartesian_product_with_fn
     }
 };
 
+template <typename B0, typename...>
+inline constexpr bool cartesian_product_is_bounded = bounded_sequence<B0>;
+
 } // namespace detail
 
 template <typename Func, typename... Bases>
@@ -121,7 +124,7 @@ public:
     }
 
     template <typename Self>
-        requires (bounded_sequence<const_like_t<Self, Bases>> && ...)
+        requires detail::cartesian_product_is_bounded<const_like_t<Self, Bases>...>
     static constexpr auto last(Self& self) -> cursor_type<Self>
     {
         auto cur = first(self);

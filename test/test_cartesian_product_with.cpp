@@ -106,21 +106,6 @@ static_assert(test_cartesian_product_with());
 TEST_CASE("cartesian_product_with")
 {
     REQUIRE(test_cartesian_product_with());
-
-    {
-        auto arr = std::array{1, 2, 3, 4, 5};
-        auto emp = flux::empty<int>;
-
-        auto cart = flux::cartesian_product_with(sum, arr, emp);
-
-        static_assert(flux::bidirectional_sequence<decltype(cart)>);
-
-        REQUIRE(cart.is_empty());
-
-        int s = 0;
-        cart.for_each([&s](int i) { s += i; });
-        CHECK(s == 0);
-    }
 }
 
 }
