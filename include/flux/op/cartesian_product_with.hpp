@@ -91,6 +91,44 @@ private:
         return cur;
     }
 
+    template <std::size_t I, typename Self>
+    static constexpr auto ra_inc_impl(Self& self, cursor_type<Self>& cur, distance_type offset)
+        -> cursor_type<Self>&
+    {
+        auto& base = std::get<I>(self.bases_);
+
+        auto this_sz = flux::size(base);
+        auto this_offset = offset  % this_sz;
+        auto next_offset = offset/this_sz;
+
+        // Adjust this cursor by the corrected offset
+        flux::inc(base, std::get<I>(cur), this_offset);
+
+        // Call the next level down if necessary
+        if constexpr (I > 0) {
+            if (next_offset != 0) {
+                ra_inc_impl<I-1>(self, cur, next_offset);
+            }
+        }
+
+        return cur;
+    }
+
+    template <std::size_t I, typename Self>
+    static constexpr auto distance_impl(Self& self,
+                                        cursor_type<Self> const& from,
+                                        cursor_type<Self> const& to) -> distance_type
+    {
+        if constexpr (I == 0) {
+            return flux::distance(std::get<0>(self.bases_), std::get<0>(from), std::get<0>(to));
+        } else {
+            auto prev_dist = distance_impl<I-1>(self, from, to);
+            auto our_sz = flux::size(std::get<I>(self.bases_));
+            auto our_dist = flux::distance(std::get<I>(self.bases_), std::get<I>(from), std::get<I>(to));
+            return prev_dist * our_sz + our_dist;
+        }
+    }
+
 public:
     template <typename Self>
     static constexpr auto first(Self& self) -> cursor_type<Self>
@@ -146,7 +184,17 @@ public:
     static constexpr auto inc(Self& self, cursor_type<Self>& cur, distance_type offset)
         -> cursor_type<Self>&
     {
-        return inc_impl<0>(self, cur, offset);
+        return ra_inc_impl<sizeof...(Bases) - 1>(self, cur, offset);
+    }
+
+    template <typename Self>
+        requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
+                 (sized_sequence<const_like_t<Self, Bases>> && ...)
+    static constexpr auto distance(Self& self,
+                                   cursor_type<Self> const& from,
+                                   cursor_type<Self> const& to) -> distance_type
+    {
+        return distance_impl<sizeof...(Bases) - 1>(self, from, to);
     }
 
     template <typename Self>

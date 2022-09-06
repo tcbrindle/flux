@@ -29,6 +29,7 @@ constexpr bool test_cartesian_product_with()
         static_assert(flux::multipass_sequence<C>);
         static_assert(flux::bounded_sequence<C>);
         static_assert(flux::bidirectional_sequence<C>);
+        static_assert(flux::random_access_sequence<C>);
         static_assert(flux::sized_sequence<C>);
 
         STATIC_CHECK(flux::size(cart) == 2 * 5);
@@ -37,12 +38,20 @@ constexpr bool test_cartesian_product_with()
                                          201, 202, 203, 204, 205
                                        }));
 
-        STATIC_CHECK(check_equal(std::move(cart).reverse(),
+        STATIC_CHECK(check_equal(flux::reverse(cart),
                                  { 205, 204, 203, 202, 201,
                                    105, 104, 103, 102, 101
                                  }));
 
+        // Random access checks
         STATIC_CHECK(flux::distance(cart, cart.first(), cart.last()) == 2 * 5);
+
+        {
+            auto cur = flux::next(cart, cart.first(), 7);
+            STATIC_CHECK(cart[cur] == 203);
+            flux::inc(cart, cur, -7);
+            STATIC_CHECK(cart[cur] == 101);
+        }
     }
 
     {
@@ -57,6 +66,7 @@ constexpr bool test_cartesian_product_with()
         static_assert(flux::multipass_sequence<C>);
         static_assert(flux::bidirectional_sequence<C>);
         static_assert(flux::bounded_sequence<C>);
+        static_assert(flux::random_access_sequence<C>);
         static_assert(flux::sized_sequence<C>);
 
         STATIC_CHECK(flux::size(cart) == 2 * 3 * 4);
@@ -68,6 +78,15 @@ constexpr bool test_cartesian_product_with()
                                          221, 222, 223, 224,
                                          231, 232, 233, 234 }
         ));
+
+        {
+            auto cur = flux::next(cart, cart.first(), 7);
+            STATIC_CHECK(cart[cur] == 124);
+            cur = flux::next(cart, cart.first(), 19);
+            STATIC_CHECK(cart[cur] == 224);
+            cur = flux::next(cart, cur, -19);
+            STATIC_CHECK(cart[cur] == 111);
+        }
     }
 
     {
