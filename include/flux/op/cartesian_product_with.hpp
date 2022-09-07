@@ -6,10 +6,7 @@
 #ifndef FLUX_OP_CARTESIAN_PRODUCT_WITH_HPP_INCLUDED
 #define FLUX_OP_CARTESIAN_PRODUCT_WITH_HPP_INCLUDED
 
-#include <flux/core.hpp>
-#include <flux/op/from.hpp>
-
-#include <tuple>
+#include <flux/op/cartesian_product.hpp>
 
 namespace flux {
 
@@ -22,6 +19,7 @@ private:
     FLUX_NO_UNIQUE_ADDRESS std::tuple<Bases...> bases_;
     FLUX_NO_UNIQUE_ADDRESS Func func_;
 
+    friend struct cartesian_product_iface_base<Bases...>;
     friend struct sequence_iface<cartesian_product_with_adaptor>;
 
 public:
@@ -44,166 +42,23 @@ struct cartesian_product_with_fn
     }
 };
 
-template <typename B0, typename...>
-inline constexpr bool cartesian_product_is_bounded = bounded_sequence<B0>;
+
 
 } // namespace detail
 
 template <typename Func, typename... Bases>
-struct sequence_iface<detail::cartesian_product_with_adaptor<Func, Bases...>> {
-
-    using distance_type = std::common_type_t<distance_t<Bases>...>;
-
-private:
-    template <typename From, typename To>
-    using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
+struct sequence_iface<detail::cartesian_product_with_adaptor<Func, Bases...>>
+    : detail::cartesian_product_iface_base<Bases...>
+{
+    //using detail::cartesian_product_iface_base<Bases...>::const_like_t;
 
     template <typename Self>
-    using cursor_type = std::tuple<cursor_t<const_like_t<Self, Bases>>...>;
-
-    template <std::size_t I, typename Self>
-    static constexpr auto inc_impl(Self& self, cursor_type<Self>& cur) -> cursor_type<Self>&
-    {
-        flux::inc(std::get<I>(self.bases_), std::get<I>(cur));
-
-        if constexpr (I > 0) {
-            if (flux::is_last(std::get<I>(self.bases_), std::get<I>(cur))) {
-                std::get<I>(cur) = flux::first(std::get<I>(self.bases_));
-                inc_impl<I-1>(self, cur);
-            }
-        }
-
-        return cur;
-    }
-
-    template <std::size_t I, typename Self>
-    static constexpr auto dec_impl(Self& self, cursor_type<Self>& cur) -> cursor_type<Self>&
-    {
-        if (std::get<I>(cur) == flux::first(std::get<I>(self.bases_))) {
-            std::get<I>(cur) = flux::last(std::get<I>(self.bases_));
-            if constexpr (I > 0) {
-                dec_impl<I-1>(self, cur);
-            }
-        }
-
-        flux::dec(std::get<I>(self.bases_), std::get<I>(cur));
-
-        return cur;
-    }
-
-    template <std::size_t I, typename Self>
-    static constexpr auto ra_inc_impl(Self& self, cursor_type<Self>& cur, distance_type offset)
-        -> cursor_type<Self>&
-    {
-        auto& base = std::get<I>(self.bases_);
-
-        auto this_sz = flux::size(base);
-        auto this_offset = offset  % this_sz;
-        auto next_offset = offset/this_sz;
-
-        // Adjust this cursor by the corrected offset
-        flux::inc(base, std::get<I>(cur), this_offset);
-
-        // Call the next level down if necessary
-        if constexpr (I > 0) {
-            if (next_offset != 0) {
-                ra_inc_impl<I-1>(self, cur, next_offset);
-            }
-        }
-
-        return cur;
-    }
-
-    template <std::size_t I, typename Self>
-    static constexpr auto distance_impl(Self& self,
-                                        cursor_type<Self> const& from,
-                                        cursor_type<Self> const& to) -> distance_type
-    {
-        if constexpr (I == 0) {
-            return flux::distance(std::get<0>(self.bases_), std::get<0>(from), std::get<0>(to));
-        } else {
-            auto prev_dist = distance_impl<I-1>(self, from, to);
-            auto our_sz = flux::size(std::get<I>(self.bases_));
-            auto our_dist = flux::distance(std::get<I>(self.bases_), std::get<I>(from), std::get<I>(to));
-            return prev_dist * our_sz + our_dist;
-        }
-    }
-
-public:
-    template <typename Self>
-    static constexpr auto first(Self& self) -> cursor_type<Self>
-    {
-        return std::apply([](auto&&... args) {
-            return cursor_type<Self>(flux::first(FLUX_FWD(args))...);
-        }, self.bases_);
-    }
-
-    template <typename Self>
-    static constexpr auto is_last(Self& self, cursor_type<Self> const& cur) -> bool
-    {
-        return [&]<std::size_t... N>(std::index_sequence<N...>) {
-            return (flux::is_last(std::get<N>(self.bases_), std::get<N>(cur)) || ...);
-        }(std::index_sequence_for<Bases...>{});
-    }
-
-    template <typename Self>
-    static constexpr auto read_at(Self& self, cursor_type<Self> const& cur)
-        -> std::invoke_result_t<const_like_t<Self, Func>&, element_t<const_like_t<Self, Bases>>...>
+    static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
+        -> decltype(auto)
     {
         return [&]<std::size_t... N>(std::index_sequence<N...>) {
             return std::invoke(self.func_, flux::read_at(std::get<N>(self.bases_), std::get<N>(cur))...);
         }(std::index_sequence_for<Bases...>{});
-    }
-
-    template <typename Self>
-    static constexpr auto inc(Self& self, cursor_type<Self>& cur) -> cursor_type<Self>&
-    {
-        return inc_impl<sizeof...(Bases) - 1>(self, cur);
-    }
-
-    template <typename Self>
-        requires detail::cartesian_product_is_bounded<const_like_t<Self, Bases>...>
-    static constexpr auto last(Self& self) -> cursor_type<Self>
-    {
-        auto cur = first(self);
-        std::get<0>(cur) = flux::last(std::get<0>(self.bases_));
-        return cur;
-    }
-
-    template <typename Self>
-        requires (bidirectional_sequence<const_like_t<Self, Bases>> && ...) &&
-                 (bounded_sequence<const_like_t<Self, Bases>> && ...)
-    static constexpr auto dec(Self& self, cursor_type<Self>& cur) -> cursor_type<Self>&
-    {
-        return dec_impl<sizeof...(Bases) - 1>(self, cur);
-    }
-
-    template <typename Self>
-        requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
-                 (sized_sequence<const_like_t<Self, Bases>> && ...)
-    static constexpr auto inc(Self& self, cursor_type<Self>& cur, distance_type offset)
-        -> cursor_type<Self>&
-    {
-        return ra_inc_impl<sizeof...(Bases) - 1>(self, cur, offset);
-    }
-
-    template <typename Self>
-        requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
-                 (sized_sequence<const_like_t<Self, Bases>> && ...)
-    static constexpr auto distance(Self& self,
-                                   cursor_type<Self> const& from,
-                                   cursor_type<Self> const& to) -> distance_type
-    {
-        return distance_impl<sizeof...(Bases) - 1>(self, from, to);
-    }
-
-    template <typename Self>
-        requires (sized_sequence<const_like_t<Self, Bases>> && ...)
-    static constexpr auto size(Self& self)
-    {
-        return std::apply([](auto&... base) {
-            return (flux::size(base) * ...);
-        }, self.bases_);
     }
 };
 
