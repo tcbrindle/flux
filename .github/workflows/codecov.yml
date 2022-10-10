@@ -16,6 +16,9 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@master
 
+    - name: Set up Homebrew
+      uses: Homebrew/actions/setup-homebrew@master
+
     - name: Build
       run: |
         brew install gcc@11 lcov ninja
