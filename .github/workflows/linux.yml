@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         build_type: [Debug, Release]
-        os: [ubuntu-20.04]
+        os: [ubuntu-latest]
         include:
           - cxx: g++-11
             install: brew install gcc@11
