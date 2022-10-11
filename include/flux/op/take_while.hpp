@@ -13,7 +13,7 @@ namespace flux {
 
 namespace detail {
 
-template <lens Base, typename Pred>
+template <sequence Base, typename Pred>
 struct take_while_adaptor : lens_base<take_while_adaptor<Base, Pred>> {
 private:
     Base base_;
@@ -39,7 +39,7 @@ struct take_while_fn {
         requires std::predicate<Pred&, element_t<Seq>&>
     constexpr auto operator()(Seq&& seq, Pred pred) const
     {
-        return take_while_adaptor(flux::from(FLUX_FWD(seq)), std::move(pred));
+        return take_while_adaptor(FLUX_FWD(seq), std::move(pred));
     }
 };
 

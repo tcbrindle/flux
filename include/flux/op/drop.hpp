@@ -15,7 +15,7 @@ namespace flux {
 
 namespace detail {
 
-template <lens Base>
+template <sequence Base>
 struct drop_adaptor : lens_base<drop_adaptor<Base>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
@@ -38,7 +38,7 @@ struct drop_fn {
     template <adaptable_sequence Seq>
     constexpr auto operator()(Seq&& seq, distance_t<Seq> count) const
     {
-        return drop_adaptor(flux::from(FLUX_FWD(seq)), count);
+        return drop_adaptor(FLUX_FWD(seq), count);
     }
 
 };

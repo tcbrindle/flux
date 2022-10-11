@@ -17,7 +17,7 @@ namespace flux {
 
 namespace detail {
 
-template <lens Base, lens Pattern>
+template <multipass_sequence Base, multipass_sequence Pattern>
 struct split_adaptor : lens_base<split_adaptor<Base, Pattern>> {
 private:
     Base base_;
@@ -39,7 +39,7 @@ struct split_fn {
                  std::equality_comparable_with<element_t<Seq>, element_t<Pattern>>
     constexpr auto operator()(Seq&& seq, Pattern&& pattern) const
     {
-        return split_adaptor(flux::from(FLUX_FWD(seq)), flux::from(FLUX_FWD(pattern)));
+        return split_adaptor(FLUX_FWD(seq), FLUX_FWD(pattern));
     }
 
     template <adaptable_sequence Seq>

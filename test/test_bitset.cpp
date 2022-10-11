@@ -39,7 +39,7 @@ constexpr bool test_bitset()
         static_assert(flux::size(b) == 32);
 
         uint32_t x = 0;
-        FLUX_FOR(bool bit, flux::reverse(std::as_const(b))) {
+        FLUX_FOR(bool bit, flux::reverse(flux::ref(std::as_const(b)))) {
             x <<= 1;
             x |= uint32_t(bit);
         }

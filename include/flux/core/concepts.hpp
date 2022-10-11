@@ -286,8 +286,9 @@ constexpr bool is_ilist<T, std::initializer_list<E>> = true;
 template <typename Seq>
 concept adaptable_sequence =
     sequence<Seq> &&
-    (std::is_lvalue_reference_v<Seq> ||
-        (std::movable<std::remove_reference_t<Seq>> && !detail::is_ilist<Seq>));
+    !std::is_reference_v<Seq> &&
+    std::movable<Seq> &&
+    !detail::is_ilist<Seq>;
 
 template <typename D>
 struct lens_base;

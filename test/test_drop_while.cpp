@@ -18,7 +18,7 @@ constexpr bool test_drop_while()
     {
         int arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-        auto seq = flux::drop_while(arr, [](int i) { return i < 5; });
+        auto seq = flux::drop_while(flux::ref(arr), [](int i) { return i < 5; });
 
         using S = decltype(seq);
 
@@ -50,7 +50,7 @@ constexpr bool test_drop_while()
     {
         int arr[] = {2, 2, 2, 3, 4, 5, 6, 7, 8, 9};
 
-        auto seq = flux::drop_while(arr, [](int i) { return i % 2 == 0; });
+        auto seq = flux::drop_while(flux::ref(arr), [](int i) { return i % 2 == 0; });
 
         STATIC_CHECK(check_equal(seq, {3, 4, 5, 6, 7, 8, 9}));
     }
@@ -70,7 +70,7 @@ constexpr bool test_drop_while()
 
         std::array arr{1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-        STATIC_CHECK(check_equal(flux::drop_while(arr, no), arr));
+        STATIC_CHECK(check_equal(flux::drop_while(flux::ref(arr), no), arr));
     }
 
     return true;

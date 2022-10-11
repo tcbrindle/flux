@@ -26,7 +26,7 @@ struct pair_or_tuple<T, U> {
 template <typename... Ts>
 using pair_or_tuple_t = typename pair_or_tuple<Ts...>::type;
 
-template <lens... Bases>
+template <sequence... Bases>
 struct zip_adaptor : lens_base<zip_adaptor<Bases...>> {
 private:
     pair_or_tuple_t<Bases...> bases_;
@@ -44,9 +44,9 @@ struct zip_fn {
     constexpr auto operator()(Seqs&&... seqs) const
     {
         if constexpr (sizeof...(Seqs) == 0) {
-            return empty<std::tuple<>>;
+            return empty<std::tuple<>>{};
         } else {
-            return zip_adaptor(flux::from(FLUX_FWD(seqs))...);
+            return zip_adaptor(FLUX_FWD(seqs)...);
         }
     }
 };

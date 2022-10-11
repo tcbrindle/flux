@@ -205,22 +205,14 @@ namespace {
 
     static_assert(flux::sequence<movable_seq>);
     static_assert(flux::adaptable_sequence<movable_seq>);
-    static_assert(flux::adaptable_sequence<movable_seq&>);
-    static_assert(flux::adaptable_sequence<movable_seq const&>);
-    static_assert(flux::adaptable_sequence<movable_seq&&>);
     static_assert(not flux::adaptable_sequence<movable_seq const&&>);
 
     static_assert(flux::sequence<move_only_seq>);
     static_assert(flux::adaptable_sequence<move_only_seq>);
-    static_assert(flux::adaptable_sequence<move_only_seq&>);
-    static_assert(flux::adaptable_sequence<move_only_seq const&>);
-    static_assert(flux::adaptable_sequence<move_only_seq&&>);
     static_assert(not flux::adaptable_sequence<move_only_seq const&&>);
 
     static_assert(flux::sequence<unmovable_seq>);
     static_assert(not flux::adaptable_sequence<unmovable_seq>);
-    static_assert(flux::adaptable_sequence<unmovable_seq&>);
-    static_assert(flux::adaptable_sequence<unmovable_seq const&>);
     static_assert(not flux::adaptable_sequence<unmovable_seq&&>);
     static_assert(not flux::adaptable_sequence<unmovable_seq const&&>);
 
@@ -228,8 +220,6 @@ namespace {
 
     static_assert(flux::sequence<ilist_t>);
     static_assert(not flux::adaptable_sequence<ilist_t>);
-    static_assert(flux::adaptable_sequence<ilist_t&>);
-    static_assert(flux::adaptable_sequence<ilist_t const&>);
     static_assert(not flux::adaptable_sequence<ilist_t&&>);
     static_assert(not flux::adaptable_sequence<ilist_t const&&>);
 }

@@ -14,18 +14,13 @@ namespace flux {
 namespace detail {
 
 struct from_fn {
-    template <adaptable_sequence Seq>
+    template <sequence Seq>
+        requires (std::is_lvalue_reference_v<Seq> || adaptable_sequence<Seq>)
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const -> lens auto
     {
-        if constexpr (lens<std::remove_cvref_t<Seq>>) {
-            if constexpr (std::is_lvalue_reference_v<Seq>) {
-                return flux::ref(seq);
-            } else {
-                return FLUX_FWD(seq);
-            }
-        } else if constexpr (std::is_lvalue_reference_v<Seq>) {
-            return detail::ref_adaptor<std::remove_reference_t<Seq>>(seq);
+        if constexpr (std::is_lvalue_reference_v<Seq>) {
+            return flux::ref(seq);
         } else {
             return detail::owning_adaptor<Seq>(FLUX_FWD(seq));
         }

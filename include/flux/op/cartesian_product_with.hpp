@@ -12,7 +12,7 @@ namespace flux {
 
 namespace detail {
 
-template <typename Func, lens... Bases>
+template <typename Func, sequence... Bases>
 struct cartesian_product_with_adaptor
     : lens_base<cartesian_product_with_adaptor<Func, Bases...>> {
 private:
@@ -37,8 +37,8 @@ struct cartesian_product_with_fn
     constexpr auto operator()(Func func, Seq0&& seq0, Seqs&&... seqs) const
     {
         return cartesian_product_with_adaptor(std::move(func),
-                                              flux::from(FLUX_FWD(seq0)),
-                                              flux::from(FLUX_FWD(seqs))...);
+                                              FLUX_FWD(seq0),
+                                              FLUX_FWD(seqs)...);
     }
 };
 

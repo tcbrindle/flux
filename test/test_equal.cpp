@@ -83,11 +83,11 @@ constexpr bool test_equal()
     // Two empty sequences compare equal if their element types are comparable
     {
         std::array<int, 0> seq1{};
-        auto seq2 = flux::take_while(seq1, [](int) { return true; }); // not sized
+        auto seq2 = flux::take_while(flux::ref(seq1), [](int) { return true; }); // not sized
 
         STATIC_CHECK(flux::equal(seq1, seq2));
 
-        static_assert(flux::equal(flux::empty<int>, flux::empty<float>));
+        static_assert(flux::equal(flux::empty<int>{}, flux::empty<float>{}));
     }
 
     return true;

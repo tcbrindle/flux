@@ -19,7 +19,7 @@ constexpr bool test_map()
     {
         int arr[] = {0, 1, 2, 3, 4};
 
-        auto mapped = flux::map(arr, [](int& i) { return i * 2; });
+        auto mapped = flux::map(flux::ref(arr), [](int& i) { return i * 2; });
 
         using M = decltype(mapped);
 
@@ -101,7 +101,7 @@ constexpr bool test_map()
 
         int arr[] = {0, 1, 2, 3, 4};
 
-        auto view = flux::map(arr, times_two).view();
+        auto view = flux::map(flux::ref(arr), times_two).view();
 
         using V = decltype(view);
 
@@ -111,7 +111,7 @@ constexpr bool test_map()
         static_assert(std::ranges::common_range<V>);
         static_assert(std::ranges::sized_range<V>);
 
-        STATIC_CHECK(std::ranges::equal(view | std::views::transform(times_two),
+        STATIC_CHECK(std::ranges::equal(std::views::transform(view, times_two),
                                         std::array{0, 4, 8, 12, 16}));
     }
 

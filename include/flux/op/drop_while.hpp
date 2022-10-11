@@ -15,7 +15,7 @@ namespace flux {
 
 namespace detail {
 
-template <lens Base, typename Pred>
+template <sequence Base, typename Pred>
 struct drop_while_adaptor : lens_base<drop_while_adaptor<Base, Pred>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
@@ -39,7 +39,7 @@ struct drop_while_fn {
         requires std::predicate<Pred&, element_t<Seq>>
     constexpr auto operator()(Seq&& seq, Pred pred) const
     {
-        return drop_while_adaptor(flux::from(FLUX_FWD(seq)), std::move(pred));
+        return drop_while_adaptor(FLUX_FWD(seq), std::move(pred));
     }
 };
 

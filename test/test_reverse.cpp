@@ -19,7 +19,7 @@ constexpr bool test_reverse()
     {
         int arr[] = {0, 1, 2, 3, 4};
 
-        auto reversed = flux::reverse(arr);
+        auto reversed = flux::reverse(flux::ref(arr));
 
         using R = decltype(reversed);
 
@@ -77,7 +77,7 @@ constexpr bool test_reverse()
         using S = decltype(seq);
 
         static_assert(flux::random_access_sequence<S>);
-        static_assert(std::same_as<S, decltype(flux::reverse(arr))>);
+        static_assert(std::same_as<S, decltype(flux::reverse(flux::ref(arr)))>);
 
         STATIC_CHECK(check_equal(seq, {4, 3, 2, 1, 0}));
     }

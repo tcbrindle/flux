@@ -29,7 +29,7 @@ constexpr bool test_split()
     {
         auto sv = "the quick brown fox"sv;
 
-        auto split = flux::split(sv, ' ');
+        auto split = flux::split(flux::ref(sv), ' ');
 
         static_assert(flux::detail::has_overloaded_slice<decltype(flux::ref(sv))>);
 
@@ -69,7 +69,7 @@ constexpr bool test_split()
     {
         int nums[] = {0, 1, 2, 3, 99};
 
-        auto split = flux::split(nums, std::array{1, 2, 3});
+        auto split = flux::split(flux::ref(nums), std::array{1, 2, 3});
 
         static_assert(
             flux::contiguous_sequence<flux::element_t<decltype(split)>>);

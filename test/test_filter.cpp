@@ -28,8 +28,6 @@ struct Pair {
 
 using filter_fn = decltype(flux::filter);
 
-// Okay
-static_assert(std::invocable<filter_fn, int(&)[10], decltype(is_even)>);
 // int is not a sequence
 static_assert(not std::invocable<filter_fn, int, decltype(is_even)>);
 // int is not a predicate
@@ -45,7 +43,7 @@ constexpr bool test_filter()
     // Basic filtering
     {
         int arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-        auto filtered = flux::filter(arr, is_even);
+        auto filtered = flux::filter(flux::ref(arr), is_even);
         using F = decltype(filtered);
         static_assert(flux::sequence<F>);
         static_assert(flux::bidirectional_sequence<F>);
@@ -78,7 +76,7 @@ constexpr bool test_filter()
     // A predicate that always returns true returns what it was given
     {
         int arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-        auto filtered = flux::filter(arr, [](auto&&) { return true; });
+        auto filtered = flux::filter(flux::ref(arr), [](auto&&) { return true; });
 
         if (!check_equal(arr, filtered)) {
             return false;
@@ -88,7 +86,7 @@ constexpr bool test_filter()
     // A predicate that always returns false returns an empty sequence
     {
         int arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-        auto filtered = flux::filter(arr, [](auto&&) { return false; });
+        auto filtered = flux::filter(flux::ref(arr), [](auto&&) { return false; });
 
         if (!filtered.is_empty()) {
             return false;
@@ -104,7 +102,7 @@ constexpr bool test_filter()
             {4, false}
         };
 
-        auto f = flux::filter(pairs, &Pair::ok);
+        auto f = flux::filter(flux::ref(pairs), &Pair::ok);
 
         if (!check_equal(f, {Pair{1, true}, Pair{3, true}})) {
             return false;
@@ -120,7 +118,7 @@ constexpr bool test_filter()
             {4, false}
         };
 
-        auto f = flux::filter(pairs, &Pair::is_okay);
+        auto f = flux::filter(std::move(pairs), &Pair::is_okay);
 
         if (!check_equal(f, {Pair{1, true}, Pair{3, true}})) {
             return false;
@@ -130,7 +128,7 @@ constexpr bool test_filter()
     // Reversed sequences can be filtered
     {
         int arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-        auto filtered = flux::reverse(arr).filter(is_even);
+        auto filtered = flux::ref(arr).reverse().filter(is_even);
 
         if (!check_equal(filtered, {8, 6, 4, 2, 0})) {
             return false;
@@ -140,7 +138,7 @@ constexpr bool test_filter()
     // ... and filtered sequences can be reversed
     {
         int arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-        auto filtered = flux::filter(arr, is_even).reverse();
+        auto filtered = flux::filter(flux::ref(arr), is_even).reverse();
 
         if (!check_equal(filtered, {8, 6, 4, 2, 0})) {
             return false;
