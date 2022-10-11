@@ -17,11 +17,11 @@ constexpr bool test_cache_last()
     // cache_last turns an unbounded sequence into a bounded one
     {
         std::array arr{1, 2, 3, 4, 5};
-        auto seq = flux::take_while(arr, [](int){ return true; });
+        auto seq = flux::take_while(flux::ref(arr), [](int){ return true; });
 
         static_assert(not flux::bounded_sequence<decltype(seq)>);
 
-        auto cached = flux::cache_last(seq);
+        auto cached = flux::cache_last(std::move(seq));
 
         using C = decltype(cached);
 
@@ -45,7 +45,7 @@ constexpr bool test_cache_last()
         std::array arr{1, 2, 3, 4, 5};
 
         auto seq = flux::from(arr);
-        auto cached = flux::cache_last(seq);
+        auto cached = flux::cache_last(flux::ref(seq));
 
         STATIC_CHECK(&seq.base() == &cached.base());
         STATIC_CHECK(&cached.base() == &arr);

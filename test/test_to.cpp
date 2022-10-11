@@ -199,7 +199,7 @@ TEST_CASE("to")
         SECTION("recursive to() calls")
         {
             std::string const str = "The quick brown fox";
-            auto vec = flux::split(str, ' ').to<std::vector<std::string>>();
+            auto vec = flux::split(flux::ref(str), ' ').to<std::vector<std::string>>();
 
             CHECK(check_equal(vec, {"The", "quick", "brown", "fox"}));
         }
@@ -209,7 +209,7 @@ TEST_CASE("to")
             using Alloc = my_allocator<std::string>;
 
             std::string const str = "The quick brown fox";
-            auto vec = flux::split(str, ' ').to<std::vector<std::string, Alloc>>(Alloc{});
+            auto vec = flux::split(flux::ref(str), ' ').to<std::vector<std::string, Alloc>>(Alloc{});
 
             using V = decltype(vec);
             static_assert(std::same_as<typename V::allocator_type, Alloc>);

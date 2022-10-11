@@ -31,9 +31,8 @@ struct rev_cur {
 template <typename B>
 rev_cur(B&&) -> rev_cur<std::remove_cvref_t<B>>;
 
-template <lens Base>
-    requires bidirectional_sequence<Base> &&
-             bounded_sequence<Base>
+template <bidirectional_sequence Base>
+    requires bounded_sequence<Base>
 struct reverse_adaptor : lens_base<reverse_adaptor<Base>>
 {
 private:
@@ -67,7 +66,7 @@ struct reverse_fn {
         if constexpr (is_reverse_adaptor<std::decay_t<Seq>>) {
             return FLUX_FWD(seq).base();
         } else {
-            return reverse_adaptor(flux::from(FLUX_FWD(seq)));
+            return reverse_adaptor(FLUX_FWD(seq));
         }
     }
 };

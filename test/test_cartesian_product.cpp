@@ -20,7 +20,7 @@ constexpr bool test_cartesian_product()
         std::array arr1{100, 200};
         std::array arr2{1.0f, 2.0f};
 
-        auto cart = flux::cartesian_product(arr1, arr2);
+        auto cart = flux::cartesian_product(flux::ref(arr1), flux::ref(arr2));
 
         using C = decltype(cart);
 

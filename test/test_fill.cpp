@@ -32,7 +32,7 @@ constexpr bool test_fill()
     {
         std::array<int, 5> arr{};
 
-        flux::take(arr, 3).fill(1);
+        flux::take(flux::ref(arr), 3).fill(1);
 
         STATIC_CHECK(check_equal(arr, {1, 1, 1, 0, 0}));
     }
@@ -48,7 +48,7 @@ constexpr bool test_fill()
 
     // empty sequences can be "filled"
     {
-        auto e = flux::empty<int>;
+        auto e = flux::empty<int>{};
         flux::fill(e, 99);
     }
 

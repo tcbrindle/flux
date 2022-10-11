@@ -31,7 +31,7 @@ consteval auto get_iterator_tag()
     }
 }
 
-template <lens Base>
+template <sequence Base>
 struct view_adaptor : std::ranges::view_interface<view_adaptor<Base>>
 {
 private:
@@ -249,7 +249,11 @@ struct view_fn {
         if constexpr (std::ranges::viewable_range<Seq>) {
             return std::views::all(FLUX_FWD(seq));
         } else {
-            return view_adaptor(flux::from(FLUX_FWD(seq)));
+            if constexpr (std::is_lvalue_reference_v<Seq>) {
+                return view_adaptor(flux::ref(FLUX_FWD(seq)));
+            } else {
+                return view_adaptor(FLUX_FWD(seq));
+            }
         }
     }
 };

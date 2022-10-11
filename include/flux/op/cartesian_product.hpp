@@ -18,7 +18,7 @@ namespace detail {
 template <typename... Bases>
 struct cartesian_product_iface_base;
 
-template <lens... Bases>
+template <sequence... Bases>
 struct cartesian_product_adaptor
     : lens_base<cartesian_product_adaptor<Bases...>> {
 private:
@@ -38,8 +38,8 @@ struct cartesian_product_fn {
         requires (multipass_sequence<Seqs> && ...)
     constexpr auto operator()(Seq0&& seq0, Seqs&&... seqs) const
     {
-        return cartesian_product_adaptor(flux::from(FLUX_FWD(seq0)),
-                                         flux::from(FLUX_FWD(seqs))...);
+        return cartesian_product_adaptor(FLUX_FWD(seq0),
+                                         FLUX_FWD(seqs)...);
     }
 };
 

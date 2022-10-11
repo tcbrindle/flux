@@ -14,7 +14,7 @@ namespace flux {
 
 namespace detail {
 
-template <typename Base>
+template <sequence Base>
 struct take_adaptor : lens_base<take_adaptor<Base>>
 {
 private:
@@ -56,7 +56,7 @@ struct take_fn {
             auto last = flux::next(seq, first, count);
             return flux::from(flux::slice(seq, std::move(first), std::move(last)));
         } else {
-            return take_adaptor(flux::from(FLUX_FWD(seq)), count);
+            return take_adaptor(FLUX_FWD(seq), count);
         }
     }
 };

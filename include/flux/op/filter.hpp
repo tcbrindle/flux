@@ -16,7 +16,7 @@ namespace flux {
 
 namespace detail {
 
-template <lens Base, typename Pred>
+template <sequence Base, typename Pred>
     requires std::predicate<Pred&, element_t<Base>&>
 class filter_adaptor : public lens_base<filter_adaptor<Base, Pred>>
 {
@@ -44,7 +44,7 @@ struct filter_fn {
         requires std::predicate<Pred&, element_t<Seq>&>
     constexpr auto operator()(Seq&& seq, Pred pred) const
     {
-        return filter_adaptor(flux::from(FLUX_FWD(seq)), std::move(pred));
+        return filter_adaptor(FLUX_FWD(seq), std::move(pred));
     }
 };
 

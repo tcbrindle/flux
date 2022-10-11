@@ -15,7 +15,7 @@ namespace flux {
 
 namespace detail {
 
-template <lens Base>
+template <sequence Base>
 struct cache_last_adaptor : lens_base<cache_last_adaptor<Base>>
 {
 private:
@@ -40,9 +40,9 @@ struct cache_last_fn {
     constexpr auto operator()(Seq&& seq) const
     {
         if constexpr (bounded_sequence<Seq>) {
-            return flux::from(FLUX_FWD(seq));
+            return FLUX_FWD(seq);
         } else {
-            return cache_last_adaptor(flux::from(FLUX_FWD(seq)));
+            return cache_last_adaptor(FLUX_FWD(seq));
         }
     }
 };

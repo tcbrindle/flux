@@ -14,7 +14,7 @@ namespace flux {
 
 namespace detail {
 
-template <lens Base>
+template <sequence Base>
 struct bounds_checked_adaptor : lens_base<bounds_checked_adaptor<Base>>
 {
 private:
@@ -36,7 +36,7 @@ struct bounds_checked_fn {
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const
     {
-        return bounds_checked_adaptor(flux::from(FLUX_FWD(seq)));
+        return bounds_checked_adaptor(FLUX_FWD(seq));
     }
 };
 

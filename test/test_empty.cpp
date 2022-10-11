@@ -9,8 +9,8 @@
 
 namespace {
 
-auto e = flux::empty<double>;
-auto f = flux::empty<double>;
+auto e = flux::empty<double>{};
+auto f = flux::empty<double>{};
 
 static_assert(flux::contiguous_sequence<decltype(e)>);
 static_assert(flux::sized_sequence<decltype(e)>);

@@ -22,7 +22,7 @@ constexpr bool test_cartesian_product_with()
         std::array arr1{100, 200};
         std::array arr2{1, 2, 3, 4, 5};
 
-        auto cart = flux::cartesian_product_with(sum, arr1, arr2);
+        auto cart = flux::cartesian_product_with(sum, flux::ref(arr1), flux::ref(arr2));
         using C = decltype(cart);
 
         static_assert(flux::sequence<C>);
@@ -38,7 +38,7 @@ constexpr bool test_cartesian_product_with()
                                          201, 202, 203, 204, 205
                                        }));
 
-        STATIC_CHECK(check_equal(flux::reverse(cart),
+        STATIC_CHECK(check_equal(flux::reverse(flux::ref(cart)),
                                  { 205, 204, 203, 202, 201,
                                    105, 104, 103, 102, 101
                                  }));
@@ -59,7 +59,7 @@ constexpr bool test_cartesian_product_with()
         std::array arr2{10, 20, 30};
         std::array arr3{1, 2, 3, 4};
 
-        auto cart = flux::cartesian_product_with(sum, arr1, arr2, arr3);
+        auto cart = flux::cartesian_product_with(sum, flux::ref(arr1), flux::ref(arr2), flux::ref(arr3));
         using C = decltype(cart);
 
         static_assert(flux::sequence<C>);
@@ -105,9 +105,9 @@ constexpr bool test_cartesian_product_with()
     // Product with a zero-sized sequence works and produces an empty sequence
     {
         auto arr = std::array{1, 2, 3, 4, 5};
-        auto emp = flux::empty<int>;
+        auto emp = flux::empty<int>{};
 
-        auto cart = flux::cartesian_product_with(sum, arr, emp);
+        auto cart = flux::cartesian_product_with(sum, flux::ref(arr), std::move(emp));
 
         static_assert(flux::bidirectional_sequence<decltype(cart)>);
 

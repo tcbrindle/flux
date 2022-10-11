@@ -13,7 +13,7 @@ namespace flux {
 
 namespace detail {
 
-template <lens Base, typename Func>
+template <sequence Base, typename Func>
     requires std::is_object_v<Func> &&
              std::regular_invocable<Func&, element_t<Base>>
 struct map_adaptor : lens_base<map_adaptor<Base, Func>>
@@ -42,7 +42,7 @@ struct map_fn {
         requires std::regular_invocable<Func&, element_t<Seq>>
     constexpr auto operator()(Seq&& seq, Func func) const
     {
-        return map_adaptor(flux::from(FLUX_FWD(seq)), std::move(func));
+        return map_adaptor(FLUX_FWD(seq), std::move(func));
     }
 };
 

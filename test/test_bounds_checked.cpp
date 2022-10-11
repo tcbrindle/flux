@@ -22,7 +22,7 @@ constexpr bool test_bounds_checked()
     {
         int arr[] = {0, 1, 2, 3, 4};
 
-        auto seq = flux::bounds_checked(arr).map([](int i) { return i * 2; });
+        auto seq = flux::bounds_checked(flux::ref(arr)).map([](int i) { return i * 2; });
 
         using S = decltype(seq);
 
@@ -57,7 +57,7 @@ TEST_CASE("bounds_checked")
     {
         int arr[] = {0, 1, 2, 3, 4};
 
-        auto seq = flux::bounds_checked(arr);
+        auto seq = flux::bounds_checked(flux::ref(arr));
 
         SECTION("Can read from in-bounds indices")
         {

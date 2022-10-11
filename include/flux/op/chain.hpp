@@ -16,7 +16,7 @@ namespace flux {
 
 namespace detail {
 
-template <lens... Bases>
+template <sequence... Bases>
 struct chain_adaptor : lens_base<chain_adaptor<Bases...>> {
 private:
     std::tuple<Bases...> bases_;
@@ -47,9 +47,9 @@ struct chain_fn {
     constexpr auto operator()(Seqs&&... seqs) const
     {
         if constexpr (sizeof...(Seqs) == 1) {
-            return flux::from(FLUX_FWD(seqs)...);
+            return std::move(seqs...);
         } else {
-            return chain_adaptor(flux::from(FLUX_FWD(seqs))...);
+            return chain_adaptor(FLUX_FWD(seqs)...);
         }
     }
 };
