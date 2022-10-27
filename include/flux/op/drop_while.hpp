@@ -50,6 +50,7 @@ template <typename Base, typename Pred>
 struct sequence_iface<detail::drop_while_adaptor<Base, Pred>>
     : detail::passthrough_iface_base<Base>
 {
+    using value_type = value_t<Base>;
     using self_t = detail::drop_while_adaptor<Base, Pred>;
 
     static constexpr auto first(self_t& self)

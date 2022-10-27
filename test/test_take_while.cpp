@@ -16,12 +16,14 @@ namespace {
 struct ints {
     int from = 0;
 
-    static constexpr int first() { return 0; }
-    static constexpr bool is_last(int) { return false; }
-    constexpr int read_at(int cur) const { return from + cur; }
-    static constexpr int& inc(int& cur, int o = 1) { return cur += o; }
-    static constexpr int& dec(int& cur) { return --cur; }
-    static constexpr int distance(int from, int to) { return to - from; }
+    struct flux_sequence_iface {
+        static constexpr int first(ints) { return 0; }
+        static constexpr bool is_last(ints, int) { return false; }
+        static constexpr int read_at(ints self, int cur){ return self.from + cur; }
+        static constexpr int& inc(ints, int& cur, int o = 1) { return cur += o; }
+        static constexpr int& dec(ints, int& cur) { return --cur; }
+        static constexpr int distance(ints, int from, int to) { return to - from; }
+    };
 };
 
 constexpr bool test_take_while()

@@ -46,6 +46,8 @@ template <typename Base>
 struct sequence_iface<detail::bounds_checked_adaptor<Base>>
     : detail::passthrough_iface_base<Base>
 {
+    using value_type = value_t<Base>;
+
     static constexpr auto read_at(auto& self, auto const& cur)
         -> decltype(flux::checked_read_at(self.base_, cur))
     {

@@ -16,29 +16,46 @@ namespace detail {
 
 template <typename T>
     requires std::is_object_v<T>
-struct empty_sequence {
-private:
-    struct cursor_type {
-        friend constexpr bool operator==(cursor_type, cursor_type) = default;
-        friend constexpr auto operator<=>(cursor_type, cursor_type) = default;
+struct empty_sequence : lens_base<empty_sequence<T>> {
+    struct flux_sequence_iface {
+    private:
+        struct cursor_type {
+            friend auto operator==(cursor_type, cursor_type) -> bool = default;
+            friend auto operator<=>(cursor_type, cursor_type) = default;
+        };
+
+    public:
+        static constexpr auto first(empty_sequence) -> cursor_type { return {}; }
+        static constexpr auto last(empty_sequence) -> cursor_type { return {}; }
+        static constexpr auto is_last(empty_sequence, cursor_type) -> bool { return true; }
+
+        static constexpr auto inc(empty_sequence, cursor_type& cur, std::ptrdiff_t = 0)
+            -> cursor_type&
+        {
+            return cur;
+        }
+
+        static constexpr auto dec(empty_sequence, cursor_type& cur) -> cursor_type&
+        {
+            return cur;
+        }
+
+        static constexpr auto distance(empty_sequence, cursor_type, cursor_type)
+            -> std::ptrdiff_t
+        {
+            return 0;
+        }
+
+        static constexpr auto size(empty_sequence) -> std::ptrdiff_t { return 0; }
+        static constexpr auto data(empty_sequence) -> T* { return nullptr; }
+
+        static constexpr auto read_at(empty_sequence, cursor_type) -> T&
+        {
+            assert(false && "Attempted read of flux::empty");
+            /* Guaranteed UB... */
+            return *static_cast<T*>(nullptr);
+        }
     };
-
-public:
-    static constexpr auto first() -> cursor_type { return {}; }
-    static constexpr auto last() -> cursor_type { return {}; }
-    static constexpr auto is_last(cursor_type) -> bool { return true; }
-    static constexpr auto inc(cursor_type& cur, std::ptrdiff_t = 0) -> cursor_type& { return cur; }
-    static constexpr auto dec(cursor_type& cur) -> cursor_type& { return cur; }
-    static constexpr auto distance(cursor_type, cursor_type) -> std::ptrdiff_t { return 0; }
-    static constexpr auto size() -> std::ptrdiff_t { return 0; }
-    static constexpr auto data() -> T* { return nullptr; }
-
-    static constexpr auto read_at(cursor_type) -> T&
-    {
-        assert(false && "Attempted read of flux::empty");
-        /* Guaranteed UB... */
-        return *static_cast<T*>(nullptr);
-    }
 };
 
 } // namespace detail

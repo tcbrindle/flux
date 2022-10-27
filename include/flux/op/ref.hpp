@@ -81,13 +81,12 @@ public:
     friend struct sequence_iface<owning_adaptor>;
 };
 
-template <sequence Base>
+template <typename Base>
 struct passthrough_iface_base {
 
     template <typename Self>
     using cursor_t = decltype(flux::first(FLUX_DECLVAL(Self&).base()));
 
-    using value_type = value_t<Base>;
     using distance_type = distance_t<Base>;
 
     static constexpr bool disable_multipass = !multipass_sequence<Base>;
@@ -195,11 +194,15 @@ struct passthrough_iface_base {
 
 template <typename Base>
 struct sequence_iface<detail::ref_adaptor<Base>>
-    : detail::passthrough_iface_base<Base> {};
+    : detail::passthrough_iface_base<Base> {
+    using value_type = value_t<Base>;
+};
 
 template <typename Base>
 struct sequence_iface<detail::owning_adaptor<Base>>
-    : detail::passthrough_iface_base<Base> {};
+    : detail::passthrough_iface_base<Base> {
+    using value_type = value_t<Base>;
+};
 
 inline constexpr auto ref = detail::ref_fn{};
 
