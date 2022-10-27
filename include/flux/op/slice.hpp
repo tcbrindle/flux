@@ -97,6 +97,7 @@ template <typename Base, bool Bounded>
 struct sequence_iface<subsequence<Base, Bounded>>
     : detail::passthrough_iface_base<Base>
 {
+    using value_type = value_t<Base>;
     using self_t = subsequence<Base, Bounded>;
 
     static constexpr auto first(self_t& self) -> cursor_t<Base>

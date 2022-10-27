@@ -353,106 +353,19 @@ concept predicate_for =
 /*
  * Default sequence_iface implementation
  */
+namespace detail {
+
 template <typename T>
-struct sequence_iface {
+concept has_nested_sequence_impl =
+    requires { typename T::flux_sequence_iface; } &&
+    std::is_class_v<typename T::flux_sequence_iface>;
 
-    static_assert(!detail::derived_from_lens_base<T>,
-        "Types deriving from lens_base cannot define the sequence interface "
-        "in-class. Provide a separate specialisation of sequence_iface instead.");
+}
 
-    static constexpr bool using_primary_template = true;
+template <typename T>
+    requires detail::has_nested_sequence_impl<T>
+struct sequence_iface<T> : T::flux_sequence_iface {};
 
-    static constexpr bool disable_multipass = detail::disable_multipass<T>;
-    static constexpr bool is_infinite = detail::is_infinite_seq<T>;
-
-    /* sequence interface */
-    static constexpr auto first(decays_to<T> auto& self)
-        -> decltype(self.first())
-    {
-        return self.first();
-    }
-
-    template <decays_to<T> Self>
-    static constexpr auto is_last(Self& self, cursor_t<Self> const& cur)
-        -> decltype(self.is_last(cur))
-    {
-        return self.is_last(cur);
-    }
-
-    template <decays_to<T> Self>
-    static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
-        -> decltype(self.read_at(cur))
-    {
-        return self.read_at(cur);
-    }
-
-    template <decays_to<T> Self>
-    static constexpr auto inc(Self& self, cursor_t<Self>& cur)
-        -> decltype(self.inc(cur))
-    {
-        return self.inc(cur);
-    }
-
-    /* bidirectional sequence interface */
-    template <decays_to<T> Self>
-    static constexpr auto dec(Self& self, cursor_t<Self>& cur)
-        -> decltype(self.dec(cur))
-    {
-        return self.dec(cur);
-    }
-
-    /* random-access sequence interface */
-    template <decays_to<T> Self>
-    static constexpr auto inc(Self& self, cursor_t<Self>& cur, distance_t<Self> offset)
-        -> decltype(self.inc(cur, offset))
-    {
-        return self.inc(cur, offset);
-    }
-
-    template <decays_to<T> Self>
-    static constexpr auto distance(Self& self, cursor_t<Self> const& from,
-                                   cursor_t<Self> const& to)
-        -> decltype(self.distance(from, to))
-    {
-        return self.distance(from, to);
-    }
-
-    /* contiguous sequence interface */
-    static constexpr auto data(decays_to<T> auto& self)
-        -> decltype(self.data())
-    {
-        return self.data();
-    }
-
-    /* sized sequence interface */
-    static constexpr auto size(decays_to<T> auto& self)
-        -> decltype(self.size())
-    {
-        return self.size();
-    }
-
-    /* bounded sequence interface */
-    static constexpr auto last(decays_to<T> auto& self)
-        -> decltype(self.last())
-    {
-        return self.last();
-    }
-
-    /* other customisation points */
-    template <decays_to<T> Self>
-    static constexpr auto move_at(Self& self, cursor_t<Self> const& cur)
-        -> decltype(self.move_at(cur))
-    {
-        return self.move_at(cur);
-    }
-
-    template <decays_to<T> Self, typename Pred>
-    static constexpr auto for_each_while(Self& self, Pred&& pred)
-        -> decltype(self.for_each_while(FLUX_FWD(pred)))
-    {
-        return self.for_each_while(FLUX_FWD(pred));
-    }
-};
 
 } // namespace flux
 

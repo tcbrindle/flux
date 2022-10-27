@@ -22,8 +22,6 @@ private:
     distance_t<Base> count_;
     std::optional<cursor_t<Base>> cached_first_;
 
-    friend struct sequence_iface<drop_adaptor>;
-
 public:
     constexpr drop_adaptor(decays_to<Base> auto&& base, distance_t<Base> count)
         : base_(FLUX_FWD(base)),
@@ -32,6 +30,40 @@ public:
 
     constexpr Base& base() & { return base_; }
     constexpr Base const& base() const& { return base_; }
+
+    struct flux_sequence_iface : passthrough_iface_base<drop_adaptor> {
+        using value_type = value_t<Base>;
+        using distance_type = distance_t<Base>;
+
+        static constexpr bool disable_multipass = !multipass_sequence<Base>;
+
+        static constexpr auto first(drop_adaptor& self)
+        {
+            if constexpr (std::copy_constructible<cursor_t<Base>>) {
+                if (!self.cached_first_) {
+                    self.cached_first_ = flux::next(self.base_, flux::first(self.base()), self.count_);
+                }
+
+                return *self.cached_first_;
+            } else {
+                return flux::next(self.base_, flux::first(self.base()), self.count_);
+            }
+        }
+
+        static constexpr auto size(drop_adaptor& self)
+            requires sized_sequence<Base>
+        {
+            return flux::size(self.base()) - self.count_;
+        }
+
+        static constexpr auto data(drop_adaptor& self)
+            requires contiguous_sequence<Base>
+        {
+            return flux::data(self.base()) + self.count_;
+        }
+
+        void for_each_while(...) = delete;
+    };
 };
 
 struct drop_fn {
@@ -45,45 +77,6 @@ struct drop_fn {
 };
 
 } // namespace detail
-
-template <typename Base>
-struct sequence_iface<detail::drop_adaptor<Base>>
-    : detail::passthrough_iface_base<Base>
-{
-    using self_t = detail::drop_adaptor<Base>;
-
-    using value_type = value_t<Base>;
-    using distance_type = distance_t<Base>;
-
-    static constexpr bool disable_multipass = !multipass_sequence<Base>;
-
-    static constexpr auto first(self_t& self)
-    {
-        if constexpr (std::copy_constructible<cursor_t<Base>>) {
-            if (!self.cached_first_) {
-                self.cached_first_ = flux::next(self.base_, flux::first(self.base()), self.count_);
-            }
-
-            return *self.cached_first_;
-        } else {
-            return flux::next(self.base_, flux::first(self.base()), self.count_);
-        }
-    }
-
-    static constexpr auto size(self_t& self)
-        requires sized_sequence<Base>
-    {
-        return flux::size(self.base()) - self.count_;
-    }
-
-    static constexpr auto data(self_t& self)
-        requires contiguous_sequence<Base>
-    {
-        return flux::data(self.base()) + self.count_;
-    }
-
-    void for_each_while(...) = delete;
-};
 
 inline constexpr auto drop = detail::drop_fn{};
 

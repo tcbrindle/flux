@@ -54,6 +54,7 @@ template <typename Base>
 struct sequence_iface<detail::cache_last_adaptor<Base>>
     : detail::passthrough_iface_base<Base> {
 
+    using value_type = value_t<Base>;
     using self_t = detail::cache_last_adaptor<Base>;
 
     static constexpr auto is_last(self_t& self, cursor_t<self_t> const& cur)

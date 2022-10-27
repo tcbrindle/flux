@@ -25,19 +25,27 @@ struct span_seq {
     T* ptr_;
     std::size_t sz_;
 
-    static constexpr std::size_t first() { return 0; }
-    constexpr bool is_last(std::size_t i) const { return i == sz_; }
-    constexpr std::size_t& inc(std::size_t& i) const { return ++i; }
-    constexpr T& read_at(std::size_t i) const { return ptr_[i]; }
-    constexpr std::size_t last() const { return sz_; }
-    static constexpr std::size_t& dec(std::size_t& i) { return --i; }
-    static constexpr std::size_t& inc(std::size_t& i, std::ptrdiff_t o) { return i += o; }
-    static constexpr std::ptrdiff_t distance(std::size_t from, std::size_t to)
-    {
-        return static_cast<std::ptrdiff_t>(to) - static_cast<std::ptrdiff_t>(from);
-    }
-    constexpr std::size_t size() { return sz_; }
-    constexpr T* data() const { return ptr_; }
+    struct flux_sequence_iface {
+        static constexpr std::size_t first(span_seq const&) { return 0; }
+        static constexpr bool is_last(span_seq const& self, std::size_t i) { return i == self.sz_; }
+        static constexpr std::size_t& inc(span_seq const&, std::size_t& i) { return ++i; }
+        static constexpr T& read_at(span_seq const& self, std::size_t i) { return self.ptr_[i]; }
+        static constexpr std::size_t last(span_seq const& self) { return self.sz_; }
+        static constexpr std::size_t& dec(span_seq const&, std::size_t& i) { return --i; }
+        static constexpr std::size_t& inc(span_seq const&, std::size_t& i, std::ptrdiff_t o)
+        {
+            return i += o;
+        }
+        static constexpr std::ptrdiff_t distance(span_seq const&,
+                                                 std::size_t from,
+                                                 std::size_t to)
+        {
+            return static_cast<std::ptrdiff_t>(to) -
+                   static_cast<std::ptrdiff_t>(from);
+        }
+        static constexpr std::size_t size(span_seq const& self) { return self.sz_; }
+        static constexpr T* data(span_seq const& self) { return self.ptr_; }
+    };
 };
 
 constexpr bool test_sort_contexpr()

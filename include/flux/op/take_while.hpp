@@ -53,6 +53,8 @@ struct sequence_iface<detail::take_while_adaptor<Base, Pred>>
 {
     using self_t = detail::take_while_adaptor<Base, Pred>;
 
+    using value_type = value_t<Base>;
+
     static constexpr bool is_infinite = false;
 
     template <typename Self>

@@ -51,18 +51,22 @@ struct dummy_impl {
 
 template <typename Elem>
 struct minimal_seq_of {
-    static int first();
-    static bool is_last(int);
-    static int& inc(int&);
-    Elem read_at(int) const;
+    struct flux_sequence_iface {
+        static int first(minimal_seq_of);
+        static bool is_last(minimal_seq_of, int);
+        static int& inc(minimal_seq_of, int&);
+        static Elem read_at(minimal_seq_of, int);
+    };
 };
 
 template <typename Idx>
 struct minimal_with_idx {
-    Idx first();
-    bool is_last(Idx const&);
-    Idx& inc(Idx&);
-    int read_at(Idx const&);
+    struct flux_sequence_iface {
+        static Idx first(minimal_with_idx);
+        static bool is_last(minimal_with_idx, Idx const&);
+        static Idx& inc(minimal_with_idx, Idx&);
+        static int read_at(minimal_with_idx, Idx const&);
+    };
 };
 
 } // end anon namespace
@@ -175,10 +179,12 @@ static_assert(flux::sequence<Derived2>);
 // Adaptable sequence tests
 namespace {
     struct movable_seq {
-        static int first();
-        static bool is_last(int);
-        static int& inc(int&);
-        static int read_at(int);
+        struct flux_sequence_iface {
+            static int first(movable_seq);
+            static bool is_last(movable_seq, int);
+            static int& inc(movable_seq, int&);
+            static int read_at(movable_seq, int);
+        };
     };
 
     struct move_only_seq {
@@ -186,10 +192,12 @@ namespace {
         move_only_seq(move_only_seq&&) = default;
         move_only_seq& operator=(move_only_seq&&) = default;
 
-        static int first();
-        static bool is_last(int);
-        static int& inc(int&);
-        static int read_at(int);
+        struct flux_sequence_iface {
+            static int first(move_only_seq const&);
+            static bool is_last(move_only_seq const&, int);
+            static int& inc(move_only_seq const&, int&);
+            static int read_at(move_only_seq const&, int);
+        };
     };
 
     struct unmovable_seq {
@@ -197,10 +205,12 @@ namespace {
         unmovable_seq(unmovable_seq&&) = delete;
         unmovable_seq& operator=(unmovable_seq&&) = delete;
 
-        static int first();
-        static bool is_last(int);
-        static int& inc(int&);
-        static int read_at(int);
+        struct flux_sequence_iface {
+            static int first(unmovable_seq const&);
+            static bool is_last(unmovable_seq const&, int);
+            static int& inc(unmovable_seq const&, int&);
+            static int read_at(unmovable_seq const&, int);
+        };
     };
 
     static_assert(flux::sequence<movable_seq>);
