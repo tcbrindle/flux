@@ -27,6 +27,18 @@ public:
         : bases_(FLUX_FWD(bases)...),
           func_(FLUX_FWD(func))
     {}
+
+    struct flux_sequence_iface : detail::cartesian_product_iface_base<Bases...>
+    {
+        template <typename Self>
+        static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
+            -> decltype(auto)
+        {
+            return [&]<std::size_t... N>(std::index_sequence<N...>) {
+                return std::invoke(self.func_, flux::read_at(std::get<N>(self.bases_), std::get<N>(cur))...);
+            }(std::index_sequence_for<Bases...>{});
+        }
+    };
 };
 
 struct cartesian_product_with_fn
@@ -46,21 +58,7 @@ struct cartesian_product_with_fn
 
 } // namespace detail
 
-template <typename Func, typename... Bases>
-struct sequence_iface<detail::cartesian_product_with_adaptor<Func, Bases...>>
-    : detail::cartesian_product_iface_base<Bases...>
-{
-    //using detail::cartesian_product_iface_base<Bases...>::const_like_t;
 
-    template <typename Self>
-    static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
-        -> decltype(auto)
-    {
-        return [&]<std::size_t... N>(std::index_sequence<N...>) {
-            return std::invoke(self.func_, flux::read_at(std::get<N>(self.bases_), std::get<N>(cur))...);
-        }(std::index_sequence_for<Bases...>{});
-    }
-};
 
 inline constexpr auto cartesian_product_with = detail::cartesian_product_with_fn{};
 

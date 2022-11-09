@@ -22,7 +22,6 @@ private:
     FLUX_NO_UNIQUE_ADDRESS Pred pred_;
     std::optional<cursor_t<Base>> cached_first_{};
 
-    friend struct sequence_iface<drop_while_adaptor>;
     friend struct passthrough_iface_base<Base>;
 
     constexpr auto base() & -> Base& { return base_; }
@@ -32,6 +31,33 @@ public:
         : base_(FLUX_FWD(base)),
           pred_(FLUX_FWD(pred))
     {}
+
+    struct flux_sequence_iface : detail::passthrough_iface_base<Base> {
+        using value_type = value_t<Base>;
+        using self_t = drop_while_adaptor;
+
+        static constexpr auto first(self_t& self)
+        {
+            if constexpr (std::copy_constructible<cursor_t<Base>>) {
+                if (!self.cached_first_) {
+                    self.cached_first_ = flux::for_each_while(self.base_, self.pred_);
+                }
+                return *self.cached_first_;
+            } else {
+                return flux::for_each_while(self.base_, self.pred_);
+            }
+        }
+
+        static constexpr auto data(self_t& self)
+            requires contiguous_sequence<Base>
+        {
+            return flux::data(self.base_) +
+                   flux::distance(self.base_, flux::first(self.base_), first(self));
+        }
+
+        void size(...) = delete;
+        void for_each_while(...) = delete;
+    };
 };
 
 struct drop_while_fn {
@@ -45,36 +71,6 @@ struct drop_while_fn {
 };
 
 } // namespace detail
-
-template <typename Base, typename Pred>
-struct sequence_iface<detail::drop_while_adaptor<Base, Pred>>
-    : detail::passthrough_iface_base<Base>
-{
-    using value_type = value_t<Base>;
-    using self_t = detail::drop_while_adaptor<Base, Pred>;
-
-    static constexpr auto first(self_t& self)
-    {
-        if constexpr (std::copy_constructible<cursor_t<Base>>) {
-            if (!self.cached_first_) {
-                self.cached_first_ = flux::for_each_while(self.base_, self.pred_);
-            }
-            return *self.cached_first_;
-        } else {
-            return flux::for_each_while(self.base_, self.pred_);
-        }
-    }
-
-    static constexpr auto data(self_t& self)
-        requires contiguous_sequence<Base>
-    {
-        return flux::data(self.base_) +
-                    flux::distance(self.base_, flux::first(self.base_), first(self));
-    }
-
-    void size(...) = delete;
-    void for_each_while(...) = delete;
-};
 
 inline constexpr auto drop_while = detail::drop_while_fn{};
 

@@ -20,8 +20,6 @@ struct bounds_checked_adaptor : lens_base<bounds_checked_adaptor<Base>>
 private:
     Base base_;
 
-    friend struct sequence_iface<bounds_checked_adaptor>;
-
 public:
     constexpr explicit bounds_checked_adaptor(decays_to<Base> auto&& base)
         : base_(FLUX_FWD(base))
@@ -29,7 +27,55 @@ public:
 
     constexpr auto base() -> Base& { return base_; }
     constexpr auto base() const -> Base const& { return base_; }
+
+    struct flux_sequence_iface : detail::passthrough_iface_base<Base> {
+        using value_type = value_t<Base>;
+
+        static constexpr auto read_at(auto& self, auto const& cur)
+            -> decltype(flux::checked_read_at(self.base_, cur))
+        {
+            return flux::checked_read_at(self.base_, cur);
+        }
+
+        static constexpr auto inc(auto& self, auto& cur)
+            -> decltype(flux::checked_inc(self.base_, cur))
+        {
+            return flux::checked_inc(self.base_, cur);
+        }
+
+        static constexpr auto dec(auto& self, auto& cur)
+            -> decltype(flux::checked_dec(self.base_, cur))
+        {
+            return flux::checked_dec(self.base_, cur);
+        }
+
+        static constexpr auto inc(auto& self, auto& cur, auto offset)
+            -> decltype(flux::checked_inc(self.base_, cur, offset))
+        {
+            return flux::checked_inc(self.base_, cur, offset);
+        }
+
+        static constexpr auto move_at(auto& self, auto const& cur)
+            -> decltype(flux::checked_move_at(self.base_, cur))
+        {
+            return flux::checked_move_at(self.base_, cur);
+        }
+
+        static constexpr auto slice(auto& self, auto first, auto last)
+        {
+            return detail::bounds_checked_adaptor(flux::slice(self.base_, std::move(first), std::move(last)));
+        }
+
+        static constexpr auto slice(auto& self, auto first)
+        {
+            return detail::bounds_checked_adaptor(flux::slice(self.base_, std::move(first), flux::last));
+        }
+    };
+
 };
+
+template <typename S>
+bounds_checked_adaptor(S) -> bounds_checked_adaptor<S>;
 
 struct bounds_checked_fn {
     template <adaptable_sequence Seq>
@@ -41,53 +87,6 @@ struct bounds_checked_fn {
 };
 
 } // namespace detail
-
-template <typename Base>
-struct sequence_iface<detail::bounds_checked_adaptor<Base>>
-    : detail::passthrough_iface_base<Base>
-{
-    using value_type = value_t<Base>;
-
-    static constexpr auto read_at(auto& self, auto const& cur)
-        -> decltype(flux::checked_read_at(self.base_, cur))
-    {
-        return flux::checked_read_at(self.base_, cur);
-    }
-
-    static constexpr auto inc(auto& self, auto& cur)
-        -> decltype(flux::checked_inc(self.base_, cur))
-    {
-        return flux::checked_inc(self.base_, cur);
-    }
-
-    static constexpr auto dec(auto& self, auto& cur)
-        -> decltype(flux::checked_dec(self.base_, cur))
-    {
-        return flux::checked_dec(self.base_, cur);
-    }
-
-    static constexpr auto inc(auto& self, auto& cur, auto offset)
-        -> decltype(flux::checked_inc(self.base_, cur, offset))
-    {
-        return flux::checked_inc(self.base_, cur, offset);
-    }
-
-    static constexpr auto move_at(auto& self, auto const& cur)
-        -> decltype(flux::checked_move_at(self.base_, cur))
-    {
-        return flux::checked_move_at(self.base_, cur);
-    }
-
-    static constexpr auto slice(auto& self, auto first, auto last)
-    {
-        return detail::bounds_checked_fn{}(flux::slice(self.base_, std::move(first), std::move(last)));
-    }
-
-    static constexpr auto slice(auto& self, auto first)
-    {
-        return detail::bounds_checked_fn{}(flux::slice(self.base_, std::move(first), flux::last));
-    }
-};
 
 inline constexpr auto bounds_checked = detail::bounds_checked_fn{};
 

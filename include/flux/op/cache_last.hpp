@@ -22,7 +22,6 @@ private:
     Base base_;
     std::optional<cursor_t<Base>> cached_last_{};
 
-    friend struct sequence_iface<cache_last_adaptor>;
     friend struct passthrough_iface_base<Base>;
 
     constexpr auto base() -> Base& { return base_; }
@@ -31,6 +30,34 @@ public:
     constexpr explicit cache_last_adaptor(decays_to<Base> auto&& base)
         : base_(FLUX_FWD(base))
     {}
+
+    struct flux_sequence_iface : detail::passthrough_iface_base<Base> {
+
+        using value_type = value_t<Base>;
+        using self_t = cache_last_adaptor;
+
+        static constexpr auto is_last(self_t& self, cursor_t<Base> const& cur)
+        {
+            if (flux::is_last(self.base_, cur)) {
+                self.cached_last_ = cur;
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        static constexpr auto last(self_t& self)
+        {
+            if (!self.cached_last_) {
+                auto cur = flux::first(self);
+                while (!is_last(self, cur)) {
+                    flux::inc(self.base_, cur);
+                }
+                assert(self.cached_last_.has_value());
+            }
+            return *self.cached_last_;
+        }
+    };
 };
 
 struct cache_last_fn {
@@ -49,36 +76,6 @@ struct cache_last_fn {
 };
 
 } // namespace detail
-
-template <typename Base>
-struct sequence_iface<detail::cache_last_adaptor<Base>>
-    : detail::passthrough_iface_base<Base> {
-
-    using value_type = value_t<Base>;
-    using self_t = detail::cache_last_adaptor<Base>;
-
-    static constexpr auto is_last(self_t& self, cursor_t<self_t> const& cur)
-    {
-        if (flux::is_last(self.base_, cur)) {
-            self.cached_last_ = cur;
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    static constexpr auto last(self_t& self)
-    {
-        if (!self.cached_last_) {
-            auto cur = flux::first(self);
-            while (!is_last(self, cur)) {
-                flux::inc(self.base_, cur);
-            }
-            assert(self.cached_last_.has_value());
-        }
-        return *self.cached_last_;
-    }
-};
 
 inline constexpr auto cache_last = detail::cache_last_fn{};
 
