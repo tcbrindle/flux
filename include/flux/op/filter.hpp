@@ -35,7 +35,82 @@ public:
     [[nodiscard]]
     constexpr auto base() && -> Base { return std::move(base_); }
 
-    friend struct sequence_iface<filter_adaptor>;
+    struct flux_sequence_iface {
+        using self_t = filter_adaptor;
+
+        static constexpr bool disable_multipass = !multipass_sequence<Base>;
+
+        static constexpr auto first(self_t& self) -> cursor_t<Base>
+        {
+            // If the cursor_type is not copy-constructible, we can't cache it
+            // and hand out copies. But this only applies to single-pass sequences
+            // where we probably can't call first() more than once anyway
+            if constexpr (!std::copy_constructible<cursor_t<Base>>) {
+                return flux::for_each_while(self.base_, [&](auto&& elem) {
+                    return !std::invoke(self.pred_, elem);
+                });
+            } else {
+                if (!self.cached_first_) {
+                    self.cached_first_ =
+                        flux::for_each_while(self.base_, [&](auto&& elem) {
+                            return !std::invoke(self.pred_, elem);
+                        });
+                }
+
+                return *self.cached_first_;
+            }
+        }
+
+        static constexpr auto is_last(self_t& self, cursor_t<Base> const& cur) -> bool
+        {
+            return flux::is_last(self.base_, cur);
+        }
+
+        static constexpr auto read_at(self_t& self, cursor_t<Base> const& cur)
+            -> element_t<Base>
+        {
+            return flux::read_at(self.base_, cur);
+        }
+
+        static constexpr auto inc(self_t& self, cursor_t<Base>& cur) -> cursor_t<Base>&
+        {
+            // base_[{next(base_, cur), _}].for_each_while(!pred)?
+            while (!flux::is_last(self.base_, flux::inc(self.base_, cur))) {
+                if (std::invoke(self.pred_, flux::read_at(self.base_, cur))) {
+                    break;
+                }
+            }
+
+            return cur;
+        }
+
+        static constexpr auto dec(self_t& self, cursor_t<Base>& cur) -> cursor_t<Base>&
+            requires bidirectional_sequence<Base>
+        {
+            do {
+                flux::dec(self.base_, cur);
+            } while(!std::invoke(self.pred_, flux::read_at(self.base_, cur)));
+
+            return cur;
+        }
+
+        static constexpr auto last(self_t& self) -> cursor_t<Base>
+            requires bounded_sequence<Base>
+        {
+            return flux::last(self.base_);
+        }
+
+        static constexpr auto for_each_while(self_t& self, auto&& func) -> cursor_t<Base>
+        {
+            return flux::for_each_while(self.base_, [&](auto&& elem) {
+                if (std::invoke(self.pred_, elem)) {
+                    return std::invoke(func, FLUX_FWD(elem));
+                } else {
+                    return true;
+                }
+            });
+        }
+    };
 };
 
 
@@ -50,85 +125,6 @@ struct filter_fn {
 };
 
 } // namespace detail
-
-template <typename Base, typename Pred>
-struct sequence_iface<detail::filter_adaptor<Base, Pred>>
-{
-    using self_t = detail::filter_adaptor<Base, Pred>;
-
-    static constexpr bool disable_multipass = !multipass_sequence<Base>;
-
-    static constexpr auto first(self_t& self) -> cursor_t<Base>
-    {
-        // If the cursor_type is not copy-constructible, we can't cache it
-        // and hand out copies. But this only applies to single-pass sequences
-        // where we probably can't call first() more than once anyway
-        if constexpr (!std::copy_constructible<cursor_t<Base>>) {
-            return flux::for_each_while(self.base_, [&](auto&& elem) {
-                return !std::invoke(self.pred_, elem);
-            });
-        } else {
-            if (!self.cached_first_) {
-                self.cached_first_ =
-                    flux::for_each_while(self.base_, [&](auto&& elem) {
-                        return !std::invoke(self.pred_, elem);
-                    });
-            }
-
-            return *self.cached_first_;
-        }
-    }
-
-    static constexpr auto is_last(self_t& self, cursor_t<Base> const& cur) -> bool
-    {
-        return flux::is_last(self.base_, cur);
-    }
-
-    static constexpr auto read_at(self_t& self, cursor_t<Base> const& cur)
-        -> element_t<Base>
-    {
-        return flux::read_at(self.base_, cur);
-    }
-
-    static constexpr auto inc(self_t& self, cursor_t<Base>& cur) -> cursor_t<Base>&
-    {
-        // base_[{next(base_, cur), _}].for_each_while(!pred)?
-        while (!flux::is_last(self.base_, flux::inc(self.base_, cur))) {
-            if (std::invoke(self.pred_, flux::read_at(self.base_, cur))) {
-                break;
-            }
-        }
-
-        return cur;
-    }
-
-    static constexpr auto dec(self_t& self, cursor_t<Base>& cur) -> cursor_t<Base>&
-        requires bidirectional_sequence<Base>
-    {
-        do {
-            flux::dec(self.base_, cur);
-        } while(!std::invoke(self.pred_, flux::read_at(self.base_, cur)));
-
-        return cur;
-    }
-
-    static constexpr auto last(self_t& self) -> cursor_t<Base>
-        requires bounded_sequence<Base>
-    {
-        return flux::last(self.base_);
-    }
-
-    static constexpr auto for_each_while(self_t& self, auto&& func) -> cursor_t<Base>
-    {
-        return flux::for_each_while(self.base_, [&](auto&& elem) {
-            if (std::invoke(self.pred_, elem)) {
-                return std::invoke(func, FLUX_FWD(elem));
-            } else {
-                return true;
-            }
-        });
-    }
-};
 
 inline constexpr auto filter = detail::filter_fn{};
 

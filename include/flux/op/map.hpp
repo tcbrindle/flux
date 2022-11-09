@@ -34,10 +34,31 @@ public:
     constexpr auto base() const& -> Base const& { return base_; }
     constexpr auto base() && -> Base&& { return std::move(base_); }
     constexpr auto base() const&& -> Base const&& { return std::move(base_); }
+
+    struct flux_sequence_iface  : detail::passthrough_iface_base<Base>
+    {
+        using value_type = std::remove_cvref_t<std::invoke_result_t<Func&, element_t<Base>>>;
+
+        template <typename Self>
+        static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
+            -> decltype(std::invoke(self.func_, flux::read_at(self.base_, cur)))
+        {
+            return std::invoke(self.func_, flux::read_at(self.base_, cur));
+        }
+
+        static constexpr auto for_each_while(auto& self, auto&& pred)
+        {
+            return flux::for_each_while(self.base_, [&](auto&& elem) {
+                return std::invoke(pred, std::invoke(self.func_, FLUX_FWD(elem)));
+            });
+        }
+
+        static void move_at() = delete; // Use the base version of move_at
+        static void data() = delete; // we're not a contiguous sequence
+    };
 };
 
 struct map_fn {
-
     template <adaptable_sequence Seq, typename Func>
         requires std::regular_invocable<Func&, element_t<Seq>>
     [[nodiscard]]
@@ -48,30 +69,6 @@ struct map_fn {
 };
 
 } // namespace detail
-
-template <typename Base, typename Func>
-struct sequence_iface<detail::map_adaptor<Base, Func>>
-    : detail::passthrough_iface_base<Base>
-{
-    using value_type = std::remove_cvref_t<std::invoke_result_t<Func&, element_t<Base>>>;
-
-    template <typename Self>
-    static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
-        -> decltype(std::invoke(self.func_, flux::read_at(self.base_, cur)))
-    {
-        return std::invoke(self.func_, flux::read_at(self.base_, cur));
-    }
-
-    static constexpr auto for_each_while(auto& self, auto&& pred)
-    {
-        return flux::for_each_while(self.base_, [&](auto&& elem) {
-            return std::invoke(pred, std::invoke(self.func_, FLUX_FWD(elem)));
-        });
-    }
-
-    static void move_at() = delete; // Use the base version of move_at
-    static void data() = delete; // we're not a contiguous sequence
-};
 
 inline constexpr auto map = detail::map_fn{};
 
