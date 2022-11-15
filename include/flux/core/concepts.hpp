@@ -17,10 +17,26 @@
 namespace flux {
 
 /*
- * Useful helper concepts
+ * Useful helpers
  */
 template <typename From, typename To>
 concept decays_to = std::same_as<std::remove_cvref_t<From>, To>;
+
+namespace detail {
+
+struct copy_fn {
+    template <typename T>
+    constexpr auto operator()(T&& arg) const
+        noexcept(std::is_nothrow_convertible_v<T, std::decay_t<T>>)
+        -> std::decay_t<T>
+    {
+        return FLUX_FWD(arg);
+    }
+};
+
+}
+
+inline constexpr auto copy = detail::copy_fn{};
 
 /*
  * Cursor concepts
