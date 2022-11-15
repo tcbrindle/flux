@@ -48,7 +48,7 @@ constexpr bool test_fill()
 
     // empty sequences can be "filled"
     {
-        auto e = flux::empty<int>{};
+        auto e = flux::empty<int>;
         flux::fill(e, 99);
     }
 

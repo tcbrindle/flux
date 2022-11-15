@@ -105,7 +105,7 @@ constexpr bool test_cartesian_product_with()
     // Product with a zero-sized sequence works and produces an empty sequence
     {
         auto arr = std::array{1, 2, 3, 4, 5};
-        auto emp = flux::empty<int>{};
+        auto emp = flux::empty<int>;
 
         auto cart = flux::cartesian_product_with(sum, flux::ref(arr), std::move(emp));
 
