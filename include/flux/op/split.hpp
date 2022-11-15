@@ -26,9 +26,9 @@ private:
     friend struct sequence_iface<split_adaptor>;
 
 public:
-    constexpr split_adaptor(Base&& base, Pattern&& pattern)
-        : base_(std::move(base)),
-          pattern_(std::move(pattern))
+    constexpr split_adaptor(decays_to<Base> auto&& base, decays_to<Pattern> auto&& pattern)
+        : base_(FLUX_FWD(base)),
+          pattern_(FLUX_FWD(pattern))
     {}
 };
 
@@ -37,13 +37,16 @@ struct split_fn {
         requires multipass_sequence<Seq> &&
                  multipass_sequence<Pattern> &&
                  std::equality_comparable_with<element_t<Seq>, element_t<Pattern>>
+    [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Pattern&& pattern) const
     {
-        return split_adaptor(FLUX_FWD(seq), FLUX_FWD(pattern));
+        return split_adaptor<std::decay_t<Seq>, std::decay_t<Pattern>>(
+                    FLUX_FWD(seq), FLUX_FWD(pattern));
     }
 
     template <adaptable_sequence Seq>
         requires multipass_sequence<Seq>
+    [[nodiscard]]
     constexpr auto operator()(Seq&& seq, value_t<Seq> delim) const
     {
         return (*this)(FLUX_FWD(seq), flux::single(std::move(delim)));

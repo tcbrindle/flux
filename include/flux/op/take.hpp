@@ -37,8 +37,8 @@ private:
     friend struct sequence_iface<take_adaptor>;
 
 public:
-    constexpr take_adaptor(Base&& base, distance_t<Base> count)
-        : base_(std::move(base)),
+    constexpr take_adaptor(decays_to<Base> auto&& base, distance_t<Base> count)
+        : base_(FLUX_FWD(base)),
           count_(count)
     {}
 
@@ -49,6 +49,7 @@ public:
 struct take_fn {
 
     template <adaptable_sequence Seq>
+    [[nodiscard]]
     constexpr auto operator()(Seq&& seq, distance_t<Seq> count) const
     {
         if constexpr (random_access_sequence<Seq> && std::is_lvalue_reference_v<Seq>) {
@@ -56,7 +57,7 @@ struct take_fn {
             auto last = flux::next(seq, first, count);
             return flux::from(flux::slice(seq, std::move(first), std::move(last)));
         } else {
-            return take_adaptor(FLUX_FWD(seq), count);
+            return take_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq), count);
         }
     }
 };

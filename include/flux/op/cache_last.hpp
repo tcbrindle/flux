@@ -28,8 +28,8 @@ private:
     constexpr auto base() -> Base& { return base_; }
 
 public:
-    constexpr explicit cache_last_adaptor(Base&& base)
-        : base_(std::move(base))
+    constexpr explicit cache_last_adaptor(decays_to<Base> auto&& base)
+        : base_(FLUX_FWD(base))
     {}
 };
 
@@ -37,12 +37,13 @@ struct cache_last_fn {
     template <adaptable_sequence Seq>
         requires bounded_sequence<Seq> ||
             (multipass_sequence<Seq> && not infinite_sequence<Seq>)
+    [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const
     {
         if constexpr (bounded_sequence<Seq>) {
             return FLUX_FWD(seq);
         } else {
-            return cache_last_adaptor(FLUX_FWD(seq));
+            return cache_last_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq));
         }
     }
 };

@@ -17,8 +17,7 @@ constexpr bool test_take()
 {
     {
         int arr[] = {0, 1, 2, 3, 4};
-//        auto taken = flux::take(arr, 3);
-        auto taken = flux::detail::take_adaptor(flux::from(arr), 3);
+        auto taken = flux::take(std::ref(arr), 3);
 
         using T = decltype(taken);
         static_assert(flux::contiguous_sequence<T>);

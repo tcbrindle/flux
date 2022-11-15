@@ -23,8 +23,8 @@ private:
     friend struct sequence_iface<bounds_checked_adaptor>;
 
 public:
-    constexpr explicit bounds_checked_adaptor(Base&& base)
-        : base_(std::move(base))
+    constexpr explicit bounds_checked_adaptor(decays_to<Base> auto&& base)
+        : base_(FLUX_FWD(base))
     {}
 
     constexpr auto base() -> Base& { return base_; }
@@ -36,7 +36,7 @@ struct bounds_checked_fn {
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const
     {
-        return bounds_checked_adaptor(FLUX_FWD(seq));
+        return bounds_checked_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq));
     }
 };
 
@@ -78,13 +78,12 @@ struct sequence_iface<detail::bounds_checked_adaptor<Base>>
 
     static constexpr auto slice(auto& self, auto first, auto last)
     {
-        return detail::bounds_checked_adaptor(
-            flux::from(flux::slice(self.base_, std::move(first), std::move(last))));
+        return detail::bounds_checked_fn{}(flux::slice(self.base_, std::move(first), std::move(last)));
     }
 
     static constexpr auto slice(auto& self, auto first)
     {
-        return detail::bounds_checked_adaptor(flux::from(flux::slice(self.base_, std::move(first), flux::last)));
+        return detail::bounds_checked_fn{}(flux::slice(self.base_, std::move(first), flux::last));
     }
 };
 

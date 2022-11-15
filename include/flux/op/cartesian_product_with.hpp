@@ -23,9 +23,9 @@ private:
     friend struct sequence_iface<cartesian_product_with_adaptor>;
 
 public:
-    constexpr explicit cartesian_product_with_adaptor(Func func, Bases&&... bases)
-        : bases_(std::move(bases)...),
-          func_(std::move(func))
+    constexpr explicit cartesian_product_with_adaptor(decays_to<Func> auto&& func, decays_to<Bases> auto&&... bases)
+        : bases_(FLUX_FWD(bases)...),
+          func_(FLUX_FWD(func))
     {}
 };
 
@@ -34,11 +34,11 @@ struct cartesian_product_with_fn
     template <typename Func, adaptable_sequence Seq0, adaptable_sequence... Seqs>
         requires (multipass_sequence<Seqs> && ...) &&
         std::regular_invocable<Func&, element_t<Seq0>, element_t<Seqs>...>
+    [[nodiscard]]
     constexpr auto operator()(Func func, Seq0&& seq0, Seqs&&... seqs) const
     {
-        return cartesian_product_with_adaptor(std::move(func),
-                                              FLUX_FWD(seq0),
-                                              FLUX_FWD(seqs)...);
+        return cartesian_product_with_adaptor<Func, std::decay_t<Seq0>, std::decay_t<Seqs>...>(
+                    std::move(func), FLUX_FWD(seq0), FLUX_FWD(seqs)...);
     }
 };
 

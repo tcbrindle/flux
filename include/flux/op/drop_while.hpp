@@ -28,18 +28,19 @@ private:
     constexpr auto base() & -> Base& { return base_; }
 
 public:
-    constexpr drop_while_adaptor(Base&& base, Pred&& pred)
-        : base_(std::move(base)),
-          pred_(std::move(pred))
+    constexpr drop_while_adaptor(decays_to<Base> auto&& base, decays_to<Pred> auto&& pred)
+        : base_(FLUX_FWD(base)),
+          pred_(FLUX_FWD(pred))
     {}
 };
 
 struct drop_while_fn {
     template <adaptable_sequence Seq, typename Pred>
         requires std::predicate<Pred&, element_t<Seq>>
+    [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Pred pred) const
     {
-        return drop_while_adaptor(FLUX_FWD(seq), std::move(pred));
+        return drop_while_adaptor<std::decay_t<Seq>, Pred>(FLUX_FWD(seq), std::move(pred));
     }
 };
 
