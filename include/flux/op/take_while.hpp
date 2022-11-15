@@ -25,9 +25,9 @@ private:
     friend struct passthrough_iface_base<Base>;
 
 public:
-    constexpr take_while_adaptor(Base&& base, Pred&& pred)
-        : base_(std::move(base)),
-          pred_(std::move(pred))
+    constexpr take_while_adaptor(decays_to<Base> auto&& base, decays_to<Pred> auto&& pred)
+        : base_(FLUX_FWD(base)),
+          pred_(FLUX_FWD(pred))
     {}
 
     [[nodiscard]] constexpr auto base() const& -> Base const& { return base_; }
@@ -37,9 +37,11 @@ public:
 struct take_while_fn {
     template <adaptable_sequence Seq, typename Pred>
         requires std::predicate<Pred&, element_t<Seq>&>
+    [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Pred pred) const
     {
-        return take_while_adaptor(FLUX_FWD(seq), std::move(pred));
+        return take_while_adaptor<std::decay_t<Seq>, Pred>(
+                    FLUX_FWD(seq), std::move(pred));
     }
 };
 

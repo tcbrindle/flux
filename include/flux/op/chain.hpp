@@ -24,8 +24,8 @@ private:
     friend struct sequence_iface<chain_adaptor>;
 
 public:
-    explicit constexpr chain_adaptor(Bases&&... bases)
-        : bases_(std::move(bases)...)
+    explicit constexpr chain_adaptor(decays_to<Bases> auto&&... bases)
+        : bases_(FLUX_FWD(bases)...)
     {}
 };
 
@@ -44,12 +44,13 @@ struct chain_fn {
     template <adaptable_sequence... Seqs>
         requires (sizeof...(Seqs) >= 1) &&
                  chainable<Seqs...>
+    [[nodiscard]]
     constexpr auto operator()(Seqs&&... seqs) const
     {
         if constexpr (sizeof...(Seqs) == 1) {
             return std::forward<Seqs...>(seqs...);
         } else {
-            return chain_adaptor(FLUX_FWD(seqs)...);
+            return chain_adaptor<std::decay_t<Seqs>...>(FLUX_FWD(seqs)...);
         }
     }
 };

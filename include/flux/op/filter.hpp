@@ -25,9 +25,9 @@ class filter_adaptor : public lens_base<filter_adaptor<Base, Pred>>
     std::optional<cursor_t<Base>> cached_first_{};
 
 public:
-    constexpr filter_adaptor(Base&& base, Pred&& pred)
-        : base_(std::move(base)),
-          pred_(std::move(pred))
+    constexpr filter_adaptor(decays_to<Base> auto&& base, decays_to<Pred> auto&& pred)
+        : base_(FLUX_FWD(base)),
+          pred_(FLUX_FWD(pred))
     {}
 
     [[nodiscard]]
@@ -42,9 +42,10 @@ public:
 struct filter_fn {
     template <adaptable_sequence Seq, typename Pred>
         requires std::predicate<Pred&, element_t<Seq>&>
+    [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Pred pred) const
     {
-        return filter_adaptor(FLUX_FWD(seq), std::move(pred));
+        return filter_adaptor<std::decay_t<Seq>, Pred>(FLUX_FWD(seq), std::move(pred));
     }
 };
 

@@ -41,8 +41,8 @@ private:
     friend struct sequence_iface<reverse_adaptor>;
 
 public:
-    constexpr explicit reverse_adaptor(Base&& base)
-        : base_(std::move(base))
+    constexpr explicit reverse_adaptor(decays_to<Base> auto&& base)
+        : base_(FLUX_FWD(base))
     {}
 
     [[nodiscard]] constexpr auto base() const& -> Base const& { return base_; }
@@ -61,12 +61,12 @@ struct reverse_fn {
                  bounded_sequence<Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const
-        -> lens auto
+        -> sequence auto
     {
         if constexpr (is_reverse_adaptor<std::decay_t<Seq>>) {
             return FLUX_FWD(seq).base();
         } else {
-            return reverse_adaptor(FLUX_FWD(seq));
+            return reverse_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq));
         }
     }
 };

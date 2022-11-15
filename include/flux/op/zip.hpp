@@ -34,19 +34,20 @@ private:
     friend struct sequence_iface<zip_adaptor>;
 
 public:
-    constexpr explicit zip_adaptor(Bases&&... bases)
-        : bases_(std::move(bases)...)
+    constexpr explicit zip_adaptor(decays_to<Bases> auto&&... bases)
+        : bases_(FLUX_FWD(bases)...)
     {}
 };
 
 struct zip_fn {
     template <adaptable_sequence... Seqs>
+    [[nodiscard]]
     constexpr auto operator()(Seqs&&... seqs) const
     {
         if constexpr (sizeof...(Seqs) == 0) {
             return empty<std::tuple<>>{};
         } else {
-            return zip_adaptor(FLUX_FWD(seqs)...);
+            return zip_adaptor<std::decay_t<Seqs>...>(FLUX_FWD(seqs)...);
         }
     }
 };

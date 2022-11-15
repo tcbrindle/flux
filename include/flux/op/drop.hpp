@@ -25,8 +25,8 @@ private:
     friend struct sequence_iface<drop_adaptor>;
 
 public:
-    constexpr drop_adaptor(Base&& base, distance_t<Base> count)
-        : base_(std::move(base)),
+    constexpr drop_adaptor(decays_to<Base> auto&& base, distance_t<Base> count)
+        : base_(FLUX_FWD(base)),
           count_(count)
     {}
 
@@ -36,9 +36,10 @@ public:
 
 struct drop_fn {
     template <adaptable_sequence Seq>
+    [[nodiscard]]
     constexpr auto operator()(Seq&& seq, distance_t<Seq> count) const
     {
-        return drop_adaptor(FLUX_FWD(seq), count);
+        return drop_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq), count);
     }
 
 };

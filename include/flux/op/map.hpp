@@ -25,9 +25,9 @@ private:
     friend struct sequence_iface<map_adaptor>;
 
 public:
-    constexpr map_adaptor(Base&& base, Func&& func)
-        : base_(std::move(base)),
-          func_(std::move(func))
+    constexpr map_adaptor(decays_to<Base> auto&& base, decays_to<Func> auto&& func)
+        : base_(FLUX_FWD(base)),
+          func_(FLUX_FWD(func))
     {}
 
     constexpr auto base() & -> Base& { return base_; }
@@ -40,9 +40,10 @@ struct map_fn {
 
     template <adaptable_sequence Seq, typename Func>
         requires std::regular_invocable<Func&, element_t<Seq>>
+    [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Func func) const
     {
-        return map_adaptor(FLUX_FWD(seq), std::move(func));
+        return map_adaptor<std::decay_t<Seq>, Func>(FLUX_FWD(seq), std::move(func));
     }
 };
 
