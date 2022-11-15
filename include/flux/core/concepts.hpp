@@ -297,13 +297,25 @@ constexpr bool is_ilist = false;
 template <typename T, typename E>
 constexpr bool is_ilist<T, std::initializer_list<E>> = true;
 
+template <typename Seq>
+concept rvalue_sequence =
+    !std::is_reference_v<Seq> &&
+    std::movable<Seq> &&
+    sequence<Seq>;
+
+template <typename Seq>
+concept trivially_copyable_sequence =
+    std::copyable<Seq> &&
+    std::is_trivially_copyable_v<Seq> &&
+    sequence<Seq>;
+
 }
 
 template <typename Seq>
 concept adaptable_sequence =
-    sequence<Seq> &&
-    !std::is_reference_v<Seq> &&
-    std::movable<Seq> &&
+    (detail::rvalue_sequence<Seq>
+         || (std::is_lvalue_reference_v<Seq> &&
+             detail::trivially_copyable_sequence<std::decay_t<Seq>>)) &&
     !detail::is_ilist<Seq>;
 
 template <typename D>
