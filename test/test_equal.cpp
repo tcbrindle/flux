@@ -87,7 +87,7 @@ constexpr bool test_equal()
 
         STATIC_CHECK(flux::equal(seq1, seq2));
 
-        static_assert(flux::equal(flux::empty<int>{}, flux::empty<float>{}));
+        static_assert(flux::equal(flux::empty<int>, flux::empty<float>));
     }
 
     return true;

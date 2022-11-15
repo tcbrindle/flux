@@ -45,7 +45,7 @@ struct zip_fn {
     constexpr auto operator()(Seqs&&... seqs) const
     {
         if constexpr (sizeof...(Seqs) == 0) {
-            return empty<std::tuple<>>{};
+            return empty<std::tuple<>>;
         } else {
             return zip_adaptor<std::decay_t<Seqs>...>(FLUX_FWD(seqs)...);
         }

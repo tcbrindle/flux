@@ -127,15 +127,15 @@ constexpr bool test_chain()
         std::array arr2 = {3, 4, 5};
 
         auto seq = flux::chain(flux::ref(arr1),
-                               flux::empty<int const>{},
+                               flux::empty<int const>,
                                flux::ref(arr2),
-                               flux::empty<int const>{},
+                               flux::empty<int const>,
                                std::array{6, 7, 8});
 
         STATIC_CHECK(flux::size(seq) == 9);
         STATIC_CHECK(check_equal(seq, {0, 1, 2, 3, 4, 5, 6, 7, 8}));
 
-        auto seq2 = flux::chain(flux::empty<int>{}, flux::empty<int>{}, flux::empty<int>{});
+        auto seq2 = flux::chain(flux::empty<int>, flux::empty<int>, flux::empty<int>);
         STATIC_CHECK(seq2.size() == 0);
         STATIC_CHECK(seq2.is_last(seq2.first()));
     }
@@ -146,9 +146,9 @@ constexpr bool test_chain()
         std::array arr2 = {6, 5, 4};
 
         auto seq = flux::chain(flux::ref(arr1),
-                               flux::empty<int>{},
+                               flux::empty<int>,
                                flux::ref(arr2),
-                               flux::empty<int>{},
+                               flux::empty<int>,
                                std::array{3, 2, 1});
 
         std::ranges::sort(seq.view());

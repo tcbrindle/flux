@@ -45,8 +45,7 @@ public:
 
 template <typename T>
     requires std::is_object_v<T>
-using empty = detail::empty_sequence<T>;
-//inline constexpr auto empty = detail::empty_sequence<T>{};
+inline constexpr auto empty = detail::empty_sequence<T>{};
 
 } // namespace flux
 
