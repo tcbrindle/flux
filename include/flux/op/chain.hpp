@@ -47,7 +47,7 @@ struct chain_fn {
     constexpr auto operator()(Seqs&&... seqs) const
     {
         if constexpr (sizeof...(Seqs) == 1) {
-            return std::move(seqs...);
+            return std::forward<Seqs...>(seqs...);
         } else {
             return chain_adaptor(FLUX_FWD(seqs)...);
         }
