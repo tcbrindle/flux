@@ -31,8 +31,6 @@ constexpr bool test_split()
 
         auto split = flux::split(flux::ref(sv), ' ');
 
-        static_assert(flux::detail::has_overloaded_slice<decltype(flux::ref(sv))>);
-
         using S = decltype(split);
 
         static_assert(flux::multipass_sequence<S>);

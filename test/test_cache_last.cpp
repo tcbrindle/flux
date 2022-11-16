@@ -32,10 +32,6 @@ constexpr bool test_cache_last()
 
         STATIC_CHECK(cached.size() == 5);
 
-        auto last = flux::last(cached);
-
-        STATIC_CHECK(last == arr.end());
-
         auto view = cached.view();
         static_assert(std::ranges::common_range<decltype(view)>);
     }

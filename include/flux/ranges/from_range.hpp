@@ -12,8 +12,17 @@
 
 namespace flux {
 
+namespace detail {
+
 template <typename R>
-    requires (!detail::derived_from_lens_base<R> && std::ranges::input_range<R>)
+concept contiguous_and_sized_range = std::ranges::contiguous_range<R> && std::ranges::sized_range<R>;
+
+}
+
+template <typename R>
+    requires (!detail::derived_from_lens_base<R> &&
+              std::ranges::input_range<R> &&
+              !detail::contiguous_and_sized_range<R>)
 struct sequence_iface<R> {
 
     using value_type = std::ranges::range_value_t<R>;
@@ -127,6 +136,102 @@ struct sequence_iface<R> {
         }
 
         return iter;
+    }
+};
+
+template <typename R>
+    requires (!detail::derived_from_lens_base<R> && detail::contiguous_and_sized_range<R>)
+struct sequence_iface<R> {
+
+    using cursor_type = std::ranges::range_size_t<R>;
+    using value_type = std::ranges::range_value_t<R>;
+    using distance_type = std::ranges::range_difference_t<R>;
+
+    template <decays_to<R> Self>
+        requires std::ranges::range<Self>
+    static constexpr auto first(Self&) -> cursor_type
+    {
+        return 0;
+    }
+
+    template <decays_to<R> Self>
+        requires std::ranges::sized_range<Self>
+    static constexpr auto is_last(Self& self, cursor_type cur) -> bool
+    {
+        return cur == std::ranges::size(self);
+    }
+
+    template <decays_to<R> Self>
+        requires std::ranges::range<Self>
+    static constexpr auto inc(Self&, cursor_type& cur) -> cursor_type&
+    {
+        return ++cur;
+    }
+
+    template <decays_to<R> Self>
+        requires std::ranges::contiguous_range<Self>
+    static constexpr auto read_at(Self& self, cursor_type cur) -> decltype(auto)
+    {
+        return *(std::ranges::data(self) + cur);
+    }
+
+    template <decays_to<R> Self>
+        requires std::ranges::range<Self>
+    static constexpr auto dec(Self&, cursor_type& cur) -> cursor_type&
+    {
+        return --cur;
+    }
+
+    template <decays_to<R> Self>
+        requires std::ranges::sized_range<Self>
+    static constexpr auto last(Self& self) -> cursor_type
+    {
+        return std::ranges::size(self);
+    }
+
+    template <decays_to<R> Self>
+        requires std::ranges::sized_range<Self>
+    static constexpr auto size(Self& self) -> std::ranges::range_size_t<R>
+    {
+        return std::ranges::size(self);
+    }
+
+    template <decays_to<R> Self>
+        requires std::ranges::range<Self>
+    static constexpr auto inc(Self&, cursor_type& cur, distance_type off) -> cursor_type&
+    {
+        return cur += off;
+    }
+
+    template <decays_to<R> Self>
+        requires std::ranges::range<Self>
+    static constexpr auto distance(Self&, cursor_type from, cursor_type to) -> distance_type
+    {
+        return static_cast<distance_type>(to - from);
+    }
+
+    template <decays_to<R> Self>
+        requires std::ranges::contiguous_range<Self>
+    static constexpr auto data(Self& self)
+    {
+        return std::ranges::data(self);
+    }
+
+    template <decays_to<R> Self, typename Pred>
+        requires std::ranges::range<Self>
+    static constexpr auto for_each_while(Self& self, Pred pred) -> cursor_type
+    {
+        cursor_type idx = 0;
+        cursor_type const last = std::ranges::size(self);
+        auto* data = std::ranges::data(self);
+
+        for (; idx != last; ++idx) {
+            if (!std::invoke(pred, data[idx])) {
+                break;
+            }
+        }
+
+        return idx;
     }
 };
 

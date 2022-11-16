@@ -89,14 +89,14 @@ TEST_CASE("find")
 {
     {
         std::vector<int> vec{1, 2, 3, 4, 5};
-        auto iter = flux::find(vec, 3);
-        REQUIRE(iter == vec.begin() + 2);
+        auto idx = flux::find(vec, 3);
+        REQUIRE(idx == 2);
     }
 
     {
         std::vector<int> vec{1, 2, 3, 4, 5};
-        auto iter = flux::from(vec).find(99);
-        REQUIRE(iter == vec.end());
+        auto idx = flux::from(vec).find(99);
+        REQUIRE(idx == vec.size());
     }
 
 }
