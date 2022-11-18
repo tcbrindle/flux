@@ -28,4 +28,15 @@ static_assert(flux::is_empty(e));
 }
 
 TEST_CASE("empty")
-{}
+{
+    REQUIRE(e.first() == f.first());
+    REQUIRE(!(e.first() < f.first()));
+    REQUIRE(e.first() == e.last());
+    REQUIRE(e.next(e.first()) == e.last());
+    REQUIRE(e.prev(e.last()) == e.first());
+    REQUIRE(e.size() == 0);
+    REQUIRE(e.distance(e.first(), e.last()) == 0);
+    REQUIRE(e.data() == nullptr);
+    REQUIRE(e.is_empty());
+    REQUIRE(flux::is_empty(e));
+}
