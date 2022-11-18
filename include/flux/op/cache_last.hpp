@@ -36,6 +36,8 @@ public:
         using value_type = value_t<Base>;
         using self_t = cache_last_adaptor;
 
+        static constexpr bool disable_multipass = !multipass_sequence<Base>;
+
         static constexpr auto is_last(self_t& self, cursor_t<Base> const& cur)
         {
             if (flux::is_last(self.base_, cur)) {

@@ -31,6 +31,9 @@ public:
     struct flux_sequence_iface : detail::passthrough_iface_base<Base> {
         using value_type = value_t<Base>;
 
+        static constexpr bool disable_multipass = !multipass_sequence<Base>;
+        static constexpr bool is_infinite = infinite_sequence<Base>;
+
         static constexpr auto read_at(auto& self, auto const& cur)
             -> decltype(flux::checked_read_at(self.base_, cur))
         {
