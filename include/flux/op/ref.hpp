@@ -89,9 +89,6 @@ struct passthrough_iface_base {
 
     using distance_type = distance_t<Base>;
 
-    static constexpr bool disable_multipass = !multipass_sequence<Base>;
-    static constexpr bool is_infinite = infinite_sequence<Base>;
-
     static constexpr auto first(auto& self)
         -> decltype(flux::first(self.base()))
     {

@@ -39,6 +39,9 @@ public:
     {
         using value_type = std::remove_cvref_t<std::invoke_result_t<Func&, element_t<Base>>>;
 
+        static constexpr bool disable_multipass = !multipass_sequence<Base>;
+        static constexpr bool is_infinite = infinite_sequence<Base>;
+
         template <typename Self>
         static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
             -> decltype(std::invoke(self.func_, flux::read_at(self.base_, cur)))

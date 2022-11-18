@@ -36,6 +36,8 @@ public:
         using value_type = value_t<Base>;
         using self_t = drop_while_adaptor;
 
+        static constexpr bool disable_multipass = !multipass_sequence<Base>;
+
         static constexpr auto first(self_t& self)
         {
             if constexpr (std::copy_constructible<cursor_t<Base>>) {
