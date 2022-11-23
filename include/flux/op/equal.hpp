@@ -31,7 +31,7 @@ struct equal_fn {
         while (!flux::is_last(seq1, cur1) && !flux::is_last(seq2, cur2)) {
             if (!std::invoke(cmp, std::invoke(proj1, flux::read_at(seq1, cur1)),
                              std::invoke(proj2, flux::read_at(seq2, cur2)))) {
-                break;
+                return false;
             }
             flux::inc(seq1, cur1);
             flux::inc(seq2, cur2);
