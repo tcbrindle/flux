@@ -38,6 +38,7 @@ add_executable(test-libflux
 
     test_bitset.cpp
     test_empty.cpp
+    test_getlines.cpp
     test_istream.cpp
     test_istreambuf.cpp
     test_single.cpp
