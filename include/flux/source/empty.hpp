@@ -29,7 +29,7 @@ struct empty_sequence : lens_base<empty_sequence<T>> {
         static constexpr auto last(empty_sequence) -> cursor_type { return {}; }
         static constexpr auto is_last(empty_sequence, cursor_type) -> bool { return true; }
 
-        static constexpr auto inc(empty_sequence, cursor_type& cur, std::ptrdiff_t = 0)
+        static constexpr auto inc(empty_sequence, cursor_type& cur, distance_t = 0)
             -> cursor_type&
         {
             return cur;

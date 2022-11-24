@@ -19,7 +19,7 @@ namespace {
 
 constexpr auto  to_string_view = []<typename Seq>(Seq&& seq) // danger Will Robinson
 {
-    return std::basic_string_view<flux::value_t<Seq>>(flux::data(seq), flux::size(seq));
+    return std::basic_string_view<flux::value_t<Seq>>(flux::data(seq), flux::usize(seq));
 };
 
 constexpr bool test_split()

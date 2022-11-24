@@ -31,14 +31,14 @@ struct sequence_iface<T[N]> {
 
     static constexpr auto& dec(auto const&, std::size_t& idx) { return --idx; }
 
-    static constexpr auto& inc(auto const&, std::size_t& idx, std::ptrdiff_t offset)
+    static constexpr auto& inc(auto const&, std::size_t& idx, distance_t offset)
     {
-        return idx += offset;
+        return idx += narrow_cast<std::ptrdiff_t>(offset);
     }
 
     static constexpr auto distance(auto const&, std::size_t from, std::size_t to)
     {
-        return static_cast<std::ptrdiff_t>(to) - static_cast<std::ptrdiff_t>(from);
+        return narrow_cast<distance_t>(to) - narrow_cast<distance_t>(from);
     }
 
     static constexpr auto data(auto& self) { return self; }

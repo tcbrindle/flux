@@ -25,7 +25,7 @@ struct to_string_view_fn {
         requires sized_sequence<Seq> && character<value_t<Seq>>
     constexpr auto operator()(Seq&& seq) const
     {
-        return std::basic_string_view<value_t<Seq>>(flux::data(seq), flux::size(seq));
+        return std::basic_string_view<value_t<Seq>>(flux::data(seq), flux::usize(seq));
     }
 };
 
