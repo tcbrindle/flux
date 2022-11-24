@@ -43,6 +43,7 @@
 
 #include <flux/source/empty.hpp>
 #include <flux/source/getlines.hpp>
+#include <flux/source/iota.hpp>
 #include <flux/source/istream.hpp>
 #include <flux/source/istreambuf.hpp>
 #include <flux/source/single.hpp>
