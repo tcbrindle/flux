@@ -77,7 +77,6 @@ template <typename Base>
 struct sequence_iface<detail::reverse_adaptor<Base>>
 {
     using value_type = value_t<Base>;
-    using distance_type = distance_t<Base>;
 
     static constexpr auto first(auto& self)
     {

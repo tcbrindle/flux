@@ -33,7 +33,7 @@
 namespace flux::detail {
 
 template <typename Seq, typename Comp, typename Proj>
-constexpr void sift_up_n(Seq& seq, distance_t<Seq> n, Comp& comp, Proj& proj)
+constexpr void sift_up_n(Seq& seq, distance_t n, Comp& comp, Proj& proj)
 {
     cursor_t<Seq> first = flux::first(seq);
 
@@ -60,7 +60,7 @@ constexpr void sift_up_n(Seq& seq, distance_t<Seq> n, Comp& comp, Proj& proj)
 }
 
 template <typename Seq, typename Comp, typename Proj>
-constexpr void sift_down_n(Seq& seq, distance_t<Seq> n, cursor_t<Seq> start,
+constexpr void sift_down_n(Seq& seq, distance_t n, cursor_t<Seq> start,
                            Comp& comp, Proj& proj)
 {
     cursor_t<Seq> first = flux::first(seq);
@@ -123,7 +123,7 @@ constexpr void sift_down_n(Seq& seq, distance_t<Seq> n, cursor_t<Seq> start,
 template <sequence Seq, typename Comp, typename Proj >
 constexpr void make_heap(Seq& seq, Comp& comp, Proj& proj)
 {
-    distance_t<Seq> n = flux::size(seq);
+    distance_t n = flux::size(seq);
     auto first = flux::first(seq);
 
     if (n > 1) {
@@ -134,7 +134,7 @@ constexpr void make_heap(Seq& seq, Comp& comp, Proj& proj)
 }
 
 template <sequence Seq, typename Comp, typename Proj>
-constexpr void pop_heap(Seq& seq, distance_t<Seq> n, Comp& comp, Proj& proj)
+constexpr void pop_heap(Seq& seq, distance_t n, Comp& comp, Proj& proj)
 {
     auto first = flux::first(seq);
     if (n > 1) {

@@ -61,7 +61,6 @@ template <typename... Bases>
 struct sequence_iface<detail::chain_adaptor<Bases...>> {
 
     using value_type = std::common_type_t<value_t<Bases>...>;
-    using distance_type = std::common_type_t<distance_t<Bases>...>;
 
     static constexpr bool disable_multipass = !(multipass_sequence<Bases> && ...);
     static constexpr bool is_infinite = (infinite_sequence<Bases> || ...);
@@ -219,7 +218,7 @@ private:
 
     template <std::size_t N, typename Self>
     static constexpr auto inc_ra_impl(Self& self, cursor_type<Self>& cur,
-                                      distance_type offset)
+                                      distance_t offset)
         -> cursor_type<Self>&
     {
         if constexpr (N < End) {
@@ -315,7 +314,7 @@ public:
     template <typename Self>
     static constexpr auto distance(Self& self, cursor_type<Self> const& from,
                                    cursor_type<Self> const& to)
-        -> distance_type
+        -> distance_t
         requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
                  (bounded_sequence<const_like_t<Self, Bases>> && ...)
     {
@@ -327,7 +326,7 @@ public:
     }
 
     template <typename Self>
-    static constexpr auto inc(Self& self, cursor_type<Self>& cur, distance_type offset)
+    static constexpr auto inc(Self& self, cursor_type<Self>& cur, distance_t offset)
         -> cursor_type<Self>&
         requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
                  (bounded_sequence<const_like_t<Self, Bases>> && ...)

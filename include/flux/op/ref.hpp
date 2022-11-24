@@ -87,8 +87,6 @@ struct passthrough_iface_base {
     template <typename Self>
     using cursor_t = decltype(flux::first(FLUX_DECLVAL(Self&).base()));
 
-    using distance_type = distance_t<Base>;
-
     static constexpr auto first(auto& self)
         -> decltype(flux::first(self.base()))
     {
@@ -124,7 +122,7 @@ struct passthrough_iface_base {
     }
 
     template <typename Self>
-    static constexpr auto inc(Self& self, cursor_t<Self>& cur, distance_type dist)
+    static constexpr auto inc(Self& self, cursor_t<Self>& cur, distance_t dist)
         -> decltype(flux::inc(self.base(), cur, dist))
     {
         return flux::unchecked_inc(self.base(), cur, dist);

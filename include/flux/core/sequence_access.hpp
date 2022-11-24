@@ -54,7 +54,7 @@ struct unchecked_inc_fn {
 
     template <random_access_sequence Seq>
     constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur,
-                              distance_t<Seq> offset) const
+                              distance_t offset) const
         noexcept(noexcept(iface_t<Seq>::inc(seq, cur, offset))) -> cursor_t<Seq>&
     {
         return iface_t<Seq>::inc(seq, cur, offset);
@@ -75,12 +75,12 @@ struct distance_fn {
     [[nodiscard]]
     constexpr auto operator()(Seq& seq, cursor_t<Seq> const& from,
                                             cursor_t<Seq> const& to) const
-        -> distance_t<Seq>
+        -> distance_t
     {
         if constexpr (random_access_sequence<Seq>) {
             return iface_t<Seq>::distance(seq, from, to);
         } else {
-            distance_t<Seq> n = 0;
+            distance_t n = 0;
             auto from_ = from;
             while (from_ != to) {
                 unchecked_inc_fn{}(seq, from_);
@@ -114,7 +114,7 @@ struct last_fn {
 struct size_fn {
     template <sized_sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq& seq) const -> distance_t<Seq>
+    constexpr auto operator()(Seq& seq) const -> distance_t
     {
         if constexpr (requires { iface_t<Seq>::size(seq); }) {
             return iface_t<Seq>::size(seq);
@@ -149,8 +149,8 @@ struct check_bounds_fn {
     constexpr bool operator()(Seq& seq, cursor_t<Seq> const& cur) const
     {
         if constexpr (random_access_sequence<Seq>) {
-            distance_t<Seq> dist = distance_fn{}(seq, first_fn{}(seq), cur);
-            if (dist < distance_t<Seq>{0}) {
+            distance_t dist = distance_fn{}(seq, first_fn{}(seq), cur);
+            if (dist < distance_t{0}) {
                 return false;
             }
             if constexpr (sized_sequence<Seq>) {
@@ -201,7 +201,7 @@ struct checked_inc_fn {
     }
 
     template <random_access_sequence Seq>
-    constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur, distance_t<Seq> offset) const
+    constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur, distance_t offset) const
         -> cursor_t<Seq>&
     {
         const auto dist = distance_fn{}(seq, first_fn{}(seq), cur);
@@ -273,13 +273,13 @@ struct next_fn {
 
     template <sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq& seq, cursor_t<Seq> cur, distance_t<Seq> offset) const
+    constexpr auto operator()(Seq& seq, cursor_t<Seq> cur, distance_t offset) const
         -> cursor_t<Seq>
     {
         if constexpr (random_access_sequence<Seq>) {
             return inc(seq, cur, offset);
         } else if constexpr (bidirectional_sequence<Seq>) {
-            const auto zero = distance_t<Seq>{0};
+            auto const zero = distance_t{0};
             if (offset > zero) {
                 while (offset-- > zero) {
                     inc(seq, cur);
@@ -291,7 +291,7 @@ struct next_fn {
             }
             return cur;
         } else {
-            while (offset-- > distance_t<Seq>{0}) {
+            while (offset-- > distance_t{0}) {
                 inc(seq, cur);
             }
             return cur;

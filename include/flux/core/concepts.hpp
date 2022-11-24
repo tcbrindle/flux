@@ -112,7 +112,6 @@ struct rvalue_element_type<T> {
 template <typename Seq>
 using value_t = typename detail::value_type<Seq>::type;
 
-template <typename Seq>
 using distance_t = std::ptrdiff_t;
 
 template <typename Seq>
@@ -148,7 +147,6 @@ concept sequence_impl =
     requires (Seq& seq, cursor_t<Seq>& cur) {
         { Iface::inc(seq, cur) } -> std::same_as<cursor_t<Seq>&>;
     } &&
-    std::signed_integral<distance_t<Seq>> &&
     std::common_reference_with<element_t<Seq>&&, rvalue_element_t<Seq>&&>;
     // FIXME FIXME: Need C++23 tuple changes, otherwise zip breaks these
 /*    std::common_reference_with<element_t<Seq>&&, value_t<Seq>&> &&
@@ -195,11 +193,11 @@ namespace detail {
 template <typename Seq, typename Iface = sequence_iface<std::remove_cvref_t<Seq>>>
 concept random_access_sequence_impl =
     bidirectional_sequence<Seq> && ordered_cursor<cursor_t<Seq>> &&
-    requires (Seq& seq, cursor_t<Seq>& cur, distance_t<Seq> offset) {
+    requires (Seq& seq, cursor_t<Seq>& cur, distance_t offset) {
         { Iface::inc(seq, cur, offset) } -> std::same_as<cursor_t<Seq>&>;
     } &&
     requires (Seq& seq, cursor_t<Seq> const& cur) {
-        { Iface::distance(seq, cur, cur) } -> std::convertible_to<distance_t<Seq>>;
+        { Iface::distance(seq, cur, cur) } -> std::convertible_to<distance_t>;
     };
 
 } // namespace detail
@@ -243,7 +241,7 @@ template <typename Seq, typename Iface = sequence_iface<std::remove_cvref_t<Seq>
 concept sized_sequence_impl =
     sequence<Seq> &&
     (requires (Seq& seq) {
-        { Iface::size(seq) } -> std::convertible_to<distance_t<Seq>>;
+        { Iface::size(seq) } -> std::convertible_to<distance_t>;
     } || (
         random_access_sequence<Seq> && bounded_sequence<Seq>
     ));

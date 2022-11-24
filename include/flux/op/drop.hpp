@@ -19,11 +19,11 @@ template <sequence Base>
 struct drop_adaptor : lens_base<drop_adaptor<Base>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
-    distance_t<Base> count_;
+    distance_t count_;
     std::optional<cursor_t<Base>> cached_first_;
 
 public:
-    constexpr drop_adaptor(decays_to<Base> auto&& base, distance_t<Base> count)
+    constexpr drop_adaptor(decays_to<Base> auto&& base, distance_t count)
         : base_(FLUX_FWD(base)),
           count_(count)
     {}
@@ -33,7 +33,6 @@ public:
 
     struct flux_sequence_iface : passthrough_iface_base<drop_adaptor> {
         using value_type = value_t<Base>;
-        using distance_type = distance_t<Base>;
 
         static constexpr bool disable_multipass = !multipass_sequence<Base>;
 
@@ -69,7 +68,7 @@ public:
 struct drop_fn {
     template <adaptable_sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, distance_t<Seq> count) const
+    constexpr auto operator()(Seq&& seq, distance_t count) const
     {
         return drop_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq), count);
     }
@@ -81,8 +80,7 @@ struct drop_fn {
 inline constexpr auto drop = detail::drop_fn{};
 
 template <typename Derived>
-template <std::same_as<Derived> D>
-constexpr auto lens_base<Derived>::drop(distance_t<D> count) &&
+constexpr auto lens_base<Derived>::drop(distance_t count) &&
 {
     return detail::drop_adaptor<Derived>(std::move(derived()), count);
 }
