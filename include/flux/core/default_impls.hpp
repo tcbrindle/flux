@@ -93,7 +93,6 @@ struct sequence_iface<std::reference_wrapper<Seq>> {
     using self_t = std::reference_wrapper<Seq>;
 
     using value_type = value_t<Seq>;
-    using distance_type = distance_t<Seq>;
 
     static constexpr bool disable_multipass = !multipass_sequence<Seq>;
 
@@ -126,7 +125,7 @@ struct sequence_iface<std::reference_wrapper<Seq>> {
         return flux::dec(self.get(), cur);
     }
 
-    static constexpr auto inc(self_t self, cursor_t<Seq>& cur, distance_type offset)
+    static constexpr auto inc(self_t self, cursor_t<Seq>& cur, distance_t offset)
         -> cursor_t<Seq>&
         requires random_access_sequence<Seq>
     {
@@ -135,7 +134,7 @@ struct sequence_iface<std::reference_wrapper<Seq>> {
 
     static constexpr auto distance(self_t self, cursor_t<Seq> const& from,
                                    cursor_t<Seq> const& to)
-        -> distance_type
+        -> distance_t
         requires random_access_sequence<Seq>
     {
         return flux::distance(self.get(), from, to);
@@ -153,7 +152,7 @@ struct sequence_iface<std::reference_wrapper<Seq>> {
         return flux::last(self.get());
     }
 
-    static constexpr auto size(self_t self) -> distance_type
+    static constexpr auto size(self_t self) -> distance_t
         requires sized_sequence<Seq>
     {
         return flux::size(self.get());

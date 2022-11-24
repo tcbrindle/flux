@@ -26,7 +26,6 @@ template <typename R>
 struct sequence_iface<R> {
 
     using value_type = std::ranges::range_value_t<R>;
-    using distance_type = std::ranges::range_difference_t<R>;
 
     static constexpr bool disable_multipass = !std::ranges::forward_range<R>;
 
@@ -68,7 +67,7 @@ struct sequence_iface<R> {
 
     template <decays_to<R> Self>
         requires std::random_access_iterator<cursor_t<Self>>
-    static constexpr auto inc(Self&, cursor_t<Self>& cur, distance_t<Self> offset)
+    static constexpr auto inc(Self&, cursor_t<Self>& cur, distance_t offset)
         -> cursor_t<Self>&
     {
         return cur += offset;
@@ -145,7 +144,6 @@ struct sequence_iface<R> {
 
     using cursor_type = std::ranges::range_size_t<R>;
     using value_type = std::ranges::range_value_t<R>;
-    using distance_type = std::ranges::range_difference_t<R>;
 
     template <decays_to<R> Self>
         requires std::ranges::range<Self>
@@ -198,16 +196,16 @@ struct sequence_iface<R> {
 
     template <decays_to<R> Self>
         requires std::ranges::range<Self>
-    static constexpr auto inc(Self&, cursor_type& cur, distance_type off) -> cursor_type&
+    static constexpr auto inc(Self&, cursor_type& cur, distance_t off) -> cursor_type&
     {
         return cur += off;
     }
 
     template <decays_to<R> Self>
         requires std::ranges::range<Self>
-    static constexpr auto distance(Self&, cursor_type from, cursor_type to) -> distance_type
+    static constexpr auto distance(Self&, cursor_type from, cursor_type to) -> distance_t
     {
-        return static_cast<distance_type>(to - from);
+        return static_cast<distance_t>(to - from);
     }
 
     template <decays_to<R> Self>

@@ -78,7 +78,6 @@ private:
 
 public:
     using value_type = tuple_t<value_t<Bases>...>;
-    using distance_type = std::common_type_t<distance_t<Bases>...>;
 
     static constexpr bool is_infinite = (infinite_sequence<Bases> && ...);
 
@@ -129,7 +128,7 @@ public:
     }
 
     template <typename Self>
-    static constexpr auto& inc(Self& self, cursor_t<Self>& cur, distance_t<Self> offset)
+    static constexpr auto& inc(Self& self, cursor_t<Self>& cur, distance_t offset)
         requires (random_access_sequence<const_like_t<Self, Bases>> && ...)
     {
         [&]<std::size_t... I>(std::index_sequence<I...>) {
@@ -145,9 +144,7 @@ public:
         requires (random_access_sequence<const_like_t<Self, Bases>> && ...)
     {
         return [&]<std::size_t... I>(std::index_sequence<I...>) {
-            return std::min({
-                static_cast<distance_t<Self>>(
-                    flux::distance(std::get<I>(self.bases_), std::get<I>(from), std::get<I>(to)))...});
+            return std::min({flux::distance(std::get<I>(self.bases_), std::get<I>(from), std::get<I>(to))...});
         }(std::index_sequence_for<Bases...>{});
     }
 
@@ -165,7 +162,7 @@ public:
         requires (sized_sequence<const_like_t<Self, Bases>> && ...)
     {
         return std::apply([&](auto&... args) {
-            return std::min({static_cast<distance_t<Self>>(flux::size(args))...});
+            return std::min({flux::size(args)...});
         }, self.bases_);
     }
 

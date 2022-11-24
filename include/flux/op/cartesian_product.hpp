@@ -49,9 +49,6 @@ inline constexpr bool cartesian_product_is_bounded = bounded_sequence<B0>;
 
 template <typename... Bases>
 struct cartesian_product_iface_base {
-
-    using distance_type = std::common_type_t<distance_t<Bases>...>;
-
 private:
     template <typename From, typename To>
     using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
@@ -90,7 +87,7 @@ private:
     }
 
     template <std::size_t I, typename Self>
-    static constexpr auto ra_inc_impl(Self& self, cursor_type<Self>& cur, distance_type offset)
+    static constexpr auto ra_inc_impl(Self& self, cursor_type<Self>& cur, distance_t offset)
     -> cursor_type<Self>&
     {
         auto& base = std::get<I>(self.bases_);
@@ -115,7 +112,7 @@ private:
     template <std::size_t I, typename Self>
     static constexpr auto distance_impl(Self& self,
                                         cursor_type<Self> const& from,
-                                        cursor_type<Self> const& to) -> distance_type
+                                        cursor_type<Self> const& to) -> distance_t
     {
         if constexpr (I == 0) {
             return flux::distance(std::get<0>(self.bases_), std::get<0>(from), std::get<0>(to));
@@ -170,7 +167,7 @@ public:
     template <typename Self>
     requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
              (sized_sequence<const_like_t<Self, Bases>> && ...)
-    static constexpr auto inc(Self& self, cursor_type<Self>& cur, distance_type offset)
+    static constexpr auto inc(Self& self, cursor_type<Self>& cur, distance_t offset)
     -> cursor_type<Self>&
     {
         return ra_inc_impl<sizeof...(Bases) - 1>(self, cur, offset);
@@ -181,17 +178,17 @@ public:
              (sized_sequence<const_like_t<Self, Bases>> && ...)
     static constexpr auto distance(Self& self,
                                    cursor_type<Self> const& from,
-                                   cursor_type<Self> const& to) -> distance_type
+                                   cursor_type<Self> const& to) -> distance_t
     {
         return distance_impl<sizeof...(Bases) - 1>(self, from, to);
     }
 
     template <typename Self>
         requires (sized_sequence<const_like_t<Self, Bases>> && ...)
-    static constexpr auto size(Self& self) -> distance_type
+    static constexpr auto size(Self& self) -> distance_t
     {
         return std::apply([](auto&... base) {
-          return (static_cast<distance_type>(flux::size(base)) * ...);
+          return (flux::size(base) * ...);
         }, self.bases_);
     }
 };

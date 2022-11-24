@@ -19,7 +19,7 @@ struct take_adaptor : lens_base<take_adaptor<Base>>
 {
 private:
     Base base_;
-    distance_t<Base> count_;
+    distance_t count_;
 
     template <bool IsConst>
     struct cursor_type {
@@ -28,7 +28,7 @@ private:
 
     public:
         cursor_t<base_t> base_cur;
-        distance_t<base_t> length;
+        distance_t length;
 
         friend bool operator==(cursor_type const&, cursor_type const&) = default;
         friend auto operator<=>(cursor_type const& lhs, cursor_type const& rhs) = default;
@@ -37,7 +37,7 @@ private:
     friend struct sequence_iface<take_adaptor>;
 
 public:
-    constexpr take_adaptor(decays_to<Base> auto&& base, distance_t<Base> count)
+    constexpr take_adaptor(decays_to<Base> auto&& base, distance_t count)
         : base_(FLUX_FWD(base)),
           count_(count)
     {}
@@ -50,7 +50,7 @@ struct take_fn {
 
     template <adaptable_sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, distance_t<Seq> count) const
+    constexpr auto operator()(Seq&& seq, distance_t count) const
     {
         if constexpr (random_access_sequence<Seq> && std::is_lvalue_reference_v<Seq>) {
             auto first = flux::first(seq);
@@ -72,7 +72,6 @@ struct sequence_iface<detail::take_adaptor<Base>> {
         typename std::remove_const_t<Self>::template cursor_type<std::is_const_v<Self>>;
 
     using value_type = value_t<Base>;
-    using distance_type = distance_t<Base>;
 
     static constexpr bool disable_multipass = !multipass_sequence<Base>;
 
@@ -116,7 +115,7 @@ struct sequence_iface<detail::take_adaptor<Base>> {
     }
 
     template <typename Self>
-    static constexpr auto inc(Self& self, cursor_t<Self>& cur, distance_t<Base> offset)
+    static constexpr auto inc(Self& self, cursor_t<Self>& cur, distance_t offset)
         -> cursor_t<Self>&
         requires random_access_sequence<Base>
     {
@@ -167,10 +166,9 @@ struct sequence_iface<detail::take_adaptor<Base>> {
 inline constexpr auto take = detail::take_fn{};
 
 template <typename Derived>
-template <std::same_as<Derived> D>
-constexpr auto lens_base<Derived>::take(distance_t<D> count) &&
+constexpr auto lens_base<Derived>::take(distance_t count) &&
 {
-    return detail::take_adaptor<D>(std::move(derived()), count);
+    return detail::take_adaptor<Derived>(std::move(derived()), count);
 }
 
 } // namespace flux

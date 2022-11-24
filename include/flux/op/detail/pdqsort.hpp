@@ -134,7 +134,7 @@ constexpr bool partial_insertion_sort(Seq& seq, Cur const begin, Cur const end, 
         return true;
     }
 
-    distance_t<Seq> limit = 0;
+    distance_t limit = 0;
 
     for (auto cur = next(seq, begin); cur != end; inc(seq, cur)) {
         if (limit > pqdsort_partial_insertion_sort_limit) {
@@ -328,8 +328,8 @@ partition_right_branchless(Seq& seq, Cur const begin, Cur const end, Comp& comp)
             last -= pdqsort_block_size;
     }
 
-    distance_t<Seq> l_size = 0, r_size = 0;
-    distance_t<Seq> unknown_left =
+    distance_t l_size = 0, r_size = 0;
+    distance_t unknown_left =
         (last - first) - ((num_r || num_l) ? pdqsort_block_size : 0);
     if (num_r) {
         // Handle leftover block by assigning the unknown elements to the other
@@ -349,7 +349,7 @@ partition_right_branchless(Seq& seq, Cur const begin, Cur const end, Comp& comp)
     if (unknown_left && !num_l) {
         start_l = 0;
         Cur cur = first;
-        for (unsigned char i = 0; static_cast<distance_t<Seq>>(i) < l_size;) {
+        for (unsigned char i = 0; static_cast<distance_t>(i) < l_size;) {
             offsets_l[num_l] = i++;
             num_l += !comp(read_at(seq, cur), pivot);
             inc(seq, cur);
@@ -358,7 +358,7 @@ partition_right_branchless(Seq& seq, Cur const begin, Cur const end, Comp& comp)
     if (unknown_left && !num_r) {
         start_r = 0;
         Cur cur = last;
-        for (unsigned char i = 0; static_cast<distance_t<Seq>>(i) < r_size;) {
+        for (unsigned char i = 0; static_cast<distance_t>(i) < r_size;) {
             offsets_r[num_r] = ++i;
             num_r += comp(read_at(seq, dec(seq, cur)), pivot);
         }
@@ -502,8 +502,7 @@ template <bool Branchless, typename Seq, typename Comp,
 constexpr void pdqsort_loop(Seq& seq, Cur begin, Cur end, Comp& comp,
                             int bad_allowed, bool leftmost = true)
 {
-    //using diff_t = iter_difference_t<I>
-    using diff_t = distance_t<Seq>;
+    using diff_t = distance_t;
 
     // Use a while loop for tail recursion elimination.
     while (true) {

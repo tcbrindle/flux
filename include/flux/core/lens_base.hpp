@@ -81,7 +81,7 @@ public:
     /// Increments the given cursor by `offset` places
     template <std::same_as<Derived> D = Derived>
         requires random_access_sequence<Derived>
-    constexpr auto& inc(cursor_t<D>& cur, distance_t<D> offset) { return flux::inc(derived(), cur, offset); }
+    constexpr auto& inc(cursor_t<D>& cur, distance_t offset) { return flux::inc(derived(), cur, offset); }
 
     /// Returns the number of times `from` must be incremented to reach `to`
     ///
@@ -125,8 +125,8 @@ public:
             requires bounded_sequence<Derived> ||
                      (multipass_sequence<Derived> && not infinite_sequence<Derived>);
 
-    template <std::same_as<Derived> D = Derived>
-    constexpr auto drop(distance_t<D> count) &&;
+    [[nodiscard]]
+    constexpr auto drop(distance_t count) &&;
 
     template <typename Pred>
         requires std::predicate<Pred&, element_t<Derived>>
@@ -160,9 +160,8 @@ public:
     [[nodiscard]]
     constexpr auto split_string(Pattern&& pattern) &&;
 
-    template <std::same_as<Derived> D = Derived>
     [[nodiscard]]
-    constexpr auto take(distance_t<D> count) &&;
+    constexpr auto take(distance_t count) &&;
 
     template <typename Pred>
         requires std::predicate<Pred&, element_t<Derived>>
