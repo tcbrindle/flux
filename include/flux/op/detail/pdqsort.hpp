@@ -323,14 +323,14 @@ partition_right_branchless(Seq& seq, Cur const begin, Cur const end, Comp& comp)
         start_l += num;
         start_r += num;
         if (num_l == 0)
-            first += pdqsort_block_size;
+            inc(seq, first, pdqsort_block_size);
         if (num_r == 0)
-            last -= pdqsort_block_size;
+            inc(seq, last, -pdqsort_block_size);
     }
 
     distance_t l_size = 0, r_size = 0;
     distance_t unknown_left =
-        (last - first) - ((num_r || num_l) ? pdqsort_block_size : 0);
+        distance(seq, first, last) - ((num_r || num_l) ? pdqsort_block_size : 0);
     if (num_r) {
         // Handle leftover block by assigning the unknown elements to the other
         // block.
@@ -372,9 +372,9 @@ partition_right_branchless(Seq& seq, Cur const begin, Cur const end, Comp& comp)
     start_l += num;
     start_r += num;
     if (num_l == 0)
-        first += l_size;
+        inc(seq, first, l_size);
     if (num_r == 0)
-        last -= r_size;
+        inc(seq, last, -r_size);
 
     // We have now fully identified [first, last)'s proper position. Swap the
     // last elements.

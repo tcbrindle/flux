@@ -70,7 +70,7 @@ struct sequence_iface<R> {
     static constexpr auto inc(Self&, cursor_t<Self>& cur, distance_t offset)
         -> cursor_t<Self>&
     {
-        return cur += offset;
+        return cur += narrow_cast<std::ranges::range_difference_t<Self>>(offset);
     }
 
     template <decays_to<R> Self>
@@ -198,14 +198,14 @@ struct sequence_iface<R> {
         requires std::ranges::range<Self>
     static constexpr auto inc(Self&, cursor_type& cur, distance_t off) -> cursor_type&
     {
-        return cur += off;
+        return cur += narrow_cast<std::ptrdiff_t>(off);
     }
 
     template <decays_to<R> Self>
         requires std::ranges::range<Self>
     static constexpr auto distance(Self&, cursor_type from, cursor_type to) -> distance_t
     {
-        return static_cast<distance_t>(to - from);
+        return narrow_cast<distance_t>(to) - narrow_cast<distance_t>(from);
     }
 
     template <decays_to<R> Self>

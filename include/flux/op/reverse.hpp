@@ -120,7 +120,7 @@ struct sequence_iface<detail::reverse_adaptor<Base>>
     static constexpr auto distance(auto& self, auto const& from, auto const& to)
         requires random_access_sequence<decltype(self.base_)>
     {
-        return -flux::distance(self.base_, from.base_cur, to.base_cur);
+        return flux::distance(self.base_, to.base_cur, from.base_cur);
     }
 
     // FIXME: GCC11 ICE

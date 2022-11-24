@@ -95,7 +95,7 @@ public:
         return cur;
     }
 
-    static constexpr auto inc(self_t const&, cursor_type& cur, std::ptrdiff_t off)
+    static constexpr auto inc(self_t const&, cursor_type& cur, distance_t off)
         -> cursor_type&
     {
         if (off > 0) {
