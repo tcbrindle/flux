@@ -89,18 +89,6 @@ template <has_element_type T>
              requires { typename T::value_type; }
 struct value_type<T> { using type = typename T::value_type; };
 
-template <typename>
-struct distance_type { using type = std::ptrdiff_t; };
-
-template <typename T>
-    requires requires { typename iface_t<T>::distance_type; }
-struct distance_type<T> { using type = typename iface_t<T>::distance_type; };
-
-template <typename T>
-    requires requires { iface_t<T>::using_primary_template; } &&
-             requires { typename std::decay_t<T>::distance_type; }
-struct distance_type<T> { using type = typename std::decay_t<T>::distance_type; };
-
 template <has_element_type T>
 struct rvalue_element_type {
     using type = std::conditional_t<std::is_lvalue_reference_v<element_t<T>>,
@@ -125,7 +113,7 @@ template <typename Seq>
 using value_t = typename detail::value_type<Seq>::type;
 
 template <typename Seq>
-using distance_t = typename detail::distance_type<Seq>::type;
+using distance_t = std::ptrdiff_t;
 
 template <typename Seq>
 using rvalue_element_t = typename detail::rvalue_element_type<Seq>::type;
