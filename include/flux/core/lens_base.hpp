@@ -104,7 +104,11 @@ public:
     [[nodiscard]]
     constexpr auto size() requires sized_sequence<Derived> { return flux::size(derived()); }
 
-    /// Returns true of the sequence contains no elements
+    /// Returns the number of elements in the sequence as a size_t
+    [[nodiscard]]
+    constexpr auto usize() requires sized_sequence<Derived> { return flux::usize(derived()); }
+
+    /// Returns true if the sequence contains no elements
     [[nodiscard]]
     constexpr auto is_empty() requires multipass_sequence<Derived> { return flux::is_empty(derived()); }
 

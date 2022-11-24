@@ -125,6 +125,15 @@ struct size_fn {
     }
 };
 
+struct usize_fn {
+    template <sized_sequence Seq>
+    [[nodiscard]]
+    constexpr auto operator()(Seq& seq) const -> std::size_t
+    {
+        return narrow_cast<std::size_t>(size_fn{}(seq));
+    }
+};
+
 struct unchecked_move_at_fn {
     template <sequence Seq>
     [[nodiscard]]
@@ -242,6 +251,7 @@ inline constexpr auto distance = detail::distance_fn{};
 inline constexpr auto data = detail::data_fn{};
 inline constexpr auto last = detail::last_fn{};
 inline constexpr auto size = detail::size_fn{};
+inline constexpr auto usize = detail::usize_fn{};
 inline constexpr auto checked_read_at = detail::checked_read_at_fn{};
 inline constexpr auto checked_move_at = detail::checked_move_at_fn{};
 inline constexpr auto checked_inc = detail::checked_inc_fn{};
