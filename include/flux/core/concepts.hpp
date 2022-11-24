@@ -26,6 +26,7 @@ namespace detail {
 
 struct copy_fn {
     template <typename T>
+    [[nodiscard]]
     constexpr auto operator()(T&& arg) const
         noexcept(std::is_nothrow_convertible_v<T, std::decay_t<T>>)
         -> std::decay_t<T>
@@ -37,6 +38,32 @@ struct copy_fn {
 }
 
 inline constexpr auto copy = detail::copy_fn{};
+
+namespace detail {
+
+template <std::integral To>
+struct narrow_cast_fn {
+    template <std::integral From>
+    [[nodiscard]]
+    constexpr auto operator()(From from) const -> To
+    {
+        if constexpr (requires { To{from}; }) {
+            return To{from}; // not a narrowing conversion
+        } else {
+            To to = static_cast<To>(from);
+
+            assert(static_cast<From>(to) == from &&
+                   ((std::is_signed_v<From> == std::is_signed_v<To>) || ((to < To{}) == (from < From{}))));
+
+            return to;
+        }
+    }
+};
+
+}
+
+template <std::integral To>
+inline constexpr auto narrow_cast = detail::narrow_cast_fn<To>{};
 
 /*
  * Cursor concepts
