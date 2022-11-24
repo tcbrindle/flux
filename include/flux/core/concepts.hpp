@@ -139,7 +139,13 @@ struct rvalue_element_type<T> {
 template <typename Seq>
 using value_t = typename detail::value_type<Seq>::type;
 
+#ifdef FLUX_DISTANCE_TYPE
+using distance_t = FLUX_DISTANCE_TYPE;
+static_assert(std::signed_integral<distance_t>,
+              "Custom FLUX_DISTANCE_TYPE must be a signed integer type");
+#else
 using distance_t = std::ptrdiff_t;
+#endif // FLUX_DISTANCE_TYPE
 
 template <typename Seq>
 using rvalue_element_t = typename detail::rvalue_element_type<Seq>::type;
