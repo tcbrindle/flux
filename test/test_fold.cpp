@@ -29,6 +29,15 @@ constexpr bool test_fold()
     }
 
     {
+        std::vector<double> v = {0.25, 0.75};
+        auto r = flux::fold(v, std::plus(), 1);
+
+        static_assert(std::same_as<decltype(r), double>);
+
+        STATIC_CHECK(r == 2.0);
+    }
+
+    {
         std::array arr{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
         auto prod = flux::from(arr)

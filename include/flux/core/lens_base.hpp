@@ -263,11 +263,14 @@ public:
     [[nodiscard]]
     constexpr auto find_if_not(Pred pred, Proj proj = {});
 
-    template <typename Func, typename Init>
-        requires std::invocable<Func&, Init, element_t<Derived>> &&
-                 std::assignable_from<Init&, std::invoke_result_t<Func&, Init, element_t<Derived>>>
+    template <typename D = Derived, typename Func, typename Init,
+              typename R = std::invoke_result_t<Func&, Init, element_t<D>>>
+        requires std::invocable<Func&, Init, element_t<D>> &&
+                 std::invocable<Func&, R, element_t<D>> &&
+                 std::convertible_to<R, Init> &&
+                 std::assignable_from<Init&, std::invoke_result_t<Func&, R, element_t<Derived>>>
     [[nodiscard]]
-    constexpr auto fold(Func func, Init init) -> Init;
+    constexpr auto fold(Func func, Init init) -> R;
 
     template <typename Func, typename Proj = std::identity>
         requires std::invocable<Func&, projected_t<Proj, Derived>>
