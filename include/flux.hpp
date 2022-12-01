@@ -27,6 +27,7 @@
 #include <flux/op/from.hpp>
 #include <flux/op/inplace_reverse.hpp>
 #include <flux/op/map.hpp>
+#include <flux/op/minmax.hpp>
 #include <flux/op/ref.hpp>
 #include <flux/op/reverse.hpp>
 #include <flux/op/slice.hpp>
