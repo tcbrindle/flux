@@ -85,6 +85,55 @@ constexpr bool test_fold_first()
 }
 static_assert(test_fold_first());
 
+constexpr bool test_sum()
+{
+    {
+        auto s = flux::from(std::array{1, 2, 3, 4, 5}).sum();
+
+        static_assert(std::same_as<decltype(s), int>);
+        STATIC_CHECK(s == 15);
+    }
+
+    {
+        auto s = flux::sum(std::array{1u, 2u, 3u, 4u, 5u});
+
+        static_assert(std::same_as<decltype(s), unsigned int>);
+        STATIC_CHECK(s == 15u);
+    }
+
+    {
+        using namespace std::chrono_literals;
+
+        auto s = flux::sum(std::array{1s, 2s, 3s, 4s, 5s});
+
+        static_assert(std::same_as<decltype(s), std::chrono::seconds>);
+        STATIC_CHECK(s == 15s);
+    }
+
+    return true;
+}
+static_assert(test_sum());
+
+constexpr bool test_product()
+{
+    {
+        auto p = flux::from(std::array{-1, 2, 3, 4, 5}).product();
+
+        static_assert(std::same_as<decltype(p), int>);
+        STATIC_CHECK(p == -120);
+    }
+
+    {
+        auto p = flux::product(std::array{2.0, 3.5, -1.0});
+
+        static_assert(std::same_as<decltype(p), double>);
+        STATIC_CHECK(p == 2.0 * 3.5 * -1.0);
+    }
+
+    return true;
+}
+static_assert(test_product());
+
 }
 
 TEST_CASE("fold")
@@ -101,4 +150,16 @@ TEST_CASE("fold")
 
         REQUIRE((out == std::vector{1, 2, 3, 4, 5}));
     }
+}
+
+TEST_CASE("fold_first")
+{
+    bool result = test_fold_first();
+    REQUIRE(result);
+}
+
+TEST_CASE("sum")
+{
+    bool result = test_sum();
+    REQUIRE(result);
 }
