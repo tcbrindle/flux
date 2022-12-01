@@ -27,6 +27,7 @@ add_executable(test-libflux
     test_fold.cpp
     test_generator.cpp
     test_map.cpp
+    test_minmax.cpp
     test_output_to.cpp
     test_reverse.cpp
     test_split.cpp

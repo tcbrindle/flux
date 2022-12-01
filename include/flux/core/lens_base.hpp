@@ -289,6 +289,15 @@ public:
         requires bounded_sequence<Derived> &&
                  detail::element_swappable_with<Derived, Derived>;
 
+    template <typename Cmp = std::ranges::less, typename Proj = std::identity>
+    constexpr auto max(Cmp cmp = Cmp{}, Proj proj = Proj{});
+
+    template <typename Cmp = std::ranges::less, typename Proj = std::identity>
+    constexpr auto min(Cmp cmp = Cmp{}, Proj proj = Proj{});
+
+    template <typename Cmp = std::ranges::less, typename Proj = std::identity>
+    constexpr auto minmax(Cmp cmp = Cmp{}, Proj proj = Proj{});
+
     template <typename Pred, typename Proj = std::identity>
         requires predicate_for<Pred, Derived, Proj>
     [[nodiscard]]
