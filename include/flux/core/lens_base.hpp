@@ -8,6 +8,8 @@
 
 #include <flux/core/sequence_access.hpp>
 
+#include <flux/op/requirements.hpp>
+
 namespace flux {
 
 template <cursor Cur>
@@ -263,14 +265,10 @@ public:
     [[nodiscard]]
     constexpr auto find_if_not(Pred pred, Proj proj = {});
 
-    template <typename D = Derived, typename Func, typename Init,
-              typename R = std::invoke_result_t<Func&, Init, element_t<D>>>
-        requires std::invocable<Func&, Init, element_t<D>> &&
-                 std::invocable<Func&, R, element_t<D>> &&
-                 std::convertible_to<R, Init> &&
-                 std::assignable_from<Init&, std::invoke_result_t<Func&, R, element_t<Derived>>>
+    template <typename D = Derived, typename Func, typename Init>
+        requires foldable<Derived, Func, Init>
     [[nodiscard]]
-    constexpr auto fold(Func func, Init init) -> R;
+    constexpr auto fold(Func func, Init init) -> fold_result_t<D, Func, Init>;
 
     template <typename D = Derived, typename Func>
         requires std::invocable<Func&, value_t<D>, element_t<D>> &&
@@ -301,12 +299,20 @@ public:
                  std::indirectly_writable<Iter, element_t<Derived>>
     constexpr auto output_to(Iter iter) -> Iter;
 
+    constexpr auto sum()
+        requires foldable<Derived, std::plus<>, value_t<Derived>> &&
+                 std::default_initializable<value_t<Derived>>;
+
     template <typename Cmp = std::less<>, typename Proj = std::identity>
         requires random_access_sequence<Derived> &&
                  bounded_sequence<Derived> &&
                  detail::element_swappable_with<Derived, Derived> &&
                  std::predicate<Cmp&, projected_t<Proj, Derived>, projected_t<Proj, Derived>>
     constexpr void sort(Cmp cmp = {}, Proj proj = {});
+
+    constexpr auto product()
+        requires foldable<Derived, std::multiplies<>, value_t<Derived>> &&
+                 requires { value_t<Derived>(1); };
 
     template <typename Container, typename... Args>
     constexpr auto to(Args&&... args) -> Container;
