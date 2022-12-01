@@ -272,6 +272,12 @@ public:
     [[nodiscard]]
     constexpr auto fold(Func func, Init init) -> R;
 
+    template <typename D = Derived, typename Func>
+        requires std::invocable<Func&, value_t<D>, element_t<D>> &&
+                 std::assignable_from<value_t<D>&, std::invoke_result_t<Func&, value_t<D>, element_t<D>>>
+    [[nodiscard]]
+    constexpr auto fold_first(Func func);
+
     template <typename Func, typename Proj = std::identity>
         requires std::invocable<Func&, projected_t<Proj, Derived>>
     constexpr auto for_each(Func func, Proj proj = {}) -> Func;

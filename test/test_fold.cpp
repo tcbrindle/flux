@@ -5,10 +5,7 @@
 
 #include "catch.hpp"
 
-#include <flux/op/fold.hpp>
-#include <flux/op/filter.hpp>
-#include <flux/op/map.hpp>
-#include <flux/ranges/from_range.hpp>
+#include <flux.hpp>
 
 #include "test_utils.hpp"
 
@@ -53,6 +50,40 @@ constexpr bool test_fold()
     return true;
 }
 static_assert(test_fold());
+
+constexpr bool test_fold_first()
+{
+    {
+        int arr[] = {1, 2, 3, 4, 5};
+
+        auto sum = flux::fold_first(arr, std::plus{});
+
+        STATIC_CHECK(sum.value() == 15);
+    }
+
+    // fold_first over an empty sequence produces no value
+    {
+        auto opt = flux::fold_first(flux::empty<double>, std::plus{});
+        STATIC_CHECK(not opt.has_value());
+    }
+
+    {
+        auto min_fn = [](auto seq) {
+            return seq.fold_first([](int so_far, int elem) {
+                return elem < so_far ? elem : so_far;
+            });
+        };
+
+        int arr[] = {5, 4, 1, 3, -1};
+
+        auto min = min_fn(flux::ref(arr));
+
+        STATIC_CHECK(min.value() == -1);
+    }
+
+    return true;
+}
+static_assert(test_fold_first());
 
 }
 
