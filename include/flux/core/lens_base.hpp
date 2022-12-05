@@ -121,6 +121,34 @@ public:
     [[nodiscard]]
     constexpr auto prev(cursor_t<D> cur) { return flux::prev(derived(), cur); }
 
+    template <typename Func, typename... Args>
+        requires std::invocable<Func, Derived&, Args...>
+    constexpr auto _(Func&& func, Args&&... args) & -> decltype(auto)
+    {
+        return std::invoke(FLUX_FWD(func), derived(), FLUX_FWD(args)...);
+    }
+
+    template <typename Func, typename... Args>
+        requires std::invocable<Func, Derived const&, Args...>
+    constexpr auto _(Func&& func, Args&&... args) const& -> decltype(auto)
+    {
+        return std::invoke(FLUX_FWD(func), derived(), FLUX_FWD(args)...);
+    }
+
+    template <typename Func, typename... Args>
+        requires std::invocable<Func, Derived, Args...>
+    constexpr auto _(Func&& func, Args&&... args) && -> decltype(auto)
+    {
+        return std::invoke(FLUX_FWD(func), std::move(derived()), FLUX_FWD(args)...);
+    }
+
+    template <typename Func, typename... Args>
+        requires std::invocable<Func, Derived const, Args...>
+    constexpr auto _(Func&& func, Args&&... args) const&& -> decltype(auto)
+    {
+        return std::invoke(FLUX_FWD(func), std::move(derived()), FLUX_FWD(args)...);
+    }
+
     /*
      * Adaptors
      */
