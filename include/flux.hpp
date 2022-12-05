@@ -15,6 +15,7 @@
 #include <flux/op/cartesian_product_with.hpp>
 #include <flux/op/chain.hpp>
 #include <flux/op/compare.hpp>
+#include <flux/op/contains.hpp>
 #include <flux/op/count.hpp>
 #include <flux/op/drop.hpp>
 #include <flux/op/drop_while.hpp>
@@ -43,6 +44,7 @@
 #include <flux/op/zip.hpp>
 
 #include <flux/source/empty.hpp>
+#include <flux/source/generator.hpp>
 #include <flux/source/getlines.hpp>
 #include <flux/source/iota.hpp>
 #include <flux/source/istream.hpp>
