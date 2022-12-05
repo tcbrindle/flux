@@ -6,6 +6,7 @@ add_executable(test-libflux
 
     test_concepts.cpp
     test_simple_sequence.cpp
+    test_apply.cpp
 
     test_all_any_none.cpp
     test_bounds_checked.cpp
