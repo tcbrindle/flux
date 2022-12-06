@@ -1154,14 +1154,14 @@ public:
     constexpr auto prev(cursor_t<D> cur) { return flux::prev(derived(), cur); }
 
     template <typename Func, typename... Args>
-        requires std::invocable<Func, Derived, Args...>
+        requires std::invocable<Func, Derived&, Args...>
     constexpr auto _(Func&& func, Args&&... args) & -> decltype(auto)
     {
         return std::invoke(FLUX_FWD(func), derived(), FLUX_FWD(args)...);
     }
 
     template <typename Func, typename... Args>
-        requires std::invocable<Func, Derived, Args...>
+        requires std::invocable<Func, Derived const&, Args...>
     constexpr auto _(Func&& func, Args&&... args) const& -> decltype(auto)
     {
         return std::invoke(FLUX_FWD(func), derived(), FLUX_FWD(args)...);
@@ -1175,7 +1175,7 @@ public:
     }
 
     template <typename Func, typename... Args>
-        requires std::invocable<Func, Derived, Args...>
+        requires std::invocable<Func, Derived const, Args...>
     constexpr auto _(Func&& func, Args&&... args) const&& -> decltype(auto)
     {
         return std::invoke(FLUX_FWD(func), std::move(derived()), FLUX_FWD(args)...);
@@ -3847,6 +3847,7 @@ namespace detail {
 struct min_op {
     template <sequence Seq, typename Cmp = std::ranges::less,
               typename Proj = std::identity>
+        requires std::predicate<Cmp&, std::invoke_result_t<Proj, value_t<Seq>>, projected_t<Proj, Seq>>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}, Proj proj = Proj{}) const
         -> std::optional<value_t<Seq>>
@@ -3864,15 +3865,16 @@ struct min_op {
 struct max_op {
     template <sequence Seq, typename Cmp = std::ranges::less,
               typename Proj = std::identity>
+        requires std::predicate<Cmp&, std::invoke_result_t<Proj, value_t<Seq>>, projected_t<Proj, Seq>>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}, Proj proj = Proj{}) const
         -> std::optional<value_t<Seq>>
     {
-        return flux::fold_first(FLUX_FWD(seq), [&](auto min, auto&& elem) -> value_t<Seq> {
-            if (!std::invoke(cmp, std::invoke(proj, elem), std::invoke(proj, min))) {
+        return flux::fold_first(FLUX_FWD(seq), [&](auto max, auto&& elem) -> value_t<Seq> {
+            if (!std::invoke(cmp, std::invoke(proj, elem), std::invoke(proj, max))) {
                 return value_t<Seq>(FLUX_FWD(elem));
             } else {
-                return min;
+                return max;
             }
         });
     }
@@ -3881,6 +3883,7 @@ struct max_op {
 struct minmax_op {
     template <sequence Seq, typename Cmp = std::ranges::less,
               typename Proj = std::identity>
+        requires std::predicate<Cmp&, std::invoke_result_t<Proj, value_t<Seq>>, projected_t<Proj, Seq>>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}, Proj proj = Proj{}) const
         -> std::optional<minmax_result<value_t<Seq>>>
