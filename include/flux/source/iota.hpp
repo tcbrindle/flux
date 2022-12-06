@@ -125,7 +125,7 @@ struct iota_sequence : lens_base<iota_sequence<T>> {
 private:
     T start_;
 
-    static constexpr iota_traits traits{.has_start = true};
+    static constexpr iota_traits traits{.has_start = true, .has_end = false};
 
 public:
     constexpr explicit iota_sequence(T from)
