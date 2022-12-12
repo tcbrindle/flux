@@ -21,7 +21,7 @@ class istream_adaptor : public lens_base<istream_adaptor<T, CharT, Traits>> {
     istream_type* is_ = nullptr;
     T val_ = T();
 
-    friend struct sequence_iface<istream_adaptor>;
+    friend struct sequence_traits<istream_adaptor>;
 
 public:
     explicit istream_adaptor(istream_type& is)
@@ -45,14 +45,14 @@ struct from_istream_fn {
 } // namespace detail
 
 template <typename T, typename CharT, typename Traits>
-struct sequence_iface<detail::istream_adaptor<T, CharT, Traits>>
+struct sequence_traits<detail::istream_adaptor<T, CharT, Traits>>
 {
 private:
     struct cursor_type {
         cursor_type(cursor_type&&) = default;
         cursor_type& operator=(cursor_type&&) = default;
     private:
-        friend struct sequence_iface;
+        friend struct sequence_traits;
         explicit cursor_type() = default;
     };
 

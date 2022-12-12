@@ -22,7 +22,7 @@ private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Func func_;
 
-    friend struct sequence_iface<map_adaptor>;
+    friend struct sequence_traits<map_adaptor>;
 
 public:
     constexpr map_adaptor(decays_to<Base> auto&& base, decays_to<Func> auto&& func)
@@ -35,7 +35,7 @@ public:
     constexpr auto base() && -> Base&& { return std::move(base_); }
     constexpr auto base() const&& -> Base const&& { return std::move(base_); }
 
-    struct flux_sequence_iface  : detail::passthrough_iface_base<Base>
+    struct flux_sequence_traits  : detail::passthrough_traits_base<Base>
     {
         using value_type = std::remove_cvref_t<std::invoke_result_t<Func&, element_t<Base>>>;
 

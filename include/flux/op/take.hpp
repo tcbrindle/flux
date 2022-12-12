@@ -34,7 +34,7 @@ private:
         friend auto operator<=>(cursor_type const& lhs, cursor_type const& rhs) = default;
     };
 
-    friend struct sequence_iface<take_adaptor>;
+    friend struct sequence_traits<take_adaptor>;
 
 public:
     constexpr take_adaptor(decays_to<Base> auto&& base, distance_t count)
@@ -65,7 +65,7 @@ struct take_fn {
 } // namespace detail
 
 template <typename Base>
-struct sequence_iface<detail::take_adaptor<Base>> {
+struct sequence_traits<detail::take_adaptor<Base>> {
 
     template <typename Self>
     using cursor_t =

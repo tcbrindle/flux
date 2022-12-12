@@ -17,7 +17,7 @@ namespace flux {
  * Default implementation for C arrays of known bound
  */
 template <typename T, std::size_t N>
-struct sequence_iface<T[N]> {
+struct sequence_traits<T[N]> {
 
     static constexpr auto first(auto const&) -> std::size_t { return 0; }
 
@@ -50,7 +50,7 @@ struct sequence_iface<T[N]> {
  * Default implementation for std::initializer_list
  */
 template <typename T>
-struct sequence_iface<std::initializer_list<T>> {
+struct sequence_traits<std::initializer_list<T>> {
 
     using ilist_t = std::initializer_list<T>;
 
@@ -88,7 +88,7 @@ struct sequence_iface<std::initializer_list<T>> {
  * Default implementation for std::reference_wrapper<T>
  */
 template <sequence Seq>
-struct sequence_iface<std::reference_wrapper<Seq>> {
+struct sequence_traits<std::reference_wrapper<Seq>> {
 
     using self_t = std::reference_wrapper<Seq>;
 

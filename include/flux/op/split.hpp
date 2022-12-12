@@ -23,7 +23,7 @@ private:
     Base base_;
     Pattern pattern_;
 
-    friend struct sequence_iface<split_adaptor>;
+    friend struct sequence_traits<split_adaptor>;
 
 public:
     constexpr split_adaptor(decays_to<Base> auto&& base, decays_to<Pattern> auto&& pattern)
@@ -65,7 +65,7 @@ inline constexpr bool is_single_seq<single_sequence<T>> = true;
 } // namespace detail
 
 template <typename Base, typename Pattern>
-struct sequence_iface<detail::split_adaptor<Base, Pattern>>
+struct sequence_traits<detail::split_adaptor<Base, Pattern>>
 {
 private:
     template <typename Self, typename B = detail::const_like_t<Self, Base>>

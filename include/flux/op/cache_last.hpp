@@ -22,7 +22,7 @@ private:
     Base base_;
     std::optional<cursor_t<Base>> cached_last_{};
 
-    friend struct passthrough_iface_base<Base>;
+    friend struct passthrough_traits_base<Base>;
 
     constexpr auto base() -> Base& { return base_; }
 
@@ -31,7 +31,7 @@ public:
         : base_(FLUX_FWD(base))
     {}
 
-    struct flux_sequence_iface : detail::passthrough_iface_base<Base> {
+    struct flux_sequence_traits : detail::passthrough_traits_base<Base> {
 
         using value_type = value_t<Base>;
         using self_t = cache_last_adaptor;

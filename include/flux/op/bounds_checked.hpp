@@ -28,7 +28,7 @@ public:
     constexpr auto base() -> Base& { return base_; }
     constexpr auto base() const -> Base const& { return base_; }
 
-    struct flux_sequence_iface : detail::passthrough_iface_base<Base> {
+    struct flux_sequence_traits : detail::passthrough_traits_base<Base> {
         using value_type = value_t<Base>;
 
         static constexpr bool disable_multipass = !multipass_sequence<Base>;

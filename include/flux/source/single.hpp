@@ -19,7 +19,7 @@ struct single_sequence : lens_base<single_sequence<T>> {
 private:
     T obj_;
 
-    friend struct sequence_iface<single_sequence>;
+    friend struct sequence_traits<single_sequence>;
 
 public:
     constexpr single_sequence()
@@ -57,7 +57,7 @@ struct single_fn {
 } // namespace detail
 
 template <typename T>
-struct sequence_iface<detail::single_sequence<T>>
+struct sequence_traits<detail::single_sequence<T>>
 {
 private:
     using self_t = detail::single_sequence<T>;

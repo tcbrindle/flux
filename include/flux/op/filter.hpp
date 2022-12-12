@@ -35,7 +35,7 @@ public:
     [[nodiscard]]
     constexpr auto base() && -> Base { return std::move(base_); }
 
-    struct flux_sequence_iface {
+    struct flux_sequence_traits {
         using self_t = filter_adaptor;
 
         static constexpr bool disable_multipass = !multipass_sequence<Base>;

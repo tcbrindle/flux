@@ -17,7 +17,7 @@ namespace detail {
 template <typename T>
     requires std::is_object_v<T>
 struct empty_sequence : lens_base<empty_sequence<T>> {
-    struct flux_sequence_iface {
+    struct flux_sequence_traits {
     private:
         struct cursor_type {
             friend auto operator==(cursor_type, cursor_type) -> bool = default;

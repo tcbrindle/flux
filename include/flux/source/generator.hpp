@@ -54,7 +54,7 @@ private:
 
     explicit generator(handle_type&& handle) : coro_(std::move(handle)) {}
 
-    friend struct sequence_iface<generator>;
+    friend struct sequence_traits<generator>;
 
 public:
     generator(generator&& other) noexcept
@@ -76,7 +76,7 @@ public:
 } // namespace experimental
 
 template <typename T>
-struct sequence_iface<experimental::generator<T>>
+struct sequence_traits<experimental::generator<T>>
 {
 private:
     struct cursor_type {
@@ -84,7 +84,7 @@ private:
         cursor_type& operator=(cursor_type&&) = default;
     private:
         cursor_type() = default;
-        friend struct sequence_iface;
+        friend struct sequence_traits;
     };
 
     using self_t = experimental::generator<T>;

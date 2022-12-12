@@ -25,7 +25,7 @@ struct span_seq {
     T* ptr_;
     std::size_t sz_;
 
-    struct flux_sequence_iface {
+    struct flux_sequence_traits {
         static constexpr std::size_t first(span_seq const&) { return 0; }
         static constexpr bool is_last(span_seq const& self, std::size_t i) { return i == self.sz_; }
         static constexpr std::size_t& inc(span_seq const&, std::size_t& i) { return ++i; }

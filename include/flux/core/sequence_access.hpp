@@ -18,9 +18,9 @@ struct first_fn {
     template <sequence Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq& seq) const
-        noexcept(noexcept(iface_t<Seq>::first(seq))) -> cursor_t<Seq>
+        noexcept(noexcept(traits_t<Seq>::first(seq))) -> cursor_t<Seq>
     {
-        return iface_t<Seq>::first(seq);
+        return traits_t<Seq>::first(seq);
     }
 };
 
@@ -28,9 +28,9 @@ struct is_last_fn {
     template <sequence Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq& seq, cursor_t<Seq> const& cur) const
-        noexcept(noexcept(iface_t<Seq>::is_last(seq, cur))) -> bool
+        noexcept(noexcept(traits_t<Seq>::is_last(seq, cur))) -> bool
     {
-        return iface_t<Seq>::is_last(seq, cur);
+        return traits_t<Seq>::is_last(seq, cur);
     }
 };
 
@@ -38,35 +38,35 @@ struct unchecked_read_at_fn {
     template <sequence Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq& seq, cursor_t<Seq> const& cur) const
-        noexcept(noexcept(iface_t<Seq>::read_at(seq, cur))) -> element_t<Seq>
+        noexcept(noexcept(traits_t<Seq>::read_at(seq, cur))) -> element_t<Seq>
     {
-        return iface_t<Seq>::read_at(seq, cur);
+        return traits_t<Seq>::read_at(seq, cur);
     }
 };
 
 struct unchecked_inc_fn {
     template <sequence Seq>
     constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur) const
-        noexcept(noexcept(iface_t<Seq>::inc(seq, cur))) -> cursor_t<Seq>&
+        noexcept(noexcept(traits_t<Seq>::inc(seq, cur))) -> cursor_t<Seq>&
     {
-        return iface_t<Seq>::inc(seq, cur);
+        return traits_t<Seq>::inc(seq, cur);
     }
 
     template <random_access_sequence Seq>
     constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur,
                               distance_t offset) const
-        noexcept(noexcept(iface_t<Seq>::inc(seq, cur, offset))) -> cursor_t<Seq>&
+        noexcept(noexcept(traits_t<Seq>::inc(seq, cur, offset))) -> cursor_t<Seq>&
     {
-        return iface_t<Seq>::inc(seq, cur, offset);
+        return traits_t<Seq>::inc(seq, cur, offset);
     }
 };
 
 struct unchecked_dec_fn {
     template <bidirectional_sequence Seq>
     constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur) const
-        noexcept(noexcept(iface_t<Seq>::dec(seq, cur))) -> cursor_t<Seq>&
+        noexcept(noexcept(traits_t<Seq>::dec(seq, cur))) -> cursor_t<Seq>&
     {
-        return iface_t<Seq>::dec(seq, cur);
+        return traits_t<Seq>::dec(seq, cur);
     }
 };
 
@@ -78,7 +78,7 @@ struct distance_fn {
         -> distance_t
     {
         if constexpr (random_access_sequence<Seq>) {
-            return iface_t<Seq>::distance(seq, from, to);
+            return traits_t<Seq>::distance(seq, from, to);
         } else {
             distance_t n = 0;
             auto from_ = from;
@@ -95,9 +95,9 @@ struct data_fn {
     template <contiguous_sequence Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq& seq) const
-        noexcept(noexcept(iface_t<Seq>::data(seq)))
+        noexcept(noexcept(traits_t<Seq>::data(seq)))
     {
-        return iface_t<Seq>::data(seq);
+        return traits_t<Seq>::data(seq);
     }
 };
 
@@ -105,9 +105,9 @@ struct last_fn {
     template <bounded_sequence Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq& seq) const
-        noexcept(noexcept(iface_t<Seq>::last(seq))) -> cursor_t<Seq>
+        noexcept(noexcept(traits_t<Seq>::last(seq))) -> cursor_t<Seq>
     {
-        return iface_t<Seq>::last(seq);
+        return traits_t<Seq>::last(seq);
     }
 };
 
@@ -116,8 +116,8 @@ struct size_fn {
     [[nodiscard]]
     constexpr auto operator()(Seq& seq) const -> distance_t
     {
-        if constexpr (requires { iface_t<Seq>::size(seq); }) {
-            return iface_t<Seq>::size(seq);
+        if constexpr (requires { traits_t<Seq>::size(seq); }) {
+            return traits_t<Seq>::size(seq);
         } else {
             static_assert(bounded_sequence<Seq> && random_access_sequence<Seq>);
             return distance_fn{}(seq, first_fn{}(seq), last_fn{}(seq));
@@ -140,8 +140,8 @@ struct unchecked_move_at_fn {
     constexpr auto operator()(Seq& seq, cursor_t<Seq> const& cur) const
         -> rvalue_element_t<Seq>
     {
-        if constexpr (requires { iface_t<Seq>::move_at(seq, cur); }) {
-            return iface_t<Seq>::move_at(seq, cur);
+        if constexpr (requires { traits_t<Seq>::move_at(seq, cur); }) {
+            return traits_t<Seq>::move_at(seq, cur);
         } else {
             if constexpr (std::is_lvalue_reference_v<element_t<Seq>>) {
                 return std::move(unchecked_read_at_fn{}(seq, cur));
