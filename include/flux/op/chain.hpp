@@ -21,7 +21,7 @@ struct chain_adaptor : lens_base<chain_adaptor<Bases...>> {
 private:
     std::tuple<Bases...> bases_;
 
-    friend struct sequence_iface<chain_adaptor>;
+    friend struct sequence_traits<chain_adaptor>;
 
 public:
     explicit constexpr chain_adaptor(decays_to<Bases> auto&&... bases)
@@ -58,7 +58,7 @@ struct chain_fn {
 } // namespace detail
 
 template <typename... Bases>
-struct sequence_iface<detail::chain_adaptor<Bases...>> {
+struct sequence_traits<detail::chain_adaptor<Bases...>> {
 
     using value_type = std::common_type_t<value_t<Bases>...>;
 

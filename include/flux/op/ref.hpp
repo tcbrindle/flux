@@ -37,7 +37,7 @@ public:
 
     constexpr Base& base() const noexcept { return *base_; }
 
-    friend struct sequence_iface<ref_adaptor>;
+    friend struct sequence_traits<ref_adaptor>;
 };
 
 template <typename>
@@ -78,11 +78,11 @@ public:
     constexpr Base&& base() && noexcept { return std::move(base_); }
     constexpr Base const&& base() const&& noexcept { return std::move(base_); }
 
-    friend struct sequence_iface<owning_adaptor>;
+    friend struct sequence_traits<owning_adaptor>;
 };
 
 template <typename Base>
-struct passthrough_iface_base {
+struct passthrough_traits_base {
 
     template <typename Self>
     using cursor_t = decltype(flux::first(FLUX_DECLVAL(Self&).base()));
@@ -172,30 +172,30 @@ struct passthrough_iface_base {
 
     template <typename Self>
     static constexpr auto slice(Self& self, cursor_t<Self> from, cursor_t<Self> to)
-        -> decltype(iface_t<decltype(self.base())>::slice(self.base(), std::move(from), std::move(to)))
+        -> decltype(traits_t<decltype(self.base())>::slice(self.base(), std::move(from), std::move(to)))
     {
-        return iface_t<decltype(self.base())>::slice(self.base(), std::move(from), std::move(to));
+        return traits_t<decltype(self.base())>::slice(self.base(), std::move(from), std::move(to));
     }
 
     template <typename Self>
     static constexpr auto slice(Self& self, cursor_t<Self> from)
-        -> decltype(iface_t<decltype(self.base())>::slice(self.base(), std::move(from)))
+        -> decltype(traits_t<decltype(self.base())>::slice(self.base(), std::move(from)))
     {
-        return iface_t<decltype(self.base())>::slice(self.base(), std::move(from));
+        return traits_t<decltype(self.base())>::slice(self.base(), std::move(from));
     }
 };
 
 } // namespace detail
 
 template <typename Base>
-struct sequence_iface<detail::ref_adaptor<Base>>
-    : detail::passthrough_iface_base<Base> {
+struct sequence_traits<detail::ref_adaptor<Base>>
+    : detail::passthrough_traits_base<Base> {
     using value_type = value_t<Base>;
 };
 
 template <typename Base>
-struct sequence_iface<detail::owning_adaptor<Base>>
-    : detail::passthrough_iface_base<Base> {
+struct sequence_traits<detail::owning_adaptor<Base>>
+    : detail::passthrough_traits_base<Base> {
     using value_type = value_t<Base>;
 };
 

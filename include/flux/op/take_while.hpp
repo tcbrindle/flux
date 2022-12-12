@@ -21,8 +21,8 @@ private:
 
     constexpr auto base() & -> Base& { return base_; }
 
-    friend struct sequence_iface<take_while_adaptor>;
-    friend struct passthrough_iface_base<Base>;
+    friend struct sequence_traits<take_while_adaptor>;
+    friend struct passthrough_traits_base<Base>;
 
 public:
     constexpr take_while_adaptor(decays_to<Base> auto&& base, decays_to<Pred> auto&& pred)
@@ -48,8 +48,8 @@ struct take_while_fn {
 } // namespace detail
 
 template <typename Base, typename Pred>
-struct sequence_iface<detail::take_while_adaptor<Base, Pred>>
-    : detail::passthrough_iface_base<Base>
+struct sequence_traits<detail::take_while_adaptor<Base, Pred>>
+    : detail::passthrough_traits_base<Base>
 {
     using self_t = detail::take_while_adaptor<Base, Pred>;
 

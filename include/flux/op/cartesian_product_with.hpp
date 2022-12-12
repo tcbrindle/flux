@@ -19,8 +19,8 @@ private:
     FLUX_NO_UNIQUE_ADDRESS std::tuple<Bases...> bases_;
     FLUX_NO_UNIQUE_ADDRESS Func func_;
 
-    friend struct cartesian_product_iface_base<Bases...>;
-    friend struct sequence_iface<cartesian_product_with_adaptor>;
+    friend struct cartesian_product_traits_base<Bases...>;
+    friend struct sequence_traits<cartesian_product_with_adaptor>;
 
 public:
     constexpr explicit cartesian_product_with_adaptor(decays_to<Func> auto&& func, decays_to<Bases> auto&&... bases)
@@ -28,7 +28,7 @@ public:
           func_(FLUX_FWD(func))
     {}
 
-    struct flux_sequence_iface : detail::cartesian_product_iface_base<Bases...>
+    struct flux_sequence_traits : detail::cartesian_product_traits_base<Bases...>
     {
         template <typename Self>
         static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)

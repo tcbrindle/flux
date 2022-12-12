@@ -34,10 +34,10 @@ concept simple_sequence =
 } // namespace detail
 
 template <detail::simple_sequence S>
-struct sequence_iface<S> {
+struct sequence_traits<S> {
 private:
     class cursor_type {
-        friend struct sequence_iface;
+        friend struct sequence_traits;
         using optional_t = decltype(FLUX_DECLVAL(S&).maybe_next());
         optional_t opt_{};
 

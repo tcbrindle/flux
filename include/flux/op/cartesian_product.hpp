@@ -16,7 +16,7 @@ namespace flux {
 namespace detail {
 
 template <typename... Bases>
-struct cartesian_product_iface_base;
+struct cartesian_product_traits_base;
 
 template <sequence... Bases>
 struct cartesian_product_adaptor
@@ -24,8 +24,8 @@ struct cartesian_product_adaptor
 private:
     FLUX_NO_UNIQUE_ADDRESS std::tuple<Bases...> bases_;
 
-    friend struct cartesian_product_iface_base<Bases...>;
-    friend struct sequence_iface<cartesian_product_adaptor>;
+    friend struct cartesian_product_traits_base<Bases...>;
+    friend struct sequence_traits<cartesian_product_adaptor>;
 
 public:
     constexpr explicit cartesian_product_adaptor(decays_to<Bases> auto&&... bases)
@@ -48,7 +48,7 @@ template <typename B0, typename...>
 inline constexpr bool cartesian_product_is_bounded = bounded_sequence<B0>;
 
 template <typename... Bases>
-struct cartesian_product_iface_base {
+struct cartesian_product_traits_base {
 private:
     template <typename From, typename To>
     using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
@@ -197,8 +197,8 @@ public:
 } // end namespace detail
 
 template <typename... Bases>
-struct sequence_iface<detail::cartesian_product_adaptor<Bases...>>
-    : detail::cartesian_product_iface_base<Bases...>
+struct sequence_traits<detail::cartesian_product_adaptor<Bases...>>
+    : detail::cartesian_product_traits_base<Bases...>
 {
 private:
     template <std::size_t I, typename Self>

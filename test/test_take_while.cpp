@@ -16,7 +16,7 @@ namespace {
 struct ints {
     int from = 0;
 
-    struct flux_sequence_iface {
+    struct flux_sequence_traits {
         static constexpr int first(ints) { return 0; }
         static constexpr bool is_last(ints, int) { return false; }
         static constexpr int read_at(ints self, int cur){ return self.from + cur; }

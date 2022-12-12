@@ -51,7 +51,7 @@ struct dummy_impl {
 
 template <typename Elem>
 struct minimal_seq_of {
-    struct flux_sequence_iface {
+    struct flux_sequence_traits {
         static int first(minimal_seq_of);
         static bool is_last(minimal_seq_of, int);
         static int& inc(minimal_seq_of, int&);
@@ -61,7 +61,7 @@ struct minimal_seq_of {
 
 template <typename Idx>
 struct minimal_with_idx {
-    struct flux_sequence_iface {
+    struct flux_sequence_traits {
         static Idx first(minimal_with_idx);
         static bool is_last(minimal_with_idx, Idx const&);
         static Idx& inc(minimal_with_idx, Idx&);
@@ -72,15 +72,15 @@ struct minimal_with_idx {
 } // end anon namespace
 
 template <>
-struct flux::sequence_iface<incomplete>
+struct flux::sequence_traits<incomplete>
     : dummy_impl<incomplete> {};
 
 template <>
-struct flux::sequence_iface<indestructable>
+struct flux::sequence_traits<indestructable>
     : dummy_impl<indestructable> {};
 
 template <>
-struct flux::sequence_iface<cant_instantiate<>>
+struct flux::sequence_traits<cant_instantiate<>>
     : dummy_impl<cant_instantiate<>> {};
 
 static_assert(not flux::cursor<void>);
@@ -164,22 +164,22 @@ struct Derived2 : Base {};
 }
 
 template <>
-struct flux::sequence_iface<Base>
+struct flux::sequence_traits<Base>
     : dummy_impl<Base> {};
 
 static_assert(flux::sequence<Base>);
 static_assert(not flux::sequence<Derived1>);
 
 template <>
-struct flux::sequence_iface<Derived2>
-    : flux::sequence_iface<Base> {};
+struct flux::sequence_traits<Derived2>
+    : flux::sequence_traits<Base> {};
 
 static_assert(flux::sequence<Derived2>);
 
 // Adaptable sequence tests
 namespace {
     struct movable_seq {
-        struct flux_sequence_iface {
+        struct flux_sequence_traits {
             static int first(movable_seq);
             static bool is_last(movable_seq, int);
             static int& inc(movable_seq, int&);
@@ -192,7 +192,7 @@ namespace {
         move_only_seq(move_only_seq&&) = default;
         move_only_seq& operator=(move_only_seq&&) = default;
 
-        struct flux_sequence_iface {
+        struct flux_sequence_traits {
             static int first(move_only_seq const&);
             static bool is_last(move_only_seq const&, int);
             static int& inc(move_only_seq const&, int&);
@@ -205,7 +205,7 @@ namespace {
         unmovable_seq(unmovable_seq&&) = delete;
         unmovable_seq& operator=(unmovable_seq&&) = delete;
 
-        struct flux_sequence_iface {
+        struct flux_sequence_traits {
             static int first(unmovable_seq const&);
             static bool is_last(unmovable_seq const&, int);
             static int& inc(unmovable_seq const&, int&);

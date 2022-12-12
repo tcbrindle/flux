@@ -31,7 +31,7 @@ public:
     constexpr Base& base() & { return base_; }
     constexpr Base const& base() const& { return base_; }
 
-    struct flux_sequence_iface : passthrough_iface_base<drop_adaptor> {
+    struct flux_sequence_traits : passthrough_traits_base<drop_adaptor> {
         using value_type = value_t<Base>;
 
         static constexpr bool disable_multipass = !multipass_sequence<Base>;

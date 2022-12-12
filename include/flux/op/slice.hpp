@@ -32,7 +32,7 @@ private:
     Base* base_;
     FLUX_NO_UNIQUE_ADDRESS slice_data<cursor_t<Base>, Bounded> data_;
 
-    friend struct sequence_iface<subsequence>;
+    friend struct sequence_traits<subsequence>;
 
 public:
     constexpr subsequence(Base& base, cursor_t<Base>&& from,
@@ -60,8 +60,8 @@ subsequence(Seq&, cursor_t<Seq>) -> subsequence<Seq, false>;
 template <typename Seq>
 concept has_overloaded_slice =
     requires (Seq& seq, cursor_t<Seq> cur) {
-        { iface_t<Seq>::slice(seq, std::move(cur)) } -> sequence;
-        { iface_t<Seq>::slice(seq, std::move(cur), std::move(cur)) } -> sequence;
+        { traits_t<Seq>::slice(seq, std::move(cur)) } -> sequence;
+        { traits_t<Seq>::slice(seq, std::move(cur), std::move(cur)) } -> sequence;
     };
 
 struct slice_fn {
@@ -71,7 +71,7 @@ struct slice_fn {
         -> sequence auto
     {
         if constexpr (has_overloaded_slice<Seq>) {
-            return iface_t<Seq>::slice(seq, std::move(from), std::move(to));
+            return traits_t<Seq>::slice(seq, std::move(from), std::move(to));
         } else {
             return subsequence(seq, std::move(from), std::move(to));
         }
@@ -82,7 +82,7 @@ struct slice_fn {
         -> sequence auto
     {
         if constexpr (has_overloaded_slice<Seq>) {
-            return iface_t<Seq>::slice(seq, std::move(from));
+            return traits_t<Seq>::slice(seq, std::move(from));
         } else {
             return subsequence(seq, std::move(from));
         }
@@ -94,8 +94,8 @@ struct slice_fn {
 using detail::subsequence;
 
 template <typename Base, bool Bounded>
-struct sequence_iface<subsequence<Base, Bounded>>
-    : detail::passthrough_iface_base<Base>
+struct sequence_traits<subsequence<Base, Bounded>>
+    : detail::passthrough_traits_base<Base>
 {
     using value_type = value_t<Base>;
     using self_t = subsequence<Base, Bounded>;

@@ -23,7 +23,7 @@ template <typename R>
     requires (!detail::derived_from_lens_base<R> &&
               std::ranges::input_range<R> &&
               !detail::contiguous_and_sized_range<R>)
-struct sequence_iface<R> {
+struct sequence_traits<R> {
 
     using value_type = std::ranges::range_value_t<R>;
 
@@ -140,7 +140,7 @@ struct sequence_iface<R> {
 
 template <typename R>
     requires (!detail::derived_from_lens_base<R> && detail::contiguous_and_sized_range<R>)
-struct sequence_iface<R> {
+struct sequence_traits<R> {
 
     using cursor_type = std::ranges::range_size_t<R>;
     using value_type = std::ranges::range_value_t<R>;

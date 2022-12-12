@@ -38,7 +38,7 @@ struct reverse_adaptor : lens_base<reverse_adaptor<Base>>
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
 
-    friend struct sequence_iface<reverse_adaptor>;
+    friend struct sequence_traits<reverse_adaptor>;
 
 public:
     constexpr explicit reverse_adaptor(decays_to<Base> auto&& base)
@@ -74,7 +74,7 @@ struct reverse_fn {
 } // namespace detail
 
 template <typename Base>
-struct sequence_iface<detail::reverse_adaptor<Base>>
+struct sequence_traits<detail::reverse_adaptor<Base>>
 {
     using value_type = value_t<Base>;
 

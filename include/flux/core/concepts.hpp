@@ -84,20 +84,20 @@ concept ordered_cursor =
  */
 
 template <typename T>
-struct sequence_iface;
+struct sequence_traits;
 
 namespace detail {
 
 template <typename T>
-using iface_t = sequence_iface<std::remove_cvref_t<T>>;
+using traits_t = sequence_traits<std::remove_cvref_t<T>>;
 
 } // namespace detail
 
 template <typename Seq>
-using cursor_t = decltype(detail::iface_t<Seq>::first(FLUX_DECLVAL(Seq&)));
+using cursor_t = decltype(detail::traits_t<Seq>::first(FLUX_DECLVAL(Seq&)));
 
 template <typename Seq>
-using element_t = decltype(detail::iface_t<Seq>::read_at(FLUX_DECLVAL(Seq&), FLUX_DECLVAL(cursor_t<Seq> const&)));
+using element_t = decltype(detail::traits_t<Seq>::read_at(FLUX_DECLVAL(Seq&), FLUX_DECLVAL(cursor_t<Seq> const&)));
 
 namespace detail {
 
@@ -108,11 +108,11 @@ template <has_element_type T>
 struct value_type { using type = std::remove_cvref_t<element_t<T>>; };
 
 template <has_element_type T>
-    requires requires { typename iface_t<T>::value_type; }
-struct value_type<T> { using type = typename iface_t<T>::value_type; };
+    requires requires { typename traits_t<T>::value_type; }
+struct value_type<T> { using type = typename traits_t<T>::value_type; };
 
 template <has_element_type T>
-    requires requires { iface_t<T>::using_primary_template; } &&
+    requires requires { traits_t<T>::using_primary_template; } &&
              requires { typename T::value_type; }
 struct value_type<T> { using type = typename T::value_type; };
 
@@ -125,13 +125,13 @@ struct rvalue_element_type {
 
 template <typename Seq>
 concept has_move_at = requires (Seq& seq, cursor_t<Seq> const& cur) {
-   { iface_t<Seq>::move_at(seq, cur) };
+   { traits_t<Seq>::move_at(seq, cur) };
 };
 
 template <has_element_type T>
     requires has_move_at<T>
 struct rvalue_element_type<T> {
-    using type = decltype(iface_t<T>::move_at(FLUX_DECLVAL(T&), FLUX_DECLVAL(cursor_t<T> const&)));
+    using type = decltype(traits_t<T>::move_at(FLUX_DECLVAL(T&), FLUX_DECLVAL(cursor_t<T> const&)));
 };
 
 } // namespace detail
@@ -168,17 +168,17 @@ using with_ref = T&;
 template <typename T>
 concept can_reference = requires { typename with_ref<T>; };
 
-template <typename Seq, typename Iface = sequence_iface<std::remove_cvref_t<Seq>>>
-concept sequence_impl =
+template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+concept sequence_concept =
     requires (Seq& seq) {
-        { Iface::first(seq) } -> cursor;
+        { Traits::first(seq) } -> cursor;
     } &&
     requires (Seq& seq, cursor_t<Seq> const& cur) {
-        { Iface::is_last(seq, cur) } -> boolean_testable;
-        { Iface::read_at(seq, cur) } -> can_reference;
+        { Traits::is_last(seq, cur) } -> boolean_testable;
+        { Traits::read_at(seq, cur) } -> can_reference;
     } &&
     requires (Seq& seq, cursor_t<Seq>& cur) {
-        { Iface::inc(seq, cur) } -> std::same_as<cursor_t<Seq>&>;
+        { Traits::inc(seq, cur) } -> std::same_as<cursor_t<Seq>&>;
     } &&
     std::common_reference_with<element_t<Seq>&&, rvalue_element_t<Seq>&&>;
     // FIXME FIXME: Need C++23 tuple changes, otherwise zip breaks these
@@ -188,7 +188,7 @@ concept sequence_impl =
 } // namespace detail
 
 template <typename Seq>
-concept sequence = detail::sequence_impl<Seq>;
+concept sequence = detail::sequence_concept<Seq>;
 
 namespace detail {
 
@@ -205,76 +205,76 @@ inline constexpr bool disable_multipass<T> = T::disable_multipass;
 template <typename Seq>
 concept multipass_sequence =
     sequence<Seq> && regular_cursor<cursor_t<Seq>> &&
-    !detail::disable_multipass<detail::iface_t<Seq>>;
+    !detail::disable_multipass<detail::traits_t<Seq>>;
 
 namespace detail {
 
-template <typename Seq, typename Iface = sequence_iface<std::remove_cvref_t<Seq>>>
-concept bidirectional_sequence_impl =
+template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+concept bidirectional_sequence_concept =
     multipass_sequence<Seq> &&
     requires (Seq& seq, cursor_t<Seq>& cur) {
-        { Iface::dec(seq, cur) } -> std::same_as<cursor_t<Seq>&>;
+        { Traits::dec(seq, cur) } -> std::same_as<cursor_t<Seq>&>;
     };
 
 } // namespace detail
 
 template <typename Seq>
-concept bidirectional_sequence = detail::bidirectional_sequence_impl<Seq>;
+concept bidirectional_sequence = detail::bidirectional_sequence_concept<Seq>;
 
 namespace detail {
 
-template <typename Seq, typename Iface = sequence_iface<std::remove_cvref_t<Seq>>>
-concept random_access_sequence_impl =
+template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+concept random_access_sequence_concept =
     bidirectional_sequence<Seq> && ordered_cursor<cursor_t<Seq>> &&
     requires (Seq& seq, cursor_t<Seq>& cur, distance_t offset) {
-        { Iface::inc(seq, cur, offset) } -> std::same_as<cursor_t<Seq>&>;
+        { Traits::inc(seq, cur, offset) } -> std::same_as<cursor_t<Seq>&>;
     } &&
     requires (Seq& seq, cursor_t<Seq> const& cur) {
-        { Iface::distance(seq, cur, cur) } -> std::convertible_to<distance_t>;
+        { Traits::distance(seq, cur, cur) } -> std::convertible_to<distance_t>;
     };
 
 } // namespace detail
 
 template <typename Seq>
-concept random_access_sequence = detail::random_access_sequence_impl<Seq>;
+concept random_access_sequence = detail::random_access_sequence_concept<Seq>;
 
 namespace detail {
 
-template <typename Seq, typename Iface = sequence_iface<std::remove_cvref_t<Seq>>>
-concept contiguous_sequence_impl =
+template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+concept contiguous_sequence_concept =
     random_access_sequence<Seq> &&
     std::is_lvalue_reference_v<element_t<Seq>> &&
     std::same_as<value_t<Seq>, std::remove_cvref_t<element_t<Seq>>> &&
     requires (Seq& seq) {
-        { Iface::data(seq) } -> std::same_as<std::add_pointer_t<element_t<Seq>>>;
+        { Traits::data(seq) } -> std::same_as<std::add_pointer_t<element_t<Seq>>>;
     };
 
 } // namespace detail
 
 template <typename Seq>
-concept contiguous_sequence = detail::contiguous_sequence_impl<Seq>;
+concept contiguous_sequence = detail::contiguous_sequence_concept<Seq>;
 
 namespace detail {
 
-template <typename Seq, typename Iface = sequence_iface<std::remove_cvref_t<Seq>>>
-concept bounded_sequence_impl =
+template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+concept bounded_sequence_concept =
     sequence<Seq> &&
     requires (Seq& seq) {
-        { Iface::last(seq) } -> std::same_as<cursor_t<Seq>>;
+        { Traits::last(seq) } -> std::same_as<cursor_t<Seq>>;
     };
 
 } // namespace detail
 
 template <typename Seq>
-concept bounded_sequence = detail::bounded_sequence_impl<Seq>;
+concept bounded_sequence = detail::bounded_sequence_concept<Seq>;
 
 namespace detail {
 
-template <typename Seq, typename Iface = sequence_iface<std::remove_cvref_t<Seq>>>
-concept sized_sequence_impl =
+template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+concept sized_sequence_concept =
     sequence<Seq> &&
     (requires (Seq& seq) {
-        { Iface::size(seq) } -> std::convertible_to<distance_t>;
+        { Traits::size(seq) } -> std::convertible_to<distance_t>;
     } || (
         random_access_sequence<Seq> && bounded_sequence<Seq>
     ));
@@ -282,7 +282,7 @@ concept sized_sequence_impl =
 } // namespace detail
 
 template <typename Seq>
-concept sized_sequence = detail::sized_sequence_impl<Seq>;
+concept sized_sequence = detail::sized_sequence_concept<Seq>;
 
 template <typename Seq, typename T>
 concept writable_sequence_of =
@@ -306,7 +306,7 @@ inline constexpr bool is_infinite_seq<T> = T::is_infinite;
 template <typename Seq>
 concept infinite_sequence =
     sequence<Seq> &&
-    detail::is_infinite_seq<detail::iface_t<Seq>>;
+    detail::is_infinite_seq<detail::traits_t<Seq>>;
 
 namespace detail {
 
@@ -370,20 +370,20 @@ concept predicate_for =
     std::predicate<Pred&, std::invoke_result_t<Proj&, element_t<Seq>>>;
 
 /*
- * Default sequence_iface implementation
+ * Default sequence_traits implementation
  */
 namespace detail {
 
 template <typename T>
-concept has_nested_sequence_impl =
-    requires { typename T::flux_sequence_iface; } &&
-    std::is_class_v<typename T::flux_sequence_iface>;
+concept has_nested_sequence_traits =
+    requires { typename T::flux_sequence_traits; } &&
+    std::is_class_v<typename T::flux_sequence_traits>;
 
 }
 
 template <typename T>
-    requires detail::has_nested_sequence_impl<T>
-struct sequence_iface<T> : T::flux_sequence_iface {};
+    requires detail::has_nested_sequence_traits<T>
+struct sequence_traits<T> : T::flux_sequence_traits {};
 
 
 } // namespace flux

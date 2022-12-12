@@ -31,7 +31,7 @@ struct zip_adaptor : lens_base<zip_adaptor<Bases...>> {
 private:
     pair_or_tuple_t<Bases...> bases_;
 
-    friend struct sequence_iface<zip_adaptor>;
+    friend struct sequence_traits<zip_adaptor>;
 
 public:
     constexpr explicit zip_adaptor(decays_to<Bases> auto&&... bases)
@@ -55,7 +55,7 @@ struct zip_fn {
 } // namespace detail
 
 template <typename... Bases>
-struct sequence_iface<detail::zip_adaptor<Bases...>>
+struct sequence_traits<detail::zip_adaptor<Bases...>>
 {
 private:
     template <typename... Ts>
