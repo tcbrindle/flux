@@ -93,7 +93,7 @@ template <typename Derived>
 template <typename D, typename Func, typename Init>
     requires foldable<Derived, Func, Init>
 [[nodiscard]]
-constexpr auto lens_base<Derived>::fold(Func func, Init init) -> fold_result_t<D, Func, Init>
+constexpr auto inline_sequence_base<Derived>::fold(Func func, Init init) -> fold_result_t<D, Func, Init>
 {
     return flux::fold(derived(), std::move(func), std::move(init));
 }
@@ -102,13 +102,13 @@ template <typename Derived>
 template <typename D, typename Func>
     requires std::invocable<Func&, value_t<D>, element_t<D>> &&
              std::assignable_from<value_t<D>&, std::invoke_result_t<Func&, value_t<D>, element_t<D>>>
-constexpr auto lens_base<Derived>::fold_first(Func func)
+constexpr auto inline_sequence_base<Derived>::fold_first(Func func)
 {
     return flux::fold_first(derived(), std::move(func));
 }
 
 template <typename D>
-constexpr auto lens_base<D>::sum()
+constexpr auto inline_sequence_base<D>::sum()
     requires foldable<D, std::plus<>, value_t<D>> &&
              std::default_initializable<value_t<D>>
 {
@@ -116,7 +116,7 @@ constexpr auto lens_base<D>::sum()
 }
 
 template <typename D>
-constexpr auto lens_base<D>::product()
+constexpr auto inline_sequence_base<D>::product()
     requires foldable<D, std::multiplies<>, value_t<D>> &&
              requires { value_t<D>(1); }
 {

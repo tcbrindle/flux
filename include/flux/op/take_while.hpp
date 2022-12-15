@@ -14,7 +14,7 @@ namespace flux {
 namespace detail {
 
 template <sequence Base, typename Pred>
-struct take_while_adaptor : lens_base<take_while_adaptor<Base, Pred>> {
+struct take_while_adaptor : inline_sequence_base<take_while_adaptor<Base, Pred>> {
 private:
     Base base_;
     Pred pred_;
@@ -89,7 +89,7 @@ inline constexpr auto take_while = detail::take_while_fn{};
 template <typename D>
 template <typename Pred>
     requires std::predicate<Pred&, element_t<D>>
-constexpr auto lens_base<D>::take_while(Pred pred) &&
+constexpr auto inline_sequence_base<D>::take_while(Pred pred) &&
 {
     return flux::take_while(std::move(derived()), std::move(pred));
 }

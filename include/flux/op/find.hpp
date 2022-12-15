@@ -7,7 +7,6 @@
 #define FLUX_OP_FIND_HPP_INCLUDED
 
 #include <flux/op/for_each_while.hpp>
-#include <flux/core/lens_base.hpp>
 
 namespace flux {
 
@@ -58,7 +57,7 @@ inline constexpr auto find_if_not = detail::find_if_not_fn{};
 template <typename D>
 template <typename Value, typename Proj>
     requires std::equality_comparable_with<projected_t<Proj, D>, Value const&>
-constexpr auto lens_base<D>::find(Value const& val, Proj proj)
+constexpr auto inline_sequence_base<D>::find(Value const& val, Proj proj)
 {
     return flux::find(derived(), val, std::ref(proj));
 }
@@ -66,7 +65,7 @@ constexpr auto lens_base<D>::find(Value const& val, Proj proj)
 template <typename D>
 template <typename Pred, typename Proj>
     requires predicate_for<Pred, D, Proj>
-constexpr auto lens_base<D>::find_if(Pred pred, Proj proj)
+constexpr auto inline_sequence_base<D>::find_if(Pred pred, Proj proj)
 {
     return flux::find_if(derived(), std::ref(pred), std::ref(proj));
 }
@@ -74,7 +73,7 @@ constexpr auto lens_base<D>::find_if(Pred pred, Proj proj)
 template <typename D>
 template <typename Pred, typename Proj>
     requires predicate_for<Pred, D, Proj>
-constexpr auto lens_base<D>::find_if_not(Pred pred, Proj proj)
+constexpr auto inline_sequence_base<D>::find_if_not(Pred pred, Proj proj)
 {
     return flux::find_if_not(derived(), std::ref(pred), std::ref(proj));
 }

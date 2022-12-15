@@ -20,7 +20,7 @@ concept contiguous_and_sized_range = std::ranges::contiguous_range<R> && std::ra
 }
 
 template <typename R>
-    requires (!detail::derived_from_lens_base<R> &&
+    requires (!detail::derived_from_inline_sequence_base<R> &&
               std::ranges::input_range<R> &&
               !detail::contiguous_and_sized_range<R>)
 struct sequence_traits<R> {
@@ -139,7 +139,7 @@ struct sequence_traits<R> {
 };
 
 template <typename R>
-    requires (!detail::derived_from_lens_base<R> && detail::contiguous_and_sized_range<R>)
+    requires (!detail::derived_from_inline_sequence_base<R> && detail::contiguous_and_sized_range<R>)
 struct sequence_traits<R> {
 
     using cursor_type = std::ranges::range_size_t<R>;

@@ -14,7 +14,7 @@ namespace detail {
 
 template <typename Func, sequence... Bases>
 struct cartesian_product_with_adaptor
-    : lens_base<cartesian_product_with_adaptor<Func, Bases...>> {
+    : inline_sequence_base<cartesian_product_with_adaptor<Func, Bases...>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS std::tuple<Bases...> bases_;
     FLUX_NO_UNIQUE_ADDRESS Func func_;

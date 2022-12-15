@@ -18,7 +18,7 @@ namespace detail {
 
 template <sequence Base, typename Pred>
     requires std::predicate<Pred&, element_t<Base>&>
-class filter_adaptor : public lens_base<filter_adaptor<Base, Pred>>
+class filter_adaptor : public inline_sequence_base<filter_adaptor<Base, Pred>>
 {
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Pred pred_;
@@ -131,7 +131,7 @@ inline constexpr auto filter = detail::filter_fn{};
 template <typename D>
 template <typename Pred>
     requires std::predicate<Pred&, element_t<D>&>
-constexpr auto lens_base<D>::filter(Pred pred) &&
+constexpr auto inline_sequence_base<D>::filter(Pred pred) &&
 {
     return detail::filter_adaptor<D, Pred>(std::move(derived()), std::move(pred));
 }

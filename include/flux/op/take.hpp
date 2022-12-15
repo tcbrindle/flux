@@ -15,7 +15,7 @@ namespace flux {
 namespace detail {
 
 template <sequence Base>
-struct take_adaptor : lens_base<take_adaptor<Base>>
+struct take_adaptor : inline_sequence_base<take_adaptor<Base>>
 {
 private:
     Base base_;
@@ -166,7 +166,7 @@ struct sequence_traits<detail::take_adaptor<Base>> {
 inline constexpr auto take = detail::take_fn{};
 
 template <typename Derived>
-constexpr auto lens_base<Derived>::take(distance_t count) &&
+constexpr auto inline_sequence_base<Derived>::take(distance_t count) &&
 {
     return detail::take_adaptor<Derived>(std::move(derived()), count);
 }

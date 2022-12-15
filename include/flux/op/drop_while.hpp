@@ -16,7 +16,7 @@ namespace flux {
 namespace detail {
 
 template <sequence Base, typename Pred>
-struct drop_while_adaptor : lens_base<drop_while_adaptor<Base, Pred>> {
+struct drop_while_adaptor : inline_sequence_base<drop_while_adaptor<Base, Pred>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Pred pred_;
@@ -79,7 +79,7 @@ inline constexpr auto drop_while = detail::drop_while_fn{};
 template <typename D>
 template <typename Pred>
     requires std::predicate<Pred&, element_t<D>>
-constexpr auto lens_base<D>::drop_while(Pred pred) &&
+constexpr auto inline_sequence_base<D>::drop_while(Pred pred) &&
 {
     return flux::drop_while(std::move(derived()), std::move(pred));
 };

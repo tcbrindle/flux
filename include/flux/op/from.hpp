@@ -17,7 +17,7 @@ struct from_fn {
     template <sequence Seq>
         requires (std::is_lvalue_reference_v<Seq> || adaptable_sequence<Seq>)
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const -> lens auto
+    constexpr auto operator()(Seq&& seq) const
     {
         if constexpr (std::is_lvalue_reference_v<Seq>) {
             return flux::ref(seq);
@@ -26,10 +26,6 @@ struct from_fn {
         }
     }
 };
-
-// This should go elsewhere...
-template <typename Seq>
-using lens_t = decltype(from_fn{}(FLUX_DECLVAL(Seq)));
 
 } // namespace detail
 

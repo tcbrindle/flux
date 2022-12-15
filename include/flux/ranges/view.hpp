@@ -263,25 +263,25 @@ struct view_fn {
 inline constexpr auto view = detail::view_fn{};
 
 template <typename D>
-constexpr auto lens_base<D>::view() &
+constexpr auto inline_sequence_base<D>::view() &
 {
     return flux::view(derived());
 }
 
 template <typename D>
-constexpr auto lens_base<D>::view() const& requires sequence<D const>
+constexpr auto inline_sequence_base<D>::view() const& requires sequence<D const>
 {
     return flux::view(derived());
 }
 
 template <typename D>
-constexpr auto lens_base<D>::view() &&
+constexpr auto inline_sequence_base<D>::view() &&
 {
     return flux::view(std::move(derived()));
 }
 
 template <typename D>
-constexpr auto lens_base<D>::view() const&& requires sequence<D const>
+constexpr auto inline_sequence_base<D>::view() const&& requires sequence<D const>
 {
     return flux::view(std::move(derived()));
 }

@@ -95,21 +95,21 @@ inline constexpr auto minmax = detail::minmax_op{};
 
 template <typename Derived>
 template <typename Cmp, typename Proj>
-constexpr auto lens_base<Derived>::max(Cmp cmp, Proj proj)
+constexpr auto inline_sequence_base<Derived>::max(Cmp cmp, Proj proj)
 {
     return flux::max(derived(), std::move(cmp), std::move(proj));
 }
 
 template <typename Derived>
 template <typename Cmp, typename Proj>
-constexpr auto lens_base<Derived>::min(Cmp cmp, Proj proj)
+constexpr auto inline_sequence_base<Derived>::min(Cmp cmp, Proj proj)
 {
     return flux::min(derived(), std::move(cmp), std::move(proj));
 }
 
 template <typename Derived>
 template <typename Cmp, typename Proj>
-constexpr auto lens_base<Derived>::minmax(Cmp cmp, Proj proj)
+constexpr auto inline_sequence_base<Derived>::minmax(Cmp cmp, Proj proj)
 {
     return flux::minmax(derived(), std::move(cmp), std::move(proj));
 }

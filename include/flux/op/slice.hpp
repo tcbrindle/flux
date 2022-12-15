@@ -26,7 +26,7 @@ struct slice_data<Cur, false> {
 
 template <sequence Base, bool Bounded>
     requires (!Bounded || regular_cursor<cursor_t<Base>>)
-struct subsequence : lens_base<subsequence<Base, Bounded>>
+struct subsequence : inline_sequence_base<subsequence<Base, Bounded>>
 {
 private:
     Base* base_;
@@ -143,14 +143,14 @@ inline constexpr auto slice = detail::slice_fn{};
 #if 0
 template <typename Derived>
 template <std::same_as<Derived> D>
-constexpr auto lens_base<Derived>::slice(cursor_t<D> from, cursor_t<D> to) &
+constexpr auto inline_sequence_base<Derived>::slice(cursor_t<D> from, cursor_t<D> to) &
 {
     return flux::slice(derived(), std::move(from), std::move(to));
 }
 
 template <typename Derived>
 template <std::same_as<Derived> D>
-constexpr auto lens_base<Derived>::slice_from(cursor_t<D> from) &
+constexpr auto inline_sequence_base<Derived>::slice_from(cursor_t<D> from) &
 {
     return flux::slice(derived(), std::move(from));
 }

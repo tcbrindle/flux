@@ -15,7 +15,7 @@ namespace flux {
 namespace detail {
 
 template <sequence Base>
-struct bounds_checked_adaptor : lens_base<bounds_checked_adaptor<Base>>
+struct bounds_checked_adaptor : inline_sequence_base<bounds_checked_adaptor<Base>>
 {
 private:
     Base base_;

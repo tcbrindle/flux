@@ -31,7 +31,7 @@ template <typename Cmp, typename Proj>
              bounded_sequence<D> &&
              detail::element_swappable_with<D, D> &&
              std::predicate<Cmp&, projected_t<Proj, D>, projected_t<Proj, D>>
-constexpr void lens_base<D>::sort(Cmp cmp, Proj proj)
+constexpr void inline_sequence_base<D>::sort(Cmp cmp, Proj proj)
 {
     return flux::sort(derived(), std::move(cmp), std::move(proj));
 }

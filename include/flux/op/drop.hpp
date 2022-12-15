@@ -16,7 +16,7 @@ namespace flux {
 namespace detail {
 
 template <sequence Base>
-struct drop_adaptor : lens_base<drop_adaptor<Base>> {
+struct drop_adaptor : inline_sequence_base<drop_adaptor<Base>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     distance_t count_;
@@ -80,7 +80,7 @@ struct drop_fn {
 inline constexpr auto drop = detail::drop_fn{};
 
 template <typename Derived>
-constexpr auto lens_base<Derived>::drop(distance_t count) &&
+constexpr auto inline_sequence_base<Derived>::drop(distance_t count) &&
 {
     return detail::drop_adaptor<Derived>(std::move(derived()), count);
 }

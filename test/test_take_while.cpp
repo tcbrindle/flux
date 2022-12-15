@@ -33,7 +33,6 @@ constexpr bool test_take_while()
 
         using S = decltype(seq);
 
-        static_assert(flux::lens<S>);
         static_assert(flux::random_access_sequence<S>);
         static_assert(not flux::bounded_sequence<S>);
         static_assert(not flux::sized_sequence<S>);
@@ -48,7 +47,6 @@ constexpr bool test_take_while()
 
         using S = decltype(seq);
 
-        static_assert(flux::lens<S>);
         static_assert(flux::contiguous_sequence<S>);
         static_assert(not flux::bounded_sequence<S>);
         static_assert(not flux::sized_sequence<S>);

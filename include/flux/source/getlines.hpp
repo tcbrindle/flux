@@ -16,7 +16,7 @@ namespace flux {
 namespace detail {
 
 template <typename CharT, typename Traits>
-struct getlines_sequence : lens_base<getlines_sequence<CharT, Traits>> {
+struct getlines_sequence : inline_sequence_base<getlines_sequence<CharT, Traits>> {
 private:
     using istream_type = std::basic_istream<CharT, Traits>;
     using string_type = std::basic_string<CharT, Traits>;

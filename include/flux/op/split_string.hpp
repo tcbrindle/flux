@@ -63,7 +63,7 @@ struct split_string_fn {
 inline constexpr auto split_string = detail::split_string_fn{};
 
 template <typename D>
-constexpr auto lens_base<D>::split_string(auto&& pattern) &&
+constexpr auto inline_sequence_base<D>::split_string(auto&& pattern) &&
 {
     return flux::split_string(std::move(derived()), FLUX_FWD(pattern));
 }

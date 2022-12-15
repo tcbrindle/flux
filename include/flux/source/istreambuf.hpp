@@ -25,7 +25,7 @@ concept derives_from_streambuf = requires (T& t) { derives_from_streambuf_test(t
 struct from_istreambuf_fn {
     template <typename CharT, typename Traits>
     [[nodiscard]]
-    auto operator()(std::basic_streambuf<CharT, Traits>* streambuf) const -> lens auto
+    auto operator()(std::basic_streambuf<CharT, Traits>* streambuf) const -> sequence auto
     {
         assert(streambuf != nullptr);
         return flux::from(*streambuf);
@@ -33,7 +33,7 @@ struct from_istreambuf_fn {
 
     template <typename CharT, typename Traits>
     [[nodiscard]]
-    auto operator()(std::basic_istream<CharT, Traits>& istream) const -> lens auto
+    auto operator()(std::basic_istream<CharT, Traits>& istream) const -> sequence auto
     {
         return flux::from(*istream.rdbuf());
     }

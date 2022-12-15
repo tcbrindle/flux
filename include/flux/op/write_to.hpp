@@ -48,7 +48,7 @@ struct write_to_fn {
 inline constexpr auto write_to = detail::write_to_fn{};
 
 template <typename Derived>
-auto lens_base<Derived>::write_to(std::ostream& os) -> std::ostream&
+auto inline_sequence_base<Derived>::write_to(std::ostream& os) -> std::ostream&
 {
     return flux::write_to(derived(), os);
 }

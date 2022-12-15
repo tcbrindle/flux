@@ -15,7 +15,7 @@ namespace flux {
 namespace detail {
 
 template <std::movable T>
-struct single_sequence : lens_base<single_sequence<T>> {
+struct single_sequence : inline_sequence_base<single_sequence<T>> {
 private:
     T obj_;
 

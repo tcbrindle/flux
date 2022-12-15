@@ -53,7 +53,6 @@ constexpr bool test_simple_sequence()
         using I = decltype(iter);
         static_assert(flux::detail::simple_sequence<I>);
         static_assert(flux::sequence<I>);
-        static_assert(flux::lens<I>);
         static_assert(not flux::multipass_sequence<I>);
         static_assert(not flux::sized_sequence<I>);
         static_assert(not flux::infinite_sequence<I>);

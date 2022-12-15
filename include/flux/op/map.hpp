@@ -16,7 +16,7 @@ namespace detail {
 template <sequence Base, typename Func>
     requires std::is_object_v<Func> &&
              std::regular_invocable<Func&, element_t<Base>>
-struct map_adaptor : lens_base<map_adaptor<Base, Func>>
+struct map_adaptor : inline_sequence_base<map_adaptor<Base, Func>>
 {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
@@ -78,7 +78,7 @@ inline constexpr auto map = detail::map_fn{};
 template <typename Derived>
 template <typename Func>
     requires std::invocable<Func&, element_t<Derived>>
-constexpr auto lens_base<Derived>::map(Func func) &&
+constexpr auto inline_sequence_base<Derived>::map(Func func) &&
 {
     return detail::map_adaptor<Derived, Func>(std::move(derived()), std::move(func));
 }

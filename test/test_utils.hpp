@@ -15,7 +15,7 @@ inline namespace test_utils {
 
 inline constexpr struct {
 private:
-    static constexpr bool impl(flux::lens auto seq1, flux::lens auto seq2)
+    static constexpr bool impl(flux::sequence auto seq1, flux::sequence auto seq2)
     {
         auto cur1 = seq1.first();
         auto cur2 = seq2.first();
@@ -46,8 +46,8 @@ public:
 
 } check_equal;
 
-template <flux::lens Base>
-struct single_pass_only : flux::lens_base<single_pass_only<Base>> {
+template <flux::sequence Base>
+struct single_pass_only : flux::inline_sequence_base<single_pass_only<Base>> {
 private:
     Base base_;
 

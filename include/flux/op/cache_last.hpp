@@ -16,7 +16,7 @@ namespace flux {
 namespace detail {
 
 template <sequence Base>
-struct cache_last_adaptor : lens_base<cache_last_adaptor<Base>>
+struct cache_last_adaptor : inline_sequence_base<cache_last_adaptor<Base>>
 {
 private:
     Base base_;
@@ -82,7 +82,7 @@ struct cache_last_fn {
 inline constexpr auto cache_last = detail::cache_last_fn{};
 
 template <typename Derived>
-constexpr auto lens_base<Derived>::cache_last() &&
+constexpr auto inline_sequence_base<Derived>::cache_last() &&
     requires bounded_sequence<Derived> ||
         (multipass_sequence<Derived> && not infinite_sequence<Derived>)
 {

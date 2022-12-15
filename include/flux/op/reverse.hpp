@@ -33,7 +33,7 @@ rev_cur(B&&) -> rev_cur<std::remove_cvref_t<B>>;
 
 template <bidirectional_sequence Base>
     requires bounded_sequence<Base>
-struct reverse_adaptor : lens_base<reverse_adaptor<Base>>
+struct reverse_adaptor : inline_sequence_base<reverse_adaptor<Base>>
 {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
@@ -156,7 +156,7 @@ struct sequence_traits<detail::reverse_adaptor<Base>>
 inline constexpr auto reverse = detail::reverse_fn{};
 
 template <typename D>
-constexpr auto lens_base<D>::reverse() &&
+constexpr auto inline_sequence_base<D>::reverse() &&
     requires bidirectional_sequence<D> && bounded_sequence<D>
 {
     return flux::reverse(std::move(derived()));

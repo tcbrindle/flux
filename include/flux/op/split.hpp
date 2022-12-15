@@ -18,7 +18,7 @@ namespace flux {
 namespace detail {
 
 template <multipass_sequence Base, multipass_sequence Pattern>
-struct split_adaptor : lens_base<split_adaptor<Base, Pattern>> {
+struct split_adaptor : inline_sequence_base<split_adaptor<Base, Pattern>> {
 private:
     Base base_;
     Pattern pattern_;
@@ -146,7 +146,7 @@ inline constexpr auto split = detail::split_fn{};
 template <typename Derived>
 template <multipass_sequence Pattern>
     requires std::equality_comparable_with<element_t<Derived>, element_t<Pattern>>
-constexpr auto lens_base<Derived>::split(Pattern&& pattern) &&
+constexpr auto inline_sequence_base<Derived>::split(Pattern&& pattern) &&
 {
     return flux::split(std::move(derived()), FLUX_FWD(pattern));
 }
@@ -154,7 +154,7 @@ constexpr auto lens_base<Derived>::split(Pattern&& pattern) &&
 template <typename Derived>
 template <typename ValueType>
     requires decays_to<ValueType, value_t<Derived>>
-constexpr auto lens_base<Derived>::split(ValueType&& delim) &&
+constexpr auto inline_sequence_base<Derived>::split(ValueType&& delim) &&
 {
     return flux::split(std::move(derived()), FLUX_FWD(delim));
 }

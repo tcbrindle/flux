@@ -22,7 +22,6 @@ constexpr bool test_drop_while()
 
         using S = decltype(seq);
 
-        static_assert(flux::lens<S>);
         static_assert(flux::contiguous_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(flux::sized_sequence<S>); // because bounded + RA
@@ -40,7 +39,6 @@ constexpr bool test_drop_while()
 
         using S = decltype(seq);
 
-        static_assert(flux::lens<S>);
         static_assert(not flux::multipass_sequence<S>);
 
         STATIC_CHECK(check_equal(seq, {5, 6, 7, 8, 9}));
