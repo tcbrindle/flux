@@ -70,7 +70,7 @@ inline constexpr auto count = detail::count_fn{};
 inline constexpr auto count_if = detail::count_if_fn{};
 
 template <typename D>
-constexpr auto lens_base<D>::count()
+constexpr auto inline_sequence_base<D>::count()
 {
     return flux::count(derived());
 }
@@ -78,7 +78,7 @@ constexpr auto lens_base<D>::count()
 template <typename D>
 template <typename Value, typename Proj>
     requires std::equality_comparable_with<projected_t<Proj, D>, Value const&>
-constexpr auto lens_base<D>::count(Value const& value, Proj proj)
+constexpr auto inline_sequence_base<D>::count(Value const& value, Proj proj)
 {
     return flux::count(derived(), value, std::move(proj));
 }
@@ -86,7 +86,7 @@ constexpr auto lens_base<D>::count(Value const& value, Proj proj)
 template <typename D>
 template <typename Pred, typename Proj>
     requires predicate_for<Pred, D, Proj>
-constexpr auto lens_base<D>::count_if(Pred pred, Proj proj)
+constexpr auto inline_sequence_base<D>::count_if(Pred pred, Proj proj)
 {
     return flux::count_if(derived(), std::move(pred), std::move(proj));
 }

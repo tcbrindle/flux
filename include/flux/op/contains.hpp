@@ -32,7 +32,7 @@ inline constexpr auto contains = detail::contains_fn{};
 template <typename D>
 template <typename Value, typename Proj>
     requires std::equality_comparable_with<projected_t<Proj, D>, Value const&>
-constexpr auto lens_base<D>::contains(Value const& value, Proj proj) -> bool
+constexpr auto inline_sequence_base<D>::contains(Value const& value, Proj proj) -> bool
 {
     return flux::contains(derived(), value, std::move(proj));
 }

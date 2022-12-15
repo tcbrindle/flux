@@ -3,8 +3,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_CORE_LENS_BASE_HPP_INCLUDED
-#define FLUX_CORE_LENS_BASE_HPP_INCLUDED
+#ifndef FLUX_CORE_INLINE_SEQUENCE_BASE_HPP_INCLUDED
+#define FLUX_CORE_INLINE_SEQUENCE_BASE_HPP_INCLUDED
 
 #include <flux/core/sequence_access.hpp>
 
@@ -26,13 +26,13 @@ using bounds_t = bounds<cursor_t<Seq>>;
 template <typename Derived>
     /*requires std::is_class_v<Derived>&&
              std::same_as<Derived, std::remove_cv_t<Derived>>*/
-struct lens_base {
+struct inline_sequence_base {
 private:
     constexpr auto derived() -> Derived& { return static_cast<Derived&>(*this); }
     constexpr auto derived() const -> Derived const& { return static_cast<Derived const&>(*this); }
 
 protected:
-    ~lens_base() = default;
+    ~inline_sequence_base() = default;
 
 public:
     /*
@@ -335,4 +335,4 @@ public:
 
 } // namespace flux
 
-#endif // FLUX_CORE_LENS_BASE_HPP_INCLUDED
+#endif // FLUX_CORE_SEQUENCE_IFACE_HPP_INCLUDED

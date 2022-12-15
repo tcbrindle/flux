@@ -338,26 +338,20 @@ concept adaptable_sequence =
     !detail::is_ilist<Seq>;
 
 template <typename D>
-struct lens_base;
+struct inline_sequence_base;
 
 namespace detail {
 
 template <typename T, typename U>
-    requires (!std::same_as<T, lens_base<U>>)
-void derived_from_lens_base_test(T const&, lens_base<U> const&);
+    requires (!std::same_as<T, inline_sequence_base<U>>)
+void derived_from_inline_sequence_base_test(T const&, inline_sequence_base<U> const&);
 
 template <typename T>
-concept derived_from_lens_base = requires(T t) {
-    derived_from_lens_base_test(t, t);
+concept derived_from_inline_sequence_base = requires(T t) {
+    derived_from_inline_sequence_base_test(t, t);
 };
 
 } // namespace detail
-
-template <typename Seq>
-concept lens =
-    sequence<Seq> &&
-    std::movable<Seq> &&
-    detail::derived_from_lens_base<Seq>;
 
 /*
  * More useful concepts and associated types

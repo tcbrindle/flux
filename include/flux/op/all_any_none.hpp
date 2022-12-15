@@ -6,7 +6,7 @@
 #ifndef FLUX_OP_ALL_ANY_NONE_HPP_INCLUDED
 #define FLUX_OP_ALL_ANY_NONE_HPP_INCLUDED
 
-#include <flux/core/lens_base.hpp>
+#include <flux/core.hpp>
 #include <flux/op/for_each_while.hpp>
 
 namespace flux {
@@ -65,7 +65,7 @@ inline constexpr auto any = any_detail::fn{};
 template <typename D>
 template <typename Pred, typename Proj>
     requires predicate_for<Pred, D, Proj>
-constexpr auto lens_base<D>::all(Pred pred, Proj proj)
+constexpr auto inline_sequence_base<D>::all(Pred pred, Proj proj)
 {
     return flux::all(derived(), std::move(pred), std::move(proj));
 }
@@ -73,7 +73,7 @@ constexpr auto lens_base<D>::all(Pred pred, Proj proj)
 template <typename D>
 template <typename Pred, typename Proj>
     requires predicate_for<Pred, D, Proj>
-constexpr auto lens_base<D>::any(Pred pred, Proj proj)
+constexpr auto inline_sequence_base<D>::any(Pred pred, Proj proj)
 {
     return flux::any(derived(), std::move(pred), std::move(proj));
 }
@@ -81,7 +81,7 @@ constexpr auto lens_base<D>::any(Pred pred, Proj proj)
 template <typename D>
 template <typename Pred, typename Proj>
     requires predicate_for<Pred, D, Proj>
-constexpr auto lens_base<D>::none(Pred pred, Proj proj)
+constexpr auto inline_sequence_base<D>::none(Pred pred, Proj proj)
 {
     return flux::none(derived(), std::move(pred), std::move(proj));
 }

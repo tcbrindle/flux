@@ -6,7 +6,7 @@
 #ifndef FLUX_SOURCE_EMPTY_HPP_INCLUDED
 #define FLUX_SOURCE_EMPTY_HPP_INCLUDED
 
-#include <flux/core/lens_base.hpp>
+#include <flux/core.hpp>
 
 #include <cassert>
 
@@ -16,7 +16,7 @@ namespace detail {
 
 template <typename T>
     requires std::is_object_v<T>
-struct empty_sequence : lens_base<empty_sequence<T>> {
+struct empty_sequence : inline_sequence_base<empty_sequence<T>> {
     struct flux_sequence_traits {
     private:
         struct cursor_type {

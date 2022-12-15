@@ -27,7 +27,7 @@ template <typename... Ts>
 using pair_or_tuple_t = typename pair_or_tuple<Ts...>::type;
 
 template <sequence... Bases>
-struct zip_adaptor : lens_base<zip_adaptor<Bases...>> {
+struct zip_adaptor : inline_sequence_base<zip_adaptor<Bases...>> {
 private:
     pair_or_tuple_t<Bases...> bases_;
 

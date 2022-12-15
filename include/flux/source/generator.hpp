@@ -16,7 +16,7 @@ namespace flux {
 namespace experimental {
 
 template <typename ElemT>
-struct generator : lens_base<generator<ElemT>> {
+struct generator : inline_sequence_base<generator<ElemT>> {
 
     using yielded_type = std::conditional_t<std::is_reference_v<ElemT>,
                                             ElemT,

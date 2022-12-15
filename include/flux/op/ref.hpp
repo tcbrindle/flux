@@ -15,7 +15,7 @@ namespace flux {
 namespace detail {
 
 template <sequence Base>
-struct ref_adaptor : lens_base<ref_adaptor<Base>> {
+struct ref_adaptor : inline_sequence_base<ref_adaptor<Base>> {
 private:
     Base* base_;
 
@@ -61,7 +61,7 @@ struct ref_fn {
 
 template <sequence Base>
     requires std::movable<Base>
-struct owning_adaptor : lens_base<owning_adaptor<Base>> {
+struct owning_adaptor : inline_sequence_base<owning_adaptor<Base>> {
 private:
     Base base_;
 
@@ -200,14 +200,6 @@ struct sequence_traits<detail::owning_adaptor<Base>>
 };
 
 inline constexpr auto ref = detail::ref_fn{};
-
-/*
-template <typename D>
-constexpr auto lens_base<D>::ref() & -> lens auto
-{
-    return detail::ref_adaptor<D>(derived());
-}
-*/
 
 } // namespace flux
 

@@ -39,7 +39,7 @@ template <typename Derived>
 template <typename Pred>
     requires std::invocable<Pred&, element_t<Derived>> &&
              detail::boolean_testable<std::invoke_result_t<Pred&, element_t<Derived>>>
-constexpr auto lens_base<Derived>::for_each_while(Pred pred)
+constexpr auto inline_sequence_base<Derived>::for_each_while(Pred pred)
 {
     return flux::for_each_while(derived(), std::ref(pred));
 }

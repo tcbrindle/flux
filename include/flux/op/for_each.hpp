@@ -34,7 +34,7 @@ inline constexpr auto for_each = detail::for_each_fn{};
 template <typename D>
 template <typename Func, typename Proj>
     requires std::invocable<Func&, projected_t<Proj, D>>
-constexpr auto lens_base<D>::for_each(Func func, Proj proj) -> Func
+constexpr auto inline_sequence_base<D>::for_each(Func func, Proj proj) -> Func
 {
     return flux::for_each(derived(), std::move(func), std::move(proj));
 }

@@ -20,7 +20,7 @@ struct cartesian_product_traits_base;
 
 template <sequence... Bases>
 struct cartesian_product_adaptor
-    : lens_base<cartesian_product_adaptor<Bases...>> {
+    : inline_sequence_base<cartesian_product_adaptor<Bases...>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS std::tuple<Bases...> bases_;
 

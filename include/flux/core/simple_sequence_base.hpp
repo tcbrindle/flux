@@ -6,12 +6,12 @@
 #ifndef FLUX_CORE_SIMPLE_SEQUENCE_BASE_HPP_INCLUDED
 #define FLUX_CORE_SIMPLE_SEQUENCE_BASE_HPP_INCLUDED
 
-#include <flux/core/lens_base.hpp>
+#include <flux/core/inline_sequence_base.hpp>
 
 namespace flux {
 
 template <typename D>
-struct simple_sequence_base : lens_base<D> {};
+struct simple_sequence_base : inline_sequence_base<D> {};
 
 namespace detail {
 

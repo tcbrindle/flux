@@ -16,7 +16,7 @@ namespace detail {
 
 template <typename T, typename CharT, typename Traits>
     requires std::default_initializable<T>
-class istream_adaptor : public lens_base<istream_adaptor<T, CharT, Traits>> {
+class istream_adaptor : public inline_sequence_base<istream_adaptor<T, CharT, Traits>> {
     using istream_type = std::basic_istream<CharT, Traits>;
     istream_type* is_ = nullptr;
     T val_ = T();
