@@ -15,6 +15,7 @@ add_executable(test-libflux
     test_cartesian_product_with.cpp
     test_chain.cpp
     test_contains.cpp
+    test_compare.cpp
     test_count.cpp
     test_count_if.cpp
     test_drop.cpp
