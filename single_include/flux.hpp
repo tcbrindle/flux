@@ -131,20 +131,20 @@ concept ordered_cursor =
  */
 
 template <typename T>
-struct sequence_iface;
+struct sequence_traits;
 
 namespace detail {
 
 template <typename T>
-using iface_t = sequence_iface<std::remove_cvref_t<T>>;
+using traits_t = sequence_traits<std::remove_cvref_t<T>>;
 
 } // namespace detail
 
 template <typename Seq>
-using cursor_t = decltype(detail::iface_t<Seq>::first(FLUX_DECLVAL(Seq&)));
+using cursor_t = decltype(detail::traits_t<Seq>::first(FLUX_DECLVAL(Seq&)));
 
 template <typename Seq>
-using element_t = decltype(detail::iface_t<Seq>::read_at(FLUX_DECLVAL(Seq&), FLUX_DECLVAL(cursor_t<Seq> const&)));
+using element_t = decltype(detail::traits_t<Seq>::read_at(FLUX_DECLVAL(Seq&), FLUX_DECLVAL(cursor_t<Seq> const&)));
 
 namespace detail {
 
@@ -155,11 +155,11 @@ template <has_element_type T>
 struct value_type { using type = std::remove_cvref_t<element_t<T>>; };
 
 template <has_element_type T>
-    requires requires { typename iface_t<T>::value_type; }
-struct value_type<T> { using type = typename iface_t<T>::value_type; };
+    requires requires { typename traits_t<T>::value_type; }
+struct value_type<T> { using type = typename traits_t<T>::value_type; };
 
 template <has_element_type T>
-    requires requires { iface_t<T>::using_primary_template; } &&
+    requires requires { traits_t<T>::using_primary_template; } &&
              requires { typename T::value_type; }
 struct value_type<T> { using type = typename T::value_type; };
 
@@ -172,13 +172,13 @@ struct rvalue_element_type {
 
 template <typename Seq>
 concept has_move_at = requires (Seq& seq, cursor_t<Seq> const& cur) {
-   { iface_t<Seq>::move_at(seq, cur) };
+   { traits_t<Seq>::move_at(seq, cur) };
 };
 
 template <has_element_type T>
     requires has_move_at<T>
 struct rvalue_element_type<T> {
-    using type = decltype(iface_t<T>::move_at(FLUX_DECLVAL(T&), FLUX_DECLVAL(cursor_t<T> const&)));
+    using type = decltype(traits_t<T>::move_at(FLUX_DECLVAL(T&), FLUX_DECLVAL(cursor_t<T> const&)));
 };
 
 } // namespace detail
@@ -215,17 +215,17 @@ using with_ref = T&;
 template <typename T>
 concept can_reference = requires { typename with_ref<T>; };
 
-template <typename Seq, typename Iface = sequence_iface<std::remove_cvref_t<Seq>>>
-concept sequence_impl =
+template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+concept sequence_concept =
     requires (Seq& seq) {
-        { Iface::first(seq) } -> cursor;
+        { Traits::first(seq) } -> cursor;
     } &&
     requires (Seq& seq, cursor_t<Seq> const& cur) {
-        { Iface::is_last(seq, cur) } -> boolean_testable;
-        { Iface::read_at(seq, cur) } -> can_reference;
+        { Traits::is_last(seq, cur) } -> boolean_testable;
+        { Traits::read_at(seq, cur) } -> can_reference;
     } &&
     requires (Seq& seq, cursor_t<Seq>& cur) {
-        { Iface::inc(seq, cur) } -> std::same_as<cursor_t<Seq>&>;
+        { Traits::inc(seq, cur) } -> std::same_as<cursor_t<Seq>&>;
     } &&
     std::common_reference_with<element_t<Seq>&&, rvalue_element_t<Seq>&&>;
     // FIXME FIXME: Need C++23 tuple changes, otherwise zip breaks these
@@ -235,7 +235,7 @@ concept sequence_impl =
 } // namespace detail
 
 template <typename Seq>
-concept sequence = detail::sequence_impl<Seq>;
+concept sequence = detail::sequence_concept<Seq>;
 
 namespace detail {
 
@@ -252,76 +252,76 @@ inline constexpr bool disable_multipass<T> = T::disable_multipass;
 template <typename Seq>
 concept multipass_sequence =
     sequence<Seq> && regular_cursor<cursor_t<Seq>> &&
-    !detail::disable_multipass<detail::iface_t<Seq>>;
+    !detail::disable_multipass<detail::traits_t<Seq>>;
 
 namespace detail {
 
-template <typename Seq, typename Iface = sequence_iface<std::remove_cvref_t<Seq>>>
-concept bidirectional_sequence_impl =
+template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+concept bidirectional_sequence_concept =
     multipass_sequence<Seq> &&
     requires (Seq& seq, cursor_t<Seq>& cur) {
-        { Iface::dec(seq, cur) } -> std::same_as<cursor_t<Seq>&>;
+        { Traits::dec(seq, cur) } -> std::same_as<cursor_t<Seq>&>;
     };
 
 } // namespace detail
 
 template <typename Seq>
-concept bidirectional_sequence = detail::bidirectional_sequence_impl<Seq>;
+concept bidirectional_sequence = detail::bidirectional_sequence_concept<Seq>;
 
 namespace detail {
 
-template <typename Seq, typename Iface = sequence_iface<std::remove_cvref_t<Seq>>>
-concept random_access_sequence_impl =
+template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+concept random_access_sequence_concept =
     bidirectional_sequence<Seq> && ordered_cursor<cursor_t<Seq>> &&
     requires (Seq& seq, cursor_t<Seq>& cur, distance_t offset) {
-        { Iface::inc(seq, cur, offset) } -> std::same_as<cursor_t<Seq>&>;
+        { Traits::inc(seq, cur, offset) } -> std::same_as<cursor_t<Seq>&>;
     } &&
     requires (Seq& seq, cursor_t<Seq> const& cur) {
-        { Iface::distance(seq, cur, cur) } -> std::convertible_to<distance_t>;
+        { Traits::distance(seq, cur, cur) } -> std::convertible_to<distance_t>;
     };
 
 } // namespace detail
 
 template <typename Seq>
-concept random_access_sequence = detail::random_access_sequence_impl<Seq>;
+concept random_access_sequence = detail::random_access_sequence_concept<Seq>;
 
 namespace detail {
 
-template <typename Seq, typename Iface = sequence_iface<std::remove_cvref_t<Seq>>>
-concept contiguous_sequence_impl =
+template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+concept contiguous_sequence_concept =
     random_access_sequence<Seq> &&
     std::is_lvalue_reference_v<element_t<Seq>> &&
     std::same_as<value_t<Seq>, std::remove_cvref_t<element_t<Seq>>> &&
     requires (Seq& seq) {
-        { Iface::data(seq) } -> std::same_as<std::add_pointer_t<element_t<Seq>>>;
+        { Traits::data(seq) } -> std::same_as<std::add_pointer_t<element_t<Seq>>>;
     };
 
 } // namespace detail
 
 template <typename Seq>
-concept contiguous_sequence = detail::contiguous_sequence_impl<Seq>;
+concept contiguous_sequence = detail::contiguous_sequence_concept<Seq>;
 
 namespace detail {
 
-template <typename Seq, typename Iface = sequence_iface<std::remove_cvref_t<Seq>>>
-concept bounded_sequence_impl =
+template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+concept bounded_sequence_concept =
     sequence<Seq> &&
     requires (Seq& seq) {
-        { Iface::last(seq) } -> std::same_as<cursor_t<Seq>>;
+        { Traits::last(seq) } -> std::same_as<cursor_t<Seq>>;
     };
 
 } // namespace detail
 
 template <typename Seq>
-concept bounded_sequence = detail::bounded_sequence_impl<Seq>;
+concept bounded_sequence = detail::bounded_sequence_concept<Seq>;
 
 namespace detail {
 
-template <typename Seq, typename Iface = sequence_iface<std::remove_cvref_t<Seq>>>
-concept sized_sequence_impl =
+template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+concept sized_sequence_concept =
     sequence<Seq> &&
     (requires (Seq& seq) {
-        { Iface::size(seq) } -> std::convertible_to<distance_t>;
+        { Traits::size(seq) } -> std::convertible_to<distance_t>;
     } || (
         random_access_sequence<Seq> && bounded_sequence<Seq>
     ));
@@ -329,7 +329,7 @@ concept sized_sequence_impl =
 } // namespace detail
 
 template <typename Seq>
-concept sized_sequence = detail::sized_sequence_impl<Seq>;
+concept sized_sequence = detail::sized_sequence_concept<Seq>;
 
 template <typename Seq, typename T>
 concept writable_sequence_of =
@@ -353,7 +353,7 @@ inline constexpr bool is_infinite_seq<T> = T::is_infinite;
 template <typename Seq>
 concept infinite_sequence =
     sequence<Seq> &&
-    detail::is_infinite_seq<detail::iface_t<Seq>>;
+    detail::is_infinite_seq<detail::traits_t<Seq>>;
 
 namespace detail {
 
@@ -385,26 +385,20 @@ concept adaptable_sequence =
     !detail::is_ilist<Seq>;
 
 template <typename D>
-struct lens_base;
+struct inline_sequence_base;
 
 namespace detail {
 
 template <typename T, typename U>
-    requires (!std::same_as<T, lens_base<U>>)
-void derived_from_lens_base_test(T const&, lens_base<U> const&);
+    requires (!std::same_as<T, inline_sequence_base<U>>)
+void derived_from_inline_sequence_base_test(T const&, inline_sequence_base<U> const&);
 
 template <typename T>
-concept derived_from_lens_base = requires(T t) {
-    derived_from_lens_base_test(t, t);
+concept derived_from_inline_sequence_base = requires(T t) {
+    derived_from_inline_sequence_base_test(t, t);
 };
 
 } // namespace detail
-
-template <typename Seq>
-concept lens =
-    sequence<Seq> &&
-    std::movable<Seq> &&
-    detail::derived_from_lens_base<Seq>;
 
 /*
  * More useful concepts and associated types
@@ -417,20 +411,20 @@ concept predicate_for =
     std::predicate<Pred&, std::invoke_result_t<Proj&, element_t<Seq>>>;
 
 /*
- * Default sequence_iface implementation
+ * Default sequence_traits implementation
  */
 namespace detail {
 
 template <typename T>
-concept has_nested_sequence_impl =
-    requires { typename T::flux_sequence_iface; } &&
-    std::is_class_v<typename T::flux_sequence_iface>;
+concept has_nested_sequence_traits =
+    requires { typename T::flux_sequence_traits; } &&
+    std::is_class_v<typename T::flux_sequence_traits>;
 
 }
 
 template <typename T>
-    requires detail::has_nested_sequence_impl<T>
-struct sequence_iface<T> : T::flux_sequence_iface {};
+    requires detail::has_nested_sequence_traits<T>
+struct sequence_traits<T> : T::flux_sequence_traits {};
 
 
 } // namespace flux
@@ -465,9 +459,9 @@ struct first_fn {
     template <sequence Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq& seq) const
-        noexcept(noexcept(iface_t<Seq>::first(seq))) -> cursor_t<Seq>
+        noexcept(noexcept(traits_t<Seq>::first(seq))) -> cursor_t<Seq>
     {
-        return iface_t<Seq>::first(seq);
+        return traits_t<Seq>::first(seq);
     }
 };
 
@@ -475,9 +469,9 @@ struct is_last_fn {
     template <sequence Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq& seq, cursor_t<Seq> const& cur) const
-        noexcept(noexcept(iface_t<Seq>::is_last(seq, cur))) -> bool
+        noexcept(noexcept(traits_t<Seq>::is_last(seq, cur))) -> bool
     {
-        return iface_t<Seq>::is_last(seq, cur);
+        return traits_t<Seq>::is_last(seq, cur);
     }
 };
 
@@ -485,35 +479,35 @@ struct unchecked_read_at_fn {
     template <sequence Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq& seq, cursor_t<Seq> const& cur) const
-        noexcept(noexcept(iface_t<Seq>::read_at(seq, cur))) -> element_t<Seq>
+        noexcept(noexcept(traits_t<Seq>::read_at(seq, cur))) -> element_t<Seq>
     {
-        return iface_t<Seq>::read_at(seq, cur);
+        return traits_t<Seq>::read_at(seq, cur);
     }
 };
 
 struct unchecked_inc_fn {
     template <sequence Seq>
     constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur) const
-        noexcept(noexcept(iface_t<Seq>::inc(seq, cur))) -> cursor_t<Seq>&
+        noexcept(noexcept(traits_t<Seq>::inc(seq, cur))) -> cursor_t<Seq>&
     {
-        return iface_t<Seq>::inc(seq, cur);
+        return traits_t<Seq>::inc(seq, cur);
     }
 
     template <random_access_sequence Seq>
     constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur,
                               distance_t offset) const
-        noexcept(noexcept(iface_t<Seq>::inc(seq, cur, offset))) -> cursor_t<Seq>&
+        noexcept(noexcept(traits_t<Seq>::inc(seq, cur, offset))) -> cursor_t<Seq>&
     {
-        return iface_t<Seq>::inc(seq, cur, offset);
+        return traits_t<Seq>::inc(seq, cur, offset);
     }
 };
 
 struct unchecked_dec_fn {
     template <bidirectional_sequence Seq>
     constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur) const
-        noexcept(noexcept(iface_t<Seq>::dec(seq, cur))) -> cursor_t<Seq>&
+        noexcept(noexcept(traits_t<Seq>::dec(seq, cur))) -> cursor_t<Seq>&
     {
-        return iface_t<Seq>::dec(seq, cur);
+        return traits_t<Seq>::dec(seq, cur);
     }
 };
 
@@ -525,7 +519,7 @@ struct distance_fn {
         -> distance_t
     {
         if constexpr (random_access_sequence<Seq>) {
-            return iface_t<Seq>::distance(seq, from, to);
+            return traits_t<Seq>::distance(seq, from, to);
         } else {
             distance_t n = 0;
             auto from_ = from;
@@ -542,9 +536,9 @@ struct data_fn {
     template <contiguous_sequence Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq& seq) const
-        noexcept(noexcept(iface_t<Seq>::data(seq)))
+        noexcept(noexcept(traits_t<Seq>::data(seq)))
     {
-        return iface_t<Seq>::data(seq);
+        return traits_t<Seq>::data(seq);
     }
 };
 
@@ -552,9 +546,9 @@ struct last_fn {
     template <bounded_sequence Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq& seq) const
-        noexcept(noexcept(iface_t<Seq>::last(seq))) -> cursor_t<Seq>
+        noexcept(noexcept(traits_t<Seq>::last(seq))) -> cursor_t<Seq>
     {
-        return iface_t<Seq>::last(seq);
+        return traits_t<Seq>::last(seq);
     }
 };
 
@@ -563,8 +557,8 @@ struct size_fn {
     [[nodiscard]]
     constexpr auto operator()(Seq& seq) const -> distance_t
     {
-        if constexpr (requires { iface_t<Seq>::size(seq); }) {
-            return iface_t<Seq>::size(seq);
+        if constexpr (requires { traits_t<Seq>::size(seq); }) {
+            return traits_t<Seq>::size(seq);
         } else {
             static_assert(bounded_sequence<Seq> && random_access_sequence<Seq>);
             return distance_fn{}(seq, first_fn{}(seq), last_fn{}(seq));
@@ -587,8 +581,8 @@ struct unchecked_move_at_fn {
     constexpr auto operator()(Seq& seq, cursor_t<Seq> const& cur) const
         -> rvalue_element_t<Seq>
     {
-        if constexpr (requires { iface_t<Seq>::move_at(seq, cur); }) {
-            return iface_t<Seq>::move_at(seq, cur);
+        if constexpr (requires { traits_t<Seq>::move_at(seq, cur); }) {
+            return traits_t<Seq>::move_at(seq, cur);
         } else {
             if constexpr (std::is_lvalue_reference_v<element_t<Seq>>) {
                 return std::move(unchecked_read_at_fn{}(seq, cur));
@@ -841,7 +835,7 @@ namespace flux {
  * Default implementation for C arrays of known bound
  */
 template <typename T, std::size_t N>
-struct sequence_iface<T[N]> {
+struct sequence_traits<T[N]> {
 
     static constexpr auto first(auto const&) -> std::size_t { return 0; }
 
@@ -874,7 +868,7 @@ struct sequence_iface<T[N]> {
  * Default implementation for std::initializer_list
  */
 template <typename T>
-struct sequence_iface<std::initializer_list<T>> {
+struct sequence_traits<std::initializer_list<T>> {
 
     using ilist_t = std::initializer_list<T>;
 
@@ -912,7 +906,7 @@ struct sequence_iface<std::initializer_list<T>> {
  * Default implementation for std::reference_wrapper<T>
  */
 template <sequence Seq>
-struct sequence_iface<std::reference_wrapper<Seq>> {
+struct sequence_traits<std::reference_wrapper<Seq>> {
 
     using self_t = std::reference_wrapper<Seq>;
 
@@ -998,8 +992,8 @@ struct sequence_iface<std::reference_wrapper<Seq>> {
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_CORE_LENS_BASE_HPP_INCLUDED
-#define FLUX_CORE_LENS_BASE_HPP_INCLUDED
+#ifndef FLUX_CORE_INLINE_SEQUENCE_BASE_HPP_INCLUDED
+#define FLUX_CORE_INLINE_SEQUENCE_BASE_HPP_INCLUDED
 
 
 
@@ -1056,13 +1050,13 @@ using bounds_t = bounds<cursor_t<Seq>>;
 template <typename Derived>
     /*requires std::is_class_v<Derived>&&
              std::same_as<Derived, std::remove_cv_t<Derived>>*/
-struct lens_base {
+struct inline_sequence_base {
 private:
     constexpr auto derived() -> Derived& { return static_cast<Derived&>(*this); }
     constexpr auto derived() const -> Derived const& { return static_cast<Derived const&>(*this); }
 
 protected:
-    ~lens_base() = default;
+    ~inline_sequence_base() = default;
 
 public:
     /*
@@ -1365,7 +1359,7 @@ public:
 
 } // namespace flux
 
-#endif // FLUX_CORE_LENS_BASE_HPP_INCLUDED
+#endif // FLUX_CORE_SEQUENCE_IFACE_HPP_INCLUDED
 
 
 
@@ -1382,7 +1376,7 @@ public:
 namespace flux {
 
 template <typename D>
-struct simple_sequence_base : lens_base<D> {};
+struct simple_sequence_base : inline_sequence_base<D> {};
 
 namespace detail {
 
@@ -1405,10 +1399,10 @@ concept simple_sequence =
 } // namespace detail
 
 template <detail::simple_sequence S>
-struct sequence_iface<S> {
+struct sequence_traits<S> {
 private:
     class cursor_type {
-        friend struct sequence_iface;
+        friend struct sequence_traits;
         using optional_t = decltype(FLUX_DECLVAL(S&).maybe_next());
         optional_t opt_{};
 
@@ -1497,8 +1491,8 @@ struct for_each_while_fn {
                  boolean_testable<std::invoke_result_t<Pred&, element_t<Seq>>>
     constexpr auto operator()(Seq&& seq, Pred pred) const -> cursor_t<Seq>
     {
-        if constexpr (requires { iface_t<Seq>::for_each_while(seq, std::move(pred)); }) {
-            return iface_t<Seq>::for_each_while(seq, std::move(pred));
+        if constexpr (requires { traits_t<Seq>::for_each_while(seq, std::move(pred)); }) {
+            return traits_t<Seq>::for_each_while(seq, std::move(pred));
         } else {
             auto cur = first(seq);
             while (!is_last(seq, cur)) {
@@ -1518,7 +1512,7 @@ template <typename Derived>
 template <typename Pred>
     requires std::invocable<Pred&, element_t<Derived>> &&
              detail::boolean_testable<std::invoke_result_t<Pred&, element_t<Derived>>>
-constexpr auto lens_base<Derived>::for_each_while(Pred pred)
+constexpr auto inline_sequence_base<Derived>::for_each_while(Pred pred)
 {
     return flux::for_each_while(derived(), std::ref(pred));
 }
@@ -1584,7 +1578,7 @@ inline constexpr auto any = any_detail::fn{};
 template <typename D>
 template <typename Pred, typename Proj>
     requires predicate_for<Pred, D, Proj>
-constexpr auto lens_base<D>::all(Pred pred, Proj proj)
+constexpr auto inline_sequence_base<D>::all(Pred pred, Proj proj)
 {
     return flux::all(derived(), std::move(pred), std::move(proj));
 }
@@ -1592,7 +1586,7 @@ constexpr auto lens_base<D>::all(Pred pred, Proj proj)
 template <typename D>
 template <typename Pred, typename Proj>
     requires predicate_for<Pred, D, Proj>
-constexpr auto lens_base<D>::any(Pred pred, Proj proj)
+constexpr auto inline_sequence_base<D>::any(Pred pred, Proj proj)
 {
     return flux::any(derived(), std::move(pred), std::move(proj));
 }
@@ -1600,7 +1594,7 @@ constexpr auto lens_base<D>::any(Pred pred, Proj proj)
 template <typename D>
 template <typename Pred, typename Proj>
     requires predicate_for<Pred, D, Proj>
-constexpr auto lens_base<D>::none(Pred pred, Proj proj)
+constexpr auto inline_sequence_base<D>::none(Pred pred, Proj proj)
 {
     return flux::none(derived(), std::move(pred), std::move(proj));
 }
@@ -1644,7 +1638,7 @@ namespace flux {
 namespace detail {
 
 template <sequence Base>
-struct ref_adaptor : lens_base<ref_adaptor<Base>> {
+struct ref_adaptor : inline_sequence_base<ref_adaptor<Base>> {
 private:
     Base* base_;
 
@@ -1666,7 +1660,7 @@ public:
 
     constexpr Base& base() const noexcept { return *base_; }
 
-    friend struct sequence_iface<ref_adaptor>;
+    friend struct sequence_traits<ref_adaptor>;
 };
 
 template <typename>
@@ -1690,7 +1684,7 @@ struct ref_fn {
 
 template <sequence Base>
     requires std::movable<Base>
-struct owning_adaptor : lens_base<owning_adaptor<Base>> {
+struct owning_adaptor : inline_sequence_base<owning_adaptor<Base>> {
 private:
     Base base_;
 
@@ -1707,11 +1701,11 @@ public:
     constexpr Base&& base() && noexcept { return std::move(base_); }
     constexpr Base const&& base() const&& noexcept { return std::move(base_); }
 
-    friend struct sequence_iface<owning_adaptor>;
+    friend struct sequence_traits<owning_adaptor>;
 };
 
 template <typename Base>
-struct passthrough_iface_base {
+struct passthrough_traits_base {
 
     template <typename Self>
     using cursor_t = decltype(flux::first(FLUX_DECLVAL(Self&).base()));
@@ -1801,42 +1795,34 @@ struct passthrough_iface_base {
 
     template <typename Self>
     static constexpr auto slice(Self& self, cursor_t<Self> from, cursor_t<Self> to)
-        -> decltype(iface_t<decltype(self.base())>::slice(self.base(), std::move(from), std::move(to)))
+        -> decltype(traits_t<decltype(self.base())>::slice(self.base(), std::move(from), std::move(to)))
     {
-        return iface_t<decltype(self.base())>::slice(self.base(), std::move(from), std::move(to));
+        return traits_t<decltype(self.base())>::slice(self.base(), std::move(from), std::move(to));
     }
 
     template <typename Self>
     static constexpr auto slice(Self& self, cursor_t<Self> from)
-        -> decltype(iface_t<decltype(self.base())>::slice(self.base(), std::move(from)))
+        -> decltype(traits_t<decltype(self.base())>::slice(self.base(), std::move(from)))
     {
-        return iface_t<decltype(self.base())>::slice(self.base(), std::move(from));
+        return traits_t<decltype(self.base())>::slice(self.base(), std::move(from));
     }
 };
 
 } // namespace detail
 
 template <typename Base>
-struct sequence_iface<detail::ref_adaptor<Base>>
-    : detail::passthrough_iface_base<Base> {
+struct sequence_traits<detail::ref_adaptor<Base>>
+    : detail::passthrough_traits_base<Base> {
     using value_type = value_t<Base>;
 };
 
 template <typename Base>
-struct sequence_iface<detail::owning_adaptor<Base>>
-    : detail::passthrough_iface_base<Base> {
+struct sequence_traits<detail::owning_adaptor<Base>>
+    : detail::passthrough_traits_base<Base> {
     using value_type = value_t<Base>;
 };
 
 inline constexpr auto ref = detail::ref_fn{};
-
-/*
-template <typename D>
-constexpr auto lens_base<D>::ref() & -> lens auto
-{
-    return detail::ref_adaptor<D>(derived());
-}
-*/
 
 } // namespace flux
 
@@ -1851,7 +1837,7 @@ struct from_fn {
     template <sequence Seq>
         requires (std::is_lvalue_reference_v<Seq> || adaptable_sequence<Seq>)
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const -> lens auto
+    constexpr auto operator()(Seq&& seq) const
     {
         if constexpr (std::is_lvalue_reference_v<Seq>) {
             return flux::ref(seq);
@@ -1860,10 +1846,6 @@ struct from_fn {
         }
     }
 };
-
-// This should go elsewhere...
-template <typename Seq>
-using lens_t = decltype(from_fn{}(FLUX_DECLVAL(Seq)));
 
 } // namespace detail
 
@@ -1901,13 +1883,13 @@ struct slice_data<Cur, false> {
 
 template <sequence Base, bool Bounded>
     requires (!Bounded || regular_cursor<cursor_t<Base>>)
-struct subsequence : lens_base<subsequence<Base, Bounded>>
+struct subsequence : inline_sequence_base<subsequence<Base, Bounded>>
 {
 private:
     Base* base_;
     FLUX_NO_UNIQUE_ADDRESS slice_data<cursor_t<Base>, Bounded> data_;
 
-    friend struct sequence_iface<subsequence>;
+    friend struct sequence_traits<subsequence>;
 
 public:
     constexpr subsequence(Base& base, cursor_t<Base>&& from,
@@ -1935,8 +1917,8 @@ subsequence(Seq&, cursor_t<Seq>) -> subsequence<Seq, false>;
 template <typename Seq>
 concept has_overloaded_slice =
     requires (Seq& seq, cursor_t<Seq> cur) {
-        { iface_t<Seq>::slice(seq, std::move(cur)) } -> sequence;
-        { iface_t<Seq>::slice(seq, std::move(cur), std::move(cur)) } -> sequence;
+        { traits_t<Seq>::slice(seq, std::move(cur)) } -> sequence;
+        { traits_t<Seq>::slice(seq, std::move(cur), std::move(cur)) } -> sequence;
     };
 
 struct slice_fn {
@@ -1946,7 +1928,7 @@ struct slice_fn {
         -> sequence auto
     {
         if constexpr (has_overloaded_slice<Seq>) {
-            return iface_t<Seq>::slice(seq, std::move(from), std::move(to));
+            return traits_t<Seq>::slice(seq, std::move(from), std::move(to));
         } else {
             return subsequence(seq, std::move(from), std::move(to));
         }
@@ -1957,7 +1939,7 @@ struct slice_fn {
         -> sequence auto
     {
         if constexpr (has_overloaded_slice<Seq>) {
-            return iface_t<Seq>::slice(seq, std::move(from));
+            return traits_t<Seq>::slice(seq, std::move(from));
         } else {
             return subsequence(seq, std::move(from));
         }
@@ -1969,8 +1951,8 @@ struct slice_fn {
 using detail::subsequence;
 
 template <typename Base, bool Bounded>
-struct sequence_iface<subsequence<Base, Bounded>>
-    : detail::passthrough_iface_base<Base>
+struct sequence_traits<subsequence<Base, Bounded>>
+    : detail::passthrough_traits_base<Base>
 {
     using value_type = value_t<Base>;
     using self_t = subsequence<Base, Bounded>;
@@ -2018,14 +2000,14 @@ inline constexpr auto slice = detail::slice_fn{};
 #if 0
 template <typename Derived>
 template <std::same_as<Derived> D>
-constexpr auto lens_base<Derived>::slice(cursor_t<D> from, cursor_t<D> to) &
+constexpr auto inline_sequence_base<Derived>::slice(cursor_t<D> from, cursor_t<D> to) &
 {
     return flux::slice(derived(), std::move(from), std::move(to));
 }
 
 template <typename Derived>
 template <std::same_as<Derived> D>
-constexpr auto lens_base<Derived>::slice_from(cursor_t<D> from) &
+constexpr auto inline_sequence_base<Derived>::slice_from(cursor_t<D> from) &
 {
     return flux::slice(derived(), std::move(from));
 }
@@ -2041,7 +2023,7 @@ namespace flux {
 namespace detail {
 
 template <sequence Base>
-struct bounds_checked_adaptor : lens_base<bounds_checked_adaptor<Base>>
+struct bounds_checked_adaptor : inline_sequence_base<bounds_checked_adaptor<Base>>
 {
 private:
     Base base_;
@@ -2054,7 +2036,7 @@ public:
     constexpr auto base() -> Base& { return base_; }
     constexpr auto base() const -> Base const& { return base_; }
 
-    struct flux_sequence_iface : detail::passthrough_iface_base<Base> {
+    struct flux_sequence_traits : detail::passthrough_traits_base<Base> {
         using value_type = value_t<Base>;
 
         static constexpr bool disable_multipass = !multipass_sequence<Base>;
@@ -2141,13 +2123,13 @@ namespace flux {
 namespace detail {
 
 template <sequence Base>
-struct cache_last_adaptor : lens_base<cache_last_adaptor<Base>>
+struct cache_last_adaptor : inline_sequence_base<cache_last_adaptor<Base>>
 {
 private:
     Base base_;
     std::optional<cursor_t<Base>> cached_last_{};
 
-    friend struct passthrough_iface_base<Base>;
+    friend struct passthrough_traits_base<Base>;
 
     constexpr auto base() -> Base& { return base_; }
 
@@ -2156,7 +2138,7 @@ public:
         : base_(FLUX_FWD(base))
     {}
 
-    struct flux_sequence_iface : detail::passthrough_iface_base<Base> {
+    struct flux_sequence_traits : detail::passthrough_traits_base<Base> {
 
         using value_type = value_t<Base>;
         using self_t = cache_last_adaptor;
@@ -2207,7 +2189,7 @@ struct cache_last_fn {
 inline constexpr auto cache_last = detail::cache_last_fn{};
 
 template <typename Derived>
-constexpr auto lens_base<Derived>::cache_last() &&
+constexpr auto inline_sequence_base<Derived>::cache_last() &&
     requires bounded_sequence<Derived> ||
         (multipass_sequence<Derived> && not infinite_sequence<Derived>)
 {
@@ -2236,16 +2218,16 @@ namespace flux {
 namespace detail {
 
 template <typename... Bases>
-struct cartesian_product_iface_base;
+struct cartesian_product_traits_base;
 
 template <sequence... Bases>
 struct cartesian_product_adaptor
-    : lens_base<cartesian_product_adaptor<Bases...>> {
+    : inline_sequence_base<cartesian_product_adaptor<Bases...>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS std::tuple<Bases...> bases_;
 
-    friend struct cartesian_product_iface_base<Bases...>;
-    friend struct sequence_iface<cartesian_product_adaptor>;
+    friend struct cartesian_product_traits_base<Bases...>;
+    friend struct sequence_traits<cartesian_product_adaptor>;
 
 public:
     constexpr explicit cartesian_product_adaptor(decays_to<Bases> auto&&... bases)
@@ -2268,7 +2250,7 @@ template <typename B0, typename...>
 inline constexpr bool cartesian_product_is_bounded = bounded_sequence<B0>;
 
 template <typename... Bases>
-struct cartesian_product_iface_base {
+struct cartesian_product_traits_base {
 private:
     template <typename From, typename To>
     using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
@@ -2417,8 +2399,8 @@ public:
 } // end namespace detail
 
 template <typename... Bases>
-struct sequence_iface<detail::cartesian_product_adaptor<Bases...>>
-    : detail::cartesian_product_iface_base<Bases...>
+struct sequence_traits<detail::cartesian_product_adaptor<Bases...>>
+    : detail::cartesian_product_traits_base<Bases...>
 {
 private:
     template <std::size_t I, typename Self>
@@ -2478,13 +2460,13 @@ namespace detail {
 
 template <typename Func, sequence... Bases>
 struct cartesian_product_with_adaptor
-    : lens_base<cartesian_product_with_adaptor<Func, Bases...>> {
+    : inline_sequence_base<cartesian_product_with_adaptor<Func, Bases...>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS std::tuple<Bases...> bases_;
     FLUX_NO_UNIQUE_ADDRESS Func func_;
 
-    friend struct cartesian_product_iface_base<Bases...>;
-    friend struct sequence_iface<cartesian_product_with_adaptor>;
+    friend struct cartesian_product_traits_base<Bases...>;
+    friend struct sequence_traits<cartesian_product_with_adaptor>;
 
 public:
     constexpr explicit cartesian_product_with_adaptor(decays_to<Func> auto&& func, decays_to<Bases> auto&&... bases)
@@ -2492,7 +2474,7 @@ public:
           func_(FLUX_FWD(func))
     {}
 
-    struct flux_sequence_iface : detail::cartesian_product_iface_base<Bases...>
+    struct flux_sequence_traits : detail::cartesian_product_traits_base<Bases...>
     {
         template <typename Self>
         static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
@@ -2549,11 +2531,11 @@ namespace flux {
 namespace detail {
 
 template <sequence... Bases>
-struct chain_adaptor : lens_base<chain_adaptor<Bases...>> {
+struct chain_adaptor : inline_sequence_base<chain_adaptor<Bases...>> {
 private:
     std::tuple<Bases...> bases_;
 
-    friend struct sequence_iface<chain_adaptor>;
+    friend struct sequence_traits<chain_adaptor>;
 
 public:
     explicit constexpr chain_adaptor(decays_to<Bases> auto&&... bases)
@@ -2590,7 +2572,7 @@ struct chain_fn {
 } // namespace detail
 
 template <typename... Bases>
-struct sequence_iface<detail::chain_adaptor<Bases...>> {
+struct sequence_traits<detail::chain_adaptor<Bases...>> {
 
     using value_type = std::common_type_t<value_t<Bases>...>;
 
@@ -2875,6 +2857,64 @@ inline constexpr auto chain = detail::chain_fn{};
 #endif
 
 
+// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_OP_COMPARE_HPP_INCLUDED
+#define FLUX_OP_COMPARE_HPP_INCLUDED
+
+
+
+#include <compare>
+
+namespace flux {
+
+namespace detail {
+
+template <typename Cmp>
+concept is_comparison_category =
+    std::same_as<Cmp, std::strong_ordering> ||
+    std::same_as<Cmp, std::weak_ordering> ||
+    std::same_as<Cmp, std::partial_ordering>;
+
+struct compare_fn {
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way,
+              typename Proj1 = std::identity, typename Proj2 = std::identity>
+        requires std::invocable<Cmp&, projected_t<Proj1, Seq1>, projected_t<Proj2, Seq2>> &&
+                 is_comparison_category<std::invoke_result_t<Cmp&, projected_t<Proj1, Seq1>, projected_t<Proj2, Seq2>>>
+    constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {},
+                              Proj1 proj1 = {}, Proj2 proj2 = {}) const
+        -> std::invoke_result_t<Cmp&, projected_t<Proj1, Seq1>, projected_t<Proj2, Seq2>>
+    {
+        auto cur1 = flux::first(seq1);
+        auto cur2 = flux::first(seq2);
+
+        while (!flux::is_last(seq1, cur1) && !flux::is_last(seq2, cur2)) {
+            if (auto r = std::invoke(cmp, std::invoke(proj1, flux::unchecked_read_at(seq1, cur1)),
+                                       std::invoke(proj2, flux::unchecked_read_at(seq2, cur2))); r != 0) {
+                return r;
+            }
+            flux::inc(seq1, cur1);
+            flux::inc(seq2, cur2);
+        }
+
+        return !flux::is_last(seq1, cur1) ? std::strong_ordering::greater :
+               !flux::is_last(seq2, cur2) ? std::strong_ordering::less :
+                                           std::strong_ordering::equal;
+    }
+
+};
+
+} // namespace detail
+
+inline constexpr auto compare = detail::compare_fn{};
+
+} // namespace flux
+
+#endif // FLUX_OP_EQUAL_HPP_INCLUDED
+
+
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -2908,7 +2948,7 @@ inline constexpr auto contains = detail::contains_fn{};
 template <typename D>
 template <typename Value, typename Proj>
     requires std::equality_comparable_with<projected_t<Proj, D>, Value const&>
-constexpr auto lens_base<D>::contains(Value const& value, Proj proj) -> bool
+constexpr auto inline_sequence_base<D>::contains(Value const& value, Proj proj) -> bool
 {
     return flux::contains(derived(), value, std::move(proj));
 }
@@ -2989,7 +3029,7 @@ inline constexpr auto count = detail::count_fn{};
 inline constexpr auto count_if = detail::count_if_fn{};
 
 template <typename D>
-constexpr auto lens_base<D>::count()
+constexpr auto inline_sequence_base<D>::count()
 {
     return flux::count(derived());
 }
@@ -2997,7 +3037,7 @@ constexpr auto lens_base<D>::count()
 template <typename D>
 template <typename Value, typename Proj>
     requires std::equality_comparable_with<projected_t<Proj, D>, Value const&>
-constexpr auto lens_base<D>::count(Value const& value, Proj proj)
+constexpr auto inline_sequence_base<D>::count(Value const& value, Proj proj)
 {
     return flux::count(derived(), value, std::move(proj));
 }
@@ -3005,7 +3045,7 @@ constexpr auto lens_base<D>::count(Value const& value, Proj proj)
 template <typename D>
 template <typename Pred, typename Proj>
     requires predicate_for<Pred, D, Proj>
-constexpr auto lens_base<D>::count_if(Pred pred, Proj proj)
+constexpr auto inline_sequence_base<D>::count_if(Pred pred, Proj proj)
 {
     return flux::count_if(derived(), std::move(pred), std::move(proj));
 }
@@ -3032,7 +3072,7 @@ namespace flux {
 namespace detail {
 
 template <sequence Base>
-struct drop_adaptor : lens_base<drop_adaptor<Base>> {
+struct drop_adaptor : inline_sequence_base<drop_adaptor<Base>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     distance_t count_;
@@ -3047,7 +3087,7 @@ public:
     constexpr Base& base() & { return base_; }
     constexpr Base const& base() const& { return base_; }
 
-    struct flux_sequence_iface : passthrough_iface_base<drop_adaptor> {
+    struct flux_sequence_traits : passthrough_traits_base<drop_adaptor> {
         using value_type = value_t<Base>;
 
         static constexpr bool disable_multipass = !multipass_sequence<Base>;
@@ -3096,7 +3136,7 @@ struct drop_fn {
 inline constexpr auto drop = detail::drop_fn{};
 
 template <typename Derived>
-constexpr auto lens_base<Derived>::drop(distance_t count) &&
+constexpr auto inline_sequence_base<Derived>::drop(distance_t count) &&
 {
     return detail::drop_adaptor<Derived>(std::move(derived()), count);
 }
@@ -3123,13 +3163,13 @@ namespace flux {
 namespace detail {
 
 template <sequence Base, typename Pred>
-struct drop_while_adaptor : lens_base<drop_while_adaptor<Base, Pred>> {
+struct drop_while_adaptor : inline_sequence_base<drop_while_adaptor<Base, Pred>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Pred pred_;
     std::optional<cursor_t<Base>> cached_first_{};
 
-    friend struct passthrough_iface_base<Base>;
+    friend struct passthrough_traits_base<Base>;
 
     constexpr auto base() & -> Base& { return base_; }
 
@@ -3139,7 +3179,7 @@ public:
           pred_(FLUX_FWD(pred))
     {}
 
-    struct flux_sequence_iface : detail::passthrough_iface_base<Base> {
+    struct flux_sequence_traits : detail::passthrough_traits_base<Base> {
         using value_type = value_t<Base>;
         using self_t = drop_while_adaptor;
 
@@ -3186,7 +3226,7 @@ inline constexpr auto drop_while = detail::drop_while_fn{};
 template <typename D>
 template <typename Pred>
     requires std::predicate<Pred&, element_t<D>>
-constexpr auto lens_base<D>::drop_while(Pred pred) &&
+constexpr auto inline_sequence_base<D>::drop_while(Pred pred) &&
 {
     return flux::drop_while(std::move(derived()), std::move(pred));
 };
@@ -3290,7 +3330,7 @@ inline constexpr auto for_each = detail::for_each_fn{};
 template <typename D>
 template <typename Func, typename Proj>
     requires std::invocable<Func&, projected_t<Proj, D>>
-constexpr auto lens_base<D>::for_each(Func func, Proj proj) -> Func
+constexpr auto inline_sequence_base<D>::for_each(Func func, Proj proj) -> Func
 {
     return flux::for_each(derived(), std::move(func), std::move(proj));
 }
@@ -3321,7 +3361,7 @@ inline constexpr auto fill = detail::fill_fn{};
 template <typename D>
 template <typename Value>
     requires writable_sequence_of<D, Value const&>
-constexpr void lens_base<D>::fill(Value const& value)
+constexpr void inline_sequence_base<D>::fill(Value const& value)
 {
     flux::fill(derived(), value);
 }
@@ -3350,7 +3390,7 @@ namespace detail {
 
 template <sequence Base, typename Pred>
     requires std::predicate<Pred&, element_t<Base>&>
-class filter_adaptor : public lens_base<filter_adaptor<Base, Pred>>
+class filter_adaptor : public inline_sequence_base<filter_adaptor<Base, Pred>>
 {
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Pred pred_;
@@ -3367,7 +3407,7 @@ public:
     [[nodiscard]]
     constexpr auto base() && -> Base { return std::move(base_); }
 
-    struct flux_sequence_iface {
+    struct flux_sequence_traits {
         using self_t = filter_adaptor;
 
         static constexpr bool disable_multipass = !multipass_sequence<Base>;
@@ -3463,7 +3503,7 @@ inline constexpr auto filter = detail::filter_fn{};
 template <typename D>
 template <typename Pred>
     requires std::predicate<Pred&, element_t<D>&>
-constexpr auto lens_base<D>::filter(Pred pred) &&
+constexpr auto inline_sequence_base<D>::filter(Pred pred) &&
 {
     return detail::filter_adaptor<D, Pred>(std::move(derived()), std::move(pred));
 }
@@ -3481,7 +3521,6 @@ constexpr auto lens_base<D>::filter(Pred pred) &&
 
 #ifndef FLUX_OP_FIND_HPP_INCLUDED
 #define FLUX_OP_FIND_HPP_INCLUDED
-
 
 
 
@@ -3534,7 +3573,7 @@ inline constexpr auto find_if_not = detail::find_if_not_fn{};
 template <typename D>
 template <typename Value, typename Proj>
     requires std::equality_comparable_with<projected_t<Proj, D>, Value const&>
-constexpr auto lens_base<D>::find(Value const& val, Proj proj)
+constexpr auto inline_sequence_base<D>::find(Value const& val, Proj proj)
 {
     return flux::find(derived(), val, std::ref(proj));
 }
@@ -3542,7 +3581,7 @@ constexpr auto lens_base<D>::find(Value const& val, Proj proj)
 template <typename D>
 template <typename Pred, typename Proj>
     requires predicate_for<Pred, D, Proj>
-constexpr auto lens_base<D>::find_if(Pred pred, Proj proj)
+constexpr auto inline_sequence_base<D>::find_if(Pred pred, Proj proj)
 {
     return flux::find_if(derived(), std::ref(pred), std::ref(proj));
 }
@@ -3550,7 +3589,7 @@ constexpr auto lens_base<D>::find_if(Pred pred, Proj proj)
 template <typename D>
 template <typename Pred, typename Proj>
     requires predicate_for<Pred, D, Proj>
-constexpr auto lens_base<D>::find_if_not(Pred pred, Proj proj)
+constexpr auto inline_sequence_base<D>::find_if_not(Pred pred, Proj proj)
 {
     return flux::find_if_not(derived(), std::ref(pred), std::ref(proj));
 }
@@ -3653,7 +3692,7 @@ template <typename Derived>
 template <typename D, typename Func, typename Init>
     requires foldable<Derived, Func, Init>
 [[nodiscard]]
-constexpr auto lens_base<Derived>::fold(Func func, Init init) -> fold_result_t<D, Func, Init>
+constexpr auto inline_sequence_base<Derived>::fold(Func func, Init init) -> fold_result_t<D, Func, Init>
 {
     return flux::fold(derived(), std::move(func), std::move(init));
 }
@@ -3662,13 +3701,13 @@ template <typename Derived>
 template <typename D, typename Func>
     requires std::invocable<Func&, value_t<D>, element_t<D>> &&
              std::assignable_from<value_t<D>&, std::invoke_result_t<Func&, value_t<D>, element_t<D>>>
-constexpr auto lens_base<Derived>::fold_first(Func func)
+constexpr auto inline_sequence_base<Derived>::fold_first(Func func)
 {
     return flux::fold_first(derived(), std::move(func));
 }
 
 template <typename D>
-constexpr auto lens_base<D>::sum()
+constexpr auto inline_sequence_base<D>::sum()
     requires foldable<D, std::plus<>, value_t<D>> &&
              std::default_initializable<value_t<D>>
 {
@@ -3676,7 +3715,7 @@ constexpr auto lens_base<D>::sum()
 }
 
 template <typename D>
-constexpr auto lens_base<D>::product()
+constexpr auto inline_sequence_base<D>::product()
     requires foldable<D, std::multiplies<>, value_t<D>> &&
              requires { value_t<D>(1); }
 {
@@ -3725,7 +3764,7 @@ struct inplace_reverse_fn {
 inline constexpr auto inplace_reverse = detail::inplace_reverse_fn{};
 
 template <typename D>
-constexpr auto lens_base<D>::inplace_reverse()
+constexpr auto inline_sequence_base<D>::inplace_reverse()
     requires bounded_sequence<D> && detail::element_swappable_with<D, D>
 {
     return flux::inplace_reverse(derived());
@@ -3753,13 +3792,13 @@ namespace detail {
 template <sequence Base, typename Func>
     requires std::is_object_v<Func> &&
              std::regular_invocable<Func&, element_t<Base>>
-struct map_adaptor : lens_base<map_adaptor<Base, Func>>
+struct map_adaptor : inline_sequence_base<map_adaptor<Base, Func>>
 {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Func func_;
 
-    friend struct sequence_iface<map_adaptor>;
+    friend struct sequence_traits<map_adaptor>;
 
 public:
     constexpr map_adaptor(decays_to<Base> auto&& base, decays_to<Func> auto&& func)
@@ -3772,7 +3811,7 @@ public:
     constexpr auto base() && -> Base&& { return std::move(base_); }
     constexpr auto base() const&& -> Base const&& { return std::move(base_); }
 
-    struct flux_sequence_iface  : detail::passthrough_iface_base<Base>
+    struct flux_sequence_traits  : detail::passthrough_traits_base<Base>
     {
         using value_type = std::remove_cvref_t<std::invoke_result_t<Func&, element_t<Base>>>;
 
@@ -3815,7 +3854,7 @@ inline constexpr auto map = detail::map_fn{};
 template <typename Derived>
 template <typename Func>
     requires std::invocable<Func&, element_t<Derived>>
-constexpr auto lens_base<Derived>::map(Func func) &&
+constexpr auto inline_sequence_base<Derived>::map(Func func) &&
 {
     return detail::map_adaptor<Derived, Func>(std::move(derived()), std::move(func));
 }
@@ -3921,21 +3960,21 @@ inline constexpr auto minmax = detail::minmax_op{};
 
 template <typename Derived>
 template <typename Cmp, typename Proj>
-constexpr auto lens_base<Derived>::max(Cmp cmp, Proj proj)
+constexpr auto inline_sequence_base<Derived>::max(Cmp cmp, Proj proj)
 {
     return flux::max(derived(), std::move(cmp), std::move(proj));
 }
 
 template <typename Derived>
 template <typename Cmp, typename Proj>
-constexpr auto lens_base<Derived>::min(Cmp cmp, Proj proj)
+constexpr auto inline_sequence_base<Derived>::min(Cmp cmp, Proj proj)
 {
     return flux::min(derived(), std::move(cmp), std::move(proj));
 }
 
 template <typename Derived>
 template <typename Cmp, typename Proj>
-constexpr auto lens_base<Derived>::minmax(Cmp cmp, Proj proj)
+constexpr auto inline_sequence_base<Derived>::minmax(Cmp cmp, Proj proj)
 {
     return flux::minmax(derived(), std::move(cmp), std::move(proj));
 }
@@ -3980,12 +4019,12 @@ rev_cur(B&&) -> rev_cur<std::remove_cvref_t<B>>;
 
 template <bidirectional_sequence Base>
     requires bounded_sequence<Base>
-struct reverse_adaptor : lens_base<reverse_adaptor<Base>>
+struct reverse_adaptor : inline_sequence_base<reverse_adaptor<Base>>
 {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
 
-    friend struct sequence_iface<reverse_adaptor>;
+    friend struct sequence_traits<reverse_adaptor>;
 
 public:
     constexpr explicit reverse_adaptor(decays_to<Base> auto&& base)
@@ -4021,7 +4060,7 @@ struct reverse_fn {
 } // namespace detail
 
 template <typename Base>
-struct sequence_iface<detail::reverse_adaptor<Base>>
+struct sequence_traits<detail::reverse_adaptor<Base>>
 {
     using value_type = value_t<Base>;
 
@@ -4103,7 +4142,7 @@ struct sequence_iface<detail::reverse_adaptor<Base>>
 inline constexpr auto reverse = detail::reverse_fn{};
 
 template <typename D>
-constexpr auto lens_base<D>::reverse() &&
+constexpr auto inline_sequence_base<D>::reverse() &&
     requires bidirectional_sequence<D> && bounded_sequence<D>
 {
     return flux::reverse(std::move(derived()));
@@ -4197,11 +4236,11 @@ namespace flux {
 namespace detail {
 
 template <std::movable T>
-struct single_sequence : lens_base<single_sequence<T>> {
+struct single_sequence : inline_sequence_base<single_sequence<T>> {
 private:
     T obj_;
 
-    friend struct sequence_iface<single_sequence>;
+    friend struct sequence_traits<single_sequence>;
 
 public:
     constexpr single_sequence()
@@ -4239,7 +4278,7 @@ struct single_fn {
 } // namespace detail
 
 template <typename T>
-struct sequence_iface<detail::single_sequence<T>>
+struct sequence_traits<detail::single_sequence<T>>
 {
 private:
     using self_t = detail::single_sequence<T>;
@@ -4323,12 +4362,12 @@ namespace flux {
 namespace detail {
 
 template <multipass_sequence Base, multipass_sequence Pattern>
-struct split_adaptor : lens_base<split_adaptor<Base, Pattern>> {
+struct split_adaptor : inline_sequence_base<split_adaptor<Base, Pattern>> {
 private:
     Base base_;
     Pattern pattern_;
 
-    friend struct sequence_iface<split_adaptor>;
+    friend struct sequence_traits<split_adaptor>;
 
 public:
     constexpr split_adaptor(decays_to<Base> auto&& base, decays_to<Pattern> auto&& pattern)
@@ -4370,7 +4409,7 @@ inline constexpr bool is_single_seq<single_sequence<T>> = true;
 } // namespace detail
 
 template <typename Base, typename Pattern>
-struct sequence_iface<detail::split_adaptor<Base, Pattern>>
+struct sequence_traits<detail::split_adaptor<Base, Pattern>>
 {
 private:
     template <typename Self, typename B = detail::const_like_t<Self, Base>>
@@ -4451,7 +4490,7 @@ inline constexpr auto split = detail::split_fn{};
 template <typename Derived>
 template <multipass_sequence Pattern>
     requires std::equality_comparable_with<element_t<Derived>, element_t<Pattern>>
-constexpr auto lens_base<Derived>::split(Pattern&& pattern) &&
+constexpr auto inline_sequence_base<Derived>::split(Pattern&& pattern) &&
 {
     return flux::split(std::move(derived()), FLUX_FWD(pattern));
 }
@@ -4459,7 +4498,7 @@ constexpr auto lens_base<Derived>::split(Pattern&& pattern) &&
 template <typename Derived>
 template <typename ValueType>
     requires decays_to<ValueType, value_t<Derived>>
-constexpr auto lens_base<Derived>::split(ValueType&& delim) &&
+constexpr auto inline_sequence_base<Derived>::split(ValueType&& delim) &&
 {
     return flux::split(std::move(derived()), FLUX_FWD(delim));
 }
@@ -4534,7 +4573,7 @@ struct split_string_fn {
 inline constexpr auto split_string = detail::split_string_fn{};
 
 template <typename D>
-constexpr auto lens_base<D>::split_string(auto&& pattern) &&
+constexpr auto inline_sequence_base<D>::split_string(auto&& pattern) &&
 {
     return flux::split_string(std::move(derived()), FLUX_FWD(pattern));
 }
@@ -5383,7 +5422,7 @@ template <typename Cmp, typename Proj>
              bounded_sequence<D> &&
              detail::element_swappable_with<D, D> &&
              std::predicate<Cmp&, projected_t<Proj, D>, projected_t<Proj, D>>
-constexpr void lens_base<D>::sort(Cmp cmp, Proj proj)
+constexpr void inline_sequence_base<D>::sort(Cmp cmp, Proj proj)
 {
     return flux::sort(derived(), std::move(cmp), std::move(proj));
 }
@@ -5447,7 +5486,7 @@ namespace flux {
 namespace detail {
 
 template <sequence Base>
-struct take_adaptor : lens_base<take_adaptor<Base>>
+struct take_adaptor : inline_sequence_base<take_adaptor<Base>>
 {
 private:
     Base base_;
@@ -5466,7 +5505,7 @@ private:
         friend auto operator<=>(cursor_type const& lhs, cursor_type const& rhs) = default;
     };
 
-    friend struct sequence_iface<take_adaptor>;
+    friend struct sequence_traits<take_adaptor>;
 
 public:
     constexpr take_adaptor(decays_to<Base> auto&& base, distance_t count)
@@ -5497,7 +5536,7 @@ struct take_fn {
 } // namespace detail
 
 template <typename Base>
-struct sequence_iface<detail::take_adaptor<Base>> {
+struct sequence_traits<detail::take_adaptor<Base>> {
 
     template <typename Self>
     using cursor_t =
@@ -5598,7 +5637,7 @@ struct sequence_iface<detail::take_adaptor<Base>> {
 inline constexpr auto take = detail::take_fn{};
 
 template <typename Derived>
-constexpr auto lens_base<Derived>::take(distance_t count) &&
+constexpr auto inline_sequence_base<Derived>::take(distance_t count) &&
 {
     return detail::take_adaptor<Derived>(std::move(derived()), count);
 }
@@ -5623,15 +5662,15 @@ namespace flux {
 namespace detail {
 
 template <sequence Base, typename Pred>
-struct take_while_adaptor : lens_base<take_while_adaptor<Base, Pred>> {
+struct take_while_adaptor : inline_sequence_base<take_while_adaptor<Base, Pred>> {
 private:
     Base base_;
     Pred pred_;
 
     constexpr auto base() & -> Base& { return base_; }
 
-    friend struct sequence_iface<take_while_adaptor>;
-    friend struct passthrough_iface_base<Base>;
+    friend struct sequence_traits<take_while_adaptor>;
+    friend struct passthrough_traits_base<Base>;
 
 public:
     constexpr take_while_adaptor(decays_to<Base> auto&& base, decays_to<Pred> auto&& pred)
@@ -5657,8 +5696,8 @@ struct take_while_fn {
 } // namespace detail
 
 template <typename Base, typename Pred>
-struct sequence_iface<detail::take_while_adaptor<Base, Pred>>
-    : detail::passthrough_iface_base<Base>
+struct sequence_traits<detail::take_while_adaptor<Base, Pred>>
+    : detail::passthrough_traits_base<Base>
 {
     using self_t = detail::take_while_adaptor<Base, Pred>;
 
@@ -5698,7 +5737,7 @@ inline constexpr auto take_while = detail::take_while_fn{};
 template <typename D>
 template <typename Pred>
     requires std::predicate<Pred&, element_t<D>>
-constexpr auto lens_base<D>::take_while(Pred pred) &&
+constexpr auto inline_sequence_base<D>::take_while(Pred pred) &&
 {
     return flux::take_while(std::move(derived()), std::move(pred));
 }
@@ -5779,7 +5818,7 @@ template <typename D>
 template <typename Iter>
     requires std::weakly_incrementable<Iter> &&
              std::indirectly_writable<Iter, element_t<D>>
-constexpr auto lens_base<D>::output_to(Iter iter) -> Iter
+constexpr auto inline_sequence_base<D>::output_to(Iter iter) -> Iter
 {
     return flux::output_to(derived(), std::move(iter));
 }
@@ -6053,25 +6092,25 @@ struct view_fn {
 inline constexpr auto view = detail::view_fn{};
 
 template <typename D>
-constexpr auto lens_base<D>::view() &
+constexpr auto inline_sequence_base<D>::view() &
 {
     return flux::view(derived());
 }
 
 template <typename D>
-constexpr auto lens_base<D>::view() const& requires sequence<D const>
+constexpr auto inline_sequence_base<D>::view() const& requires sequence<D const>
 {
     return flux::view(derived());
 }
 
 template <typename D>
-constexpr auto lens_base<D>::view() &&
+constexpr auto inline_sequence_base<D>::view() &&
 {
     return flux::view(std::move(derived()));
 }
 
 template <typename D>
-constexpr auto lens_base<D>::view() const&& requires sequence<D const>
+constexpr auto inline_sequence_base<D>::view() const&& requires sequence<D const>
 {
     return flux::view(std::move(derived()));
 }
@@ -6246,14 +6285,14 @@ constexpr auto to(Seq&& seq, Args&&... args)
 
 template <typename D>
 template <typename Container, typename... Args>
-constexpr auto lens_base<D>::to(Args&&... args) -> Container
+constexpr auto inline_sequence_base<D>::to(Args&&... args) -> Container
 {
     return flux::to<Container>(derived(), FLUX_FWD(args)...);
 }
 
 template <typename D>
 template <template <typename...> typename Container, typename... Args>
-constexpr auto lens_base<D>::to(Args&&... args)
+constexpr auto inline_sequence_base<D>::to(Args&&... args)
 {
     return flux::to<Container>(derived(), FLUX_FWD(args)...);
 }
@@ -6312,7 +6351,7 @@ struct write_to_fn {
 inline constexpr auto write_to = detail::write_to_fn{};
 
 template <typename Derived>
-auto lens_base<Derived>::write_to(std::ostream& os) -> std::ostream&
+auto inline_sequence_base<Derived>::write_to(std::ostream& os) -> std::ostream&
 {
     return flux::write_to(derived(), os);
 }
@@ -6348,8 +6387,8 @@ namespace detail {
 
 template <typename T>
     requires std::is_object_v<T>
-struct empty_sequence : lens_base<empty_sequence<T>> {
-    struct flux_sequence_iface {
+struct empty_sequence : inline_sequence_base<empty_sequence<T>> {
+    struct flux_sequence_traits {
     private:
         struct cursor_type {
             friend auto operator==(cursor_type, cursor_type) -> bool = default;
@@ -6419,11 +6458,11 @@ template <typename... Ts>
 using pair_or_tuple_t = typename pair_or_tuple<Ts...>::type;
 
 template <sequence... Bases>
-struct zip_adaptor : lens_base<zip_adaptor<Bases...>> {
+struct zip_adaptor : inline_sequence_base<zip_adaptor<Bases...>> {
 private:
     pair_or_tuple_t<Bases...> bases_;
 
-    friend struct sequence_iface<zip_adaptor>;
+    friend struct sequence_traits<zip_adaptor>;
 
 public:
     constexpr explicit zip_adaptor(decays_to<Bases> auto&&... bases)
@@ -6447,7 +6486,7 @@ struct zip_fn {
 } // namespace detail
 
 template <typename... Bases>
-struct sequence_iface<detail::zip_adaptor<Bases...>>
+struct sequence_traits<detail::zip_adaptor<Bases...>>
 {
 private:
     template <typename... Ts>
@@ -6596,7 +6635,7 @@ namespace flux {
 namespace experimental {
 
 template <typename ElemT>
-struct generator : lens_base<generator<ElemT>> {
+struct generator : inline_sequence_base<generator<ElemT>> {
 
     using yielded_type = std::conditional_t<std::is_reference_v<ElemT>,
                                             ElemT,
@@ -6634,7 +6673,7 @@ private:
 
     explicit generator(handle_type&& handle) : coro_(std::move(handle)) {}
 
-    friend struct sequence_iface<generator>;
+    friend struct sequence_traits<generator>;
 
 public:
     generator(generator&& other) noexcept
@@ -6656,7 +6695,7 @@ public:
 } // namespace experimental
 
 template <typename T>
-struct sequence_iface<experimental::generator<T>>
+struct sequence_traits<experimental::generator<T>>
 {
 private:
     struct cursor_type {
@@ -6664,7 +6703,7 @@ private:
         cursor_type& operator=(cursor_type&&) = default;
     private:
         cursor_type() = default;
-        friend struct sequence_iface;
+        friend struct sequence_traits;
     };
 
     using self_t = experimental::generator<T>;
@@ -6713,7 +6752,7 @@ namespace flux {
 namespace detail {
 
 template <typename CharT, typename Traits>
-struct getlines_sequence : lens_base<getlines_sequence<CharT, Traits>> {
+struct getlines_sequence : inline_sequence_base<getlines_sequence<CharT, Traits>> {
 private:
     using istream_type = std::basic_istream<CharT, Traits>;
     using string_type = std::basic_string<CharT, Traits>;
@@ -6734,7 +6773,7 @@ public:
     getlines_sequence(getlines_sequence&&) = default;
     getlines_sequence& operator=(getlines_sequence&&) = default;
 
-    struct flux_sequence_iface {
+    struct flux_sequence_traits {
     private:
         struct cursor_type {
             explicit cursor_type() = default;
@@ -6800,6 +6839,201 @@ inline constexpr auto getlines = detail::getlines_fn{};
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
+#ifndef FLUX_SOURCE_IOTA_HPP_INCLUDED
+#define FLUX_SOURCE_IOTA_HPP_INCLUDED
+
+
+
+namespace flux {
+
+namespace detail {
+
+// These concepts mirror the standard ones, except that iter_difference_t is not required
+template <typename T>
+concept incrementable =
+    std::regular<T> &&
+    requires (T t) {
+        { ++t } -> std::same_as<T&>;
+        { t++ } -> std::same_as<T>;
+    };
+
+template <typename T>
+concept decrementable =
+    incrementable<T> &&
+    requires (T t) {
+        { --t } -> std::same_as<T&>;
+        { t-- } -> std::same_as<T>;
+    };
+
+template <typename T>
+concept advancable =
+    decrementable<T> &&
+    std::totally_ordered<T> &&
+    std::weakly_incrementable<T> && // iter_difference_t exists
+    requires (T t, T const u, std::iter_difference_t<T> o) {
+        { t += o } -> std::same_as<T&>;
+        { t -= o } -> std::same_as<T&>;
+        T(u + o);
+        T(o + u);
+        T(u - o);
+        { u - u } -> std::convertible_to<distance_t>;
+    };
+
+struct iota_traits {
+    bool has_start;
+    bool has_end;
+};
+
+template <incrementable T, iota_traits Traits>
+struct iota_sequence_traits {
+    using cursor_type = T;
+
+    static constexpr bool is_infinite = !Traits.has_end;
+
+    static constexpr auto first(auto& self) -> cursor_type
+    {
+        if constexpr (Traits.has_start) {
+            return self.start_;
+        } else {
+            return cursor_type{};
+        }
+    }
+
+    static constexpr auto is_last(auto& self, cursor_type const& cur) -> bool
+    {
+        if constexpr (Traits.has_end) {
+            return cur == self.end_;
+        } else {
+            return false;
+        }
+    }
+
+    static constexpr auto inc(auto&, cursor_type& cur) -> cursor_type&
+    {
+        return ++cur;
+    }
+
+    static constexpr auto read_at(auto&, cursor_type const& cur) -> T
+    {
+        return cur;
+    }
+
+    static constexpr auto last(auto& self) -> cursor_type
+        requires (Traits.has_end)
+    {
+        return self.end_;
+    }
+
+    static constexpr auto dec(auto&, cursor_type& cur) -> cursor_type&
+        requires decrementable<T>
+    {
+        return --cur;
+    }
+
+    static constexpr auto inc(auto&, cursor_type& cur, distance_t offset)
+        -> cursor_type&
+        requires advancable<T>
+    {
+        return cur += narrow_cast<std::iter_difference_t<T>>(offset);
+    }
+
+    static constexpr auto distance(auto&, cursor_type const& from, cursor_type const& to)
+        requires advancable<T>
+    {
+        return from <= to ? narrow_cast<distance_t>(to - from) : -narrow_cast<distance_t>(from - to);
+    }
+
+    static constexpr auto size(auto& self) -> distance_t
+        requires advancable<T> && (Traits.has_start && Traits.has_end)
+    {
+        return narrow_cast<distance_t>(self.end_ - self.start_);
+    }
+};
+
+template <typename T>
+struct basic_iota_sequence : inline_sequence_base<basic_iota_sequence<T>> {
+    using flux_sequence_traits = iota_sequence_traits<T, iota_traits{}>;
+    friend flux_sequence_traits;
+};
+
+template <typename T>
+struct iota_sequence : inline_sequence_base<iota_sequence<T>> {
+private:
+    T start_;
+
+    static constexpr iota_traits traits{.has_start = true, .has_end = false};
+
+public:
+    constexpr explicit iota_sequence(T from)
+        : start_(std::move(from))
+    {}
+
+    using flux_sequence_traits = iota_sequence_traits<T, traits>;
+    friend flux_sequence_traits;
+};
+
+template <typename T>
+struct bounded_iota_sequence : inline_sequence_base<bounded_iota_sequence<T>> {
+    T start_;
+    T end_;
+
+    static constexpr iota_traits traits{.has_start = true, .has_end = true};
+
+public:
+    constexpr bounded_iota_sequence(T from, T to)
+        : start_(std::move(from)),
+          end_(std::move(to))
+    {}
+
+    using flux_sequence_traits = iota_sequence_traits<T, traits>;
+    friend flux_sequence_traits;
+};
+
+struct iota_fn {
+    template <incrementable T>
+    constexpr auto operator()(T from) const
+    {
+        return iota_sequence<T>(std::move(from));
+    }
+
+    template <incrementable T>
+    constexpr auto operator()(T from, T to) const
+    {
+        return bounded_iota_sequence<T>(std::move(from), std::move(to));
+    }
+};
+
+struct ints_fn {
+    constexpr auto operator()() const
+    {
+        return basic_iota_sequence<distance_t>();
+    }
+
+    constexpr auto operator()(distance_t from) const
+    {
+        return iota_sequence<distance_t>(from);
+    }
+
+    constexpr auto operator()(distance_t from, distance_t to) const
+    {
+        return bounded_iota_sequence<distance_t>(from, to);
+    }
+};
+
+} // namespace detail
+
+inline constexpr auto iota = detail::iota_fn{};
+inline constexpr auto ints = detail::ints_fn{};
+
+} // namespace flux
+
+#endif // FLUX_SOURCE_IOTA_HPP_INCLUDED
+
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
 #ifndef FLUX_SOURCE_FROM_ISTREAM_HPP_INCLUDED
 #define FLUX_SOURCE_FROM_ISTREAM_HPP_INCLUDED
 
@@ -6813,12 +7047,12 @@ namespace detail {
 
 template <typename T, typename CharT, typename Traits>
     requires std::default_initializable<T>
-class istream_adaptor : public lens_base<istream_adaptor<T, CharT, Traits>> {
+class istream_adaptor : public inline_sequence_base<istream_adaptor<T, CharT, Traits>> {
     using istream_type = std::basic_istream<CharT, Traits>;
     istream_type* is_ = nullptr;
     T val_ = T();
 
-    friend struct sequence_iface<istream_adaptor>;
+    friend struct sequence_traits<istream_adaptor>;
 
 public:
     explicit istream_adaptor(istream_type& is)
@@ -6842,14 +7076,14 @@ struct from_istream_fn {
 } // namespace detail
 
 template <typename T, typename CharT, typename Traits>
-struct sequence_iface<detail::istream_adaptor<T, CharT, Traits>>
+struct sequence_traits<detail::istream_adaptor<T, CharT, Traits>>
 {
 private:
     struct cursor_type {
         cursor_type(cursor_type&&) = default;
         cursor_type& operator=(cursor_type&&) = default;
     private:
-        friend struct sequence_iface;
+        friend struct sequence_traits;
         explicit cursor_type() = default;
     };
 
@@ -6916,7 +7150,7 @@ concept derives_from_streambuf = requires (T& t) { derives_from_streambuf_test(t
 struct from_istreambuf_fn {
     template <typename CharT, typename Traits>
     [[nodiscard]]
-    auto operator()(std::basic_streambuf<CharT, Traits>* streambuf) const -> lens auto
+    auto operator()(std::basic_streambuf<CharT, Traits>* streambuf) const -> sequence auto
     {
         assert(streambuf != nullptr);
         return flux::from(*streambuf);
@@ -6924,7 +7158,7 @@ struct from_istreambuf_fn {
 
     template <typename CharT, typename Traits>
     [[nodiscard]]
-    auto operator()(std::basic_istream<CharT, Traits>& istream) const -> lens auto
+    auto operator()(std::basic_istream<CharT, Traits>& istream) const -> sequence auto
     {
         return flux::from(*istream.rdbuf());
     }
@@ -6933,14 +7167,14 @@ struct from_istreambuf_fn {
 } // namespace detail
 
 template <detail::derives_from_streambuf Streambuf>
-struct sequence_iface<Streambuf>
+struct sequence_traits<Streambuf>
 {
 private:
     struct cursor_type {
         cursor_type(cursor_type&&) = default;
         cursor_type& operator=(cursor_type&&) = default;
     private:
-        friend struct sequence_iface;
+        friend struct sequence_traits;
         cursor_type() = default;
     };
 
@@ -7005,10 +7239,10 @@ concept contiguous_and_sized_range = std::ranges::contiguous_range<R> && std::ra
 }
 
 template <typename R>
-    requires (!detail::derived_from_lens_base<R> &&
+    requires (!detail::derived_from_inline_sequence_base<R> &&
               std::ranges::input_range<R> &&
               !detail::contiguous_and_sized_range<R>)
-struct sequence_iface<R> {
+struct sequence_traits<R> {
 
     using value_type = std::ranges::range_value_t<R>;
 
@@ -7124,8 +7358,8 @@ struct sequence_iface<R> {
 };
 
 template <typename R>
-    requires (!detail::derived_from_lens_base<R> && detail::contiguous_and_sized_range<R>)
-struct sequence_iface<R> {
+    requires (!detail::derived_from_inline_sequence_base<R> && detail::contiguous_and_sized_range<R>)
+struct sequence_traits<R> {
 
     using cursor_type = std::ranges::range_size_t<R>;
     using value_type = std::ranges::range_value_t<R>;
