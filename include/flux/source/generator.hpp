@@ -9,7 +9,6 @@
 #include <flux/core.hpp>
 
 #include <coroutine>
-#include <iostream>
 #include <utility>
 
 namespace flux {
