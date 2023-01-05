@@ -3,7 +3,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#pragma once
+#ifndef FLUX_OP_SEARCH_HPP_INCLUDED
+#define FLUX_OP_SEARCH_HPP_INCLUDED
 
 #include <flux/core.hpp>
 
@@ -51,3 +52,6 @@ struct search_fn {
 inline constexpr auto search = detail::search_fn{};
 
 } // namespace flux
+
+#endif
+
