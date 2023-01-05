@@ -6632,8 +6632,6 @@ inline constexpr auto zip = detail::zip_fn{};
 
 namespace flux {
 
-namespace experimental {
-
 template <typename ElemT>
 struct generator : inline_sequence_base<generator<ElemT>> {
 
@@ -6692,10 +6690,8 @@ public:
     }
 };
 
-} // namespace experimental
-
 template <typename T>
-struct sequence_traits<experimental::generator<T>>
+struct sequence_traits<generator<T>>
 {
 private:
     struct cursor_type {
@@ -6706,7 +6702,7 @@ private:
         friend struct sequence_traits;
     };
 
-    using self_t = experimental::generator<T>;
+    using self_t = generator<T>;
 
 public:
     static auto first(self_t& self) {

@@ -11,9 +11,9 @@
 
 #include "test_utils.hpp"
 
-using flux::experimental::generator;
-
 namespace {
+
+using flux::generator;
 
 auto ints(int from = 0) -> generator<int>
 {
