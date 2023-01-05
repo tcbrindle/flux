@@ -1055,9 +1055,6 @@ private:
     constexpr auto derived() -> Derived& { return static_cast<Derived&>(*this); }
     constexpr auto derived() const -> Derived const& { return static_cast<Derived const&>(*this); }
 
-protected:
-    ~inline_sequence_base() = default;
-
 public:
     /*
      * Basic iteration functions
@@ -4169,7 +4166,8 @@ constexpr auto inline_sequence_base<D>::reverse() &&
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#pragma once
+#ifndef FLUX_OP_SEARCH_HPP_INCLUDED
+#define FLUX_OP_SEARCH_HPP_INCLUDED
 
 
 
@@ -4217,6 +4215,9 @@ struct search_fn {
 inline constexpr auto search = detail::search_fn{};
 
 } // namespace flux
+
+#endif
+
 
 
 

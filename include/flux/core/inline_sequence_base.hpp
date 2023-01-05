@@ -31,9 +31,6 @@ private:
     constexpr auto derived() -> Derived& { return static_cast<Derived&>(*this); }
     constexpr auto derived() const -> Derived const& { return static_cast<Derived const&>(*this); }
 
-protected:
-    ~inline_sequence_base() = default;
-
 public:
     /*
      * Basic iteration functions
