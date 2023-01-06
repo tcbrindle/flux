@@ -62,7 +62,7 @@ public:
 
         static constexpr auto inc(self_t& self, cursor_type& cur) -> cursor_type&
         {
-            assert(self.is_);
+            FLUX_ASSERT(self.is_ != nullptr);
             if (!std::getline(*self.is_, self.str_, self.delim_)) {
                 self.is_ = nullptr;
             }
