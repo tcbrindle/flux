@@ -29,6 +29,9 @@ static_assert(flux::is_empty(e));
 
 TEST_CASE("empty")
 {
+    // Make sure the assertion fires
+    REQUIRE_THROWS_AS(e[e.first()], flux::unrecoverable_error);
+
     REQUIRE(e.first() == f.first());
     REQUIRE(!(e.first() < f.first()));
     REQUIRE(e.first() == e.last());
