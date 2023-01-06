@@ -50,6 +50,7 @@ add_executable(test-libflux
     test_single.cpp
 )
 target_link_libraries(test-libflux flux catch-main)
+target_compile_definitions(test-libflux PUBLIC -DFLUX_UNWIND_ON_ERROR)
 
 if (${FLUX_ENABLE_ASAN})
     target_compile_options(test-libflux PRIVATE -fsanitize=address)
