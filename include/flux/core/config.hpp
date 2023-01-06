@@ -10,6 +10,30 @@
 #include <cstddef>
 #include <type_traits>
 
+#define FLUX_ERROR_POLICY_TERMINATE 1
+#define FLUX_ERROR_POLICY_UNWIND     2
+
+#define FLUX_OVERFLOW_POLICY_ERROR   10
+#define FLUX_OVERFLOW_POLICY_WRAP    11
+#define FLUX_OVERFLOW_POLICY_IGNORE  12
+
+// Default error policy is terminate
+#define FLUX_DEFAULT_ERROR_POLICY FLUX_ERROR_POLICY_TERMINATE
+
+// Select which error policy to use
+#if defined(FLUX_TERMINATE_ON_ERROR)
+#  define FLUX_ERROR_POLICY FLUX_ERROR_POLICY_TERMINATE
+#elif defined(FLUX_UNWIND_ON_ERROR)
+#  define FLUX_ERROR_POLICY FLUX_ERROR_POLICY_UNWIND
+#else
+#  define FLUX_ERROR_POLICY FLUX_DEFAULT_ERROR_POLICY
+#endif // FLUX_TERMINATE_ON_ERROR
+
+// Should we print an error message before terminating?
+#ifndef FLUX_PRINT_ERROR_ON_TERMINATE
+#  define FLUX_PRINT_ERROR_ON_TERMINATE 1
+#endif // FLUX_PRINT_ERROR_ON_TERMINATE
+
 // Default int_t is ptrdiff_t
 #define FLUX_DEFAULT_INT_TYPE std::ptrdiff_t
 
@@ -20,11 +44,20 @@
 
 namespace flux {
 
+enum class error_policy {
+    terminate = FLUX_ERROR_POLICY_TERMINATE,
+    unwind = FLUX_ERROR_POLICY_UNWIND
+};
+
 namespace config {
 
 using int_type = FLUX_INT_TYPE;
 static_assert(std::signed_integral<int_type> && (sizeof(int_type) >= sizeof(int)),
               "Custom FLUX_INT_TYPE must be a signed integer type at least as large as int");
+
+inline constexpr error_policy on_error = static_cast<error_policy>(FLUX_ERROR_POLICY);
+
+inline constexpr bool print_error_on_terminate = FLUX_PRINT_ERROR_ON_TERMINATE;
 
 } // namespace config
 
