@@ -7,6 +7,7 @@
 #define FLUX_CORE_CONCEPTS_HPP_INCLUDED
 
 #include <flux/core/macros.hpp>
+#include <flux/core/utils.hpp>
 
 #include <cassert>
 #include <compare>
@@ -16,55 +17,6 @@
 #include <type_traits>
 
 namespace flux {
-
-/*
- * Useful helpers
- */
-template <typename From, typename To>
-concept decays_to = std::same_as<std::remove_cvref_t<From>, To>;
-
-namespace detail {
-
-struct copy_fn {
-    template <typename T>
-    [[nodiscard]]
-    constexpr auto operator()(T&& arg) const
-        noexcept(std::is_nothrow_convertible_v<T, std::decay_t<T>>)
-        -> std::decay_t<T>
-    {
-        return FLUX_FWD(arg);
-    }
-};
-
-}
-
-inline constexpr auto copy = detail::copy_fn{};
-
-namespace detail {
-
-template <std::integral To>
-struct narrow_cast_fn {
-    template <std::integral From>
-    [[nodiscard]]
-    constexpr auto operator()(From from) const -> To
-    {
-        if constexpr (requires { To{from}; }) {
-            return To{from}; // not a narrowing conversion
-        } else {
-            To to = static_cast<To>(from);
-
-            assert(static_cast<From>(to) == from &&
-                   ((std::is_signed_v<From> == std::is_signed_v<To>) || ((to < To{}) == (from < From{}))));
-
-            return to;
-        }
-    }
-};
-
-}
-
-template <std::integral To>
-inline constexpr auto narrow_cast = detail::narrow_cast_fn<To>{};
 
 /*
  * Cursor concepts
@@ -140,13 +92,7 @@ struct rvalue_element_type<T> {
 template <typename Seq>
 using value_t = typename detail::value_type<Seq>::type;
 
-#ifdef FLUX_DISTANCE_TYPE
-using distance_t = FLUX_DISTANCE_TYPE;
-static_assert(std::signed_integral<distance_t>,
-              "Custom FLUX_DISTANCE_TYPE must be a signed integer type");
-#else
-using distance_t = std::ptrdiff_t;
-#endif // FLUX_DISTANCE_TYPE
+using distance_t = flux::config::int_type;
 
 template <typename Seq>
 using rvalue_element_t = typename detail::rvalue_element_type<Seq>::type;
