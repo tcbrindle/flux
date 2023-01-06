@@ -31,6 +31,9 @@ TEST_CASE("getlines")
     REQUIRE(seq[cur] == "Line3");
     seq.inc(cur);
     REQUIRE(seq.is_last(cur));
+
+    // Make sure assertion fires
+    REQUIRE_THROWS_AS(seq.inc(cur), flux::unrecoverable_error);
 }
 
 TEST_CASE("getlines to vector")

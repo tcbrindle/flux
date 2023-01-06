@@ -69,4 +69,10 @@ TEST_CASE("istreambuf")
 
         REQUIRE(str == U"hello world");
     }
+
+    // Make sure assertion fires
+    {
+        std::basic_streambuf<char, std::char_traits<char>>* ptr = nullptr;
+        REQUIRE_THROWS_AS(flux::from_istreambuf(ptr), flux::unrecoverable_error);
+    }
 }
