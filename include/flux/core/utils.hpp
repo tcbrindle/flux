@@ -29,8 +29,8 @@ struct copy_fn {
     template <typename T>
     [[nodiscard]]
     constexpr auto operator()(T&& arg) const
-    noexcept(std::is_nothrow_convertible_v<T, std::decay_t<T>>)
-    -> std::decay_t<T>
+        noexcept(std::is_nothrow_convertible_v<T, std::decay_t<T>>)
+        -> std::decay_t<T>
     {
         return FLUX_FWD(arg);
     }
@@ -46,42 +46,54 @@ struct unrecoverable_error : std::logic_error {
 
 namespace detail {
 
-[[noreturn]]
-inline void assertion_failure(char const* msg, std::source_location loc)
-{
-    if constexpr (config::on_error == error_policy::unwind) {
-        char buf[1024];
-        std::snprintf(buf, 1024, "%s:%u:%u: Assertion failed: %s",
-                      loc.file_name(), loc.line(), loc.column(), msg);
-        throw unrecoverable_error(buf);
-    } else {
-        if constexpr (config::print_error_on_terminate) {
-            std::fprintf(stderr, "%s:%u:%u: Assertion failed: %s\n",
-                         loc.file_name(), loc.line(), loc.column(), msg);
+struct assertion_failure_fn {
+    [[noreturn]]
+    inline void operator()(char const* msg, std::source_location loc) const
+    {
+        if constexpr (config::on_error == error_policy::unwind) {
+            char buf[1024];
+            std::snprintf(buf, 1024, "%s:%u:%u: Assertion failed: %s",
+                          loc.file_name(), loc.line(), loc.column(), msg);
+            throw unrecoverable_error(buf);
+        } else {
+            if constexpr (config::print_error_on_terminate) {
+                std::fprintf(stderr, "%s:%u:%u: Assertion failed: %s\n",
+                             loc.file_name(), loc.line(), loc.column(), msg);
+            }
+            std::terminate();
         }
-        std::terminate();
     }
-}
+};
 
-inline void assert_(bool cond, char const* msg,
-                    std::source_location loc = std::source_location::current())
-{
-    if (cond) [[likely]] {
-        return;
-    } else [[unlikely]] {
-        assertion_failure(msg, std::move(loc));
+inline constexpr auto assertion_failure = assertion_failure_fn{};
+
+struct assert_fn {
+    constexpr void operator()(bool cond, char const* msg,
+                              std::source_location loc = std::source_location::current()) const
+    {
+        if (cond) [[likely]] {
+            return;
+        } else [[unlikely]] {
+            assertion_failure(msg, std::move(loc));
+        }
     }
-}
+};
+
+inline constexpr auto assert_ = assert_fn{};
 
 #define FLUX_ASSERT(cond) (::flux::detail::assert_(cond, #cond))
 
-inline constexpr void bounds_check(bool cond, const char* msg,
-                                   std::source_location loc = std::source_location::current())
-{
-    if (!std::is_constant_evaluated()) {
-        assert_(cond, msg, std::move(loc));
+struct bounds_check_fn {
+    constexpr void operator()(bool cond, const char* msg,
+                              std::source_location loc = std::source_location::current()) const
+    {
+        if (!std::is_constant_evaluated()) {
+            assert_(cond, msg, std::move(loc));
+        }
     }
-}
+};
+
+inline constexpr auto bounds_check = bounds_check_fn{};
 
 } // namespace detail
 
