@@ -52,13 +52,13 @@ struct assertion_failure_fn {
     {
         if constexpr (config::on_error == error_policy::unwind) {
             char buf[1024];
-            std::snprintf(buf, 1024, "%s:%u:%u: Assertion failed: %s",
-                          loc.file_name(), loc.line(), loc.column(), msg);
+            std::snprintf(buf, 1024, "%s:%u: Fatal error: %s",
+                          loc.file_name(), loc.line(), msg);
             throw unrecoverable_error(buf);
         } else {
             if constexpr (config::print_error_on_terminate) {
-                std::fprintf(stderr, "%s:%u:%u: Assertion failed: %s\n",
-                             loc.file_name(), loc.line(), loc.column(), msg);
+                std::fprintf(stderr, "%s:%u: Fatal error: %s\n",
+                             loc.file_name(), loc.line(), msg);
             }
             std::terminate();
         }
@@ -81,7 +81,7 @@ struct assert_fn {
 
 inline constexpr auto assert_ = assert_fn{};
 
-#define FLUX_ASSERT(cond) (::flux::detail::assert_(cond, #cond))
+#define FLUX_ASSERT(cond) (::flux::detail::assert_(cond, "assertion '" #cond "' failed"))
 
 #ifdef NDEBUG
 #  define FLUX_DEBUG_ASSERT(cond)
@@ -103,7 +103,7 @@ inline constexpr auto bounds_check = bounds_check_fn{};
 
 } // namespace detail
 
-#define FLUX_BOUNDS_CHECK(cond) (::flux::detail::bounds_check(cond, #cond))
+#define FLUX_BOUNDS_CHECK(cond) (::flux::detail::bounds_check(cond, "out of bounds sequence access"))
 
 namespace detail {
 
@@ -130,6 +130,166 @@ struct checked_cast_fn {
 
 template <std::integral To>
 inline constexpr auto checked_cast = detail::checked_cast_fn<To>{};
+
+namespace detail {
+
+struct wrapping_add_fn {
+    template <std::signed_integral T>
+    constexpr auto operator()(T lhs, T rhs) const noexcept -> T
+    {
+        using U = std::make_unsigned_t<T>;
+        return static_cast<T>(static_cast<U>(lhs) + static_cast<U>(rhs));
+    }
+};
+
+struct wrapping_sub_fn {
+    template <std::signed_integral T>
+    constexpr auto operator()(T lhs, T rhs) const noexcept -> T
+    {
+        using U = std::make_unsigned_t<T>;
+        return static_cast<T>(static_cast<U>(lhs) - static_cast<U>(rhs));
+    }
+};
+
+struct wrapping_mul_fn {
+    template <std::signed_integral T>
+    constexpr auto operator()(T lhs, T rhs) const noexcept -> T
+    {
+        using U = std::make_unsigned_t<T>;
+        return static_cast<T>(static_cast<U>(lhs) * static_cast<U>(rhs));
+    }
+};
+
+inline constexpr auto wrapping_add = wrapping_add_fn{};
+inline constexpr auto wrapping_sub = wrapping_sub_fn{};
+inline constexpr auto wrapping_mul = wrapping_mul_fn{};
+
+#if defined(__has_builtin)
+#  if __has_builtin(__builtin_add_overflow) && \
+      __has_builtin(__builtin_sub_overflow) && \
+      __has_builtin(__builtin_mul_overflow)
+#    define FLUX_HAVE_BUILTIN_OVERFLOW_OPS 1
+#  endif
+#endif
+
+struct add_overflow_fn {
+    template <std::signed_integral T>
+    constexpr auto operator()(T lhs, T rhs, T* result) const noexcept -> bool
+    {
+#ifdef FLUX_HAVE_BUILTIN_OVERFLOW_OPS
+        return __builtin_add_overflow(lhs, rhs, result);
+#else
+        *result = wrapping_add(lhs, rhs);
+        return ((lhs < T{}) == (rhs < T{})) && ((lhs < T{}) != (*result < T{}));
+#endif
+    }
+};
+
+struct sub_overflow_fn {
+    template <std::signed_integral T>
+    constexpr auto operator()(T lhs, T rhs, T* result) const noexcept -> bool
+    {
+#ifdef FLUX_HAVE_BUILTIN_OVERFLOW_OPS
+        return __builtin_sub_overflow(lhs, rhs, result);
+#else
+        *result = wrapping_sub(lhs, rhs);
+        return (lhs > T{} && rhs < T{} && *result < T{}) ||
+               (lhs < T{} && rhs > T{} && *result > T{});
+#endif
+    }
+};
+
+struct mul_overflow_fn {
+    template <std::signed_integral T>
+    constexpr auto operator()(T lhs, T rhs, T* result) const noexcept -> bool
+    {
+#ifdef FLUX_HAVE_BUILTIN_OVERFLOW_OPS
+        return __builtin_mul_overflow(lhs, rhs, result);
+#else
+        *result = wrapping_mul(lhs, rhs);
+        return lhs != 0 && *result/lhs != rhs;
+#endif
+    }
+};
+
+inline constexpr auto add_overflow = add_overflow_fn{};
+inline constexpr auto sub_overflow = sub_overflow_fn{};
+inline constexpr auto mul_overflow = mul_overflow_fn{};
+
+struct int_add_fn {
+    template <std::signed_integral T>
+    constexpr auto operator()(T lhs, T rhs,
+                              std::source_location loc = std::source_location::current()) const -> T
+    {
+        if (std::is_constant_evaluated()) {
+            return lhs + rhs;
+        } else {
+            if constexpr (config::on_overflow == overflow_policy::ignore) {
+                return lhs + rhs;
+            } else if constexpr (config::on_overflow == overflow_policy::wrap) {
+                return wrapping_add(lhs, rhs);
+            } else {
+                bool overflowed = add_overflow(lhs, rhs, &lhs);
+                if (overflowed) {
+                    assertion_failure("Signed overflow in addition", loc);
+                }
+                return lhs;
+            }
+        }
+    }
+};
+
+struct int_sub_fn {
+    template <std::signed_integral T>
+    constexpr auto operator()(T lhs, T rhs,
+                              std::source_location loc = std::source_location::current()) const -> T
+    {
+        if (std::is_constant_evaluated()) {
+            return lhs - rhs;
+        } else {
+            if constexpr (config::on_overflow == overflow_policy::ignore) {
+                return lhs - rhs;
+            } else if constexpr (config::on_overflow == overflow_policy::wrap) {
+                return wrapping_sub(lhs, rhs);
+            } else {
+                bool overflowed = sub_overflow(lhs, rhs, &lhs);
+                if (overflowed) {
+                    assertion_failure("Signed overflow in subtraction", loc);
+                }
+                return lhs;
+            }
+        }
+    }
+};
+
+struct int_mul_fn {
+    template <std::signed_integral T>
+    constexpr auto operator()(T lhs, T rhs,
+                              std::source_location loc = std::source_location::current()) const -> T
+    {
+        if (std::is_constant_evaluated()) {
+            return lhs * rhs;
+        } else {
+            if constexpr (config::on_overflow == overflow_policy::ignore) {
+                return lhs * rhs;
+            } else if constexpr (config::on_overflow == overflow_policy::wrap) {
+                return wrapping_mul(lhs, rhs);
+            } else {
+                bool overflowed = mul_overflow(lhs, rhs, &lhs);
+                if (overflowed) {
+                    assertion_failure("Signed overflow in multiplication", loc);
+                }
+                return lhs;
+            }
+        }
+    }
+};
+
+inline constexpr auto int_add = int_add_fn{};
+inline constexpr auto int_sub = int_sub_fn{};
+inline constexpr auto int_mul = int_mul_fn{};
+
+} // namespace detail
 
 } // namespace flux
 
