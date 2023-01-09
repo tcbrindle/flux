@@ -75,7 +75,17 @@ inline void assert_(bool cond, char const* msg,
 
 #define FLUX_ASSERT(cond) (::flux::detail::assert_(cond, #cond))
 
+inline constexpr void bounds_check(bool cond, const char* msg,
+                                   std::source_location loc = std::source_location::current())
+{
+    if (!std::is_constant_evaluated()) {
+        assert_(cond, msg, std::move(loc));
+    }
+}
+
 } // namespace detail
+
+#define FLUX_BOUNDS_CHECK(cond) (::flux::detail::bounds_check(cond, #cond))
 
 namespace detail {
 
