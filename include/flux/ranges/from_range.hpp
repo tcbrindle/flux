@@ -70,7 +70,8 @@ struct sequence_traits<R> {
     static constexpr auto inc(Self&, cursor_t<Self>& cur, distance_t offset)
         -> cursor_t<Self>&
     {
-        return cur += narrow_cast<std::ranges::range_difference_t<Self>>(offset);
+        return cur +=
+               checked_cast<std::ranges::range_difference_t<Self>>(offset);
     }
 
     template <decays_to<R> Self>
@@ -198,14 +199,14 @@ struct sequence_traits<R> {
         requires std::ranges::range<Self>
     static constexpr auto inc(Self&, cursor_type& cur, distance_t off) -> cursor_type&
     {
-        return cur += narrow_cast<std::ptrdiff_t>(off);
+        return cur += checked_cast<std::ptrdiff_t>(off);
     }
 
     template <decays_to<R> Self>
         requires std::ranges::range<Self>
     static constexpr auto distance(Self&, cursor_type from, cursor_type to) -> distance_t
     {
-        return narrow_cast<distance_t>(to) - narrow_cast<distance_t>(from);
+        return checked_cast<distance_t>(to) - checked_cast<distance_t>(from);
     }
 
     template <decays_to<R> Self>

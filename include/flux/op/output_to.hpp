@@ -44,7 +44,7 @@ public:
             } else {
                 std::memmove(std::to_address(iter), flux::data(seq),
                              flux::usize(seq) * sizeof(value_t<Seq>));
-                return iter + narrow_cast<std::iter_difference_t<Iter>>(flux::size(seq));
+                return iter + checked_cast<std::iter_difference_t<Iter>>(flux::size(seq));
             }
         } else {
             return impl(seq, iter);

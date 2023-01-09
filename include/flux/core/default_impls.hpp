@@ -33,12 +33,12 @@ struct sequence_traits<T[N]> {
 
     static constexpr auto& inc(auto const&, std::size_t& idx, distance_t offset)
     {
-        return idx += narrow_cast<std::ptrdiff_t>(offset);
+        return idx += checked_cast<std::ptrdiff_t>(offset);
     }
 
     static constexpr auto distance(auto const&, std::size_t from, std::size_t to)
     {
-        return narrow_cast<distance_t>(to) - narrow_cast<distance_t>(from);
+        return checked_cast<distance_t>(to) - checked_cast<distance_t>(from);
     }
 
     static constexpr auto data(auto& self) { return self; }

@@ -83,6 +83,12 @@ inline constexpr auto assert_ = assert_fn{};
 
 #define FLUX_ASSERT(cond) (::flux::detail::assert_(cond, #cond))
 
+#ifdef NDEBUG
+#  define FLUX_DEBUG_ASSERT(cond)
+#else
+#  define FLUX_DEBUG_ASSERT FLUX_ASSERT
+#endif // NDEBUG
+
 struct bounds_check_fn {
     constexpr void operator()(bool cond, const char* msg,
                               std::source_location loc = std::source_location::current()) const
@@ -102,7 +108,7 @@ inline constexpr auto bounds_check = bounds_check_fn{};
 namespace detail {
 
 template <std::integral To>
-struct narrow_cast_fn {
+struct checked_cast_fn {
     template <std::integral From>
     [[nodiscard]]
     constexpr auto operator()(From from) const -> To
@@ -111,10 +117,10 @@ struct narrow_cast_fn {
             return To{from}; // not a narrowing conversion
         } else {
             To to = static_cast<To>(from);
-
-            assert(static_cast<From>(to) == from &&
-                ((std::is_signed_v<From> == std::is_signed_v<To>) || ((to < To{}) == (from < From{}))));
-
+            FLUX_DEBUG_ASSERT(static_cast<From>(to) == from);
+            if constexpr (std::is_signed_v<From> != std::is_signed_v<To>) {
+                FLUX_DEBUG_ASSERT((to < To{}) == (from < From{}));
+            }
             return to;
         }
     }
@@ -123,7 +129,7 @@ struct narrow_cast_fn {
 } // namespace detail
 
 template <std::integral To>
-inline constexpr auto narrow_cast = detail::narrow_cast_fn<To>{};
+inline constexpr auto checked_cast = detail::checked_cast_fn<To>{};
 
 } // namespace flux
 
