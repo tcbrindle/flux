@@ -9,7 +9,6 @@
 #include <flux/core/macros.hpp>
 #include <flux/core/utils.hpp>
 
-#include <cassert>
 #include <compare>
 #include <concepts>
 #include <cstdint>

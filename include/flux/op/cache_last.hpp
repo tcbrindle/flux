@@ -55,7 +55,7 @@ public:
                 while (!is_last(self, cur)) {
                     flux::inc(self.base_, cur);
                 }
-                assert(self.cached_last_.has_value());
+                FLUX_DEBUG_ASSERT(self.cached_last_.has_value());
             }
             return *self.cached_last_;
         }

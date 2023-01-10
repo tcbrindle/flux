@@ -44,7 +44,7 @@ TEST_CASE("C array bounds checking")
 
         SECTION("Reading before the start is an error")
         {
-            auto cur = seq.prev(seq.first());
+            auto cur = seq.first() - 1;
             REQUIRE_THROWS_AS(seq[cur], flux::unrecoverable_error);
             REQUIRE_THROWS_AS(seq.move_at(cur), flux::unrecoverable_error);
         }

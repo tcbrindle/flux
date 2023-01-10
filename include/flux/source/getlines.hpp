@@ -62,8 +62,8 @@ public:
 
         static constexpr auto inc(self_t& self, cursor_type& cur) -> cursor_type&
         {
-            flux::detail::assert_(self.is_ != nullptr,
-                                 "flux::getlines::inc(): attempt to iterate after stream EOF");
+            flux::assert_(self.is_ != nullptr,
+                         "flux::getlines::inc(): attempt to iterate after stream EOF");
             if (!std::getline(*self.is_, self.str_, self.delim_)) {
                 self.is_ = nullptr;
             }

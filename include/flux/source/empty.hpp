@@ -8,8 +8,6 @@
 
 #include <flux/core.hpp>
 
-#include <cassert>
-
 namespace flux {
 
 namespace detail {

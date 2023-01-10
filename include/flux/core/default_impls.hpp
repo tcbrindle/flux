@@ -25,8 +25,8 @@ struct sequence_traits<T[N]> {
 
     static constexpr auto read_at(auto& self, index_t idx) -> decltype(auto)
     {
-        FLUX_BOUNDS_CHECK(idx >= 0);
-        FLUX_BOUNDS_CHECK(idx < N);
+        bounds_check(idx >= 0);
+        bounds_check(idx < N);
         return self[idx];
     }
 
@@ -37,6 +37,7 @@ struct sequence_traits<T[N]> {
 
     static constexpr auto inc(auto const&, index_t& idx)
     {
+        FLUX_DEBUG_ASSERT(idx < N);
         idx = detail::int_add(idx, distance_t{1});
     }
 
@@ -44,11 +45,14 @@ struct sequence_traits<T[N]> {
 
     static constexpr auto dec(auto const&, index_t& idx)
     {
+        FLUX_DEBUG_ASSERT(idx > 0);
         idx = detail::int_sub(idx, distance_t{1});
     }
 
     static constexpr auto inc(auto const&, index_t& idx, distance_t offset)
     {
+        FLUX_DEBUG_ASSERT(detail::int_add(idx, offset) <= N);
+        FLUX_DEBUG_ASSERT(detail::int_add(idx, offset) >= 0);
         idx = detail::int_add(idx, offset);
     }
 

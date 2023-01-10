@@ -8,7 +8,6 @@
 
 #include <flux/core.hpp>
 
-#include <cassert>
 #include <tuple>
 #include <variant>
 
@@ -199,7 +198,7 @@ private:
                 return distance_impl<N+1>(self, from, to);
             }
 
-            assert(N == from.index());
+            FLUX_DEBUG_ASSERT(N == from.index());
             if (N == to.index()) {
                 return flux::distance(std::get<N>(self.bases_),
                                       std::get<N>(from), std::get<N>(to));
@@ -211,7 +210,7 @@ private:
                 return dist_to_end + remaining;
             }
         } else {
-            assert(N == from.index() && N == to.index());
+            FLUX_DEBUG_ASSERT(N == from.index() && N == to.index());
             return flux::distance(std::get<N>(self.bases_), std::get<N>(from), std::get<N>(to));
         }
     }
@@ -239,7 +238,7 @@ private:
                 return inc_ra_impl<N+1>(self, cur, offset);
             }
         } else {
-            assert(cur.index() == N);
+            FLUX_DEBUG_ASSERT(cur.index() == N);
             flux::inc(std::get<N>(self.bases_), std::get<N>(cur), offset);
             return cur;
         }

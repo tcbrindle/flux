@@ -41,6 +41,15 @@
 #  define FLUX_PRINT_ERROR_ON_TERMINATE 1
 #endif // FLUX_PRINT_ERROR_ON_TERMINATE
 
+// Should we test debug assertions?
+#ifndef FLUX_ENABLE_DEBUG_ASSERTS
+#  ifdef NDEBUG
+#    define FLUX_ENABLE_DEBUG_ASSERTS 0
+#  else
+#    define FLUX_ENABLE_DEBUG_ASSERTS 1
+#  endif
+#endif
+
 // Select which overflow policy to use
 #if defined(FLUX_ERROR_ON_OVERFLOW)
 #  define FLUX_OVERFLOW_POLICY FLUX_OVERFLOW_POLICY_ERROR
@@ -84,6 +93,8 @@ inline constexpr error_policy on_error = static_cast<error_policy>(FLUX_ERROR_PO
 inline constexpr overflow_policy on_overflow = static_cast<overflow_policy>(FLUX_OVERFLOW_POLICY);
 
 inline constexpr bool print_error_on_terminate = FLUX_PRINT_ERROR_ON_TERMINATE;
+
+inline constexpr bool enable_debug_asserts = FLUX_ENABLE_DEBUG_ASSERTS;
 
 } // namespace config
 
