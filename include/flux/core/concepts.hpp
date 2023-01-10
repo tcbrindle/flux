@@ -94,6 +94,8 @@ using value_t = typename detail::value_type<Seq>::type;
 
 using distance_t = flux::config::int_type;
 
+using index_t = flux::config::int_type;
+
 template <typename Seq>
 using rvalue_element_t = typename detail::rvalue_element_type<Seq>::type;
 

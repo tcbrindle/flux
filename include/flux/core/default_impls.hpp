@@ -16,34 +16,62 @@ namespace flux {
 /*
  * Default implementation for C arrays of known bound
  */
-template <typename T, std::size_t N>
+template <typename T, index_t N>
 struct sequence_traits<T[N]> {
 
-    static constexpr auto first(auto const&) -> std::size_t { return 0; }
+    static constexpr auto first(auto const&) -> index_t { return index_t{0}; }
 
-    static constexpr bool is_last(auto const&, std::size_t idx) { return idx == N; }
+    static constexpr bool is_last(auto const&, index_t idx) { return idx == N; }
 
-    static constexpr auto read_at(auto& self, std::size_t idx) -> decltype(auto) { return self[idx]; }
-
-    static constexpr auto& inc(auto const&, std::size_t& idx) { return ++idx; }
-
-    static constexpr auto last(auto const&) { return N; }
-
-    static constexpr auto& dec(auto const&, std::size_t& idx) { return --idx; }
-
-    static constexpr auto& inc(auto const&, std::size_t& idx, distance_t offset)
+    static constexpr auto read_at(auto& self, index_t idx) -> decltype(auto)
     {
-        return idx += checked_cast<std::ptrdiff_t>(offset);
+        FLUX_BOUNDS_CHECK(idx >= 0);
+        FLUX_BOUNDS_CHECK(idx < N);
+        return self[idx];
     }
 
-    static constexpr auto distance(auto const&, std::size_t from, std::size_t to)
+    static constexpr auto read_at_unchecked(auto& self, index_t idx) -> decltype(auto)
     {
-        return checked_cast<distance_t>(to) - checked_cast<distance_t>(from);
+        return self[idx];
     }
 
-    static constexpr auto data(auto& self) { return self; }
+    static constexpr auto inc(auto const&, index_t& idx)
+    {
+        idx = detail::int_add(idx, distance_t{1});
+    }
 
-    static constexpr auto size(auto const&) { return N; }
+    static constexpr auto last(auto const&) -> index_t { return N; }
+
+    static constexpr auto dec(auto const&, index_t& idx)
+    {
+        idx = detail::int_sub(idx, distance_t{1});
+    }
+
+    static constexpr auto inc(auto const&, index_t& idx, distance_t offset)
+    {
+        idx = detail::int_add(idx, offset);
+    }
+
+    static constexpr auto distance(auto const&, index_t from, index_t to) -> distance_t
+    {
+        return detail::int_sub(to, from);
+    }
+
+    static constexpr auto data(auto& self) -> auto* { return self; }
+
+    static constexpr auto size(auto const&) -> distance_t { return N; }
+
+    static constexpr auto for_each_while(auto& self, auto pred) -> index_t
+    {
+        index_t idx = 0;
+        while (idx < N) {
+            if (!std::invoke(pred, self[idx])) {
+                break;
+            }
+            ++idx;
+        }
+        return idx;
+    }
 };
 
 /*
