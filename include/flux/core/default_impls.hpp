@@ -21,7 +21,7 @@ struct sequence_traits<T[N]> {
 
     static constexpr auto first(auto const&) -> index_t { return index_t{0}; }
 
-    static constexpr bool is_last(auto const&, index_t idx) { return idx == N; }
+    static constexpr bool is_last(auto const&, index_t idx) { return idx >= N; }
 
     static constexpr auto read_at(auto& self, index_t idx) -> decltype(auto)
     {
