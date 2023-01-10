@@ -125,7 +125,7 @@ concept sequence_concept =
         { Traits::read_at(seq, cur) } -> can_reference;
     } &&
     requires (Seq& seq, cursor_t<Seq>& cur) {
-        { Traits::inc(seq, cur) } -> std::same_as<cursor_t<Seq>&>;
+        { Traits::inc(seq, cur) };
     } &&
     std::common_reference_with<element_t<Seq>&&, rvalue_element_t<Seq>&&>;
     // FIXME FIXME: Need C++23 tuple changes, otherwise zip breaks these
@@ -160,7 +160,7 @@ template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Se
 concept bidirectional_sequence_concept =
     multipass_sequence<Seq> &&
     requires (Seq& seq, cursor_t<Seq>& cur) {
-        { Traits::dec(seq, cur) } -> std::same_as<cursor_t<Seq>&>;
+        { Traits::dec(seq, cur) };
     };
 
 } // namespace detail
@@ -174,7 +174,7 @@ template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Se
 concept random_access_sequence_concept =
     bidirectional_sequence<Seq> && ordered_cursor<cursor_t<Seq>> &&
     requires (Seq& seq, cursor_t<Seq>& cur, distance_t offset) {
-        { Traits::inc(seq, cur, offset) } -> std::same_as<cursor_t<Seq>&>;
+        { Traits::inc(seq, cur, offset) };
     } &&
     requires (Seq& seq, cursor_t<Seq> const& cur) {
         { Traits::distance(seq, cur, cur) } -> std::convertible_to<distance_t>;

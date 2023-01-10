@@ -49,7 +49,8 @@ struct unchecked_inc_fn {
     constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur) const
         noexcept(noexcept(traits_t<Seq>::inc(seq, cur))) -> cursor_t<Seq>&
     {
-        return traits_t<Seq>::inc(seq, cur);
+        (void) traits_t<Seq>::inc(seq, cur);
+        return cur;
     }
 
     template <random_access_sequence Seq>
@@ -57,7 +58,8 @@ struct unchecked_inc_fn {
                               distance_t offset) const
         noexcept(noexcept(traits_t<Seq>::inc(seq, cur, offset))) -> cursor_t<Seq>&
     {
-        return traits_t<Seq>::inc(seq, cur, offset);
+        (void) traits_t<Seq>::inc(seq, cur, offset);
+        return cur;
     }
 };
 
@@ -66,7 +68,8 @@ struct unchecked_dec_fn {
     constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur) const
         noexcept(noexcept(traits_t<Seq>::dec(seq, cur))) -> cursor_t<Seq>&
     {
-        return traits_t<Seq>::dec(seq, cur);
+        (void) traits_t<Seq>::dec(seq, cur);
+        return cur;
     }
 };
 
