@@ -12,10 +12,6 @@
 
 #define FLUX_DECLVAL(...)  ((static_cast<__VA_ARGS__(*)()noexcept>(nullptr))())
 
-#define FLUX_ASSERT(cond) (::flux::assert_(cond, "assertion '" #cond "' failed"))
-
-#define FLUX_DEBUG_ASSERT(cond) (::flux::debug_assert(cond, "assertion '" #cond "' failed"))
-
 #ifdef __GNUC__
 #define FLUX_ALWAYS_INLINE [[gnu::always_inline]]
 #else

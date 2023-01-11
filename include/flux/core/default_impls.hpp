@@ -38,7 +38,7 @@ struct sequence_traits<T[N]> {
     static constexpr auto inc(auto const&, index_t& idx)
     {
         FLUX_DEBUG_ASSERT(idx < N);
-        idx = detail::int_add(idx, distance_t{1});
+        idx = num::checked_add(idx, distance_t{1});
     }
 
     static constexpr auto last(auto const&) -> index_t { return N; }
@@ -46,26 +46,26 @@ struct sequence_traits<T[N]> {
     static constexpr auto dec(auto const&, index_t& idx)
     {
         FLUX_DEBUG_ASSERT(idx > 0);
-        idx = detail::int_sub(idx, distance_t{1});
+        idx = num::checked_sub(idx, distance_t{1});
     }
 
     static constexpr auto inc(auto const&, index_t& idx, distance_t offset)
     {
-        FLUX_DEBUG_ASSERT(detail::int_add(idx, offset) <= N);
-        FLUX_DEBUG_ASSERT(detail::int_add(idx, offset) >= 0);
-        idx = detail::int_add(idx, offset);
+        FLUX_DEBUG_ASSERT(num::checked_add(idx, offset) <= N);
+        FLUX_DEBUG_ASSERT(num::checked_add(idx, offset) >= 0);
+        idx = num::checked_add(idx, offset);
     }
 
     static constexpr auto distance(auto const&, index_t from, index_t to) -> distance_t
     {
-        return detail::int_sub(to, from);
+        return num::checked_sub(to, from);
     }
 
     static constexpr auto data(auto& self) -> auto* { return self; }
 
     static constexpr auto size(auto const&) -> distance_t { return N; }
 
-    static constexpr auto for_each_while(auto& self, auto pred) -> index_t
+    static constexpr auto for_each_while(auto& self, auto&& pred) -> index_t
     {
         index_t idx = 0;
         while (idx < N) {

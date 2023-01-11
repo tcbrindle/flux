@@ -5,12 +5,7 @@
 
 #include "catch.hpp"
 
-#include <flux/op/bounds_checked.hpp>
-#include <flux/op/map.hpp>
-#include <flux/ranges/view.hpp>
-#include <flux/source/istream.hpp>
-
-#include <sstream>
+#include <flux.hpp>
 
 #include "test_utils.hpp"
 

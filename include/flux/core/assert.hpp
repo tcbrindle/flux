@@ -22,9 +22,10 @@ struct unrecoverable_error : std::logic_error {
 
 namespace detail {
 
-struct assertion_failure_fn {
+struct runtime_error_fn {
     [[noreturn]]
-    inline void operator()(char const* msg, std::source_location loc) const
+    inline void operator()(char const* msg,
+                           std::source_location loc = std::source_location::current()) const
     {
         if constexpr (config::on_error == error_policy::unwind) {
             char buf[1024];
@@ -41,7 +42,11 @@ struct assertion_failure_fn {
     }
 };
 
-inline constexpr auto assertion_failure = assertion_failure_fn{};
+}
+
+inline constexpr auto runtime_error = detail::runtime_error_fn{};
+
+namespace detail {
 
 struct assert_fn {
     constexpr void operator()(bool cond, char const* msg,
@@ -50,17 +55,7 @@ struct assert_fn {
         if (cond) [[likely]] {
             return;
         } else [[unlikely]] {
-            assertion_failure(msg, std::move(loc));
-        }
-    }
-};
-
-struct debug_assert_fn {
-    constexpr void operator()(bool cond, char const* msg,
-                              std::source_location loc = std::source_location::current()) const
-    {
-        if constexpr (config::enable_debug_asserts) {
-            assert_fn{}(cond, msg, std::move(loc));
+            runtime_error(msg, std::move(loc));
         }
     }
 };
@@ -77,8 +72,11 @@ struct bounds_check_fn {
 } // namespace detail
 
 inline constexpr auto assert_ = detail::assert_fn{};
-inline constexpr auto debug_assert = detail::debug_assert_fn{};
 inline constexpr auto bounds_check = detail::bounds_check_fn{};
+
+#define FLUX_ASSERT(cond) (::flux::assert_(cond, "assertion '" #cond "' failed"))
+
+#define FLUX_DEBUG_ASSERT(cond) (::flux::assert_(!::flux::config::enable_debug_asserts || (cond), "assertion '" #cond "' failed"));
 
 } // namespace flux
 

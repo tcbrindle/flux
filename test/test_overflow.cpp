@@ -7,7 +7,6 @@
 
 #include <flux/core/utils.hpp>
 
-#include <climits>
 #include <limits>
 
 namespace {
@@ -15,91 +14,92 @@ namespace {
 template <typename T>
 void test_add()
 {
-    using flux::detail::int_add;
+    auto add = flux::num::checked_add;
 
     constexpr T zero = 0;
     constexpr T min = std::numeric_limits<T>::lowest();
     constexpr T max = std::numeric_limits<T>::max();
 
-    REQUIRE(int_add(zero, zero) == zero);
-    REQUIRE(int_add(T{1}, T{-1}) == zero);
+    REQUIRE(add(zero, zero) == zero);
+    REQUIRE(add(T{1}, T{-1}) == zero);
 
-    REQUIRE(int_add(min, zero) == min);
-    REQUIRE(int_add(zero, min) == min);
-    REQUIRE(int_add(max, zero) == max);
-    REQUIRE(int_add(zero, max) == max);
+    REQUIRE(add(min, zero) == min);
+    REQUIRE(add(zero, min) == min);
+    REQUIRE(add(max, zero) == max);
+    REQUIRE(add(zero, max) == max);
 
-    REQUIRE(int_add(min, max) == T{-1});
-    REQUIRE(int_add(max, min) == T{-1});
+    REQUIRE(add(min, max) == T{-1});
+    REQUIRE(add(max, min) == T{-1});
 
-    REQUIRE_THROWS_AS(int_add(max, T{1}), flux::unrecoverable_error);
-    REQUIRE_THROWS_AS(int_add(T{1}, max), flux::unrecoverable_error);
-    REQUIRE_THROWS_AS(int_add(min, T{-1}), flux::unrecoverable_error);
-    REQUIRE_THROWS_AS(int_add(T{-1}, min), flux::unrecoverable_error);
+    REQUIRE_THROWS_AS(add(max, T{1}), flux::unrecoverable_error);
+    REQUIRE_THROWS_AS(add(T{1}, max), flux::unrecoverable_error);
+    REQUIRE_THROWS_AS(add(min, T{-1}), flux::unrecoverable_error);
+    REQUIRE_THROWS_AS(add(T{-1}, min), flux::unrecoverable_error);
 }
 
 template <typename T>
 void test_sub()
 {
-    using flux::detail::int_sub;
+    auto sub = flux::num::checked_sub;
 
     constexpr T zero = 0;
     constexpr T min = std::numeric_limits<T>::lowest();
     constexpr T max = std::numeric_limits<T>::max();
 
-    REQUIRE(int_sub(zero, zero) == zero);
-    REQUIRE(int_sub(T{1}, T{1}) == zero);
-    REQUIRE(int_sub(max, max) == zero);
-    REQUIRE(int_sub(min, min) == zero);
+    REQUIRE(sub(zero, zero) == zero);
+    REQUIRE(sub(T{1}, T{1}) == zero);
+    REQUIRE(sub(max, max) == zero);
+    REQUIRE(sub(min, min) == zero);
 
-    REQUIRE(int_sub(min, zero) == min);
-    REQUIRE(int_sub(max, zero) == max);
-    REQUIRE(int_sub(zero, max) == T{min + 1});
-    REQUIRE(int_sub(T{-1}, max) == min);
+    REQUIRE(sub(min, zero) == min);
+    REQUIRE(sub(max, zero) == max);
+    REQUIRE(sub(zero, max) == T{min + 1});
+    REQUIRE(sub(T{-1}, max) == min);
 
-    REQUIRE_THROWS_AS(int_sub(min, T{1}), flux::unrecoverable_error);
-    REQUIRE_THROWS_AS(int_sub(max, T{-1}), flux::unrecoverable_error);
-    REQUIRE_THROWS_AS(int_sub(T{-2}, max), flux::unrecoverable_error);
+    REQUIRE_THROWS_AS(sub(zero, min), flux::unrecoverable_error);
+    REQUIRE_THROWS_AS(sub(min, T{1}), flux::unrecoverable_error);
+    REQUIRE_THROWS_AS(sub(max, T{-1}), flux::unrecoverable_error);
+    REQUIRE_THROWS_AS(sub(T{-2}, max), flux::unrecoverable_error);
 }
 
 template <typename T>
 void test_mul()
 {
-    using flux::detail::int_mul;
+    auto mul = flux::num::checked_mul;
 
     constexpr T zero = 0;
     constexpr T one = 1;
     constexpr T min = std::numeric_limits<T>::lowest();
     constexpr T max = std::numeric_limits<T>::max();
 
-    REQUIRE(int_mul(zero, zero) == zero);
-    REQUIRE(int_mul(zero, one) == zero);
-    REQUIRE(int_mul(zero, min) == zero);
-    REQUIRE(int_mul(zero, max) == zero);
-    REQUIRE(int_mul(one, zero) == zero);
-    REQUIRE(int_mul(min, zero) == zero);
-    REQUIRE(int_mul(max, zero) == zero);
+    REQUIRE(mul(zero, zero) == zero);
+    REQUIRE(mul(zero, one) == zero);
+    REQUIRE(mul(zero, min) == zero);
+    REQUIRE(mul(zero, max) == zero);
+    REQUIRE(mul(one, zero) == zero);
+    REQUIRE(mul(min, zero) == zero);
+    REQUIRE(mul(max, zero) == zero);
 
     REQUIRE(one * one == one);
-    REQUIRE(int_mul(one, one) == one);
-    REQUIRE(int_mul(one, min) == min);
-    REQUIRE(int_mul(one, max) == max);
-    REQUIRE(int_mul(min, one) == min);
-    REQUIRE(int_mul(max, one) == max);
+    REQUIRE(mul(one, one) == one);
+    REQUIRE(mul(one, min) == min);
+    REQUIRE(mul(one, max) == max);
+    REQUIRE(mul(min, one) == min);
+    REQUIRE(mul(max, one) == max);
 
-    REQUIRE(int_mul(max, T{-1}) == T{min + 1});
-    REQUIRE(int_mul(T{-1}, max) == T{min + 1});
+    REQUIRE(mul(max, T{-1}) == T{min + 1});
+    REQUIRE(mul(T{-1}, max) == T{min + 1});
 
-    REQUIRE_THROWS_AS(int_mul(min, T{-1}), flux::unrecoverable_error);
+    REQUIRE_THROWS_AS(mul(min, T{-1}), flux::unrecoverable_error);
 
     // FIXME: Raises sigfpe when not using built-in overflow checking
-#if FLUX_HAVE_BUILTIN_OVERFLOW_OPS
-    REQUIRE_THROWS_AS(int_mul(T{-1}, min), flux::unrecoverable_error);
-#endif
+    if constexpr (flux::num::detail::use_builtin_overflow_ops) {
+        REQUIRE_THROWS_AS(mul(T{-1}, min), flux::unrecoverable_error);
+    }
 
-    REQUIRE_THROWS_AS(int_mul(max, T{2}), flux::unrecoverable_error);
-    REQUIRE_THROWS_AS(int_mul(T{2}, max), flux::unrecoverable_error);
-    REQUIRE_THROWS_AS(int_mul(max, max), flux::unrecoverable_error);
+    REQUIRE_THROWS_AS(mul(max, T{2}), flux::unrecoverable_error);
+    REQUIRE_THROWS_AS(mul(T{2}, max), flux::unrecoverable_error);
+    REQUIRE_THROWS_AS(mul(max, max), flux::unrecoverable_error);
 
 
 }

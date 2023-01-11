@@ -50,8 +50,7 @@ struct empty_sequence : inline_sequence_base<empty_sequence<T>> {
         [[noreturn]]
         static constexpr auto read_at(empty_sequence, cursor_type) -> T&
         {
-            detail::assertion_failure("Attempted read of flux::empty",
-                                      std::source_location::current());
+            runtime_error("Attempted read of flux::empty");
         }
     };
 };
