@@ -48,11 +48,11 @@ struct fold_first_op {
             return std::nullopt;
         }
 
-        V init(flux::unchecked_read_at(seq, cur));
+        V init(flux::read_at(seq, cur));
         flux::inc(seq, cur);
 
         while (!flux::is_last(seq, cur)) {
-            init = std::invoke(func, std::move(init), flux::unchecked_read_at(seq, cur));
+            init = std::invoke(func, std::move(init), flux::read_at(seq, cur));
             flux::inc(seq, cur);
         }
 

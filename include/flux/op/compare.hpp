@@ -33,8 +33,8 @@ struct compare_fn {
         auto cur2 = flux::first(seq2);
 
         while (!flux::is_last(seq1, cur1) && !flux::is_last(seq2, cur2)) {
-            if (auto r = std::invoke(cmp, std::invoke(proj1, flux::unchecked_read_at(seq1, cur1)),
-                                       std::invoke(proj2, flux::unchecked_read_at(seq2, cur2))); r != 0) {
+            if (auto r = std::invoke(cmp, std::invoke(proj1, flux::read_at(seq1, cur1)),
+                                          std::invoke(proj2, flux::read_at(seq2, cur2))); r != 0) {
                 return r;
             }
             flux::inc(seq1, cur1);

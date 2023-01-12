@@ -34,7 +34,7 @@ struct is_last_fn {
     }
 };
 
-struct unchecked_read_at_fn {
+struct read_at_fn {
     template <sequence Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq& seq, cursor_t<Seq> const& cur) const
@@ -44,7 +44,7 @@ struct unchecked_read_at_fn {
     }
 };
 
-struct unchecked_inc_fn {
+struct inc_fn {
     template <sequence Seq>
     constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur) const
         noexcept(noexcept(traits_t<Seq>::inc(seq, cur))) -> cursor_t<Seq>&
@@ -63,7 +63,7 @@ struct unchecked_inc_fn {
     }
 };
 
-struct unchecked_dec_fn {
+struct dec_fn {
     template <bidirectional_sequence Seq>
     constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur) const
         noexcept(noexcept(traits_t<Seq>::dec(seq, cur))) -> cursor_t<Seq>&
@@ -86,7 +86,7 @@ struct distance_fn {
             distance_t n = 0;
             auto from_ = from;
             while (from_ != to) {
-                unchecked_inc_fn{}(seq, from_);
+                inc_fn{}(seq, from_);
                 ++n;
             }
             return n;
@@ -137,7 +137,7 @@ struct usize_fn {
     }
 };
 
-struct unchecked_move_at_fn {
+struct move_at_fn {
     template <sequence Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq& seq, cursor_t<Seq> const& cur) const
@@ -147,130 +147,28 @@ struct unchecked_move_at_fn {
             return traits_t<Seq>::move_at(seq, cur);
         } else {
             if constexpr (std::is_lvalue_reference_v<element_t<Seq>>) {
-                return std::move(unchecked_read_at_fn{}(seq, cur));
+                return std::move(read_at_fn{}(seq, cur));
             } else {
-                return unchecked_read_at_fn{}(seq, cur);
+                return read_at_fn{}(seq, cur);
             }
         }
     }
 };
 
-struct check_bounds_fn {
-    template <typename Seq>
-    [[nodiscard]]
-    constexpr bool operator()(Seq& seq, cursor_t<Seq> const& cur) const
-    {
-        if constexpr (random_access_sequence<Seq>) {
-            distance_t dist = distance_fn{}(seq, first_fn{}(seq), cur);
-            if (dist < distance_t{0}) {
-                return false;
-            }
-            if constexpr (sized_sequence<Seq>) {
-                return dist < size_fn{}(seq);
-            }
-        }
-        return !is_last_fn{}(seq, cur);
-    }
-};
-
-inline constexpr auto check_bounds = check_bounds_fn{};
-
-struct checked_read_at_fn {
-    template <sequence Seq>
-    [[nodiscard]]
-    constexpr auto operator()(Seq& seq, cursor_t<Seq> const& cur) const
-        -> decltype(unchecked_read_at_fn{}(seq, cur))
-    {
-        if (!check_bounds(seq, cur)) {
-            throw std::out_of_range("Read via an out-of-bounds cursor");
-        }
-        return unchecked_read_at_fn{}(seq, cur);
-    }
-};
-
-struct checked_move_at_fn {
-    template <sequence Seq>
-    [[nodiscard]]
-    constexpr auto operator()(Seq& seq, cursor_t<Seq> const& cur) const
-            -> decltype(unchecked_move_at_fn{}(seq, cur))
-    {
-        if (!check_bounds(seq, cur)) {
-            throw std::out_of_range("Read via an out-of-bounds cursor");
-        }
-        return unchecked_move_at_fn{}(seq, cur);
-    }
-};
-
-struct checked_inc_fn {
-    template <sequence Seq>
-    constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur) const
-        -> cursor_t<Seq>&
-    {
-        if (!check_bounds(seq, cur)) {
-            throw std::out_of_range("Increment would result in an out-of-bounds cursor");
-        }
-        return unchecked_inc_fn{}(seq, cur);
-    }
-
-    template <random_access_sequence Seq>
-    constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur, distance_t offset) const
-        -> cursor_t<Seq>&
-    {
-        const auto dist = distance_fn{}(seq, first_fn{}(seq), cur);
-        if (dist + offset < 0) {
-            throw std::out_of_range("Increment with offset would result in an out-of-bounds cursor");
-        }
-        if constexpr (sized_sequence<Seq>) {
-            if (dist + offset > size_fn{}(seq)) {
-                throw std::out_of_range("Increment with offset would result in an out-of-bounds cursor");
-            }
-        }
-
-        return unchecked_inc_fn{}(seq, cur, offset);
-    }
-};
-
-struct checked_dec_fn {
-    template <bidirectional_sequence Seq>
-    constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur) const
-        -> cursor_t<Seq>&
-    {
-        if (cur == first_fn{}(seq)) {
-            throw std::out_of_range("Decrement would result in a before-the-start cursor");
-        }
-        return unchecked_dec_fn{}(seq, cur);
-    }
-};
 
 } // namespace detail
 
 inline constexpr auto first = detail::first_fn{};
 inline constexpr auto is_last = detail::is_last_fn{};
-inline constexpr auto unchecked_read_at = detail::unchecked_read_at_fn{};
-inline constexpr auto unchecked_move_at = detail::unchecked_move_at_fn{};
-inline constexpr auto unchecked_inc = detail::unchecked_inc_fn{};
-inline constexpr auto unchecked_dec = detail::unchecked_dec_fn{};
+inline constexpr auto read_at = detail::read_at_fn{};
+inline constexpr auto move_at = detail::move_at_fn{};
+inline constexpr auto inc = detail::inc_fn{};
+inline constexpr auto dec = detail::dec_fn{};
 inline constexpr auto distance = detail::distance_fn{};
 inline constexpr auto data = detail::data_fn{};
 inline constexpr auto last = detail::last_fn{};
 inline constexpr auto size = detail::size_fn{};
 inline constexpr auto usize = detail::usize_fn{};
-inline constexpr auto checked_read_at = detail::checked_read_at_fn{};
-inline constexpr auto checked_move_at = detail::checked_move_at_fn{};
-inline constexpr auto checked_inc = detail::checked_inc_fn{};
-inline constexpr auto checked_dec = detail::checked_dec_fn{};
-
-#ifdef FLUX_ENABLE_BOUNDS_CHECKING
-inline constexpr auto read_at = checked_read_at;
-inline constexpr auto move_at = checked_move_at;
-inline constexpr auto inc = checked_inc;
-inline constexpr auto dec = checked_dec;
-#else
-inline constexpr auto read_at = unchecked_read_at;
-inline constexpr auto move_at = unchecked_move_at;
-inline constexpr auto inc = unchecked_inc;
-inline constexpr auto dec = unchecked_dec;
-#endif
 
 namespace detail {
 

@@ -8,6 +8,8 @@
 
 #include <flux/core.hpp>
 
+#include <flux/op/slice.hpp>
+
 namespace flux {
 
 template <typename T>
@@ -69,8 +71,8 @@ struct minmax_op {
             return std::nullopt;
         }
 
-        R init = R{value_t<Seq>(flux::unchecked_read_at(seq, cur)),
-                   value_t<Seq>(flux::unchecked_read_at(seq, cur))};
+        R init = R{value_t<Seq>(flux::read_at(seq, cur)),
+                   value_t<Seq>(flux::read_at(seq, cur))};
 
         auto fold_fn = [&](R mm, auto&& elem) -> R {
             if (std::invoke(cmp, std::invoke(proj, elem), std::invoke(proj, mm.min))) {

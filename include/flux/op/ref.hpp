@@ -104,28 +104,28 @@ struct passthrough_traits_base {
     static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
         -> decltype(flux::read_at(self.base(), cur))
     {
-        return flux::unchecked_read_at(self.base(), cur);
+        return flux::read_at(self.base(), cur);
     }
 
     template <typename Self>
     static constexpr auto inc(Self& self, cursor_t<Self>& cur)
         -> decltype(flux::inc(self.base(), cur))
     {
-        return flux::unchecked_inc(self.base(), cur);
+        return flux::inc(self.base(), cur);
     }
 
     template <typename Self>
     static constexpr auto dec(Self& self, cursor_t<Self>& cur)
         -> decltype(flux::dec(self.base(), cur))
     {
-        return flux::unchecked_dec(self.base(), cur);
+        return flux::dec(self.base(), cur);
     }
 
     template <typename Self>
     static constexpr auto inc(Self& self, cursor_t<Self>& cur, distance_t dist)
         -> decltype(flux::inc(self.base(), cur, dist))
     {
-        return flux::unchecked_inc(self.base(), cur, dist);
+        return flux::inc(self.base(), cur, dist);
     }
 
     template <typename Self>
@@ -160,7 +160,7 @@ struct passthrough_traits_base {
     static constexpr auto move_at(Self& self, auto const& cur)
         -> decltype(flux::move_at(self.base(), cur))
     {
-        return flux::unchecked_move_at(self.base(), cur);
+        return flux::move_at(self.base(), cur);
     }
 
     template <typename Self>
