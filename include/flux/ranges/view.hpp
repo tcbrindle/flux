@@ -7,6 +7,7 @@
 #define FLUX_RANGES_VIEW_HPP_INCLUDED
 
 #include <flux/core/concepts.hpp>
+#include <flux/op/begin_end.hpp>
 #include <flux/op/from.hpp>
 
 #include <ranges>
@@ -15,21 +16,7 @@ namespace flux {
 
 namespace detail {
 
-template <sequence Base>
-consteval auto get_iterator_tag()
-{
-    if constexpr (contiguous_sequence<Base>) {
-        return std::contiguous_iterator_tag{};
-    } else if constexpr (random_access_sequence<Base>) {
-        return std::random_access_iterator_tag{};
-    } else if constexpr (bidirectional_sequence<Base>) {
-        return std::bidirectional_iterator_tag{};
-    } else if constexpr (multipass_sequence<Base>) {
-        return std::forward_iterator_tag{};
-    } else {
-        return std::input_iterator_tag{};
-    }
-}
+
 
 template <sequence Base>
 struct view_adaptor : std::ranges::view_interface<view_adaptor<Base>>

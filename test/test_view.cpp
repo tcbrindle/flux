@@ -21,7 +21,7 @@ constexpr bool test_view()
 
     {
         int arr[] = {0, 1, 2, 3, 4};
-        auto view = flux::view(arr);
+        auto view = flux::ref(arr);
 
         using V = decltype(view);
 
@@ -80,8 +80,8 @@ constexpr bool test_view()
     {
         auto arr = std::array{1, 2, 3, 4, 5};
         auto view1 = arr | std::views::filter([](int i) { return i % 2 == 0; });
-        auto view2 = flux::from_range(view1).view() | std::views::transform([](int i) { return i * 2; });
-        auto view3 = flux::from_range(view2).view();
+        auto view2 = flux::from_range(view1) | std::views::transform([](int i) { return i * 2; });
+        auto view3 = flux::from_range(std::move(view2));
 
         using V = decltype(view3);
 

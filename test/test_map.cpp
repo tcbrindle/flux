@@ -100,7 +100,7 @@ constexpr bool test_map()
 
         int arr[] = {0, 1, 2, 3, 4};
 
-        auto view = flux::map(flux::ref(arr), times_two).view();
+        auto view = flux::map(flux::ref(arr), times_two);
 
         using V = decltype(view);
 

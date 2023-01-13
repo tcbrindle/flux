@@ -9,6 +9,7 @@
 #include <flux/core.hpp>
 
 #include <flux/op/all_any_none.hpp>
+#include <flux/op/begin_end.hpp>
 #include <flux/op/cache_last.hpp>
 #include <flux/op/cartesian_product.hpp>
 #include <flux/op/cartesian_product_with.hpp>

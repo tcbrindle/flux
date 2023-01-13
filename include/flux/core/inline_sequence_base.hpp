@@ -149,6 +149,17 @@ public:
     }
 
     /*
+     * Iterator support
+     */
+    constexpr auto begin() &;
+
+    constexpr auto begin() const& requires sequence<Derived const>;
+
+    constexpr auto end() &;
+
+    constexpr auto end() const& requires sequence<Derived const>;
+
+    /*
      * Adaptors
      */
 

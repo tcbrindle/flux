@@ -28,7 +28,7 @@ constexpr bool test_from_range()
     {
         std::array<int, 4> arr{10, 2, 3, 4};
 
-        auto seq = flux::from_range(arr);
+        auto seq = flux::from_range(flux::ref(arr));
 
         using S = decltype(seq);
 
@@ -40,11 +40,10 @@ constexpr bool test_from_range()
         static_assert(flux::sized_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
 
-
         STATIC_CHECK(flux::read_at(seq, flux::first(seq)) == 10);
         STATIC_CHECK(flux::move_at(seq, flux::prev(seq, flux::last(seq))) == 4);
         STATIC_CHECK(flux::usize(seq) == arr.size());
-        STATIC_CHECK(flux::data(seq) == arr.data());
+        STATIC_CHECK(flux::data(seq)[0] == 10);
     }
 
     return true;

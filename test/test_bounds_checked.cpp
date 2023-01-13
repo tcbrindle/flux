@@ -63,10 +63,8 @@ TEST_CASE("C array bounds checking")
 
         SECTION("Views are bounds checked as well")
         {
-            auto view = seq.view();
-
-            auto first = view.begin();
-            auto last = view.end();
+            auto first = seq.begin();
+            auto last = seq.end();
 
             REQUIRE_THROWS_AS(*last, flux::unrecoverable_error);
             REQUIRE_THROWS_AS(first[10], flux::unrecoverable_error);

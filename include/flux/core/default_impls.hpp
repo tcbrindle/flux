@@ -160,10 +160,11 @@ struct sequence_traits<std::reference_wrapper<Seq>> {
 
 // Default implementation for contiguous, sized ranges
 template <typename R>
-    requires std::ranges::contiguous_range<R> &&
+    requires (!detail::derived_from_inline_sequence_base<R> &&
+             std::ranges::contiguous_range<R> &&
              std::ranges::sized_range<R> &&
              std::ranges::contiguous_range<R const> &&
-             std::ranges::sized_range<R const>
+             std::ranges::sized_range<R const>)
 struct sequence_traits<R> {
 
     using value_type = std::ranges::range_value_t<R>;
