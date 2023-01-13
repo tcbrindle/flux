@@ -69,7 +69,7 @@ constexpr bool test_view()
 
     {
         using List = std::list<int>;
-        using V = decltype(flux::from(FLUX_DECLVAL(List&)).view());
+        using V = decltype(flux::from_range(FLUX_DECLVAL(List&)).view());
 
         static_assert(rng::bidirectional_range<V>);
         static_assert(rng::sized_range<V>);
@@ -80,8 +80,8 @@ constexpr bool test_view()
     {
         auto arr = std::array{1, 2, 3, 4, 5};
         auto view1 = arr | std::views::filter([](int i) { return i % 2 == 0; });
-        auto view2 = flux::from(view1).view() | std::views::transform([](int i) { return i * 2; });
-        auto view3 = flux::from(view2).view();
+        auto view2 = flux::from_range(view1).view() | std::views::transform([](int i) { return i * 2; });
+        auto view3 = flux::from_range(view2).view();
 
         using V = decltype(view3);
 
@@ -117,10 +117,4 @@ TEST_CASE("view")
 {
     bool result = test_view();
     REQUIRE(result);
-
-    {
-        std::list<int> list{1, 2, 3, 4, 5};
-        static_assert(flux::bidirectional_sequence<decltype(list)>);
-        static_assert(flux::sized_sequence<decltype(list)>);
-    }
 }

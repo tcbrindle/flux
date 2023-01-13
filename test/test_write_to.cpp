@@ -5,9 +5,7 @@
 
 #include "catch.hpp"
 
-#include <flux/op/write_to.hpp>
-#include <flux/ranges.hpp>
-#include <flux/source/istream.hpp>
+#include <flux.hpp>
 
 #include <sstream>
 #include <vector>

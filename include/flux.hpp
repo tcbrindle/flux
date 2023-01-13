@@ -51,6 +51,6 @@
 #include <flux/source/range.hpp>
 #include <flux/source/single.hpp>
 
-#include <flux/ranges.hpp>
+#include <flux/ranges/view.hpp>
 
 #endif

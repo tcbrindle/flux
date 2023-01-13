@@ -94,7 +94,7 @@ TEST_CASE("reverse")
     REQUIRE(result);
 
     {
-        auto rlist = flux::reverse(std::list{0, 1, 2, 3, 4});
+        auto rlist = flux::reverse(flux::from_range(std::list{0, 1, 2, 3, 4}));
 
         using R = decltype(rlist);
 

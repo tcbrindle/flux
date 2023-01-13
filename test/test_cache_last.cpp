@@ -1,10 +1,7 @@
 
 #include "catch.hpp"
 
-#include <flux/op/cache_last.hpp>
-#include <flux/op/inplace_reverse.hpp>
-#include <flux/op/take_while.hpp>
-#include <flux/ranges.hpp>
+#include <flux.hpp>
 
 #include <array>
 

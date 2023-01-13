@@ -8,7 +8,6 @@
 #include <flux/core/default_impls.hpp>
 #include <flux/op/find.hpp>
 #include <flux/op/from.hpp>
-#include <flux/ranges/from_range.hpp>
 
 #include <array>
 #include <forward_list>

@@ -3,7 +3,6 @@
 
 #include <flux/op/equal.hpp>
 #include <flux/op/take_while.hpp>
-#include <flux/ranges/from_range.hpp>
 #include <flux/source/empty.hpp>
 
 #include "test_utils.hpp"

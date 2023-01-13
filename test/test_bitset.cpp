@@ -5,12 +5,8 @@
 
 #include "catch.hpp"
 
+#include <flux.hpp>
 #include <flux/source/bitset.hpp>
-#include <flux/op/all_any_none.hpp>
-#include <flux/op/inplace_reverse.hpp>
-#include <flux/op/reverse.hpp>
-#include <flux/op/swap_elements.hpp>
-#include <flux/ranges/from_range.hpp>
 
 #include "test_utils.hpp"
 
@@ -80,7 +76,7 @@ TEST_CASE("bitset")
     // Swapping bits with another proxy reference type
     {
         auto seq1 = flux::from(std::bitset<2>{0b00});
-        auto seq2 = flux::from(std::vector<bool>{true, true});
+        auto seq2 = flux::from_range(std::vector<bool>{true, true});
 
         flux::swap_with(seq1, flux::first(seq1),
                         seq2, flux::first(seq2));
@@ -106,7 +102,7 @@ TEST_CASE("bitset")
     // swap_elements between a bitset and a vector<bool>
     {
         std::bitset<16> seq1{};
-        std::vector<bool> seq2(16, true);
+        auto seq2 = flux::from_range(std::vector<bool>(16, true));
 
         flux::swap_elements(seq1, seq2);
 
