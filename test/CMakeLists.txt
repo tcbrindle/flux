@@ -44,6 +44,7 @@ add_executable(test-libflux
 
     test_bitset.cpp
     test_empty.cpp
+    test_from_range.cpp
     test_getlines.cpp
     test_iota.cpp
     test_istream.cpp

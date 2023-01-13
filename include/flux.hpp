@@ -48,6 +48,7 @@
 #include <flux/source/iota.hpp>
 #include <flux/source/istream.hpp>
 #include <flux/source/istreambuf.hpp>
+#include <flux/source/range.hpp>
 #include <flux/source/single.hpp>
 
 #include <flux/ranges.hpp>
