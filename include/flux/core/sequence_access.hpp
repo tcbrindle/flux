@@ -54,8 +54,7 @@ struct inc_fn {
     }
 
     template <random_access_sequence Seq>
-    constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur,
-                              distance_t offset) const
+    constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur, distance_t offset) const
         noexcept(noexcept(traits_t<Seq>::inc(seq, cur, offset))) -> cursor_t<Seq>&
     {
         (void) traits_t<Seq>::inc(seq, cur, offset);

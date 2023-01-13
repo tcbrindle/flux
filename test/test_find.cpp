@@ -96,7 +96,7 @@ TEST_CASE("find")
     {
         std::vector<int> vec{1, 2, 3, 4, 5};
         auto idx = flux::from(vec).find(99);
-        REQUIRE(idx == vec.size());
+        REQUIRE(idx == std::ssize(vec));
     }
 
 }

@@ -85,8 +85,8 @@ enum class overflow_policy {
 namespace config {
 
 using int_type = FLUX_INT_TYPE;
-static_assert(std::signed_integral<int_type> && (sizeof(int_type) >= sizeof(int)),
-              "Custom FLUX_INT_TYPE must be a signed integer type at least as large as int");
+static_assert(std::signed_integral<int_type> && (sizeof(int_type) >= sizeof(std::ptrdiff_t)),
+              "Custom FLUX_INT_TYPE must be a signed integer type at least as large as ptrdiff_t");
 
 inline constexpr error_policy on_error = static_cast<error_policy>(FLUX_ERROR_POLICY);
 
