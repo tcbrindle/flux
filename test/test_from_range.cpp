@@ -13,6 +13,13 @@
 #include <forward_list>
 #include <list>
 #include <map>
+#include <sstream>
+
+#if defined(_GLIBCXX_RELEASE)
+#  if _GLIBCXX_RELEASE < 12
+#    define RVALUE_VIEWS_NOT_SUPPORTED
+#  endif
+#endif
 
 namespace {
 
@@ -187,6 +194,7 @@ TEST_CASE("from range")
             REQUIRE(check_equal(seq, {1, 2, 3, 4, 5}));
         }
 
+#ifndef RVALUE_VIEWS_NOT_SUPPORTED
         SECTION("prvalue argument, non-const seq, non-const from_range")
         {
             auto seq = flux::from_range(flux::copy(list));
@@ -208,6 +216,7 @@ TEST_CASE("from range")
 
             REQUIRE(check_equal(seq, {1, 2, 3, 4, 5}));
         }
+#endif
 
         SECTION("non-const argument, non-const seq, from_crange")
         {
@@ -289,6 +298,7 @@ TEST_CASE("from range")
             REQUIRE(check_equal(seq, {1, 2, 3, 4, 5}));
         }
 
+#ifndef RVALUE_VIEWS_NOT_SUPPORTED
         SECTION("prvalue argument, non-const seq, from_crange")
         {
             auto seq = flux::from_crange(flux::copy(list));
@@ -328,6 +338,7 @@ TEST_CASE("from range")
 
             REQUIRE(check_equal(seq, {1, 2, 3, 4, 5}));
         }
+#endif
     }
 
     SECTION("...with std::forward_list...") {
@@ -413,6 +424,7 @@ TEST_CASE("from range")
             REQUIRE(check_equal(seq, {1, 2, 3, 4, 5}));
         }
 
+#ifndef RVALUE_VIEWS_NOT_SUPPORTED
         SECTION("prvalue argument, non-const seq, non-const from_range")
         {
             auto seq = flux::from_range(flux::copy(list));
@@ -434,6 +446,7 @@ TEST_CASE("from range")
 
             REQUIRE(check_equal(seq, {1, 2, 3, 4, 5}));
         }
+#endif
 
         SECTION("non-const argument, non-const seq, from_crange")
         {
@@ -515,6 +528,7 @@ TEST_CASE("from range")
             REQUIRE(check_equal(seq, {1, 2, 3, 4, 5}));
         }
 
+#ifndef RVALUE_VIEWS_NOT_SUPPORTED
         SECTION("prvalue argument, non-const seq, from_crange")
         {
             auto seq = flux::from_crange(flux::copy(list));
@@ -554,13 +568,13 @@ TEST_CASE("from range")
 
             REQUIRE(check_equal(seq, {1, 2, 3, 4, 5}));
         }
+#endif
     }
 
-
-    SECTION("with isteam_range") {
+    SECTION("with input range") {
 
         std::istringstream iss("1 2 3 4 5");
-        auto view = std::views::istream<int>(iss);
+        auto view = std::ranges::basic_istream_view<int, char>(iss);
 
         auto seq = flux::from_range(view);
 
