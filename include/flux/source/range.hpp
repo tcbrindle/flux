@@ -176,6 +176,34 @@ public:
     };
 
     constexpr explicit range_sequence(R rng) : rng_(std::move(rng)) {}
+
+    constexpr auto begin()
+    {
+        if constexpr (IsConst) {
+            return std::ranges::cbegin(rng_);
+        } else {
+            return std::ranges::begin(rng_);
+        }
+    }
+
+    constexpr auto begin() const requires std::ranges::range<R const>
+    {
+        return std::ranges::begin(rng_);
+    }
+
+    constexpr auto end()
+    {
+        if constexpr (IsConst) {
+            return std::ranges::cend(rng_);
+        } else {
+            return std::ranges::end(rng_);
+        }
+    }
+
+    constexpr auto end() const requires std::ranges::range<R const>
+    {
+        return std::ranges::end(rng_);
+    }
 };
 
 struct from_range_fn {
@@ -200,8 +228,6 @@ struct from_crange_fn {
         }
     }
 };
-
-
 
 } // namespace detail
 
