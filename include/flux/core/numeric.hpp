@@ -132,7 +132,7 @@ inline constexpr auto checked_sub =
       } else {
           auto res = overflowing_sub(lhs, rhs);
           if (res.overflowed) {
-              runtime_error("signed overflow in addition", loc);
+              runtime_error("signed overflow in subtraction", loc);
           }
           return res.value;
       }
@@ -154,7 +154,7 @@ inline constexpr auto checked_mul =
       } else {
           auto res = overflowing_mul(lhs, rhs);
           if (res.overflowed) {
-              runtime_error("signed overflow in addition", loc);
+              runtime_error("signed overflow in multiplication", loc);
           }
           return res.value;
       }
