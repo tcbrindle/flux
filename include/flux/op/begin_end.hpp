@@ -47,7 +47,7 @@ public:
 
     template <typename SS = S>
         requires std::is_const_v<SS>
-    constexpr sequence_iterator(sequence_iterator<std::remove_const_t<S>> other)
+    constexpr sequence_iterator(sequence_iterator<std::remove_const_t<SS>> other)
         : seq_(other.seq_),
           cur_(std::move(other.cur_))
     {}
