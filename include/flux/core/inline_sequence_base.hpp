@@ -99,13 +99,25 @@ public:
         return flux::data(derived());
     }
 
+    [[nodiscard]]
+    constexpr auto data() const requires contiguous_sequence<Derived const>
+    {
+        return flux::data(derived());
+    }
+
     /// Returns the number of elements in the sequence
     [[nodiscard]]
     constexpr auto size() requires sized_sequence<Derived> { return flux::size(derived()); }
 
+    [[nodiscard]]
+    constexpr auto size() const requires sized_sequence<Derived const> { return flux::size(derived()); }
+
     /// Returns the number of elements in the sequence as a size_t
     [[nodiscard]]
     constexpr auto usize() requires sized_sequence<Derived> { return flux::usize(derived()); }
+
+    [[nodiscard]]
+    constexpr auto usize() const requires sized_sequence<Derived const> { return flux::usize(derived()); }
 
     /// Returns true if the sequence contains no elements
     [[nodiscard]]
