@@ -32,13 +32,13 @@ add_executable(test-libflux
     test_map.cpp
     test_minmax.cpp
     test_output_to.cpp
+    test_range_iface.cpp
     test_reverse.cpp
     test_split.cpp
     test_sort.cpp
     test_take.cpp
     test_take_while.cpp
     test_to.cpp
-    test_view.cpp
     test_write_to.cpp
     test_zip.cpp
 
