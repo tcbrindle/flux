@@ -135,12 +135,10 @@ TEST_CASE("vector bounds checking")
         REQUIRE_THROWS_AS(flux::read_at(vec2, cur), flux::unrecoverable_error);
     }
 
-    SECTION("Views are bounds checked as well")
+    SECTION("Range interface is bounds checked as well")
     {
-        auto view = seq.view();
-
-        auto first = view.begin();
-        auto last = view.end();
+        auto first = seq.begin();
+        auto last = seq.end();
 
         REQUIRE_THROWS_AS(*last, flux::unrecoverable_error);
         REQUIRE_THROWS_AS(first[10], flux::unrecoverable_error);

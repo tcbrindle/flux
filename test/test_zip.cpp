@@ -144,13 +144,12 @@ constexpr bool test_zip()
         std::array arr2 = {0.0, 100.0, 200.0, 300.0, 400.0};
         std::array arr3 = {'o', 'l', 'l', 'e', 'h', '\0'};
 
-        auto view = flux::zip(flux::ref(arr1), flux::ref(arr2), flux::ref(arr3)).view();
+        auto view = flux::zip(flux::ref(arr1), flux::ref(arr2), flux::ref(arr3));
 
         using V = decltype(view);
 
         namespace rng = std::ranges;
 
-        static_assert(rng::view<V>);
         static_assert(rng::random_access_range<V>);
         static_assert(not rng::contiguous_range<V>);
         static_assert(rng::sized_range<V>);

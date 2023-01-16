@@ -9,6 +9,7 @@
 #include <flux/core/sequence_access.hpp>
 
 #include <functional>
+#include <ranges>
 
 namespace flux {
 

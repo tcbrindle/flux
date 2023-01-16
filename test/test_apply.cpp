@@ -21,8 +21,7 @@ auto rotate_by = []<flux::random_access_sequence Seq>(Seq&& seq, flux::distance_
         places -= sz;
     }
 
-    auto view = flux::view(seq);
-    std::ranges::rotate(view, view.begin() + places);
+    std::ranges::rotate(seq, seq.begin() + places);
 
     return FLUX_FWD(seq);
 };

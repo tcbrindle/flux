@@ -210,18 +210,6 @@ public:
     [[nodiscard]]
     constexpr auto take_while(Pred pred) &&;
 
-    [[nodiscard]]
-    constexpr auto view() &;
-
-    [[nodiscard]]
-    constexpr auto view() const& requires sequence<Derived const>;
-
-    [[nodiscard]]
-    constexpr auto view() &&;
-
-    [[nodiscard]]
-    constexpr auto view() const&& requires sequence<Derived const>;
-
     /*
      * Algorithms
      */

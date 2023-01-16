@@ -9,7 +9,6 @@
 #include <flux/core.hpp>
 #include <flux/op/map.hpp>
 #include <flux/op/output_to.hpp>
-#include <flux/ranges/view.hpp>
 
 namespace flux {
 
@@ -29,19 +28,13 @@ template <typename C, typename Seq, typename... Args>
 concept from_sequence_constructible =
     std::constructible_from<C, from_sequence_t, Seq, Args...>;
 
-template <sequence Seq>
-using view_t = decltype(flux::view(FLUX_DECLVAL(Seq)));
-
 template <typename C>
 using container_value_t = typename C::value_type; // Let's just assume it exists
 
 template <sequence Seq>
 using common_iterator_t =
-    std::ranges::iterator_t<decltype(std::views::common(FLUX_DECLVAL(view_t<Seq>)))>;
+    std::ranges::iterator_t<decltype(std::views::common(FLUX_DECLVAL(Seq)))>;
 
-template <typename C, typename Seq, typename... Args>
-concept direct_view_constructible =
-    std::constructible_from<C, view_t<Seq>, Args...>;
 
 template <typename C, typename Seq, typename... Args>
 concept cpp17_range_constructible =
@@ -58,7 +51,6 @@ template <typename C, typename Seq, typename... Args>
 concept container_convertible =
     direct_sequence_constructible<C, Seq, Args...> ||
     from_sequence_constructible<C, Seq, Args...> ||
-    direct_view_constructible<C, Seq, Args...> ||
     cpp17_range_constructible<C, Seq, Args...> ||
     (  std::constructible_from<C, Args...> &&
         container_insertable<C, element_t<Seq>>);
@@ -89,16 +81,12 @@ template <template <typename...> typename C, typename Seq, typename... Args>
 using ctad_from_seq = decltype((C(from_sequence, FLUX_DECLVAL(Seq), FLUX_DECLVAL(Args)...)));
 
 template <template <typename...> typename C, typename Seq, typename... Args>
-using ctad_from_view = decltype(C(FLUX_DECLVAL(view_t<Seq>), FLUX_DECLVAL(Args)...));
-
-template <template <typename...> typename C, typename Seq, typename... Args>
 using ctad_from_iters = decltype(C(FLUX_DECLVAL(common_iterator_t<Seq>), FLUX_DECLVAL(common_iterator_t<Seq>), FLUX_DECLVAL(Args)...));
 
 template <template <typename...> typename C, typename Seq, typename... Args>
 concept can_deduce_container_type =
     requires { typename ctad_direct_seq<C, Seq, Args...>; } ||
     requires { typename ctad_from_seq<C, Seq, Args...>; } ||
-    requires { typename ctad_from_view<C, Seq, Args...>; } ||
     requires { typename ctad_from_iters<C, Seq, Args...>; } ||
     ( sizeof...(Args) == 0 && requires { typename C<value_t<Seq>>; });
 
@@ -113,8 +101,6 @@ consteval auto deduce_container_type()
         return type_t<decltype(C(FLUX_DECLVAL(Seq), FLUX_DECLVAL(Args)...))>{};
     } else if constexpr (requires { typename ctad_from_seq<C, Seq, Args...>; }) {
         return type_t<decltype((C(from_sequence, FLUX_DECLVAL(Seq), FLUX_DECLVAL(Args)...)))>{};
-    } else if constexpr (requires { typename ctad_from_view<C, Seq, Args...>; }) {
-        return type_t<decltype(C(FLUX_DECLVAL(view_t<Seq>), FLUX_DECLVAL(Args)...))>{};
     } else if constexpr (requires { typename ctad_from_iters<C, Seq, Args...>; }) {
         using I = common_iterator_t<Seq>;
         return type_t<decltype(C(FLUX_DECLVAL(I), FLUX_DECLVAL(I), FLUX_DECLVAL(Args)...))>{};
@@ -142,10 +128,8 @@ constexpr auto to(Seq&& seq, Args&&... args) -> Container
             return Container(FLUX_FWD(seq), FLUX_FWD(args)...);
         } else if constexpr (detail::from_sequence_constructible<Container, Seq, Args...>) {
             return Container(from_sequence, FLUX_FWD(seq), FLUX_FWD(args)...);
-        } else if constexpr (detail::direct_view_constructible<Container, Seq, Args...>) {
-            return Container(flux::view(FLUX_FWD(seq)), FLUX_FWD(args)...);
         } else if constexpr (detail::cpp17_range_constructible<Container, Seq, Args...>) {
-            auto view_ = std::views::common(flux::view(FLUX_FWD(seq)));
+            auto view_ = std::views::common(FLUX_FWD(seq));
             return Container(view_.begin(), view_.end(), FLUX_FWD(args)...);
         } else {
             auto c = Container(FLUX_FWD(args)...);

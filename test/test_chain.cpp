@@ -151,7 +151,7 @@ constexpr bool test_chain()
                                flux::empty<int>,
                                std::array{3, 2, 1});
 
-        std::ranges::sort(seq.view());
+        std::ranges::sort(seq);
 
         STATIC_CHECK(check_equal(seq, {1, 2, 3, 4, 5, 6, 7, 8, 9}));
     }

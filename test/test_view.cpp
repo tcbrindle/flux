@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <array>
 #include <list>
+#include <iostream>
 
 #include "test_utils.hpp"
 
@@ -41,7 +42,7 @@ constexpr bool test_view()
     }
 
     {
-        auto view = flux::from(std::array{1, 2, 3, 4, 5}).view();
+        auto view = flux::from(std::array{1, 2, 3, 4, 5});
 
         using V = decltype(view);
 
@@ -58,18 +59,9 @@ constexpr bool test_view()
         STATIC_CHECK(rng::equal(view, std::array{1, 2, 3, 4, 5}));
     }
 
-    // We can act as a passthrough in simple cases
-    {
-        std::array arr{1, 2, 3, 4, 5};
-
-        auto view = flux::view(arr);
-
-        static_assert(std::same_as<decltype(view), std::views::all_t<std::array<int, 5>&>>);
-    }
-
     {
         using List = std::list<int>;
-        using V = decltype(flux::from_range(FLUX_DECLVAL(List&)).view());
+        using V = decltype(flux::from_range(FLUX_DECLVAL(List&)));
 
         static_assert(rng::bidirectional_range<V>);
         static_assert(rng::sized_range<V>);
@@ -94,8 +86,7 @@ constexpr bool test_view()
 
     {
         int arr[] = {1, 2, 3, 4, 5};
-        auto seq = single_pass_only(flux::from(arr));
-        auto view = seq.view();
+        auto view = single_pass_only(flux::from(arr));
 
         using V = decltype(view);
 
