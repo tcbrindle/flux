@@ -29,8 +29,12 @@ consteval auto get_iterator_tag()
 
 template <sequence S>
 struct sequence_iterator {
+private:
     S* seq_ = nullptr;
     cursor_t<S> cur_{};
+
+    template <sequence SS>
+    friend struct sequence_iterator;
 
 public:
     using value_type = value_t<S>;
