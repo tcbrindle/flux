@@ -106,6 +106,12 @@ struct sequence_traits<std::reference_wrapper<Seq>> {
         return flux::read_at(self.get(), cur);
     }
 
+    static constexpr auto read_at_unchecked(self_t self, cursor_t<Seq> const& cur)
+        -> decltype(auto)
+    {
+        return flux::read_at_unchecked(self.get(), cur);
+    }
+
     static constexpr auto inc(self_t self, cursor_t<Seq>& cur)
         -> cursor_t<Seq>&
     {
@@ -187,6 +193,11 @@ struct sequence_traits<R> {
     {
         bounds_check(idx >= 0);
         bounds_check(idx < size(self));
+        return data(self)[idx];
+    }
+
+    static constexpr auto read_at_unchecked(auto& self, index_t idx) -> decltype(auto)
+    {
         return data(self)[idx];
     }
 

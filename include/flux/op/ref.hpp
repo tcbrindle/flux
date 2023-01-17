@@ -164,6 +164,20 @@ struct passthrough_traits_base {
     }
 
     template <typename Self>
+    static constexpr auto read_at_unchecked(Self& self, auto const& cur)
+        -> decltype(flux::read_at_unchecked(self.base(), cur))
+    {
+        return flux::read_at_unchecked(self.base(), cur);
+    }
+
+    template <typename Self>
+    static constexpr auto move_at_unchecked(Self& self, auto const& cur)
+        -> decltype(flux::move_at_unchecked(self.base(), cur))
+    {
+        return flux::move_at_unchecked(self.base(), cur);
+    }
+
+    template <typename Self>
     static constexpr auto for_each_while(Self& self, auto&& pred)
         -> decltype(flux::for_each_while(self.base(), FLUX_FWD(pred)))
     {
