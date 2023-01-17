@@ -235,7 +235,7 @@ requires sequence<D const>
 // Every sequence is a range: furthermore, it is a view if it is either
 // trivially copyable, or not copyable at all
 // See P2415 for the logic behind this
-template <flux::sequence Seq>
+template <flux::detail::derived_from_inline_sequence_base Seq>
 inline constexpr bool std::ranges::enable_view<Seq> =
     std::is_trivially_copyable_v<Seq> || !std::copyable<Seq>;
 
