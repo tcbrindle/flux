@@ -53,9 +53,6 @@ struct split_fn {
     }
 };
 
-template <typename From, typename To>
-using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
-
 template <typename>
 inline constexpr bool is_single_seq = false;
 
@@ -68,14 +65,12 @@ template <typename Base, typename Pattern>
 struct sequence_traits<detail::split_adaptor<Base, Pattern>>
 {
 private:
-    template <typename Self, typename B = detail::const_like_t<Self, Base>>
     struct cursor_type {
-        cursor_t<B> cur;
-        bounds_t<B> next;
+        cursor_t<Base> cur;
+        bounds_t<Base> next;
         bool trailing_empty = false;
 
-        friend bool operator==(cursor_type const&,
-                               cursor_type const&) = default;
+        friend bool operator==(cursor_type const&, cursor_type const&) = default;
     };
 
     static constexpr auto find_next(auto& self, auto const& from)
@@ -99,31 +94,24 @@ public:
 
     static constexpr bool is_infinite = infinite_sequence<Base>;
 
-    template <typename Self>
-    static constexpr auto first(Self& self)
-        requires sequence<decltype(self.base_)>
+    static constexpr auto first(auto& self) -> cursor_type
     {
         auto bounds = flux::search(self.base_, self.pattern_);
-        return cursor_type<Self>(flux::first(self.base_), std::move(bounds));
+        return cursor_type(flux::first(self.base_), std::move(bounds));
     }
 
-    template <typename Self>
-    static constexpr auto is_last(Self& self, cursor_type<Self> const& cur)
-        requires sequence<decltype(self.base_)>
+    static constexpr auto is_last(auto& self, cursor_type const& cur) -> bool
     {
         return flux::is_last(self.base_, cur.cur) && !cur.trailing_empty;
     }
 
-    template <typename Self>
-    static constexpr auto read_at(Self& self, cursor_type<Self> const& cur)
-        requires sequence<decltype(self.base_)>
+    static constexpr auto read_at(auto& self, cursor_type const& cur)
+        requires sequence<decltype((self.base_))>
     {
         return flux::slice(self.base_, cur.cur, cur.next.from);
     }
 
-    template <typename Self>
-    static constexpr auto inc(Self& self, cursor_type<Self>& cur) -> cursor_type<Self>&
-        requires sequence<decltype(self.base_)>
+    static constexpr auto inc(auto& self, cursor_type& cur)
     {
         cur.cur = cur.next.from;
         if (!flux::is_last(self.base_, cur.cur)) {
@@ -137,7 +125,6 @@ public:
         } else {
             cur.trailing_empty = false;
         }
-        return cur;
     }
 };
 
