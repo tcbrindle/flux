@@ -277,7 +277,7 @@ constexpr bool test_optional_value_ctor() {
     }
 
     {
-        flux::optional<Tester> o({.i = 1, .f = 2.0f});
+        flux::optional<Tester> o(Tester{.i = 1, .f = 2.0f});
         STATIC_CHECK(o.has_value());
         STATIC_CHECK(o->i == 1);
         STATIC_CHECK(o->f == 2.0f);
