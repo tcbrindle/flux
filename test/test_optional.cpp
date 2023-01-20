@@ -991,6 +991,98 @@ enum class cv_qual {
 
 constexpr bool test_optional_map()
 {
+    // Test basic mapping
+    {
+        auto fn = [](int i) { return double(i); };
+
+        // value, engaged
+        flux::optional<int> ve(3);
+        {
+            flux::optional<double> o = ve.map(fn);
+            STATIC_CHECK(o.has_value());
+            STATIC_CHECK(o.value() == 3.0);
+        }
+        {
+            flux::optional<double> o = std::as_const(ve).map(fn);
+            STATIC_CHECK(o.has_value());
+            STATIC_CHECK(o.value() == 3.0);
+        }
+        {
+            flux::optional<double> o = std::move(ve).map(fn);
+            STATIC_CHECK(o.has_value());
+            STATIC_CHECK(o.value() == 3.0);
+        }
+        {
+            flux::optional<double> o = std::move(std::as_const(ve)).map(fn);
+            STATIC_CHECK(o.has_value());
+            STATIC_CHECK(o.value() == 3.0);
+        }
+
+        // value, disengaged
+        flux::optional<int> vd;
+        {
+            flux::optional<double> o = vd.map(fn);
+            STATIC_CHECK(!o.has_value());
+        }
+        {
+            flux::optional<double> o = std::as_const(vd).map(fn);
+            STATIC_CHECK(!o.has_value());
+        }
+        {
+            flux::optional<double> o = std::move(vd).map(fn);
+            STATIC_CHECK(!o.has_value());
+        }
+        {
+            flux::optional<double> o = std::move(std::as_const(vd)).map(fn);
+            STATIC_CHECK(!o.has_value());
+        }
+
+        // reference, engaged
+        int i = 3;
+        flux::optional<int&> re(i);
+        {
+            flux::optional<double> o = re.map(fn);
+            STATIC_CHECK(o.has_value());
+            STATIC_CHECK(o.value() == 3.0);
+        }
+        {
+            flux::optional<double> o = std::as_const(re).map(fn);
+            STATIC_CHECK(o.has_value());
+            STATIC_CHECK(o.value() == 3.0);
+        }
+        {
+            flux::optional<double> o = std::move(re).map(fn);
+            STATIC_CHECK(o.has_value());
+            STATIC_CHECK(o.value() == 3.0);
+        }
+        {
+            flux::optional<double> o = std::move(std::as_const(re)).map(fn);
+            STATIC_CHECK(o.has_value());
+            STATIC_CHECK(o.value() == 3.0);
+        }
+
+        // reference, disengaged
+        flux::optional<int&> rd;
+        {
+            flux::optional<double> o = rd.map(fn);
+            STATIC_CHECK(!o.has_value());
+        }
+        {
+            flux::optional<double> o = std::as_const(rd).map(fn);
+            STATIC_CHECK(!o.has_value());
+        }
+        {
+            flux::optional<double> o = std::move(rd).map(fn);
+            STATIC_CHECK(!o.has_value());
+        }
+        {
+            flux::optional<double> o = std::move(std::as_const(rd)).map(fn);
+            STATIC_CHECK(!o.has_value());
+        }
+
+    }
+
+
     auto get_cv = []<typename T>(T&&) -> cv_qual {
         if constexpr (std::is_lvalue_reference_v<T>) {
             using R = std::remove_reference_t<T>;
