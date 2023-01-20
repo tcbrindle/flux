@@ -8,8 +8,6 @@
 
 #include <flux/op/for_each_while.hpp>
 
-#include <optional>
-
 namespace flux {
 
 namespace detail {
@@ -40,7 +38,7 @@ struct fold_first_op {
         requires std::invocable<Func&, V, element_t<Seq>> &&
                  std::assignable_from<value_t<Seq>&, std::invoke_result_t<Func&, V&&, element_t<Seq>>>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Func func) const -> std::optional<V>
+    constexpr auto operator()(Seq&& seq, Func func) const -> flux::optional<V>
     {
         auto cur = flux::first(seq);
 
@@ -56,7 +54,7 @@ struct fold_first_op {
             flux::inc(seq, cur);
         }
 
-        return std::optional<V>(std::in_place, std::move(init));
+        return flux::optional<V>(std::in_place, std::move(init));
     }
 };
 

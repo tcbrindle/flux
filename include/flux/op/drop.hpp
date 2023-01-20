@@ -9,8 +9,6 @@
 #include <flux/core.hpp>
 #include <flux/op/from.hpp>
 
-#include <optional>
-
 namespace flux {
 
 namespace detail {
@@ -20,7 +18,7 @@ struct drop_adaptor : inline_sequence_base<drop_adaptor<Base>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     distance_t count_;
-    std::optional<cursor_t<Base>> cached_first_;
+    flux::optional<cursor_t<Base>> cached_first_;
 
 public:
     constexpr drop_adaptor(decays_to<Base> auto&& base, distance_t count)
@@ -40,10 +38,11 @@ public:
         {
             if constexpr (std::copy_constructible<cursor_t<Base>>) {
                 if (!self.cached_first_) {
-                    self.cached_first_ = flux::next(self.base_, flux::first(self.base()), self.count_);
+                    self.cached_first_ = flux::optional(
+                        flux::next(self.base_, flux::first(self.base()), self.count_));
                 }
 
-                return *self.cached_first_;
+                return self.cached_first_.value_unchecked();
             } else {
                 return flux::next(self.base_, flux::first(self.base()), self.count_);
             }

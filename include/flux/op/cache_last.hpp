@@ -9,8 +9,6 @@
 #include <flux/core.hpp>
 #include <flux/op/from.hpp>
 
-#include <optional>
-
 namespace flux {
 
 namespace detail {
@@ -20,7 +18,7 @@ struct cache_last_adaptor : inline_sequence_base<cache_last_adaptor<Base>>
 {
 private:
     Base base_;
-    std::optional<cursor_t<Base>> cached_last_{};
+    flux::optional<cursor_t<Base>> cached_last_{};
 
     friend struct passthrough_traits_base<Base>;
 
@@ -41,7 +39,7 @@ public:
         static constexpr auto is_last(self_t& self, cursor_t<Base> const& cur)
         {
             if (flux::is_last(self.base_, cur)) {
-                self.cached_last_ = cur;
+                self.cached_last_ = flux::optional(cur);
                 return true;
             } else {
                 return false;
@@ -57,7 +55,7 @@ public:
                 }
                 FLUX_DEBUG_ASSERT(self.cached_last_.has_value());
             }
-            return *self.cached_last_;
+            return self.cached_last_.value_unchecked();
         }
     };
 };

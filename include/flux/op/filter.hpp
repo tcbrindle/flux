@@ -10,8 +10,6 @@
 #include <flux/op/for_each_while.hpp>
 #include <flux/op/from.hpp>
 
-#include <optional>
-
 namespace flux {
 
 namespace detail {
@@ -22,7 +20,7 @@ class filter_adaptor : public inline_sequence_base<filter_adaptor<Base, Pred>>
 {
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Pred pred_;
-    std::optional<cursor_t<Base>> cached_first_{};
+    flux::optional<cursor_t<Base>> cached_first_{};
 
 public:
     constexpr filter_adaptor(decays_to<Base> auto&& base, decays_to<Pred> auto&& pred)
@@ -51,13 +49,13 @@ public:
                 });
             } else {
                 if (!self.cached_first_) {
-                    self.cached_first_ =
+                    self.cached_first_ = flux::optional(
                         flux::for_each_while(self.base_, [&](auto&& elem) {
                             return !std::invoke(self.pred_, elem);
-                        });
+                        }));
                 }
 
-                return *self.cached_first_;
+                return self.cached_first_.value_unchecked();
             }
         }
 

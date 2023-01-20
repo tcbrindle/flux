@@ -26,7 +26,7 @@ struct min_op {
         requires std::predicate<Cmp&, std::invoke_result_t<Proj, value_t<Seq>>, projected_t<Proj, Seq>>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}, Proj proj = Proj{}) const
-        -> std::optional<value_t<Seq>>
+        -> flux::optional<value_t<Seq>>
     {
         return flux::fold_first(FLUX_FWD(seq), [&](auto min, auto&& elem) -> value_t<Seq> {
             if (std::invoke(cmp, std::invoke(proj, elem), std::invoke(proj, min))) {
@@ -44,7 +44,7 @@ struct max_op {
         requires std::predicate<Cmp&, std::invoke_result_t<Proj, value_t<Seq>>, projected_t<Proj, Seq>>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}, Proj proj = Proj{}) const
-        -> std::optional<value_t<Seq>>
+        -> flux::optional<value_t<Seq>>
     {
         return flux::fold_first(FLUX_FWD(seq), [&](auto max, auto&& elem) -> value_t<Seq> {
             if (!std::invoke(cmp, std::invoke(proj, elem), std::invoke(proj, max))) {
@@ -62,7 +62,7 @@ struct minmax_op {
         requires std::predicate<Cmp&, std::invoke_result_t<Proj, value_t<Seq>>, projected_t<Proj, Seq>>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}, Proj proj = Proj{}) const
-        -> std::optional<minmax_result<value_t<Seq>>>
+        -> flux::optional<minmax_result<value_t<Seq>>>
     {
         using R = minmax_result<value_t<Seq>>;
 
@@ -84,7 +84,7 @@ struct minmax_op {
             return mm;
         };
 
-        return std::optional<R>(std::in_place,
+        return flux::optional<R>(std::in_place,
                                 flux::fold(flux::slice(seq, std::move(cur), flux::last), fold_fn, std::move(init)));
     }
 };
