@@ -237,8 +237,9 @@ public:
     }
 
 private:
-    static constexpr auto do_compare(optional const& lhs, optional const& rhs, auto cmp)
-        -> std::invoke_result_t<decltype(cmp), T const&, T const&>
+    template <typename Cmp>
+    static constexpr auto do_compare(optional const& lhs, optional const& rhs, Cmp cmp)
+        -> std::invoke_result_t<Cmp&, T const&, T const&>
     {
         if (lhs.has_value() && rhs.has_value()) {
             return cmp(lhs.value_unchecked(), rhs.value_unchecked());
