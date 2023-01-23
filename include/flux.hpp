@@ -43,6 +43,7 @@
 #include <flux/op/write_to.hpp>
 #include <flux/op/zip.hpp>
 
+#include <flux/source/array_ptr.hpp>
 #include <flux/source/empty.hpp>
 #include <flux/source/generator.hpp>
 #include <flux/source/getlines.hpp>
