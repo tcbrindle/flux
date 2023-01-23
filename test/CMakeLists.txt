@@ -29,6 +29,7 @@ add_executable(test-libflux
     test_find.cpp
     test_for_each.cpp
     test_fold.cpp
+    test_front_back.cpp
     test_generator.cpp
     test_map.cpp
     test_minmax.cpp

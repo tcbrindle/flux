@@ -7,8 +7,7 @@
 #define FLUX_CORE_SEQUENCE_ACCESS_HPP_INCLUDED
 
 #include <flux/core/concepts.hpp>
-
-#include <stdexcept>
+#include <flux/core/optional.hpp>
 
 namespace flux {
 
@@ -135,7 +134,6 @@ struct usize_fn {
         return checked_cast<std::size_t>(size_fn{}(seq));
     }
 };
-
 
 template <typename Seq>
 concept has_custom_move_at =
@@ -326,6 +324,35 @@ struct swap_at_fn {
     }
 };
 
+struct front_fn {
+    template <multipass_sequence Seq>
+    [[nodiscard]]
+    constexpr auto operator()(Seq& seq) const -> optional<element_t<Seq>>
+    {
+        auto cur = first(seq);
+        if (!is_last(seq, cur)) {
+            return optional<element_t<Seq>>(read_at(seq, cur));
+        } else {
+            return nullopt;
+        }
+    }
+};
+
+struct back_fn {
+    template <bidirectional_sequence Seq>
+        requires bounded_sequence<Seq>
+    [[nodiscard]]
+    constexpr auto operator()(Seq& seq) const -> optional<element_t<Seq>>
+    {
+        auto cur = last(seq);
+        if (cur != first(seq)) {
+            return optional<element_t<Seq>>(read_at(seq, dec(seq, cur)));
+        } else {
+            return nullopt;
+        }
+    }
+};
+
 } // namespace detail
 
 
@@ -334,6 +361,8 @@ inline constexpr auto prev = detail::prev_fn{};
 inline constexpr auto is_empty = detail::is_empty_fn{};
 inline constexpr auto swap_with = detail::swap_with_fn{};
 inline constexpr auto swap_at = detail::swap_at_fn{};
+inline constexpr auto front = detail::front_fn{};
+inline constexpr auto back = detail::back_fn{};
 
 } // namespace flux
 

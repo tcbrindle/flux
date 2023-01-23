@@ -24,8 +24,6 @@ template <sequence Seq>
 using bounds_t = bounds<cursor_t<Seq>>;
 
 template <typename Derived>
-    /*requires std::is_class_v<Derived>&&
-             std::same_as<Derived, std::remove_cv_t<Derived>>*/
 struct inline_sequence_base {
 private:
     constexpr auto derived() -> Derived& { return static_cast<Derived&>(*this); }
@@ -131,6 +129,32 @@ public:
         requires bidirectional_sequence<Derived>
     [[nodiscard]]
     constexpr auto prev(cursor_t<D> cur) { return flux::prev(derived(), cur); }
+
+    [[nodiscard]]
+    constexpr auto front() requires multipass_sequence<Derived>
+    {
+        return flux::front(derived());
+    }
+
+    [[nodiscard]]
+    constexpr auto front() const requires multipass_sequence<Derived const>
+    {
+        return flux::front(derived());
+    }
+
+    [[nodiscard]]
+    constexpr auto back()
+        requires bidirectional_sequence<Derived> && bounded_sequence<Derived>
+    {
+        return flux::back(derived());
+    }
+
+    [[nodiscard]]
+    constexpr auto back() const
+        requires bidirectional_sequence<Derived const> && bounded_sequence<Derived const>
+    {
+        return flux::back(derived());
+    }
 
     template <typename Func, typename... Args>
         requires std::invocable<Func, Derived&, Args...>
