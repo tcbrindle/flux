@@ -8,15 +8,19 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         build_type: [Debug, Release]
-        os: [ubuntu-latest]
+        cxx: [g++-11, g++-12]
         include:
           - cxx: g++-11
             install: |
               brew install gcc@11 ninja
+              brew link --force binutils
+          - cxx: g++-12
+            install: |
+              brew install gcc@12 ninja
               brew link --force binutils
 
     steps:
