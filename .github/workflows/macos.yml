@@ -21,7 +21,7 @@ jobs:
             install: brew install gcc@12 ninja
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Create Build Environment
       run: |
