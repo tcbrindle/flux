@@ -27,10 +27,12 @@ endif()
 
 set(CMAKE_CXX_EXTENSIONS Off)
 
-#option(FLUX_BUILD_EXAMPLES "Build libflux examples" On)
-option(FLUX_BUILD_TESTS "Build libflux tests" On)
-option(FLUX_BUILD_BENCHMARKS "Build libflux benchmarks" Off)
+#option(FLUX_BUILD_EXAMPLES "Build Flux examples" On)
+option(FLUX_BUILD_TESTS "Build Flux tests" On)
+option(FLUX_BUILD_BENCHMARKS "Build Flux benchmarks" Off)
 option(FLUX_BUILD_TOOLS "Build single-header generator tool" Off)
+option(FLUX_ENABLE_ASAN "Enable Address Sanitizer for tests" Off)
+option(FLUX_ENABLE_UBSAN "Enable Undefined Behaviour Sanitizer for tests" Off)
 
 #if (${FLUX_BUILD_EXAMPLES})
 #    add_subdirectory(example)

@@ -1,6 +1,7 @@
 
 add_library(catch-main catch_main.cpp)
 target_compile_features(catch-main PUBLIC cxx_std_20)
+target_compile_definitions(catch-main PUBLIC -DCATCH_CONFIG_NO_POSIX_SIGNALS)
 
 add_executable(test-libflux
 
@@ -50,12 +51,23 @@ add_executable(test-libflux
 )
 target_link_libraries(test-libflux flux catch-main)
 
+if (${FLUX_ENABLE_ASAN})
+    target_compile_options(test-libflux PRIVATE -fsanitize=address)
+    target_link_options(test-libflux PRIVATE -fsanitize=address)
+endif()
+
+if (${FLUX_ENABLE_UBSAN})
+    target_compile_options(test-libflux PRIVATE -fsanitize=undefined)
+    target_link_options(test-libflux PRIVATE -fsanitize=undefined)
+endif()
+
 if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")
     target_precompile_headers(test-libflux PRIVATE "catch.hpp")
 endif()
 
 if (CMAKE_COMPILER_IS_GNUCXX)
     target_compile_options(test-libflux PRIVATE -Wall -Wextra -pedantic
+        -fno-omit-frame-pointer
         -ftemplate-backtrace-limit=0
         -fconcepts-diagnostics-depth=2)
 endif()
