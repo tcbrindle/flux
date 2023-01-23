@@ -1,0 +1,49 @@
+name: sanitizers
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        sanitizer: [ubsan, asan]
+        include:
+          - cxx: g++-12
+            install: |
+              brew install gcc@12 ninja
+              brew link --force binutils
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Create Build Environment
+        run: |
+          ${{matrix.install}}
+          cmake -E make_directory ${{runner.workspace}}/build
+
+      - name: Configure
+        working-directory: ${{runner.workspace}}/build
+        run: |
+          cmake -GNinja \
+                -DFLUX_ENABLE_ASAN=${{matrix.sanitizer == 'asan'}} \
+                -DFLUX_ENABLE_UBSAN=${{matrix.sanitizer == 'ubsan'}} \
+                -DCMAKE_CXX_COMPILER=g++-12 \
+                $GITHUB_WORKSPACE
+
+      - name: Build
+        working-directory: ${{runner.workspace}}/build
+        run: cmake --build .
+
+      - name: Test
+        working-directory: ${{runner.workspace}}/build
+        run: ctest -C ${{matrix.build_type}}
+        env:
+          CTEST_OUTPUT_ON_FAILURE: True
