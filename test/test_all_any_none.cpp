@@ -7,8 +7,6 @@
 
 #include <flux/op/all_any_none.hpp>
 
-#include <flux/ranges/from_range.hpp>
-
 namespace {
 
 constexpr auto gt_zero = [](auto i) { return i > 0; };

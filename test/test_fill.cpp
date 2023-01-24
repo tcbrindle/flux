@@ -7,7 +7,6 @@
 
 #include <flux/op/fill.hpp>
 #include <flux/op/take.hpp>
-#include <flux/ranges/from_range.hpp>
 #include <flux/source/empty.hpp>
 #include <flux/source/single.hpp>
 

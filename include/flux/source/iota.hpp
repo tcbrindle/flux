@@ -98,19 +98,19 @@ struct iota_sequence_traits {
         -> cursor_type&
         requires advancable<T>
     {
-        return cur += narrow_cast<std::iter_difference_t<T>>(offset);
+        return cur += checked_cast<std::iter_difference_t<T>>(offset);
     }
 
     static constexpr auto distance(auto&, cursor_type const& from, cursor_type const& to)
         requires advancable<T>
     {
-        return from <= to ? narrow_cast<distance_t>(to - from) : -narrow_cast<distance_t>(from - to);
+        return from <= to ? checked_cast<distance_t>(to - from) : -checked_cast<distance_t>(from - to);
     }
 
     static constexpr auto size(auto& self) -> distance_t
         requires advancable<T> && (Traits.has_start && Traits.has_end)
     {
-        return narrow_cast<distance_t>(self.end_ - self.start_);
+        return checked_cast<distance_t>(self.end_ - self.start_);
     }
 };
 

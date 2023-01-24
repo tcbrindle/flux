@@ -37,9 +37,9 @@ auto fib(int a, int b) -> generator<int const&>
 }
 
 auto pythagorean_triples() -> generator<std::tuple<int, int, int>> {
-    for (int z : ints(1).view()) {
-        for (int y : ints(1, z).view()) {
-            for (int x : ints(1, y).view()) {
+    for (int z : ints(1)) {
+        for (int y : ints(1, z)) {
+            for (int x : ints(1, y)) {
                 if (x*x + y*y == z*z) {
                     co_yield {x, y, z};
                 }
@@ -96,7 +96,7 @@ TEST_CASE("generator")
 
     SECTION("ranges integration")
     {
-        auto view = ints().view();
+        auto view = ints();
 
         using V = decltype(view);
 

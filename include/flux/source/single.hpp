@@ -8,8 +8,6 @@
 
 #include <flux/core.hpp>
 
-#include <cassert>
-
 namespace flux {
 
 namespace detail {
@@ -77,20 +75,20 @@ public:
 
     static constexpr auto read_at(auto& self, [[maybe_unused]] cursor_type cur) -> auto&
     {
-        assert(cur == cursor_type::valid);
+        FLUX_DEBUG_ASSERT(cur == cursor_type::valid);
         return self.obj_;
     }
 
     static constexpr auto inc(self_t const&, cursor_type& cur) -> cursor_type&
     {
-        assert(cur == cursor_type::valid);
+        FLUX_DEBUG_ASSERT(cur == cursor_type::valid);
         cur = cursor_type::done;
         return cur;
     }
 
     static constexpr auto dec(self_t const&, cursor_type& cur) -> cursor_type&
     {
-        assert(cur == cursor_type::done);
+        FLUX_DEBUG_ASSERT(cur == cursor_type::done);
         cur = cursor_type::valid;
         return cur;
     }
@@ -99,10 +97,10 @@ public:
         -> cursor_type&
     {
         if (off > 0) {
-            assert(cur == cursor_type::valid && off == 1);
+            FLUX_DEBUG_ASSERT(cur == cursor_type::valid && off == 1);
             cur = cursor_type::done;
         } else if (off < 0) {
-            assert(cur == cursor_type::done && off == -1);
+            FLUX_DEBUG_ASSERT(cur == cursor_type::done && off == -1);
             cur = cursor_type::valid;
         }
         return cur;

@@ -8,8 +8,6 @@
 
 #include <flux/core.hpp>
 
-#include <cassert>
-
 namespace flux {
 
 namespace detail {
@@ -49,11 +47,10 @@ struct empty_sequence : inline_sequence_base<empty_sequence<T>> {
         static constexpr auto size(empty_sequence) -> std::ptrdiff_t { return 0; }
         static constexpr auto data(empty_sequence) -> T* { return nullptr; }
 
+        [[noreturn]]
         static constexpr auto read_at(empty_sequence, cursor_type) -> T&
         {
-            assert(false && "Attempted read of flux::empty");
-            /* Guaranteed UB... */
-            return *static_cast<T*>(nullptr);
+            runtime_error("Attempted read of flux::empty");
         }
     };
 };

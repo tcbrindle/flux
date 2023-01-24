@@ -6,7 +6,6 @@
 #include "catch.hpp"
 
 #include <flux/op/for_each.hpp>
-#include <flux/ranges.hpp>
 
 #include "test_utils.hpp"
 

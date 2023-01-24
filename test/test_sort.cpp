@@ -189,7 +189,7 @@ void test_adapted_deque_sort(int sz)
 
     CHECK(not std::is_sorted(deque.cbegin(), deque.cend())); // seems unlikely, anyway
 
-    flux::from(deque)
+    flux::from_range(deque)
         .take(sz/2)
         .sort();
 

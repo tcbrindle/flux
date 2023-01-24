@@ -5,8 +5,7 @@
 
 #include "catch.hpp"
 
-#include <flux/source/single.hpp>
-#include <flux/ranges/view.hpp>
+#include <flux.hpp>
 
 #include "test_utils.hpp"
 
@@ -44,7 +43,7 @@ constexpr bool test_single()
     {
         namespace rng = std::ranges;
 
-        auto view = flux::single(1.0f).view();
+        auto view = flux::single(1.0f);
 
         using V = decltype(view);
 

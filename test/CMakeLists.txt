@@ -6,6 +6,8 @@ target_compile_definitions(catch-main PUBLIC -DCATCH_CONFIG_NO_POSIX_SIGNALS)
 add_executable(test-libflux
 
     test_concepts.cpp
+    test_overflow.cpp
+    test_optional.cpp
     test_simple_sequence.cpp
     test_apply.cpp
 
@@ -27,22 +29,25 @@ add_executable(test-libflux
     test_find.cpp
     test_for_each.cpp
     test_fold.cpp
+    test_front_back.cpp
     test_generator.cpp
     test_map.cpp
     test_minmax.cpp
     test_output_to.cpp
+    test_range_iface.cpp
     test_reverse.cpp
     test_split.cpp
     test_sort.cpp
     test_take.cpp
     test_take_while.cpp
     test_to.cpp
-    test_view.cpp
     test_write_to.cpp
     test_zip.cpp
 
+    test_array_ptr.cpp
     test_bitset.cpp
     test_empty.cpp
+    test_from_range.cpp
     test_getlines.cpp
     test_iota.cpp
     test_istream.cpp
@@ -50,6 +55,7 @@ add_executable(test-libflux
     test_single.cpp
 )
 target_link_libraries(test-libflux flux catch-main)
+target_compile_definitions(test-libflux PUBLIC FLUX_UNWIND_ON_ERROR FLUX_ERROR_ON_OVERFLOW)
 
 if (${FLUX_ENABLE_ASAN})
     target_compile_options(test-libflux PRIVATE -fsanitize=address)

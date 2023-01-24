@@ -7,7 +7,6 @@
 
 #include <flux/op/output_to.hpp>
 #include <flux/op/take.hpp>
-#include <flux/ranges.hpp>
 #include <flux/source/istream.hpp>
 #include <flux/source/istreambuf.hpp>
 
@@ -61,7 +60,7 @@ TEST_CASE("output to")
 
         flux::output_to(in, std::back_inserter(out));
 
-        REQUIRE(check_equal(in, out));
+        REQUIRE(std::ranges::equal(in, out));
     }
 
     SECTION("...with iostreams")

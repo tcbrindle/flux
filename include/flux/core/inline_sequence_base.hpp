@@ -24,8 +24,6 @@ template <sequence Seq>
 using bounds_t = bounds<cursor_t<Seq>>;
 
 template <typename Derived>
-    /*requires std::is_class_v<Derived>&&
-             std::same_as<Derived, std::remove_cv_t<Derived>>*/
 struct inline_sequence_base {
 private:
     constexpr auto derived() -> Derived& { return static_cast<Derived&>(*this); }
@@ -99,13 +97,25 @@ public:
         return flux::data(derived());
     }
 
+    [[nodiscard]]
+    constexpr auto data() const requires contiguous_sequence<Derived const>
+    {
+        return flux::data(derived());
+    }
+
     /// Returns the number of elements in the sequence
     [[nodiscard]]
     constexpr auto size() requires sized_sequence<Derived> { return flux::size(derived()); }
 
+    [[nodiscard]]
+    constexpr auto size() const requires sized_sequence<Derived const> { return flux::size(derived()); }
+
     /// Returns the number of elements in the sequence as a size_t
     [[nodiscard]]
     constexpr auto usize() requires sized_sequence<Derived> { return flux::usize(derived()); }
+
+    [[nodiscard]]
+    constexpr auto usize() const requires sized_sequence<Derived const> { return flux::usize(derived()); }
 
     /// Returns true if the sequence contains no elements
     [[nodiscard]]
@@ -119,6 +129,32 @@ public:
         requires bidirectional_sequence<Derived>
     [[nodiscard]]
     constexpr auto prev(cursor_t<D> cur) { return flux::prev(derived(), cur); }
+
+    [[nodiscard]]
+    constexpr auto front() requires multipass_sequence<Derived>
+    {
+        return flux::front(derived());
+    }
+
+    [[nodiscard]]
+    constexpr auto front() const requires multipass_sequence<Derived const>
+    {
+        return flux::front(derived());
+    }
+
+    [[nodiscard]]
+    constexpr auto back()
+        requires bidirectional_sequence<Derived> && bounded_sequence<Derived>
+    {
+        return flux::back(derived());
+    }
+
+    [[nodiscard]]
+    constexpr auto back() const
+        requires bidirectional_sequence<Derived const> && bounded_sequence<Derived const>
+    {
+        return flux::back(derived());
+    }
 
     template <typename Func, typename... Args>
         requires std::invocable<Func, Derived&, Args...>
@@ -147,6 +183,17 @@ public:
     {
         return std::invoke(FLUX_FWD(func), std::move(derived()), FLUX_FWD(args)...);
     }
+
+    /*
+     * Iterator support
+     */
+    constexpr auto begin() &;
+
+    constexpr auto begin() const& requires sequence<Derived const>;
+
+    constexpr auto end() &;
+
+    constexpr auto end() const& requires sequence<Derived const>;
 
     /*
      * Adaptors
@@ -198,18 +245,6 @@ public:
         requires std::predicate<Pred&, element_t<Derived>>
     [[nodiscard]]
     constexpr auto take_while(Pred pred) &&;
-
-    [[nodiscard]]
-    constexpr auto view() &;
-
-    [[nodiscard]]
-    constexpr auto view() const& requires sequence<Derived const>;
-
-    [[nodiscard]]
-    constexpr auto view() &&;
-
-    [[nodiscard]]
-    constexpr auto view() const&& requires sequence<Derived const>;
 
     /*
      * Algorithms

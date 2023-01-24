@@ -1,10 +1,7 @@
 
 #include "catch.hpp"
 
-#include <flux/op/cache_last.hpp>
-#include <flux/op/inplace_reverse.hpp>
-#include <flux/op/take_while.hpp>
-#include <flux/ranges.hpp>
+#include <flux.hpp>
 
 #include <array>
 
@@ -32,8 +29,7 @@ constexpr bool test_cache_last()
 
         STATIC_CHECK(cached.size() == 5);
 
-        auto view = cached.view();
-        static_assert(std::ranges::common_range<decltype(view)>);
+        static_assert(std::ranges::common_range<C>);
     }
 
     // For a bounded sequence, cache_last is equivalent to flux::from

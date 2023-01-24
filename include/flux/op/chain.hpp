@@ -8,7 +8,6 @@
 
 #include <flux/core.hpp>
 
-#include <cassert>
 #include <tuple>
 #include <variant>
 
@@ -71,30 +70,27 @@ private:
     template <typename From, typename To>
     using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
 
-    template <typename Self>
-    using cursor_type = std::variant<cursor_t<const_like_t<Self, Bases>>...>;
+    using cursor_type = std::variant<cursor_t<Bases>...>;
 
     template <std::size_t N, typename Self>
-    static constexpr auto first_impl(Self& self)
-        -> cursor_type<Self>
+    static constexpr auto first_impl(Self& self) -> cursor_type
     {
         auto& base = std::get<N>(self.bases_);
         auto cur = flux::first(base);
 
         if constexpr (N < End) {
             if (!flux::is_last(base, cur)) {
-                return cursor_type<Self>(std::in_place_index<N>, std::move(cur));
+                return cursor_type(std::in_place_index<N>, std::move(cur));
             } else {
                 return first_impl<N+1>(self);
             }
         } else {
-            return cursor_type<Self>(std::in_place_index<N>, std::move(cur));
+            return cursor_type(std::in_place_index<N>, std::move(cur));
         }
     }
 
     template <std::size_t N, typename Self>
-    static constexpr auto inc_impl(Self& self, cursor_type<Self>& cur)
-            -> cursor_type<Self>&
+    static constexpr auto inc_impl(Self& self, cursor_type& cur) -> void
     {
         if constexpr (N < End) {
             if (cur.index() == N) {
@@ -104,19 +100,16 @@ private:
                 if (flux::is_last(base, base_cur)) {
                     cur = first_impl<N + 1>(self);
                 }
-                return cur;
             } else {
-                return inc_impl<N+1>(self, cur);
+                inc_impl<N+1>(self, cur);
             }
         } else {
             flux::inc(std::get<N>(self.bases_), std::get<N>(cur));
-            return cur;
         }
     }
 
     template <std::size_t N, typename Self>
-    static constexpr auto dec_impl(Self& self, cursor_type<Self>& cur)
-        -> cursor_type<Self>&
+    static constexpr auto dec_impl(Self& self, cursor_type& cur)
     {
         if constexpr (N > 0) {
             if (cur.index() == N) {
@@ -124,24 +117,22 @@ private:
                 auto& base_cur = std::get<N>(cur);
 
                 if (base_cur == flux::first(base)) {
-                    cur = cursor_type<Self>(std::in_place_index<N-1>,
-                                           flux::last(std::get<N-1>(self.bases_)));
-                    return dec_impl<N-1>(self, cur);
+                    cur = cursor_type(std::in_place_index<N-1>,
+                                      flux::last(std::get<N-1>(self.bases_)));
+                    dec_impl<N-1>(self, cur);
                 } else {
                     flux::dec(base, base_cur);
-                    return cur;
                 }
             } else {
-                return dec_impl<N-1>(self, cur);
+                dec_impl<N-1>(self, cur);
             }
         } else {
             flux::dec(std::get<0>(self.bases_), std::get<0>(cur));
-            return cur;
         }
     }
 
     template <std::size_t N, typename Self>
-    static constexpr auto read_impl(Self& self, cursor_type<Self> const& cur)
+    static constexpr auto read_impl(Self& self, cursor_type const& cur)
         -> std::common_reference_t<element_t<const_like_t<Self, Bases>>...>
     {
         if constexpr (N < End) {
@@ -156,7 +147,7 @@ private:
     }
 
     template <std::size_t N, typename Self>
-    static constexpr auto move_impl(Self& self, cursor_type<Self> const& cur)
+    static constexpr auto move_impl(Self& self, cursor_type const& cur)
         -> std::common_reference_t<rvalue_element_t<const_like_t<Self, Bases>>...>
     {
         if constexpr (N < End) {
@@ -173,33 +164,33 @@ private:
 
     template <std::size_t N, typename Self>
     static constexpr auto for_each_while_impl(Self& self, auto& pred)
-        -> cursor_type<Self>
+        -> cursor_type
     {
         if constexpr (N < End) {
             auto& base = std::get<N>(self.bases_);
             auto base_cur = flux::for_each_while(base, pred);
             if (!flux::is_last(base, base_cur)) {
-                return cursor_type<Self>(std::in_place_index<N>, std::move(base_cur));
+                return cursor_type(std::in_place_index<N>, std::move(base_cur));
             } else {
                 return for_each_while_impl<N+1>(self, pred);
             }
         } else {
-            return cursor_type<Self>(std::in_place_index<N>,
-                                    flux::for_each_while(std::get<N>(self.bases_), pred));
+            return cursor_type(std::in_place_index<N>,
+                               flux::for_each_while(std::get<N>(self.bases_), pred));
         }
     }
 
     template <std::size_t N, typename Self>
     static constexpr auto distance_impl(Self& self,
-                                        cursor_type<Self> const& from,
-                                        cursor_type<Self> const& to)
+                                        cursor_type const& from,
+                                        cursor_type const& to)
     {
         if constexpr (N < End) {
             if (N < from.index()) {
                 return distance_impl<N+1>(self, from, to);
             }
 
-            assert(N == from.index());
+            FLUX_DEBUG_ASSERT(N == from.index());
             if (N == to.index()) {
                 return flux::distance(std::get<N>(self.bases_),
                                       std::get<N>(from), std::get<N>(to));
@@ -211,15 +202,15 @@ private:
                 return dist_to_end + remaining;
             }
         } else {
-            assert(N == from.index() && N == to.index());
+            FLUX_DEBUG_ASSERT(N == from.index() && N == to.index());
             return flux::distance(std::get<N>(self.bases_), std::get<N>(from), std::get<N>(to));
         }
     }
 
     template <std::size_t N, typename Self>
-    static constexpr auto inc_ra_impl(Self& self, cursor_type<Self>& cur,
+    static constexpr auto inc_ra_impl(Self& self, cursor_type& cur,
                                       distance_t offset)
-        -> cursor_type<Self>&
+        -> cursor_type&
     {
         if constexpr (N < End) {
             if (N < cur.index()) {
@@ -239,7 +230,7 @@ private:
                 return inc_ra_impl<N+1>(self, cur, offset);
             }
         } else {
-            assert(cur.index() == N);
+            FLUX_DEBUG_ASSERT(cur.index() == N);
             flux::inc(std::get<N>(self.bases_), std::get<N>(cur), offset);
             return cur;
         }
@@ -247,54 +238,51 @@ private:
 
 public:
     template <typename Self>
-    static constexpr auto first(Self& self) -> cursor_type<Self>
+    static constexpr auto first(Self& self) -> cursor_type
     {
         return first_impl<0>(self);
     }
 
     template <typename Self>
-    static constexpr auto is_last(Self& self, cursor_type<Self> const& cur)
+    static constexpr auto is_last(Self& self, cursor_type const& cur) -> bool
     {
         return cur.index() == End &&
                flux::is_last(std::get<End>(self.bases_), std::get<End>(cur));
     }
 
     template <typename Self>
-    static constexpr auto read_at(Self& self, cursor_type<Self> const& cur)
+    static constexpr auto read_at(Self& self, cursor_type const& cur)
         -> std::common_reference_t<element_t<const_like_t<Self, Bases>>...>
     {
         return read_impl<0>(self, cur);
     }
 
     template <typename Self>
-    static constexpr auto move_at(Self& self, cursor_type<Self> const& cur)
+    static constexpr auto move_at(Self& self, cursor_type const& cur)
         -> std::common_reference_t<rvalue_element_t<const_like_t<Self, Bases>>...>
     {
         return move_impl<0>(self, cur);
     }
 
     template <typename Self>
-    static constexpr auto inc(Self& self, cursor_type<Self>& cur)
-        -> cursor_type<Self>&
+    static constexpr auto inc(Self& self, cursor_type& cur) -> void
     {
-        return inc_impl<0>(self, cur);
+        inc_impl<0>(self, cur);
     }
 
     template <typename Self>
-    static constexpr auto dec(Self& self, cursor_type<Self>& cur)
-        -> cursor_type<Self>&
+    static constexpr auto dec(Self& self, cursor_type& cur) -> void
         requires (bidirectional_sequence<const_like_t<Self, Bases>> && ...) &&
                  (bounded_sequence<const_like_t<Self,Bases>> &&...)
     {
-        return dec_impl<sizeof...(Bases) - 1>(self, cur);
+        dec_impl<End>(self, cur);
     }
 
     template <typename Self>
-    static constexpr auto last(Self& self) -> cursor_type<Self>
+    static constexpr auto last(Self& self) -> cursor_type
         requires bounded_sequence<decltype(std::get<End>(self.bases_))>
     {
-        constexpr auto Last = sizeof...(Bases) - 1;
-        return cursor_type<Self>(std::in_place_index<Last>, flux::last(std::get<Last>(self.bases_)));
+        return cursor_type(std::in_place_index<End>, flux::last(std::get<End>(self.bases_)));
     }
 
     template <typename Self>
@@ -312,8 +300,8 @@ public:
     }
 
     template <typename Self>
-    static constexpr auto distance(Self& self, cursor_type<Self> const& from,
-                                   cursor_type<Self> const& to)
+    static constexpr auto distance(Self& self, cursor_type const& from,
+                                   cursor_type const& to)
         -> distance_t
         requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
                  (bounded_sequence<const_like_t<Self, Bases>> && ...)
@@ -326,12 +314,11 @@ public:
     }
 
     template <typename Self>
-    static constexpr auto inc(Self& self, cursor_type<Self>& cur, distance_t offset)
-        -> cursor_type<Self>&
+    static constexpr auto inc(Self& self, cursor_type& cur, distance_t offset)
         requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
                  (bounded_sequence<const_like_t<Self, Bases>> && ...)
     {
-        return inc_ra_impl<0>(self, cur, offset);
+        inc_ra_impl<0>(self, cur, offset);
     }
 
 };

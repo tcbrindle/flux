@@ -27,7 +27,7 @@ struct from_istreambuf_fn {
     [[nodiscard]]
     auto operator()(std::basic_streambuf<CharT, Traits>* streambuf) const -> sequence auto
     {
-        assert(streambuf != nullptr);
+        FLUX_ASSERT(streambuf != nullptr);
         return flux::from(*streambuf);
     }
 

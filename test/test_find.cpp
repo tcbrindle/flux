@@ -8,7 +8,6 @@
 #include <flux/core/default_impls.hpp>
 #include <flux/op/find.hpp>
 #include <flux/op/from.hpp>
-#include <flux/ranges/from_range.hpp>
 
 #include <array>
 #include <forward_list>
@@ -96,7 +95,7 @@ TEST_CASE("find")
     {
         std::vector<int> vec{1, 2, 3, 4, 5};
         auto idx = flux::from(vec).find(99);
-        REQUIRE(idx == vec.size());
+        REQUIRE(idx == std::ssize(vec));
     }
 
 }

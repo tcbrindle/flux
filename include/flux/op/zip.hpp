@@ -65,15 +65,18 @@ private:
     using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
 
     template <std::size_t I>
-    static constexpr decltype(auto) read_at_(auto& self, auto const& cur)
+    static constexpr decltype(auto) read1_(auto fn, auto& self, auto const& cur)
     {
-        return flux::read_at(std::get<I>(self.bases_), std::get<I>(cur));
+        return fn(std::get<I>(self.bases_), std::get<I>(cur));
     }
 
-    template <std::size_t I>
-    static constexpr decltype(auto) move_at_(auto& self, auto const& cur)
+    static constexpr auto read_(auto fn, auto& self, auto const& cur)
     {
-        return flux::move_at(std::get<I>(self.bases_), std::get<I>(cur));
+        return [&]<std::size_t... I>(std::index_sequence<I...>) {
+          return tuple_t<decltype(read1_<I>(fn, self, cur))...> {
+              read1_<I>(fn, self, cur)...
+          };
+        }(std::index_sequence_for<Bases...>{});
     }
 
 public:
@@ -99,11 +102,7 @@ public:
     template <typename Self>
     static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
     {
-        return [&]<std::size_t... I>(std::index_sequence<I...>) {
-            return tuple_t<decltype(read_at_<I>(self, cur))...> {
-                read_at_<I>(self, cur)...
-            };
-        }(std::index_sequence_for<Bases...>{});
+        return read_(flux::read_at, self, cur);
     }
 
     template <typename Self>
@@ -169,11 +168,19 @@ public:
     template <typename Self>
     static constexpr auto move_at(Self& self, cursor_t<Self> const& cur)
     {
-        return [&]<std::size_t... I>(std::index_sequence<I...>) {
-            return tuple_t<decltype(move_at_<I>(self, cur))...>{
-                move_at_<I>(self, cur)...
-            };
-        }(std::index_sequence_for<Bases...>{});
+        return read_(flux::move_at, self, cur);
+    }
+
+    template <typename Self>
+    static constexpr auto read_at_unchecked(Self& self, cursor_t<Self> const& cur)
+    {
+        return read_(flux::read_at_unchecked, self, cur);
+    }
+
+    template <typename Self>
+    static constexpr auto move_at_unchecked(Self& self, cursor_t<Self> const& cur)
+    {
+        return read_(flux::move_at_unchecked, self, cur);
     }
 };
 

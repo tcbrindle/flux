@@ -8,80 +8,74 @@
 
 #include <flux/core/sequence_access.hpp>
 
-#include <initializer_list>
 #include <functional>
+#include <ranges>
 
 namespace flux {
 
 /*
  * Default implementation for C arrays of known bound
  */
-template <typename T, std::size_t N>
+template <typename T, index_t N>
 struct sequence_traits<T[N]> {
 
-    static constexpr auto first(auto const&) -> std::size_t { return 0; }
+    static constexpr auto first(auto const&) -> index_t { return index_t{0}; }
 
-    static constexpr bool is_last(auto const&, std::size_t idx) { return idx == N; }
+    static constexpr bool is_last(auto const&, index_t idx) { return idx >= N; }
 
-    static constexpr auto read_at(auto& self, std::size_t idx) -> decltype(auto) { return self[idx]; }
-
-    static constexpr auto& inc(auto const&, std::size_t& idx) { return ++idx; }
-
-    static constexpr auto last(auto const&) { return N; }
-
-    static constexpr auto& dec(auto const&, std::size_t& idx) { return --idx; }
-
-    static constexpr auto& inc(auto const&, std::size_t& idx, distance_t offset)
+    static constexpr auto read_at(auto& self, index_t idx) -> decltype(auto)
     {
-        return idx += narrow_cast<std::ptrdiff_t>(offset);
+        bounds_check(idx >= 0);
+        bounds_check(idx < N);
+        return self[idx];
     }
 
-    static constexpr auto distance(auto const&, std::size_t from, std::size_t to)
+    static constexpr auto read_at_unchecked(auto& self, index_t idx) -> decltype(auto)
     {
-        return narrow_cast<distance_t>(to) - narrow_cast<distance_t>(from);
+        return self[idx];
     }
 
-    static constexpr auto data(auto& self) { return self; }
-
-    static constexpr auto size(auto const&) { return N; }
-};
-
-/*
- * Default implementation for std::initializer_list
- */
-template <typename T>
-struct sequence_traits<std::initializer_list<T>> {
-
-    using ilist_t = std::initializer_list<T>;
-
-    static constexpr auto first(ilist_t self) -> T const* { return self.begin(); }
-
-    static constexpr auto is_last(ilist_t self, T const* ptr) -> bool
+    static constexpr auto inc(auto const&, index_t& idx)
     {
-        return ptr == self.end();
+        FLUX_DEBUG_ASSERT(idx < N);
+        idx = num::checked_add(idx, distance_t{1});
     }
 
-    static constexpr auto read_at(ilist_t, T const* ptr) -> T const& { return *ptr; }
+    static constexpr auto last(auto const&) -> index_t { return N; }
 
-    static constexpr auto inc(ilist_t, T const*& ptr) -> T const*& { return ++ptr; }
-
-    static constexpr auto last(ilist_t self) -> T const* { return self.end(); }
-
-    static constexpr auto dec(ilist_t, T const*& ptr) -> T const*& { return --ptr; }
-
-    static constexpr auto inc(ilist_t, T const*& ptr, std::ptrdiff_t offset) -> T const*&
+    static constexpr auto dec(auto const&, index_t& idx)
     {
-        return ptr += offset;
+        FLUX_DEBUG_ASSERT(idx > 0);
+        idx = num::checked_sub(idx, distance_t{1});
     }
 
-    static constexpr auto distance(ilist_t, T const* from, T const* to) -> std::ptrdiff_t
+    static constexpr auto inc(auto const&, index_t& idx, distance_t offset)
     {
-        return to - from;
+        FLUX_DEBUG_ASSERT(num::checked_add(idx, offset) <= N);
+        FLUX_DEBUG_ASSERT(num::checked_add(idx, offset) >= 0);
+        idx = num::checked_add(idx, offset);
     }
 
-    static constexpr auto data(ilist_t self) -> T const* { return std::data(self); }
+    static constexpr auto distance(auto const&, index_t from, index_t to) -> distance_t
+    {
+        return num::checked_sub(to, from);
+    }
 
-    static constexpr auto size(ilist_t self) { return self.size(); }
+    static constexpr auto data(auto& self) -> auto* { return self; }
+
+    static constexpr auto size(auto const&) -> distance_t { return N; }
+
+    static constexpr auto for_each_while(auto& self, auto&& pred) -> index_t
+    {
+        index_t idx = 0;
+        while (idx < N) {
+            if (!std::invoke(pred, self[idx])) {
+                break;
+            }
+            ++idx;
+        }
+        return idx;
+    }
 };
 
 /*
@@ -110,6 +104,12 @@ struct sequence_traits<std::reference_wrapper<Seq>> {
         -> decltype(auto)
     {
         return flux::read_at(self.get(), cur);
+    }
+
+    static constexpr auto read_at_unchecked(self_t self, cursor_t<Seq> const& cur)
+        -> decltype(auto)
+    {
+        return flux::read_at_unchecked(self.get(), cur);
     }
 
     static constexpr auto inc(self_t self, cursor_t<Seq>& cur)
@@ -162,6 +162,88 @@ struct sequence_traits<std::reference_wrapper<Seq>> {
         -> rvalue_element_t<Seq>
     {
         return flux::move_at(self.get(), cur);
+    }
+};
+
+// Default implementation for contiguous, sized ranges
+template <typename R>
+    requires (!detail::derived_from_inline_sequence_base<R> &&
+             std::ranges::contiguous_range<R> &&
+             std::ranges::sized_range<R> &&
+             std::ranges::contiguous_range<R const> &&
+             std::ranges::sized_range<R const>)
+struct sequence_traits<R> {
+
+    using value_type = std::ranges::range_value_t<R>;
+
+    static constexpr auto first(auto&) -> index_t { return index_t{0}; }
+
+    static constexpr auto is_last(auto& self, index_t idx)
+    {
+        return idx >= size(self);
+    }
+
+    static constexpr auto inc(auto& self, index_t& idx)
+    {
+        FLUX_DEBUG_ASSERT(idx < size(self));
+        idx = num::checked_add(idx, distance_t{1});
+    }
+
+    static constexpr auto read_at(auto& self, index_t idx) -> decltype(auto)
+    {
+        bounds_check(idx >= 0);
+        bounds_check(idx < size(self));
+        return data(self)[idx];
+    }
+
+    static constexpr auto read_at_unchecked(auto& self, index_t idx) -> decltype(auto)
+    {
+        return data(self)[idx];
+    }
+
+    static constexpr auto dec(auto&, index_t& idx)
+    {
+        FLUX_DEBUG_ASSERT(idx > 0);
+        idx = num::checked_sub(idx, distance_t{1});
+    }
+
+    static constexpr auto last(auto& self) -> index_t { return size(self); }
+
+    static constexpr auto inc(auto& self, index_t& idx, distance_t offset)
+    {
+        FLUX_DEBUG_ASSERT(num::checked_add(idx, offset) <= size(self));
+        FLUX_DEBUG_ASSERT(num::checked_add(idx, offset) >= 0);
+        idx = num::checked_add(idx, offset);
+    }
+
+    static constexpr auto distance(auto&, index_t from, index_t to) -> distance_t
+    {
+        return num::checked_sub(to, from);
+    }
+
+    static constexpr auto size(auto& self) -> distance_t
+    {
+        return checked_cast<distance_t>(std::ranges::ssize(self));
+    }
+
+    static constexpr auto data(auto& self) -> auto*
+    {
+        return std::ranges::data(self);
+    }
+
+    static constexpr auto for_each_while(auto& self, auto&& pred) -> index_t
+    {
+        auto iter = std::ranges::begin(self);
+        auto const end = std::ranges::end(self);
+
+        while (iter != end) {
+            if (!std::invoke(pred, *iter)) {
+                break;
+            }
+            ++iter;
+        }
+
+        return checked_cast<index_t>(iter - std::ranges::begin(self));
     }
 };
 

@@ -54,12 +54,375 @@
 #endif // FLUX_CORE_MACROS_HPP_INCLUDED
 
 
-#include <cassert>
-#include <compare>
+// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_CORE_UTILS_HPP_INCLUDED
+#define FLUX_CORE_UTILS_HPP_INCLUDED
+
+
+// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_CORE_ASSERT_HPP_INCLUDED
+#define FLUX_CORE_ASSERT_HPP_INCLUDED
+
+
+// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_CORE_CONFIG_HPP_INCLUDED
+#define FLUX_CORE_CONFIG_HPP_INCLUDED
+
 #include <concepts>
-#include <cstdint>
-#include <initializer_list>
+#include <cstddef>
 #include <type_traits>
+
+#define FLUX_ERROR_POLICY_TERMINATE 1
+#define FLUX_ERROR_POLICY_UNWIND     2
+
+#define FLUX_OVERFLOW_POLICY_ERROR   10
+#define FLUX_OVERFLOW_POLICY_WRAP    11
+#define FLUX_OVERFLOW_POLICY_IGNORE  12
+
+// Default error policy is terminate
+#define FLUX_DEFAULT_ERROR_POLICY FLUX_ERROR_POLICY_TERMINATE
+
+// Default overflow policy is error in debug builds, wrap in release builds
+#ifdef NDEBUG
+#  define FLUX_DEFAULT_OVERFLOW_POLICY FLUX_OVERFLOW_POLICY_WRAP
+#else
+#  define FLUX_DEFAULT_OVERFLOW_POLICY FLUX_OVERFLOW_POLICY_ERROR
+#endif // NDEBUG
+
+// Select which error policy to use
+#if defined(FLUX_TERMINATE_ON_ERROR)
+#  define FLUX_ERROR_POLICY FLUX_ERROR_POLICY_TERMINATE
+#elif defined(FLUX_UNWIND_ON_ERROR)
+#  define FLUX_ERROR_POLICY FLUX_ERROR_POLICY_UNWIND
+#else
+#  define FLUX_ERROR_POLICY FLUX_DEFAULT_ERROR_POLICY
+#endif // FLUX_TERMINATE_ON_ERROR
+
+// Should we print an error message before terminating?
+#ifndef FLUX_PRINT_ERROR_ON_TERMINATE
+#  define FLUX_PRINT_ERROR_ON_TERMINATE 1
+#endif // FLUX_PRINT_ERROR_ON_TERMINATE
+
+// Should we test debug assertions?
+#ifndef FLUX_ENABLE_DEBUG_ASSERTS
+#  ifdef NDEBUG
+#    define FLUX_ENABLE_DEBUG_ASSERTS 0
+#  else
+#    define FLUX_ENABLE_DEBUG_ASSERTS 1
+#  endif
+#endif
+
+// Select which overflow policy to use
+#if defined(FLUX_ERROR_ON_OVERFLOW)
+#  define FLUX_OVERFLOW_POLICY FLUX_OVERFLOW_POLICY_ERROR
+#elif defined(FLUX_WRAP_ON_OVERFLOW)
+#  define FLUX_OVERFLOW_POLICY FLUX_OVERFLOW_POLICY_WRAP
+#elif defined(FLUX_IGNORE_OVERFLOW)
+#  define FLUX_OVERFLOW_POLICY FLUX_OVERFLOW_POLICY_IGNORE
+#else
+#  define FLUX_OVERFLOW_POLICY FLUX_DEFAULT_OVERFLOW_POLICY
+#endif // FLUX_ERROR_ON_OVERFLOW
+
+// Default int_t is ptrdiff_t
+#define FLUX_DEFAULT_INT_TYPE std::ptrdiff_t
+
+// Select which int type to use
+#ifndef FLUX_INT_TYPE
+#define FLUX_INT_TYPE FLUX_DEFAULT_INT_TYPE
+#endif
+
+namespace flux {
+
+enum class error_policy {
+    terminate = FLUX_ERROR_POLICY_TERMINATE,
+    unwind = FLUX_ERROR_POLICY_UNWIND
+};
+
+enum class overflow_policy {
+    ignore = FLUX_OVERFLOW_POLICY_IGNORE,
+    wrap = FLUX_OVERFLOW_POLICY_WRAP,
+    error = FLUX_OVERFLOW_POLICY_ERROR
+};
+
+namespace config {
+
+using int_type = FLUX_INT_TYPE;
+static_assert(std::signed_integral<int_type> && (sizeof(int_type) >= sizeof(std::ptrdiff_t)),
+              "Custom FLUX_INT_TYPE must be a signed integer type at least as large as ptrdiff_t");
+
+inline constexpr error_policy on_error = static_cast<error_policy>(FLUX_ERROR_POLICY);
+
+inline constexpr overflow_policy on_overflow = static_cast<overflow_policy>(FLUX_OVERFLOW_POLICY);
+
+inline constexpr bool print_error_on_terminate = FLUX_PRINT_ERROR_ON_TERMINATE;
+
+inline constexpr bool enable_debug_asserts = FLUX_ENABLE_DEBUG_ASSERTS;
+
+} // namespace config
+
+} // namespace flux
+
+#endif
+
+
+#include <cstdio>
+#include <exception>
+#include <source_location>
+#include <stdexcept>
+#include <type_traits>
+
+namespace flux {
+
+struct unrecoverable_error : std::logic_error {
+    explicit unrecoverable_error(char const* msg) : std::logic_error(msg) {}
+};
+
+namespace detail {
+
+struct runtime_error_fn {
+    [[noreturn]]
+    inline void operator()(char const* msg,
+                           std::source_location loc = std::source_location::current()) const
+    {
+        if constexpr (config::on_error == error_policy::unwind) {
+            char buf[1024];
+            std::snprintf(buf, 1024, "%s:%u: Fatal error: %s",
+                          loc.file_name(), loc.line(), msg);
+            throw unrecoverable_error(buf);
+        } else {
+            if constexpr (config::print_error_on_terminate) {
+                std::fprintf(stderr, "%s:%u: Fatal error: %s\n",
+                             loc.file_name(), loc.line(), msg);
+            }
+            std::terminate();
+        }
+    }
+};
+
+}
+
+inline constexpr auto runtime_error = detail::runtime_error_fn{};
+
+namespace detail {
+
+struct assert_fn {
+    constexpr void operator()(bool cond, char const* msg,
+                              std::source_location loc = std::source_location::current()) const
+    {
+        if (cond) [[likely]] {
+            return;
+        } else [[unlikely]] {
+            runtime_error(msg, std::move(loc));
+        }
+    }
+};
+
+struct bounds_check_fn {
+    constexpr void operator()(bool cond, std::source_location loc = std::source_location::current()) const
+    {
+        if (!std::is_constant_evaluated()) {
+            assert_fn{}(cond, "out of bounds sequence access", std::move(loc));
+        }
+    }
+};
+
+} // namespace detail
+
+inline constexpr auto assert_ = detail::assert_fn{};
+inline constexpr auto bounds_check = detail::bounds_check_fn{};
+
+#define FLUX_ASSERT(cond) (::flux::assert_(cond, "assertion '" #cond "' failed"))
+
+#define FLUX_DEBUG_ASSERT(cond) (::flux::assert_(!::flux::config::enable_debug_asserts || (cond), "assertion '" #cond "' failed"));
+
+} // namespace flux
+
+#endif // FLUX_CORE_ASSERT_HPP_INCLUDED
+
+
+#include <concepts>
+#include <cstdio>
+#include <exception>
+#include <source_location>
+#include <stdexcept>
+#include <type_traits>
+
+
+// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_CORE_NUMERIC_HPP_INCLUDED
+#define FLUX_CORE_NUMERIC_HPP_INCLUDED
+
+
+
+#include <limits>
+
+namespace flux::num {
+
+inline constexpr auto wrapping_add = []<std::signed_integral T>(T lhs, T rhs) -> T
+{
+    using U = std::make_unsigned_t<T>;
+    return static_cast<T>(static_cast<U>(lhs) + static_cast<U>(rhs));
+};
+
+inline constexpr auto wrapping_sub = []<std::signed_integral T>(T lhs, T rhs) -> T
+{
+    using U = std::make_unsigned_t<T>;
+    return static_cast<T>(static_cast<U>(lhs) - static_cast<U>(rhs));
+};
+
+inline constexpr auto wrapping_mul = []<std::signed_integral T>(T lhs, T rhs) -> T
+{
+    using U = std::make_unsigned_t<T>;
+    return static_cast<T>(static_cast<U>(lhs) * static_cast<U>(rhs));
+};
+
+namespace detail {
+
+#if defined(__has_builtin)
+#  if __has_builtin(__builtin_add_overflow) && \
+      __has_builtin(__builtin_sub_overflow) && \
+      __has_builtin(__builtin_mul_overflow)
+#    define FLUX_HAVE_BUILTIN_OVERFLOW_OPS 1
+#  endif
+#endif
+
+#ifdef FLUX_HAVE_BUILTIN_OVERFLOW_OPS
+    inline constexpr bool use_builtin_overflow_ops = true;
+#else
+    inline constexpr bool use_builtin_overflow_ops = false;
+#endif
+
+#undef FLUX_HAVE_BUILTIN_OVERFLOW_OPS
+
+}
+
+template <std::signed_integral T>
+struct overflow_result {
+    T value;
+    bool overflowed;
+};
+
+inline constexpr auto overflowing_add = []<std::signed_integral T>(T lhs, T rhs)
+    -> overflow_result<T>
+{
+    if constexpr (detail::use_builtin_overflow_ops) {
+        bool overflowed = __builtin_add_overflow(lhs, rhs, &lhs);
+        return {lhs, overflowed};
+    } else {
+        T value = wrapping_add(lhs, rhs);
+        bool overflowed = ((lhs < T{}) == (rhs < T{})) && ((lhs < T{}) != (value < T{}));
+        return {value, overflowed};
+    }
+};
+
+inline constexpr auto overflowing_sub = []<std::signed_integral T>(T lhs, T rhs)
+    -> overflow_result<T>
+{
+    if constexpr (detail::use_builtin_overflow_ops) {
+        bool overflowed = __builtin_sub_overflow(lhs, rhs, &lhs);
+        return {lhs, overflowed};
+    } else {
+        T value = wrapping_sub(lhs, rhs);
+        bool overflowed = (lhs >= T{} && rhs < T{} && value < T{}) ||
+                         (lhs < T{} && rhs > T{} && value > T{});
+        return {value, overflowed};
+    }
+};
+
+inline constexpr auto overflowing_mul = []<std::signed_integral T>(T lhs, T rhs)
+    -> overflow_result<T>
+{
+    if constexpr (detail::use_builtin_overflow_ops) {
+        bool overflowed = __builtin_mul_overflow(lhs, rhs, &lhs);
+        return {lhs, overflowed};
+    } else {
+        T value =  wrapping_mul(lhs, rhs);
+        return {value, lhs != 0 && value/lhs != rhs};
+    }
+};
+
+inline constexpr auto checked_add =
+    []<std::signed_integral T>(T lhs, T rhs,
+                               std::source_location loc = std::source_location::current())
+    -> T
+{
+    if (std::is_constant_evaluated()) {
+        return lhs + rhs;
+    } else {
+        if constexpr (config::on_overflow == overflow_policy::ignore) {
+            return lhs + rhs;
+        } else if constexpr (config::on_overflow == overflow_policy::wrap) {
+            return wrapping_add(lhs, rhs);
+        } else {
+            auto res = overflowing_add(lhs, rhs);
+            if (res.overflowed) {
+                runtime_error("signed overflow in addition", loc);
+            }
+            return res.value;
+        }
+    }
+};
+
+inline constexpr auto checked_sub =
+    []<std::signed_integral T>(T lhs, T rhs,
+                               std::source_location loc = std::source_location::current())
+    -> T
+{
+  if (std::is_constant_evaluated()) {
+      return lhs - rhs;
+  } else {
+      if constexpr (config::on_overflow == overflow_policy::ignore) {
+          return lhs - rhs;
+      } else if constexpr (config::on_overflow == overflow_policy::wrap) {
+          return wrapping_sub(lhs, rhs);
+      } else {
+          auto res = overflowing_sub(lhs, rhs);
+          if (res.overflowed) {
+              runtime_error("signed overflow in subtraction", loc);
+          }
+          return res.value;
+      }
+  }
+};
+
+inline constexpr auto checked_mul =
+    []<std::signed_integral T>(T lhs, T rhs,
+                               std::source_location loc = std::source_location::current())
+    -> T
+{
+  if (std::is_constant_evaluated()) {
+      return lhs * rhs;
+  } else {
+      if constexpr (config::on_overflow == overflow_policy::ignore) {
+          return lhs * rhs;
+      } else if constexpr (config::on_overflow == overflow_policy::wrap) {
+          return wrapping_mul(lhs, rhs);
+      } else {
+          auto res = overflowing_mul(lhs, rhs);
+          if (res.overflowed) {
+              runtime_error("signed overflow in multiplication", loc);
+          }
+          return res.value;
+      }
+  }
+};
+
+} // namespace flux::num
+
+#endif
+
 
 namespace flux {
 
@@ -82,14 +445,14 @@ struct copy_fn {
     }
 };
 
-}
+} // namespace detail
 
 inline constexpr auto copy = detail::copy_fn{};
 
 namespace detail {
 
 template <std::integral To>
-struct narrow_cast_fn {
+struct checked_cast_fn {
     template <std::integral From>
     [[nodiscard]]
     constexpr auto operator()(From from) const -> To
@@ -98,19 +461,32 @@ struct narrow_cast_fn {
             return To{from}; // not a narrowing conversion
         } else {
             To to = static_cast<To>(from);
-
-            assert(static_cast<From>(to) == from &&
-                   ((std::is_signed_v<From> == std::is_signed_v<To>) || ((to < To{}) == (from < From{}))));
-
+            FLUX_DEBUG_ASSERT(static_cast<From>(to) == from);
+            if constexpr (std::is_signed_v<From> != std::is_signed_v<To>) {
+                FLUX_DEBUG_ASSERT((to < To{}) == (from < From{}));
+            }
             return to;
         }
     }
 };
 
-}
+} // namespace detail
 
 template <std::integral To>
-inline constexpr auto narrow_cast = detail::narrow_cast_fn<To>{};
+inline constexpr auto checked_cast = detail::checked_cast_fn<To>{};
+
+} // namespace flux
+
+#endif
+
+
+#include <compare>
+#include <concepts>
+#include <cstdint>
+#include <initializer_list>
+#include <type_traits>
+
+namespace flux {
 
 /*
  * Cursor concepts
@@ -186,13 +562,9 @@ struct rvalue_element_type<T> {
 template <typename Seq>
 using value_t = typename detail::value_type<Seq>::type;
 
-#ifdef FLUX_DISTANCE_TYPE
-using distance_t = FLUX_DISTANCE_TYPE;
-static_assert(std::signed_integral<distance_t>,
-              "Custom FLUX_DISTANCE_TYPE must be a signed integer type");
-#else
-using distance_t = std::ptrdiff_t;
-#endif // FLUX_DISTANCE_TYPE
+using distance_t = flux::config::int_type;
+
+using index_t = flux::config::int_type;
 
 template <typename Seq>
 using rvalue_element_t = typename detail::rvalue_element_type<Seq>::type;
@@ -225,7 +597,7 @@ concept sequence_concept =
         { Traits::read_at(seq, cur) } -> can_reference;
     } &&
     requires (Seq& seq, cursor_t<Seq>& cur) {
-        { Traits::inc(seq, cur) } -> std::same_as<cursor_t<Seq>&>;
+        { Traits::inc(seq, cur) };
     } &&
     std::common_reference_with<element_t<Seq>&&, rvalue_element_t<Seq>&&>;
     // FIXME FIXME: Need C++23 tuple changes, otherwise zip breaks these
@@ -260,7 +632,7 @@ template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Se
 concept bidirectional_sequence_concept =
     multipass_sequence<Seq> &&
     requires (Seq& seq, cursor_t<Seq>& cur) {
-        { Traits::dec(seq, cur) } -> std::same_as<cursor_t<Seq>&>;
+        { Traits::dec(seq, cur) };
     };
 
 } // namespace detail
@@ -274,7 +646,7 @@ template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Se
 concept random_access_sequence_concept =
     bidirectional_sequence<Seq> && ordered_cursor<cursor_t<Seq>> &&
     requires (Seq& seq, cursor_t<Seq>& cur, distance_t offset) {
-        { Traits::inc(seq, cur, offset) } -> std::same_as<cursor_t<Seq>&>;
+        { Traits::inc(seq, cur, offset) };
     } &&
     requires (Seq& seq, cursor_t<Seq> const& cur) {
         { Traits::distance(seq, cur, cur) } -> std::convertible_to<distance_t>;
@@ -449,7 +821,463 @@ struct sequence_traits<T> : T::flux_sequence_traits {};
 
 
 
-#include <stdexcept>
+// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_CORE_OPTIONAL_HPP_INCLUDED
+#define FLUX_CORE_OPTIONAL_HPP_INCLUDED
+
+
+
+
+#include <optional>
+
+namespace flux {
+
+using nullopt_t = std::nullopt_t;
+inline constexpr nullopt_t const& nullopt = std::nullopt;
+
+namespace detail {
+
+template <typename T>
+concept can_optional =
+    (std::is_object_v<T> || std::is_lvalue_reference_v<T>) &&
+    !decays_to<T, nullopt_t> &&
+    !decays_to<T, std::in_place_t>;
+
+}
+
+template <typename T>
+class optional;
+
+template <detail::can_optional T>
+    requires std::is_object_v<T>
+class optional<T> {
+
+    struct dummy {};
+
+    union {
+        dummy dummy_{};
+        T item_;
+    };
+
+    bool engaged_ = false;
+
+    template <typename... Args>
+    constexpr auto construct(Args&&... args) {
+        std::construct_at(std::addressof(item_), FLUX_FWD(args)...);
+        engaged_ = true;
+    }
+
+public:
+
+    constexpr optional() noexcept {}
+
+    constexpr explicit(false) optional(nullopt_t) noexcept {}
+
+    template <decays_to<T> U = T>
+    constexpr explicit optional(U&& item)
+        noexcept(std::is_nothrow_constructible_v<T, U>)
+        : item_(FLUX_FWD(item)),
+          engaged_(true)
+    {}
+
+    template <typename... Args>
+        requires std::constructible_from<T, Args...>
+    constexpr explicit optional(std::in_place_t, Args&&... args)
+        noexcept(std::is_nothrow_constructible_v<T, Args...>)
+        : item_(FLUX_FWD(args)...),
+          engaged_(true)
+    {}
+
+    /*
+     * Destructors
+     */
+    constexpr ~optional()
+    {
+        if (engaged_) {
+            item_.T::~T();
+        }
+    }
+
+    ~optional() requires std::is_trivially_destructible_v<T> = default;
+
+    /*
+     * Copy constructors
+     */
+    constexpr optional(optional const& other)
+        noexcept(std::is_nothrow_copy_constructible_v<T>)
+        requires std::copy_constructible<T>
+    {
+        if (other.engaged_) {
+            construct(other.item_);
+        }
+    }
+
+    optional(optional const&)
+        requires std::copy_constructible<T> &&
+                 std::is_trivially_constructible_v<T>
+        = default;
+
+    /*
+     * Copy-assignment operators
+     */
+    constexpr optional& operator=(optional const& other)
+        noexcept(std::is_nothrow_copy_assignable_v<T> &&
+                 std::is_nothrow_copy_constructible_v<T>)
+        requires std::copyable<T>
+    {
+        if (engaged_) {
+            if (other.engaged_) {
+                item_ = other.item_;
+            } else {
+                reset();
+            }
+        } else {
+            if (other.engaged_) {
+                construct(other.item_);
+            }
+        }
+        return *this;
+    }
+
+    optional& operator=(optional const&)
+        requires std::copyable<T> && std::is_trivially_copy_assignable_v<T>
+        = default;
+
+    /*
+     * Move constructors
+     */
+    constexpr optional(optional&& other)
+        noexcept(std::is_nothrow_move_constructible_v<T>)
+        requires std::move_constructible<T>
+    {
+        if (other.engaged_) {
+            construct(std::move(other).item_);
+        }
+    }
+
+    optional(optional&&)
+        requires std::move_constructible<T> &&
+                 std::is_trivially_move_constructible_v<T>
+        = default;
+
+    /*
+     * Move-assignment operators
+     */
+    constexpr optional& operator=(optional&& other)
+        noexcept(std::is_nothrow_move_constructible_v<T> &&
+                 std::is_nothrow_move_assignable_v<T>)
+        requires std::movable<T>
+    {
+        if (engaged_) {
+            if (other.engaged_) {
+                item_ = std::move(other.item_);
+            } else {
+                reset();
+            }
+        } else {
+            if (other.engaged_) {
+                construct(std::move(other).item_);
+            }
+        }
+        return *this;
+    }
+
+    optional& operator=(optional&&)
+        requires std::movable<T> &&
+                 std::is_trivially_move_assignable_v<T>
+        = default;
+
+    /*
+     * Observers
+     */
+    [[nodiscard]]
+    constexpr auto has_value() const -> bool { return engaged_; }
+
+    constexpr explicit operator bool() const { return engaged_; }
+
+    template <decays_to<optional> Opt>
+    [[nodiscard]]
+    friend constexpr auto operator*(Opt&& self) -> decltype(auto)
+    {
+        if (!std::is_constant_evaluated()) {
+            FLUX_ASSERT(self.has_value());
+        }
+        return (FLUX_FWD(self).item_);
+    }
+
+    constexpr auto operator->() -> T*
+    {
+        if (!std::is_constant_evaluated()) {
+            FLUX_ASSERT(this->has_value());
+        }
+        return std::addressof(item_);
+    }
+
+    constexpr auto operator->() const -> T const*
+    {
+        if (!std::is_constant_evaluated()) {
+            FLUX_ASSERT(this->has_value());
+        }
+        return std::addressof(item_);
+    }
+
+    [[nodiscard]] constexpr auto value() & -> T& { return **this; }
+    [[nodiscard]] constexpr auto value() const& -> T const& { return **this; }
+    [[nodiscard]] constexpr auto value() && -> T&& { return *std::move(*this); }
+    [[nodiscard]] constexpr auto value() const&& -> T const&& { return *std::move(*this); }
+
+    [[nodiscard]] constexpr auto value_unchecked() & noexcept -> T& { return item_; }
+    [[nodiscard]] constexpr auto value_unchecked() const& noexcept -> T const& { return item_; }
+    [[nodiscard]] constexpr auto value_unchecked() && noexcept -> T&& { return std::move(item_); }
+    [[nodiscard]] constexpr auto value_unchecked() const&& noexcept -> T const&& { return std::move(item_); }
+
+    [[nodiscard]] constexpr auto value_or(auto&& alt) &
+        -> decltype(has_value() ? value_unchecked() : FLUX_FWD(alt))
+    {
+        return has_value() ? value_unchecked() : FLUX_FWD(alt);
+    }
+
+    [[nodiscard]] constexpr auto value_or(auto&& alt) const&
+        -> decltype(has_value() ? value_unchecked() : FLUX_FWD(alt))
+    {
+        return has_value() ? value_unchecked() : FLUX_FWD(alt);
+    }
+
+    [[nodiscard]] constexpr auto value_or(auto&& alt) &&
+        -> decltype(has_value() ? std::move(*this).value_unchecked() : FLUX_FWD(alt))
+    {
+        return has_value() ? std::move(*this).value_unchecked() : FLUX_FWD(alt);
+    }
+
+    [[nodiscard]] constexpr auto value_or(auto&& alt) const&&
+        -> decltype(has_value() ? std::move(*this).value_unchecked() : FLUX_FWD(alt))
+    {
+        return has_value() ? std::move(*this).value_unchecked() : FLUX_FWD(alt);
+    }
+
+private:
+    template <typename Cmp>
+    static constexpr auto do_compare(optional const& lhs, optional const& rhs, Cmp cmp)
+        -> std::invoke_result_t<Cmp&, T const&, T const&>
+    {
+        if (lhs.has_value() && rhs.has_value()) {
+            return cmp(lhs.value_unchecked(), rhs.value_unchecked());
+        } else {
+            return cmp(lhs.has_value(), rhs.has_value());
+        }
+    }
+
+public:
+    [[nodiscard]]
+    friend constexpr auto operator==(optional const& lhs, optional const& rhs) -> bool
+        requires std::equality_comparable<T>
+    {
+        return do_compare(lhs, rhs, std::equal_to{});
+    }
+
+    [[nodiscard]]
+    friend constexpr auto operator<=>(optional const& lhs, optional const& rhs)
+        requires std::totally_ordered<T> && std::three_way_comparable<T>
+    {
+        return do_compare(lhs, rhs, std::compare_three_way{});
+    }
+
+    [[nodiscard]]
+    friend constexpr auto operator<=>(optional const& lhs, optional const& rhs)
+        requires std::totally_ordered<T>
+    {
+        return do_compare(lhs, rhs, std::compare_partial_order_fallback);
+    }
+
+    [[nodiscard]]
+    friend constexpr auto operator==(optional const& o, nullopt_t) -> bool
+    {
+        return !o.has_value();
+    }
+
+    [[nodiscard]]
+    friend constexpr auto operator<=>(optional const& o, nullopt_t)
+        -> std::strong_ordering
+    {
+        return o.has_value() ? std::strong_ordering::greater
+                             : std::strong_ordering::equivalent;
+    }
+
+    /*
+     * Modifiers
+     */
+
+    constexpr auto reset() -> void
+    {
+        if (engaged_) {
+            item_.T::~T();
+            engaged_ = false;
+        }
+    }
+
+    /*
+     * Monadic operations
+     */
+    template <typename F>
+        requires std::invocable<F, T&> &&
+                 detail::can_optional<std::invoke_result_t<F, T&>>
+    [[nodiscard]]
+    constexpr auto map(F&& func) & -> optional<std::invoke_result_t<F, T&>>
+    {
+        using R = optional<std::invoke_result_t<F, T&>>;
+        if (engaged_) {
+            return R(std::invoke(FLUX_FWD(func), value_unchecked()));
+        } else {
+            return nullopt;
+        }
+    }
+
+    template <typename F>
+        requires std::invocable<F, T const&> &&
+                 detail::can_optional<std::invoke_result_t<F, T const&>>
+    [[nodiscard]]
+    constexpr auto map(F&& func) const& -> optional<std::invoke_result_t<F, T const&>>
+    {
+        using R = optional<std::invoke_result_t<F, T const&>>;
+        if (engaged_) {
+            return R(std::invoke(FLUX_FWD(func), value_unchecked()));
+        } else {
+            return nullopt;
+        }
+    }
+
+    template <typename F>
+        requires std::invocable<F, T&&> &&
+                 detail::can_optional<std::invoke_result_t<F, T&&>>
+    [[nodiscard]]
+    constexpr auto map(F&& func) && -> optional<std::invoke_result_t<F, T&&>>
+    {
+        using R = optional<std::invoke_result_t<F, T&>>;
+        if (engaged_) {
+            return R(std::invoke(FLUX_FWD(func), std::move(*this).value_unchecked()));
+        } else {
+            return nullopt;
+        }
+    }
+
+    template <typename F>
+        requires std::invocable<F, T const&&> &&
+                 detail::can_optional<std::invoke_result_t<F, T const&&>>
+    [[nodiscard]]
+    constexpr auto map(F&& func) const&& -> optional<std::invoke_result_t<F, T const&&>>
+    {
+        using R = optional<std::invoke_result_t<F, T const&&>>;
+        if (engaged_) {
+            return R(std::invoke(FLUX_FWD(func), std::move(*this).value_unchecked()));
+        } else {
+            return nullopt;
+        }
+    }
+};
+
+template <typename T>
+optional(T) -> optional<T>;
+
+template <detail::can_optional T>
+class optional<T&> {
+    T* ptr_ = nullptr;
+
+    static void test_fn(T&);
+
+public:
+    optional() = default;
+
+    constexpr explicit(false) optional(nullopt_t) noexcept {};
+
+    template <typename U = T>
+        requires requires(U& u) { test_fn(u); }
+    constexpr explicit optional(U& item) noexcept
+        : ptr_(std::addressof(item))
+    {}
+
+    /*
+     * Observers
+     */
+    [[nodiscard]]
+    constexpr auto has_value() const noexcept { return ptr_ != nullptr; }
+
+    [[nodiscard]]
+    constexpr explicit operator bool() const noexcept { return ptr_ != nullptr; }
+
+    [[nodiscard]]
+    constexpr auto operator*() const -> T&
+    {
+        if (!std::is_constant_evaluated()) {
+            FLUX_ASSERT(ptr_ != nullptr);
+        }
+        return *ptr_;
+    }
+
+    constexpr auto operator->() const -> T*
+    {
+        if (!std::is_constant_evaluated()) {
+            FLUX_ASSERT(ptr_ != nullptr);
+        }
+        return ptr_;
+    }
+
+    [[nodiscard]]
+    constexpr auto value() const -> T& { return **this; }
+
+    [[nodiscard]]
+    constexpr auto value_unchecked() const noexcept -> T& { return *ptr_; }
+
+    [[nodiscard]]
+    constexpr auto value_or(auto&& alt) const
+        -> decltype(has_value() ? value_unchecked() : FLUX_FWD(alt))
+    {
+        return has_value() ? value_unchecked() : FLUX_FWD(alt);
+    }
+
+    [[nodiscard]]
+    friend constexpr auto operator==(optional const& o, nullopt_t) -> bool
+    {
+        return !o.has_value();
+    }
+
+    [[nodiscard]]
+    friend constexpr auto operator<=>(optional const& o, nullopt_t)
+        -> std::strong_ordering
+    {
+        return o.has_value() ? std::strong_ordering::greater
+                             : std::strong_ordering::equivalent;
+    }
+
+    /*
+     * Modifiers
+     */
+    constexpr auto reset() -> void { ptr_ = nullptr; }
+
+    /*
+     * Monadic operations
+     */
+    template <typename F>
+        requires std::invocable<F, T&> &&
+                 detail::can_optional<std::invoke_result_t<F, T&>>
+    [[nodiscard]]
+    constexpr auto map(F&& func) const -> optional<std::invoke_result_t<F, T&>>
+    {
+        using R = optional<std::invoke_result_t<F, T&>>;
+        if (ptr_) {
+            return R(std::invoke(FLUX_FWD(func), *ptr_));
+        } else {
+            return nullopt;
+        }
+    }
+};
+
+} // namespace flux
+
+#endif
+
 
 namespace flux {
 
@@ -475,7 +1303,7 @@ struct is_last_fn {
     }
 };
 
-struct unchecked_read_at_fn {
+struct read_at_fn {
     template <sequence Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq& seq, cursor_t<Seq> const& cur) const
@@ -485,29 +1313,31 @@ struct unchecked_read_at_fn {
     }
 };
 
-struct unchecked_inc_fn {
+struct inc_fn {
     template <sequence Seq>
     constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur) const
         noexcept(noexcept(traits_t<Seq>::inc(seq, cur))) -> cursor_t<Seq>&
     {
-        return traits_t<Seq>::inc(seq, cur);
+        (void) traits_t<Seq>::inc(seq, cur);
+        return cur;
     }
 
     template <random_access_sequence Seq>
-    constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur,
-                              distance_t offset) const
+    constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur, distance_t offset) const
         noexcept(noexcept(traits_t<Seq>::inc(seq, cur, offset))) -> cursor_t<Seq>&
     {
-        return traits_t<Seq>::inc(seq, cur, offset);
+        (void) traits_t<Seq>::inc(seq, cur, offset);
+        return cur;
     }
 };
 
-struct unchecked_dec_fn {
+struct dec_fn {
     template <bidirectional_sequence Seq>
     constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur) const
         noexcept(noexcept(traits_t<Seq>::dec(seq, cur))) -> cursor_t<Seq>&
     {
-        return traits_t<Seq>::dec(seq, cur);
+        (void) traits_t<Seq>::dec(seq, cur);
+        return cur;
     }
 };
 
@@ -524,7 +1354,7 @@ struct distance_fn {
             distance_t n = 0;
             auto from_ = from;
             while (from_ != to) {
-                unchecked_inc_fn{}(seq, from_);
+                inc_fn{}(seq, from_);
                 ++n;
             }
             return n;
@@ -571,112 +1401,78 @@ struct usize_fn {
     [[nodiscard]]
     constexpr auto operator()(Seq& seq) const -> std::size_t
     {
-        return narrow_cast<std::size_t>(size_fn{}(seq));
+        return checked_cast<std::size_t>(size_fn{}(seq));
     }
 };
 
-struct unchecked_move_at_fn {
+template <typename Seq>
+concept has_custom_move_at =
+    sequence<Seq> &&
+    requires (Seq& seq, cursor_t<Seq> const& cur) {
+        { traits_t<Seq>::move_at(seq, cur) };
+    };
+
+struct move_at_fn {
     template <sequence Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq& seq, cursor_t<Seq> const& cur) const
         -> rvalue_element_t<Seq>
     {
-        if constexpr (requires { traits_t<Seq>::move_at(seq, cur); }) {
+        if constexpr (has_custom_move_at<Seq>) {
             return traits_t<Seq>::move_at(seq, cur);
         } else {
             if constexpr (std::is_lvalue_reference_v<element_t<Seq>>) {
-                return std::move(unchecked_read_at_fn{}(seq, cur));
+                return std::move(read_at_fn{}(seq, cur));
             } else {
-                return unchecked_read_at_fn{}(seq, cur);
+                return read_at_fn{}(seq, cur);
             }
         }
     }
 };
 
-struct check_bounds_fn {
-    template <typename Seq>
-    [[nodiscard]]
-    constexpr bool operator()(Seq& seq, cursor_t<Seq> const& cur) const
-    {
-        if constexpr (random_access_sequence<Seq>) {
-            distance_t dist = distance_fn{}(seq, first_fn{}(seq), cur);
-            if (dist < distance_t{0}) {
-                return false;
-            }
-            if constexpr (sized_sequence<Seq>) {
-                return dist < size_fn{}(seq);
-            }
-        }
-        return !is_last_fn{}(seq, cur);
-    }
-};
+template <typename Seq>
+concept has_custom_read_at_unchecked =
+    sequence<Seq> &&
+    requires (Seq& seq, cursor_t<Seq> const& cur) {
+        { traits_t<Seq>::read_at_unchecked(seq, cur) } -> std::same_as<element_t<Seq>>;
+    };
 
-inline constexpr auto check_bounds = check_bounds_fn{};
-
-struct checked_read_at_fn {
+struct read_at_unchecked_fn {
     template <sequence Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq& seq, cursor_t<Seq> const& cur) const
-        -> decltype(unchecked_read_at_fn{}(seq, cur))
+        -> element_t<Seq>
     {
-        if (!check_bounds(seq, cur)) {
-            throw std::out_of_range("Read via an out-of-bounds cursor");
+        if constexpr (has_custom_read_at_unchecked<Seq>) {
+            return traits_t<Seq>::read_at_unchecked(seq, cur);
+        } else {
+            return read_at_fn{}(seq, cur);
         }
-        return unchecked_read_at_fn{}(seq, cur);
     }
 };
 
-struct checked_move_at_fn {
+template <typename Seq>
+concept has_custom_move_at_unchecked =
+    sequence<Seq> &&
+    requires (Seq& seq, cursor_t<Seq> const& cur) {
+        { traits_t<Seq>::read_at_unchecked(seq, cur) } -> std::same_as<rvalue_element_t<Seq>>;
+};
+
+struct move_at_unchecked_fn {
     template <sequence Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq& seq, cursor_t<Seq> const& cur) const
-            -> decltype(unchecked_move_at_fn{}(seq, cur))
+        -> rvalue_element_type<Seq>
     {
-        if (!check_bounds(seq, cur)) {
-            throw std::out_of_range("Read via an out-of-bounds cursor");
+        if constexpr (has_custom_move_at_unchecked<Seq>) {
+            return traits_t<Seq>::move_at_unchecked(seq, cur);
+        } else if constexpr (has_custom_move_at<Seq>) {
+            return move_at_fn{}(seq, cur);
+        } else if constexpr (std::is_lvalue_reference_v<element_t<Seq>>){
+            return std::move(read_at_unchecked_fn{}(seq, cur));
+        } else {
+            return read_at_unchecked_fn{}(seq, cur);
         }
-        return unchecked_move_at_fn{}(seq, cur);
-    }
-};
-
-struct checked_inc_fn {
-    template <sequence Seq>
-    constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur) const
-        -> cursor_t<Seq>&
-    {
-        if (!check_bounds(seq, cur)) {
-            throw std::out_of_range("Increment would result in an out-of-bounds cursor");
-        }
-        return unchecked_inc_fn{}(seq, cur);
-    }
-
-    template <random_access_sequence Seq>
-    constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur, distance_t offset) const
-        -> cursor_t<Seq>&
-    {
-        const auto dist = distance_fn{}(seq, first_fn{}(seq), cur);
-        if (dist + offset < 0) {
-            throw std::out_of_range("Increment with offset would result in an out-of-bounds cursor");
-        }
-        if constexpr (sized_sequence<Seq>) {
-            if (dist + offset > size_fn{}(seq)) {
-                throw std::out_of_range("Increment with offset would result in an out-of-bounds cursor");
-            }
-        }
-
-        return unchecked_inc_fn{}(seq, cur, offset);
-    }
-};
-
-struct checked_dec_fn {
-    template <bidirectional_sequence Seq>
-    constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur) const
-        -> cursor_t<Seq>&
-    {
-        if (cur == first_fn{}(seq)) {
-            throw std::out_of_range("Decrement would result in a before-the-start cursor");
-        }
-        return unchecked_dec_fn{}(seq, cur);
     }
 };
 
@@ -684,31 +1480,17 @@ struct checked_dec_fn {
 
 inline constexpr auto first = detail::first_fn{};
 inline constexpr auto is_last = detail::is_last_fn{};
-inline constexpr auto unchecked_read_at = detail::unchecked_read_at_fn{};
-inline constexpr auto unchecked_move_at = detail::unchecked_move_at_fn{};
-inline constexpr auto unchecked_inc = detail::unchecked_inc_fn{};
-inline constexpr auto unchecked_dec = detail::unchecked_dec_fn{};
+inline constexpr auto read_at = detail::read_at_fn{};
+inline constexpr auto move_at = detail::move_at_fn{};
+inline constexpr auto read_at_unchecked = detail::read_at_unchecked_fn{};
+inline constexpr auto move_at_unchecked = detail::move_at_unchecked_fn{};
+inline constexpr auto inc = detail::inc_fn{};
+inline constexpr auto dec = detail::dec_fn{};
 inline constexpr auto distance = detail::distance_fn{};
 inline constexpr auto data = detail::data_fn{};
 inline constexpr auto last = detail::last_fn{};
 inline constexpr auto size = detail::size_fn{};
 inline constexpr auto usize = detail::usize_fn{};
-inline constexpr auto checked_read_at = detail::checked_read_at_fn{};
-inline constexpr auto checked_move_at = detail::checked_move_at_fn{};
-inline constexpr auto checked_inc = detail::checked_inc_fn{};
-inline constexpr auto checked_dec = detail::checked_dec_fn{};
-
-#ifdef FLUX_ENABLE_BOUNDS_CHECKING
-inline constexpr auto read_at = checked_read_at;
-inline constexpr auto move_at = checked_move_at;
-inline constexpr auto inc = checked_inc;
-inline constexpr auto dec = checked_dec;
-#else
-inline constexpr auto read_at = unchecked_read_at;
-inline constexpr auto move_at = unchecked_move_at;
-inline constexpr auto inc = unchecked_inc;
-inline constexpr auto dec = unchecked_dec;
-#endif
 
 namespace detail {
 
@@ -812,6 +1594,35 @@ struct swap_at_fn {
     }
 };
 
+struct front_fn {
+    template <multipass_sequence Seq>
+    [[nodiscard]]
+    constexpr auto operator()(Seq& seq) const -> optional<element_t<Seq>>
+    {
+        auto cur = first(seq);
+        if (!is_last(seq, cur)) {
+            return optional<element_t<Seq>>(read_at(seq, cur));
+        } else {
+            return nullopt;
+        }
+    }
+};
+
+struct back_fn {
+    template <bidirectional_sequence Seq>
+        requires bounded_sequence<Seq>
+    [[nodiscard]]
+    constexpr auto operator()(Seq& seq) const -> optional<element_t<Seq>>
+    {
+        auto cur = last(seq);
+        if (cur != first(seq)) {
+            return optional<element_t<Seq>>(read_at(seq, dec(seq, cur)));
+        } else {
+            return nullopt;
+        }
+    }
+};
+
 } // namespace detail
 
 
@@ -820,86 +1631,82 @@ inline constexpr auto prev = detail::prev_fn{};
 inline constexpr auto is_empty = detail::is_empty_fn{};
 inline constexpr auto swap_with = detail::swap_with_fn{};
 inline constexpr auto swap_at = detail::swap_at_fn{};
+inline constexpr auto front = detail::front_fn{};
+inline constexpr auto back = detail::back_fn{};
 
 } // namespace flux
 
 #endif
 
 
-#include <initializer_list>
 #include <functional>
+#include <ranges>
 
 namespace flux {
 
 /*
  * Default implementation for C arrays of known bound
  */
-template <typename T, std::size_t N>
+template <typename T, index_t N>
 struct sequence_traits<T[N]> {
 
-    static constexpr auto first(auto const&) -> std::size_t { return 0; }
+    static constexpr auto first(auto const&) -> index_t { return index_t{0}; }
 
-    static constexpr bool is_last(auto const&, std::size_t idx) { return idx == N; }
+    static constexpr bool is_last(auto const&, index_t idx) { return idx >= N; }
 
-    static constexpr auto read_at(auto& self, std::size_t idx) -> decltype(auto) { return self[idx]; }
-
-    static constexpr auto& inc(auto const&, std::size_t& idx) { return ++idx; }
-
-    static constexpr auto last(auto const&) { return N; }
-
-    static constexpr auto& dec(auto const&, std::size_t& idx) { return --idx; }
-
-    static constexpr auto& inc(auto const&, std::size_t& idx, distance_t offset)
+    static constexpr auto read_at(auto& self, index_t idx) -> decltype(auto)
     {
-        return idx += narrow_cast<std::ptrdiff_t>(offset);
+        bounds_check(idx >= 0);
+        bounds_check(idx < N);
+        return self[idx];
     }
 
-    static constexpr auto distance(auto const&, std::size_t from, std::size_t to)
+    static constexpr auto read_at_unchecked(auto& self, index_t idx) -> decltype(auto)
     {
-        return narrow_cast<distance_t>(to) - narrow_cast<distance_t>(from);
+        return self[idx];
     }
 
-    static constexpr auto data(auto& self) { return self; }
-
-    static constexpr auto size(auto const&) { return N; }
-};
-
-/*
- * Default implementation for std::initializer_list
- */
-template <typename T>
-struct sequence_traits<std::initializer_list<T>> {
-
-    using ilist_t = std::initializer_list<T>;
-
-    static constexpr auto first(ilist_t self) -> T const* { return self.begin(); }
-
-    static constexpr auto is_last(ilist_t self, T const* ptr) -> bool
+    static constexpr auto inc(auto const&, index_t& idx)
     {
-        return ptr == self.end();
+        FLUX_DEBUG_ASSERT(idx < N);
+        idx = num::checked_add(idx, distance_t{1});
     }
 
-    static constexpr auto read_at(ilist_t, T const* ptr) -> T const& { return *ptr; }
+    static constexpr auto last(auto const&) -> index_t { return N; }
 
-    static constexpr auto inc(ilist_t, T const*& ptr) -> T const*& { return ++ptr; }
-
-    static constexpr auto last(ilist_t self) -> T const* { return self.end(); }
-
-    static constexpr auto dec(ilist_t, T const*& ptr) -> T const*& { return --ptr; }
-
-    static constexpr auto inc(ilist_t, T const*& ptr, std::ptrdiff_t offset) -> T const*&
+    static constexpr auto dec(auto const&, index_t& idx)
     {
-        return ptr += offset;
+        FLUX_DEBUG_ASSERT(idx > 0);
+        idx = num::checked_sub(idx, distance_t{1});
     }
 
-    static constexpr auto distance(ilist_t, T const* from, T const* to) -> std::ptrdiff_t
+    static constexpr auto inc(auto const&, index_t& idx, distance_t offset)
     {
-        return to - from;
+        FLUX_DEBUG_ASSERT(num::checked_add(idx, offset) <= N);
+        FLUX_DEBUG_ASSERT(num::checked_add(idx, offset) >= 0);
+        idx = num::checked_add(idx, offset);
     }
 
-    static constexpr auto data(ilist_t self) -> T const* { return std::data(self); }
+    static constexpr auto distance(auto const&, index_t from, index_t to) -> distance_t
+    {
+        return num::checked_sub(to, from);
+    }
 
-    static constexpr auto size(ilist_t self) { return self.size(); }
+    static constexpr auto data(auto& self) -> auto* { return self; }
+
+    static constexpr auto size(auto const&) -> distance_t { return N; }
+
+    static constexpr auto for_each_while(auto& self, auto&& pred) -> index_t
+    {
+        index_t idx = 0;
+        while (idx < N) {
+            if (!std::invoke(pred, self[idx])) {
+                break;
+            }
+            ++idx;
+        }
+        return idx;
+    }
 };
 
 /*
@@ -928,6 +1735,12 @@ struct sequence_traits<std::reference_wrapper<Seq>> {
         -> decltype(auto)
     {
         return flux::read_at(self.get(), cur);
+    }
+
+    static constexpr auto read_at_unchecked(self_t self, cursor_t<Seq> const& cur)
+        -> decltype(auto)
+    {
+        return flux::read_at_unchecked(self.get(), cur);
     }
 
     static constexpr auto inc(self_t self, cursor_t<Seq>& cur)
@@ -980,6 +1793,88 @@ struct sequence_traits<std::reference_wrapper<Seq>> {
         -> rvalue_element_t<Seq>
     {
         return flux::move_at(self.get(), cur);
+    }
+};
+
+// Default implementation for contiguous, sized ranges
+template <typename R>
+    requires (!detail::derived_from_inline_sequence_base<R> &&
+             std::ranges::contiguous_range<R> &&
+             std::ranges::sized_range<R> &&
+             std::ranges::contiguous_range<R const> &&
+             std::ranges::sized_range<R const>)
+struct sequence_traits<R> {
+
+    using value_type = std::ranges::range_value_t<R>;
+
+    static constexpr auto first(auto&) -> index_t { return index_t{0}; }
+
+    static constexpr auto is_last(auto& self, index_t idx)
+    {
+        return idx >= size(self);
+    }
+
+    static constexpr auto inc(auto& self, index_t& idx)
+    {
+        FLUX_DEBUG_ASSERT(idx < size(self));
+        idx = num::checked_add(idx, distance_t{1});
+    }
+
+    static constexpr auto read_at(auto& self, index_t idx) -> decltype(auto)
+    {
+        bounds_check(idx >= 0);
+        bounds_check(idx < size(self));
+        return data(self)[idx];
+    }
+
+    static constexpr auto read_at_unchecked(auto& self, index_t idx) -> decltype(auto)
+    {
+        return data(self)[idx];
+    }
+
+    static constexpr auto dec(auto&, index_t& idx)
+    {
+        FLUX_DEBUG_ASSERT(idx > 0);
+        idx = num::checked_sub(idx, distance_t{1});
+    }
+
+    static constexpr auto last(auto& self) -> index_t { return size(self); }
+
+    static constexpr auto inc(auto& self, index_t& idx, distance_t offset)
+    {
+        FLUX_DEBUG_ASSERT(num::checked_add(idx, offset) <= size(self));
+        FLUX_DEBUG_ASSERT(num::checked_add(idx, offset) >= 0);
+        idx = num::checked_add(idx, offset);
+    }
+
+    static constexpr auto distance(auto&, index_t from, index_t to) -> distance_t
+    {
+        return num::checked_sub(to, from);
+    }
+
+    static constexpr auto size(auto& self) -> distance_t
+    {
+        return checked_cast<distance_t>(std::ranges::ssize(self));
+    }
+
+    static constexpr auto data(auto& self) -> auto*
+    {
+        return std::ranges::data(self);
+    }
+
+    static constexpr auto for_each_while(auto& self, auto&& pred) -> index_t
+    {
+        auto iter = std::ranges::begin(self);
+        auto const end = std::ranges::end(self);
+
+        while (iter != end) {
+            if (!std::invoke(pred, *iter)) {
+                break;
+            }
+            ++iter;
+        }
+
+        return checked_cast<index_t>(iter - std::ranges::begin(self));
     }
 };
 
@@ -1048,8 +1943,6 @@ template <sequence Seq>
 using bounds_t = bounds<cursor_t<Seq>>;
 
 template <typename Derived>
-    /*requires std::is_class_v<Derived>&&
-             std::same_as<Derived, std::remove_cv_t<Derived>>*/
 struct inline_sequence_base {
 private:
     constexpr auto derived() -> Derived& { return static_cast<Derived&>(*this); }
@@ -1123,13 +2016,25 @@ public:
         return flux::data(derived());
     }
 
+    [[nodiscard]]
+    constexpr auto data() const requires contiguous_sequence<Derived const>
+    {
+        return flux::data(derived());
+    }
+
     /// Returns the number of elements in the sequence
     [[nodiscard]]
     constexpr auto size() requires sized_sequence<Derived> { return flux::size(derived()); }
 
+    [[nodiscard]]
+    constexpr auto size() const requires sized_sequence<Derived const> { return flux::size(derived()); }
+
     /// Returns the number of elements in the sequence as a size_t
     [[nodiscard]]
     constexpr auto usize() requires sized_sequence<Derived> { return flux::usize(derived()); }
+
+    [[nodiscard]]
+    constexpr auto usize() const requires sized_sequence<Derived const> { return flux::usize(derived()); }
 
     /// Returns true if the sequence contains no elements
     [[nodiscard]]
@@ -1143,6 +2048,32 @@ public:
         requires bidirectional_sequence<Derived>
     [[nodiscard]]
     constexpr auto prev(cursor_t<D> cur) { return flux::prev(derived(), cur); }
+
+    [[nodiscard]]
+    constexpr auto front() requires multipass_sequence<Derived>
+    {
+        return flux::front(derived());
+    }
+
+    [[nodiscard]]
+    constexpr auto front() const requires multipass_sequence<Derived const>
+    {
+        return flux::front(derived());
+    }
+
+    [[nodiscard]]
+    constexpr auto back()
+        requires bidirectional_sequence<Derived> && bounded_sequence<Derived>
+    {
+        return flux::back(derived());
+    }
+
+    [[nodiscard]]
+    constexpr auto back() const
+        requires bidirectional_sequence<Derived const> && bounded_sequence<Derived const>
+    {
+        return flux::back(derived());
+    }
 
     template <typename Func, typename... Args>
         requires std::invocable<Func, Derived&, Args...>
@@ -1171,6 +2102,17 @@ public:
     {
         return std::invoke(FLUX_FWD(func), std::move(derived()), FLUX_FWD(args)...);
     }
+
+    /*
+     * Iterator support
+     */
+    constexpr auto begin() &;
+
+    constexpr auto begin() const& requires sequence<Derived const>;
+
+    constexpr auto end() &;
+
+    constexpr auto end() const& requires sequence<Derived const>;
 
     /*
      * Adaptors
@@ -1222,18 +2164,6 @@ public:
         requires std::predicate<Pred&, element_t<Derived>>
     [[nodiscard]]
     constexpr auto take_while(Pred pred) &&;
-
-    [[nodiscard]]
-    constexpr auto view() &;
-
-    [[nodiscard]]
-    constexpr auto view() const& requires sequence<Derived const>;
-
-    [[nodiscard]]
-    constexpr auto view() &&;
-
-    [[nodiscard]]
-    constexpr auto view() const&& requires sequence<Derived const>;
 
     /*
      * Algorithms
@@ -1357,6 +2287,7 @@ public:
 } // namespace flux
 
 #endif // FLUX_CORE_SEQUENCE_IFACE_HPP_INCLUDED
+
 
 
 
@@ -1600,13 +2531,256 @@ constexpr auto inline_sequence_base<D>::none(Pred pred, Proj proj)
 
 #endif // FLUX_OP_ALL_ANY_NONE_HPP_INCLUDED
 
+// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_OP_BEGIN_END_HPP_INCLUDED
+#define FLUX_OP_BEGIN_END_HPP_INCLUDED
+
+
+
+namespace flux {
+
+namespace detail {
+
+template <sequence Base>
+consteval auto get_iterator_tag()
+{
+    if constexpr (contiguous_sequence<Base>) {
+        return std::contiguous_iterator_tag{};
+    } else if constexpr (random_access_sequence<Base>) {
+        return std::random_access_iterator_tag{};
+    } else if constexpr (bidirectional_sequence<Base>) {
+        return std::bidirectional_iterator_tag{};
+    } else if constexpr (multipass_sequence<Base>) {
+        return std::forward_iterator_tag{};
+    } else {
+        return std::input_iterator_tag{};
+    }
+}
+
+template <sequence S>
+struct sequence_iterator {
+private:
+    S* seq_ = nullptr;
+    cursor_t<S> cur_{};
+
+    template <sequence SS>
+    friend struct sequence_iterator;
+
+public:
+    using value_type = value_t<S>;
+    using difference_type = distance_t;
+    using element_type = value_t<S>; // Yes, really
+    using iterator_concept = decltype(get_iterator_tag<S>());
+
+    sequence_iterator() requires std::default_initializable<cursor_t<S>> = default;
+
+    constexpr sequence_iterator(S& base, cursor_t<S> cur)
+        : seq_(std::addressof(base)),
+          cur_(std::move(cur))
+    {}
+
+    template <typename SS = S>
+        requires std::is_const_v<SS>
+    constexpr sequence_iterator(sequence_iterator<std::remove_const_t<SS>> other)
+        : seq_(other.seq_),
+          cur_(std::move(other.cur_))
+    {}
+
+    constexpr auto operator*() const -> element_t<S>
+    {
+        return flux::read_at(*seq_, cur_);
+    }
+
+    constexpr auto operator++() -> sequence_iterator&
+    {
+        flux::inc(*seq_, cur_);
+        return *this;
+    }
+
+    constexpr void operator++(int) { flux::inc(*seq_, cur_); }
+
+    constexpr auto operator++(int) -> sequence_iterator
+        requires multipass_sequence<S>
+    {
+        auto temp = *this;
+        ++*this;
+        return temp;
+    }
+
+    constexpr auto operator--() -> sequence_iterator&
+        requires bidirectional_sequence<S>
+    {
+        flux::dec(*seq_, cur_);
+        return *this;
+    }
+
+    constexpr auto operator--(int) -> sequence_iterator
+        requires bidirectional_sequence<S>
+    {
+        auto temp = *this;
+        --*this;
+        return temp;
+    }
+
+    constexpr auto operator+=(difference_type n) -> sequence_iterator&
+        requires random_access_sequence<S>
+    {
+        flux::inc(*seq_, cur_, n);
+        return *this;
+    }
+
+    constexpr auto operator-=(difference_type n) -> sequence_iterator&
+        requires random_access_sequence<S>
+    {
+        flux::inc(*seq_, cur_, -n);
+        return *this;
+    }
+
+    constexpr auto operator[](difference_type n) const -> element_t<S>
+    requires random_access_sequence<S>
+    {
+        auto i = flux::first(*seq_);
+        flux::inc(*seq_, i, n);
+        return flux::read_at(*seq_, i);
+    }
+
+    constexpr auto operator->() const -> std::add_pointer_t<element_t<S>>
+        requires contiguous_sequence<S>
+    {
+        return flux::data(*seq_) + flux::distance(*seq_, flux::first(*seq_), cur_);
+    }
+
+    friend constexpr bool operator==(sequence_iterator const& self, std::default_sentinel_t)
+    {
+        return flux::is_last(*self.seq_, self.cur_);
+    }
+
+    friend bool operator==(sequence_iterator const&, sequence_iterator const&)
+        requires multipass_sequence<S>
+        = default;
+
+    friend std::strong_ordering operator<=>(sequence_iterator const&, sequence_iterator const&)
+        requires random_access_sequence<S>
+        = default;
+
+    friend constexpr auto operator+(sequence_iterator self, difference_type n)
+        -> sequence_iterator
+        requires random_access_sequence<S>
+    {
+        flux::inc(*self.seq_, self.cur_, n);
+        return self;
+    }
+
+    friend constexpr auto operator+(difference_type n, sequence_iterator self)
+        -> sequence_iterator
+        requires random_access_sequence<S>
+    {
+        flux::inc(*self.seq_, self.cur_, n);
+        return self;
+    }
+
+    friend constexpr auto operator-(sequence_iterator self, difference_type n)
+        -> sequence_iterator
+        requires random_access_sequence<S>
+    {
+        flux::inc(*self.seq_, self.cur_, -n);
+        return self;
+    }
+
+    friend constexpr auto operator-(sequence_iterator const& lhs, sequence_iterator const& rhs)
+        -> difference_type
+        requires random_access_sequence<S>
+    {
+        FLUX_ASSERT(lhs.seq_ == rhs.seq_);
+        return flux::distance(*lhs.seq_, rhs.cur_, lhs.cur_);
+    }
+
+    friend constexpr auto iter_move(sequence_iterator const& self)
+        -> rvalue_element_t<S>
+    {
+        return flux::move_at(*self.seq_, self.cur_);
+    }
+
+    friend constexpr void iter_swap(sequence_iterator const& lhs, sequence_iterator const& rhs)
+        requires element_swappable_with<S, S>
+    {
+        flux::swap_with(*lhs.seq_, lhs.cur_, *rhs.seq_, rhs.cur_);
+    }
+};
+
+struct begin_fn {
+    template <sequence S>
+    constexpr auto operator()(S& seq) const
+    {
+        return sequence_iterator<S>(seq, flux::first(seq));
+    }
+};
+
+struct end_fn {
+    template <sequence S>
+    constexpr auto operator()(S& seq) const
+    {
+        // Ranges requires sentinels to be copy-constructible
+        if constexpr (bounded_sequence<S> && std::copy_constructible<cursor_t<S>>) {
+            return sequence_iterator(seq, flux::last(seq));
+        } else {
+            return std::default_sentinel;
+        }
+    }
+};
+
+} // namespace detail
+
+inline constexpr auto begin = detail::begin_fn{};
+inline constexpr auto end = detail::end_fn{};
+
+template <typename D>
+constexpr auto inline_sequence_base<D>::begin() &
+{
+    return flux::begin(derived());
+}
+
+template <typename D>
+constexpr auto inline_sequence_base<D>::begin() const&
+    requires sequence<D const>
+{
+    return flux::begin(derived());
+};
+
+template <typename D>
+constexpr auto inline_sequence_base<D>::end() &
+{
+    return flux::end(derived());
+}
+
+template <typename D>
+constexpr auto inline_sequence_base<D>::end() const&
+requires sequence<D const>
+{
+    return flux::end(derived());
+};
+
+} // namespace flux
+
+// Every sequence is a range: furthermore, it is a view if it is either
+// trivially copyable, or not copyable at all
+// See P2415 for the logic behind this
+template <flux::detail::derived_from_inline_sequence_base Seq>
+inline constexpr bool std::ranges::enable_view<Seq> =
+    std::is_trivially_copyable_v<Seq> || !std::copyable<Seq>;
+
+#endif // FLUX_OP_BEGIN_END_HPP_INCLUDED
+
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_BOUNDS_CHECKED_HPP_INCLUDED
-#define FLUX_OP_BOUNDS_CHECKED_HPP_INCLUDED
+#ifndef FLUX_OP_CACHE_LAST_HPP_INCLUDED
+#define FLUX_OP_CACHE_LAST_HPP_INCLUDED
 
 
 
@@ -1724,28 +2898,28 @@ struct passthrough_traits_base {
     static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
         -> decltype(flux::read_at(self.base(), cur))
     {
-        return flux::unchecked_read_at(self.base(), cur);
+        return flux::read_at(self.base(), cur);
     }
 
     template <typename Self>
     static constexpr auto inc(Self& self, cursor_t<Self>& cur)
         -> decltype(flux::inc(self.base(), cur))
     {
-        return flux::unchecked_inc(self.base(), cur);
+        return flux::inc(self.base(), cur);
     }
 
     template <typename Self>
     static constexpr auto dec(Self& self, cursor_t<Self>& cur)
         -> decltype(flux::dec(self.base(), cur))
     {
-        return flux::unchecked_dec(self.base(), cur);
+        return flux::dec(self.base(), cur);
     }
 
     template <typename Self>
     static constexpr auto inc(Self& self, cursor_t<Self>& cur, distance_t dist)
         -> decltype(flux::inc(self.base(), cur, dist))
     {
-        return flux::unchecked_inc(self.base(), cur, dist);
+        return flux::inc(self.base(), cur, dist);
     }
 
     template <typename Self>
@@ -1780,7 +2954,21 @@ struct passthrough_traits_base {
     static constexpr auto move_at(Self& self, auto const& cur)
         -> decltype(flux::move_at(self.base(), cur))
     {
-        return flux::unchecked_move_at(self.base(), cur);
+        return flux::move_at(self.base(), cur);
+    }
+
+    template <typename Self>
+    static constexpr auto read_at_unchecked(Self& self, auto const& cur)
+        -> decltype(flux::read_at_unchecked(self.base(), cur))
+    {
+        return flux::read_at_unchecked(self.base(), cur);
+    }
+
+    template <typename Self>
+    static constexpr auto move_at_unchecked(Self& self, auto const& cur)
+        -> decltype(flux::move_at_unchecked(self.base(), cur))
+    {
+        return flux::move_at_unchecked(self.base(), cur);
     }
 
     template <typename Self>
@@ -1853,268 +3041,6 @@ inline constexpr auto from = detail::from_fn{};
 #endif // FLUX_OP_FROM_HPP_INCLUDED
 
 
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_SLICE_HPP_INCLUDED
-#define FLUX_OP_SLICE_HPP_INCLUDED
-
-
-
-
-namespace flux {
-
-namespace detail {
-
-template <cursor Cur, bool Bounded>
-struct slice_data {
-    Cur first;
-    Cur last;
-};
-
-template <cursor Cur>
-struct slice_data<Cur, false> {
-    Cur first;
-};
-
-template <sequence Base, bool Bounded>
-    requires (!Bounded || regular_cursor<cursor_t<Base>>)
-struct subsequence : inline_sequence_base<subsequence<Base, Bounded>>
-{
-private:
-    Base* base_;
-    FLUX_NO_UNIQUE_ADDRESS slice_data<cursor_t<Base>, Bounded> data_;
-
-    friend struct sequence_traits<subsequence>;
-
-public:
-    constexpr subsequence(Base& base, cursor_t<Base>&& from,
-                          cursor_t<Base>&& to)
-        requires Bounded
-        : base_(std::addressof(base)),
-          data_{std::move(from), std::move(to)}
-    {}
-
-    constexpr subsequence(Base& base, cursor_t<Base>&& from)
-        requires (!Bounded)
-        : base_(std::addressof(base)),
-          data_{std::move(from)}
-    {}
-
-    constexpr auto base() const -> Base& { return *base_; };
-};
-
-template <sequence Seq>
-subsequence(Seq&, cursor_t<Seq>, cursor_t<Seq>) -> subsequence<Seq, true>;
-
-template <sequence Seq>
-subsequence(Seq&, cursor_t<Seq>) -> subsequence<Seq, false>;
-
-template <typename Seq>
-concept has_overloaded_slice =
-    requires (Seq& seq, cursor_t<Seq> cur) {
-        { traits_t<Seq>::slice(seq, std::move(cur)) } -> sequence;
-        { traits_t<Seq>::slice(seq, std::move(cur), std::move(cur)) } -> sequence;
-    };
-
-struct slice_fn {
-    template <sequence Seq>
-    constexpr auto operator()(Seq& seq, cursor_t<Seq> from,
-                              cursor_t<Seq> to) const
-        -> sequence auto
-    {
-        if constexpr (has_overloaded_slice<Seq>) {
-            return traits_t<Seq>::slice(seq, std::move(from), std::move(to));
-        } else {
-            return subsequence(seq, std::move(from), std::move(to));
-        }
-    }
-
-    template <sequence Seq>
-    constexpr auto operator()(Seq& seq, cursor_t<Seq> from, last_fn) const
-        -> sequence auto
-    {
-        if constexpr (has_overloaded_slice<Seq>) {
-            return traits_t<Seq>::slice(seq, std::move(from));
-        } else {
-            return subsequence(seq, std::move(from));
-        }
-    }
-};
-
-} // namespace detail
-
-using detail::subsequence;
-
-template <typename Base, bool Bounded>
-struct sequence_traits<subsequence<Base, Bounded>>
-    : detail::passthrough_traits_base<Base>
-{
-    using value_type = value_t<Base>;
-    using self_t = subsequence<Base, Bounded>;
-
-    static constexpr auto first(self_t& self) -> cursor_t<Base>
-    {
-        if constexpr (std::copy_constructible<decltype(self.data_.first)>) {
-            return self.data_.first;
-        } else {
-            return std::move(self.data_.first);
-        }
-    }
-
-    static constexpr bool is_last(self_t& self, cursor_t<Base> const& cur) {
-        if constexpr (Bounded) {
-            return cur == self.data_.last;
-        } else {
-            return flux::is_last(*self.base_, cur);
-        }
-    }
-
-    static constexpr auto last(self_t& self) -> cursor_t<Base>
-        requires (Bounded || bounded_sequence<Base>)
-    {
-        if constexpr (Bounded) {
-            return self.data_.last;
-        } else {
-            return flux::last(*self.base_);
-        }
-    }
-
-    static constexpr auto data(self_t& self)
-        requires contiguous_sequence<Base>
-    {
-        return flux::data(*self.base_) +
-               flux::distance(*self.base_, flux::first(*self.base_), self.data_.first);
-    }
-
-    void size() = delete;
-    void for_each_while() = delete;
-};
-
-inline constexpr auto slice = detail::slice_fn{};
-
-#if 0
-template <typename Derived>
-template <std::same_as<Derived> D>
-constexpr auto inline_sequence_base<Derived>::slice(cursor_t<D> from, cursor_t<D> to) &
-{
-    return flux::slice(derived(), std::move(from), std::move(to));
-}
-
-template <typename Derived>
-template <std::same_as<Derived> D>
-constexpr auto inline_sequence_base<Derived>::slice_from(cursor_t<D> from) &
-{
-    return flux::slice(derived(), std::move(from));
-}
-#endif
-
-} // namespace flux
-
-#endif // namespace FLUX_OP_SLICE_HPP_INCLUDED
-
-
-namespace flux {
-
-namespace detail {
-
-template <sequence Base>
-struct bounds_checked_adaptor : inline_sequence_base<bounds_checked_adaptor<Base>>
-{
-private:
-    Base base_;
-
-public:
-    constexpr explicit bounds_checked_adaptor(decays_to<Base> auto&& base)
-        : base_(FLUX_FWD(base))
-    {}
-
-    constexpr auto base() -> Base& { return base_; }
-    constexpr auto base() const -> Base const& { return base_; }
-
-    struct flux_sequence_traits : detail::passthrough_traits_base<Base> {
-        using value_type = value_t<Base>;
-
-        static constexpr bool disable_multipass = !multipass_sequence<Base>;
-        static constexpr bool is_infinite = infinite_sequence<Base>;
-
-        static constexpr auto read_at(auto& self, auto const& cur)
-            -> decltype(flux::checked_read_at(self.base_, cur))
-        {
-            return flux::checked_read_at(self.base_, cur);
-        }
-
-        static constexpr auto inc(auto& self, auto& cur)
-            -> decltype(flux::checked_inc(self.base_, cur))
-        {
-            return flux::checked_inc(self.base_, cur);
-        }
-
-        static constexpr auto dec(auto& self, auto& cur)
-            -> decltype(flux::checked_dec(self.base_, cur))
-        {
-            return flux::checked_dec(self.base_, cur);
-        }
-
-        static constexpr auto inc(auto& self, auto& cur, auto offset)
-            -> decltype(flux::checked_inc(self.base_, cur, offset))
-        {
-            return flux::checked_inc(self.base_, cur, offset);
-        }
-
-        static constexpr auto move_at(auto& self, auto const& cur)
-            -> decltype(flux::checked_move_at(self.base_, cur))
-        {
-            return flux::checked_move_at(self.base_, cur);
-        }
-
-        static constexpr auto slice(auto& self, auto first, auto last)
-        {
-            return detail::bounds_checked_adaptor(flux::slice(self.base_, std::move(first), std::move(last)));
-        }
-
-        static constexpr auto slice(auto& self, auto first)
-        {
-            return detail::bounds_checked_adaptor(flux::slice(self.base_, std::move(first), flux::last));
-        }
-    };
-
-};
-
-template <typename S>
-bounds_checked_adaptor(S) -> bounds_checked_adaptor<S>;
-
-struct bounds_checked_fn {
-    template <adaptable_sequence Seq>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const
-    {
-        return bounds_checked_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq));
-    }
-};
-
-} // namespace detail
-
-inline constexpr auto bounds_checked = detail::bounds_checked_fn{};
-
-} // namespace flux
-
-#endif // FLUX_OP_BOUNDS_CHECKED_HPP_INCLUDED
-
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_CACHE_LAST_HPP_INCLUDED
-#define FLUX_OP_CACHE_LAST_HPP_INCLUDED
-
-
-
-
-#include <optional>
-
 namespace flux {
 
 namespace detail {
@@ -2124,7 +3050,7 @@ struct cache_last_adaptor : inline_sequence_base<cache_last_adaptor<Base>>
 {
 private:
     Base base_;
-    std::optional<cursor_t<Base>> cached_last_{};
+    flux::optional<cursor_t<Base>> cached_last_{};
 
     friend struct passthrough_traits_base<Base>;
 
@@ -2145,7 +3071,7 @@ public:
         static constexpr auto is_last(self_t& self, cursor_t<Base> const& cur)
         {
             if (flux::is_last(self.base_, cur)) {
-                self.cached_last_ = cur;
+                self.cached_last_ = flux::optional(cur);
                 return true;
             } else {
                 return false;
@@ -2159,9 +3085,9 @@ public:
                 while (!is_last(self, cur)) {
                     flux::inc(self.base_, cur);
                 }
-                assert(self.cached_last_.has_value());
+                FLUX_DEBUG_ASSERT(self.cached_last_.has_value());
             }
-            return *self.cached_last_;
+            return self.cached_last_.value_unchecked();
         }
     };
 };
@@ -2400,18 +3326,19 @@ struct sequence_traits<detail::cartesian_product_adaptor<Bases...>>
     : detail::cartesian_product_traits_base<Bases...>
 {
 private:
-    template <std::size_t I, typename Self>
-    static constexpr auto read_at_impl(Self& self, cursor_t<Self> const& cur)
+    template <std::size_t I, typename Self, typename Fn>
+    static constexpr auto read1_(Fn fn, Self& self, cursor_t<Self> const& cur)
         -> decltype(auto)
     {
-        return flux::read_at(std::get<I>(self.bases_), std::get<I>(cur));
+        return fn(std::get<I>(self.bases_), std::get<I>(cur));
     }
 
-    template <std::size_t I, typename Self>
-    static constexpr auto move_at_impl(Self& self, cursor_t<Self> const& cur)
-        -> decltype(auto)
+    template <typename Fn, typename Self>
+    static constexpr auto read_(Fn fn, Self& self, cursor_t<Self> const& cur)
     {
-        return flux::move_at(std::get<I>(self.bases_), std::get<I>(cur));
+        return [&]<std::size_t... N>(std::index_sequence<N...>) {
+            return std::tuple<decltype(read1_<N>(fn, self, cur))...>(read1_<N>(fn, self, cur)...);
+        }(std::index_sequence_for<Bases...>{});
     }
 
 public:
@@ -2420,17 +3347,25 @@ public:
     template <typename Self>
     static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
     {
-        return [&]<std::size_t... N>(std::index_sequence<N...>) {
-            return std::tuple<decltype(read_at_impl<N>(self, cur))...>(read_at_impl<N>(self, cur)...);
-        }(std::index_sequence_for<Bases...>{});
+        return read_(flux::read_at, self, cur);
     }
 
     template <typename Self>
     static constexpr auto move_at(Self& self, cursor_t<Self> const& cur)
     {
-        return [&]<std::size_t... N>(std::index_sequence<N...>) {
-          return std::tuple<decltype(move_at_impl<N>(self, cur))...>(move_at_impl<N>(self, cur)...);
-        }(std::index_sequence_for<Bases...>{});
+        return read_(flux::move_at, self, cur);
+    }
+
+    template <typename Self>
+    static constexpr auto read_at_unchecked(Self& self, cursor_t<Self> const& cur)
+    {
+        return read_(flux::read_at_unchecked, self, cur);
+    }
+
+    template <typename Self>
+    static constexpr auto move_at_unchecked(Self& self, cursor_t<Self> const& cur)
+    {
+        return read_(flux::move_at_unchecked, self, cur);
     }
 };
 
@@ -2519,7 +3454,6 @@ inline constexpr auto cartesian_product_with = detail::cartesian_product_with_fn
 
 
 
-#include <cassert>
 #include <tuple>
 #include <variant>
 
@@ -2582,30 +3516,27 @@ private:
     template <typename From, typename To>
     using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
 
-    template <typename Self>
-    using cursor_type = std::variant<cursor_t<const_like_t<Self, Bases>>...>;
+    using cursor_type = std::variant<cursor_t<Bases>...>;
 
     template <std::size_t N, typename Self>
-    static constexpr auto first_impl(Self& self)
-        -> cursor_type<Self>
+    static constexpr auto first_impl(Self& self) -> cursor_type
     {
         auto& base = std::get<N>(self.bases_);
         auto cur = flux::first(base);
 
         if constexpr (N < End) {
             if (!flux::is_last(base, cur)) {
-                return cursor_type<Self>(std::in_place_index<N>, std::move(cur));
+                return cursor_type(std::in_place_index<N>, std::move(cur));
             } else {
                 return first_impl<N+1>(self);
             }
         } else {
-            return cursor_type<Self>(std::in_place_index<N>, std::move(cur));
+            return cursor_type(std::in_place_index<N>, std::move(cur));
         }
     }
 
     template <std::size_t N, typename Self>
-    static constexpr auto inc_impl(Self& self, cursor_type<Self>& cur)
-            -> cursor_type<Self>&
+    static constexpr auto inc_impl(Self& self, cursor_type& cur) -> void
     {
         if constexpr (N < End) {
             if (cur.index() == N) {
@@ -2615,19 +3546,16 @@ private:
                 if (flux::is_last(base, base_cur)) {
                     cur = first_impl<N + 1>(self);
                 }
-                return cur;
             } else {
-                return inc_impl<N+1>(self, cur);
+                inc_impl<N+1>(self, cur);
             }
         } else {
             flux::inc(std::get<N>(self.bases_), std::get<N>(cur));
-            return cur;
         }
     }
 
     template <std::size_t N, typename Self>
-    static constexpr auto dec_impl(Self& self, cursor_type<Self>& cur)
-        -> cursor_type<Self>&
+    static constexpr auto dec_impl(Self& self, cursor_type& cur)
     {
         if constexpr (N > 0) {
             if (cur.index() == N) {
@@ -2635,24 +3563,22 @@ private:
                 auto& base_cur = std::get<N>(cur);
 
                 if (base_cur == flux::first(base)) {
-                    cur = cursor_type<Self>(std::in_place_index<N-1>,
-                                           flux::last(std::get<N-1>(self.bases_)));
-                    return dec_impl<N-1>(self, cur);
+                    cur = cursor_type(std::in_place_index<N-1>,
+                                      flux::last(std::get<N-1>(self.bases_)));
+                    dec_impl<N-1>(self, cur);
                 } else {
                     flux::dec(base, base_cur);
-                    return cur;
                 }
             } else {
-                return dec_impl<N-1>(self, cur);
+                dec_impl<N-1>(self, cur);
             }
         } else {
             flux::dec(std::get<0>(self.bases_), std::get<0>(cur));
-            return cur;
         }
     }
 
     template <std::size_t N, typename Self>
-    static constexpr auto read_impl(Self& self, cursor_type<Self> const& cur)
+    static constexpr auto read_impl(Self& self, cursor_type const& cur)
         -> std::common_reference_t<element_t<const_like_t<Self, Bases>>...>
     {
         if constexpr (N < End) {
@@ -2667,7 +3593,7 @@ private:
     }
 
     template <std::size_t N, typename Self>
-    static constexpr auto move_impl(Self& self, cursor_type<Self> const& cur)
+    static constexpr auto move_impl(Self& self, cursor_type const& cur)
         -> std::common_reference_t<rvalue_element_t<const_like_t<Self, Bases>>...>
     {
         if constexpr (N < End) {
@@ -2684,33 +3610,33 @@ private:
 
     template <std::size_t N, typename Self>
     static constexpr auto for_each_while_impl(Self& self, auto& pred)
-        -> cursor_type<Self>
+        -> cursor_type
     {
         if constexpr (N < End) {
             auto& base = std::get<N>(self.bases_);
             auto base_cur = flux::for_each_while(base, pred);
             if (!flux::is_last(base, base_cur)) {
-                return cursor_type<Self>(std::in_place_index<N>, std::move(base_cur));
+                return cursor_type(std::in_place_index<N>, std::move(base_cur));
             } else {
                 return for_each_while_impl<N+1>(self, pred);
             }
         } else {
-            return cursor_type<Self>(std::in_place_index<N>,
-                                    flux::for_each_while(std::get<N>(self.bases_), pred));
+            return cursor_type(std::in_place_index<N>,
+                               flux::for_each_while(std::get<N>(self.bases_), pred));
         }
     }
 
     template <std::size_t N, typename Self>
     static constexpr auto distance_impl(Self& self,
-                                        cursor_type<Self> const& from,
-                                        cursor_type<Self> const& to)
+                                        cursor_type const& from,
+                                        cursor_type const& to)
     {
         if constexpr (N < End) {
             if (N < from.index()) {
                 return distance_impl<N+1>(self, from, to);
             }
 
-            assert(N == from.index());
+            FLUX_DEBUG_ASSERT(N == from.index());
             if (N == to.index()) {
                 return flux::distance(std::get<N>(self.bases_),
                                       std::get<N>(from), std::get<N>(to));
@@ -2722,15 +3648,15 @@ private:
                 return dist_to_end + remaining;
             }
         } else {
-            assert(N == from.index() && N == to.index());
+            FLUX_DEBUG_ASSERT(N == from.index() && N == to.index());
             return flux::distance(std::get<N>(self.bases_), std::get<N>(from), std::get<N>(to));
         }
     }
 
     template <std::size_t N, typename Self>
-    static constexpr auto inc_ra_impl(Self& self, cursor_type<Self>& cur,
+    static constexpr auto inc_ra_impl(Self& self, cursor_type& cur,
                                       distance_t offset)
-        -> cursor_type<Self>&
+        -> cursor_type&
     {
         if constexpr (N < End) {
             if (N < cur.index()) {
@@ -2750,7 +3676,7 @@ private:
                 return inc_ra_impl<N+1>(self, cur, offset);
             }
         } else {
-            assert(cur.index() == N);
+            FLUX_DEBUG_ASSERT(cur.index() == N);
             flux::inc(std::get<N>(self.bases_), std::get<N>(cur), offset);
             return cur;
         }
@@ -2758,54 +3684,51 @@ private:
 
 public:
     template <typename Self>
-    static constexpr auto first(Self& self) -> cursor_type<Self>
+    static constexpr auto first(Self& self) -> cursor_type
     {
         return first_impl<0>(self);
     }
 
     template <typename Self>
-    static constexpr auto is_last(Self& self, cursor_type<Self> const& cur)
+    static constexpr auto is_last(Self& self, cursor_type const& cur) -> bool
     {
         return cur.index() == End &&
                flux::is_last(std::get<End>(self.bases_), std::get<End>(cur));
     }
 
     template <typename Self>
-    static constexpr auto read_at(Self& self, cursor_type<Self> const& cur)
+    static constexpr auto read_at(Self& self, cursor_type const& cur)
         -> std::common_reference_t<element_t<const_like_t<Self, Bases>>...>
     {
         return read_impl<0>(self, cur);
     }
 
     template <typename Self>
-    static constexpr auto move_at(Self& self, cursor_type<Self> const& cur)
+    static constexpr auto move_at(Self& self, cursor_type const& cur)
         -> std::common_reference_t<rvalue_element_t<const_like_t<Self, Bases>>...>
     {
         return move_impl<0>(self, cur);
     }
 
     template <typename Self>
-    static constexpr auto inc(Self& self, cursor_type<Self>& cur)
-        -> cursor_type<Self>&
+    static constexpr auto inc(Self& self, cursor_type& cur) -> void
     {
-        return inc_impl<0>(self, cur);
+        inc_impl<0>(self, cur);
     }
 
     template <typename Self>
-    static constexpr auto dec(Self& self, cursor_type<Self>& cur)
-        -> cursor_type<Self>&
+    static constexpr auto dec(Self& self, cursor_type& cur) -> void
         requires (bidirectional_sequence<const_like_t<Self, Bases>> && ...) &&
                  (bounded_sequence<const_like_t<Self,Bases>> &&...)
     {
-        return dec_impl<sizeof...(Bases) - 1>(self, cur);
+        dec_impl<End>(self, cur);
     }
 
     template <typename Self>
-    static constexpr auto last(Self& self) -> cursor_type<Self>
+    static constexpr auto last(Self& self) -> cursor_type
         requires bounded_sequence<decltype(std::get<End>(self.bases_))>
     {
-        constexpr auto Last = sizeof...(Bases) - 1;
-        return cursor_type<Self>(std::in_place_index<Last>, flux::last(std::get<Last>(self.bases_)));
+        return cursor_type(std::in_place_index<End>, flux::last(std::get<End>(self.bases_)));
     }
 
     template <typename Self>
@@ -2823,8 +3746,8 @@ public:
     }
 
     template <typename Self>
-    static constexpr auto distance(Self& self, cursor_type<Self> const& from,
-                                   cursor_type<Self> const& to)
+    static constexpr auto distance(Self& self, cursor_type const& from,
+                                   cursor_type const& to)
         -> distance_t
         requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
                  (bounded_sequence<const_like_t<Self, Bases>> && ...)
@@ -2837,12 +3760,11 @@ public:
     }
 
     template <typename Self>
-    static constexpr auto inc(Self& self, cursor_type<Self>& cur, distance_t offset)
-        -> cursor_type<Self>&
+    static constexpr auto inc(Self& self, cursor_type& cur, distance_t offset)
         requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
                  (bounded_sequence<const_like_t<Self, Bases>> && ...)
     {
-        return inc_ra_impl<0>(self, cur, offset);
+        inc_ra_impl<0>(self, cur, offset);
     }
 
 };
@@ -2888,8 +3810,8 @@ struct compare_fn {
         auto cur2 = flux::first(seq2);
 
         while (!flux::is_last(seq1, cur1) && !flux::is_last(seq2, cur2)) {
-            if (auto r = std::invoke(cmp, std::invoke(proj1, flux::unchecked_read_at(seq1, cur1)),
-                                       std::invoke(proj2, flux::unchecked_read_at(seq2, cur2))); r != 0) {
+            if (auto r = std::invoke(cmp, std::invoke(proj1, flux::read_at(seq1, cur1)),
+                                          std::invoke(proj2, flux::read_at(seq2, cur2))); r != 0) {
                 return r;
             }
             flux::inc(seq1, cur1);
@@ -3062,8 +3984,6 @@ constexpr auto inline_sequence_base<D>::count_if(Pred pred, Proj proj)
 
 
 
-#include <optional>
-
 namespace flux {
 
 namespace detail {
@@ -3073,7 +3993,7 @@ struct drop_adaptor : inline_sequence_base<drop_adaptor<Base>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     distance_t count_;
-    std::optional<cursor_t<Base>> cached_first_;
+    flux::optional<cursor_t<Base>> cached_first_;
 
 public:
     constexpr drop_adaptor(decays_to<Base> auto&& base, distance_t count)
@@ -3093,10 +4013,11 @@ public:
         {
             if constexpr (std::copy_constructible<cursor_t<Base>>) {
                 if (!self.cached_first_) {
-                    self.cached_first_ = flux::next(self.base_, flux::first(self.base()), self.count_);
+                    self.cached_first_ = flux::optional(
+                        flux::next(self.base_, flux::first(self.base()), self.count_));
                 }
 
-                return *self.cached_first_;
+                return self.cached_first_.value_unchecked();
             } else {
                 return flux::next(self.base_, flux::first(self.base()), self.count_);
             }
@@ -3153,8 +4074,6 @@ constexpr auto inline_sequence_base<Derived>::drop(distance_t count) &&
 
 
 
-#include <optional>
-
 namespace flux {
 
 namespace detail {
@@ -3164,7 +4083,7 @@ struct drop_while_adaptor : inline_sequence_base<drop_while_adaptor<Base, Pred>>
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Pred pred_;
-    std::optional<cursor_t<Base>> cached_first_{};
+    flux::optional<cursor_t<Base>> cached_first_{};
 
     friend struct passthrough_traits_base<Base>;
 
@@ -3186,9 +4105,9 @@ public:
         {
             if constexpr (std::copy_constructible<cursor_t<Base>>) {
                 if (!self.cached_first_) {
-                    self.cached_first_ = flux::for_each_while(self.base_, self.pred_);
+                    self.cached_first_ = flux::optional(flux::for_each_while(self.base_, self.pred_));
                 }
-                return *self.cached_first_;
+                return self.cached_first_.value_unchecked();
             } else {
                 return flux::for_each_while(self.base_, self.pred_);
             }
@@ -3379,8 +4298,6 @@ constexpr void inline_sequence_base<D>::fill(Value const& value)
 
 
 
-#include <optional>
-
 namespace flux {
 
 namespace detail {
@@ -3391,7 +4308,7 @@ class filter_adaptor : public inline_sequence_base<filter_adaptor<Base, Pred>>
 {
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Pred pred_;
-    std::optional<cursor_t<Base>> cached_first_{};
+    flux::optional<cursor_t<Base>> cached_first_{};
 
 public:
     constexpr filter_adaptor(decays_to<Base> auto&& base, decays_to<Pred> auto&& pred)
@@ -3420,13 +4337,13 @@ public:
                 });
             } else {
                 if (!self.cached_first_) {
-                    self.cached_first_ =
+                    self.cached_first_ = flux::optional(
                         flux::for_each_while(self.base_, [&](auto&& elem) {
                             return !std::invoke(self.pred_, elem);
-                        });
+                        }));
                 }
 
-                return *self.cached_first_;
+                return self.cached_first_.value_unchecked();
             }
         }
 
@@ -3604,8 +4521,6 @@ constexpr auto inline_sequence_base<D>::find_if_not(Pred pred, Proj proj)
 
 
 
-#include <optional>
-
 namespace flux {
 
 namespace detail {
@@ -3636,7 +4551,7 @@ struct fold_first_op {
         requires std::invocable<Func&, V, element_t<Seq>> &&
                  std::assignable_from<value_t<Seq>&, std::invoke_result_t<Func&, V&&, element_t<Seq>>>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Func func) const -> std::optional<V>
+    constexpr auto operator()(Seq&& seq, Func func) const -> flux::optional<V>
     {
         auto cur = flux::first(seq);
 
@@ -3644,15 +4559,15 @@ struct fold_first_op {
             return std::nullopt;
         }
 
-        V init(flux::unchecked_read_at(seq, cur));
+        V init(flux::read_at(seq, cur));
         flux::inc(seq, cur);
 
         while (!flux::is_last(seq, cur)) {
-            init = std::invoke(func, std::move(init), flux::unchecked_read_at(seq, cur));
+            init = std::invoke(func, std::move(init), flux::read_at(seq, cur));
             flux::inc(seq, cur);
         }
 
-        return std::optional<V>(std::in_place, std::move(init));
+        return flux::optional<V>(std::in_place, std::move(init));
     }
 };
 
@@ -3870,6 +4785,169 @@ constexpr auto inline_sequence_base<Derived>::map(Func func) &&
 
 
 
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_OP_SLICE_HPP_INCLUDED
+#define FLUX_OP_SLICE_HPP_INCLUDED
+
+
+
+
+namespace flux {
+
+namespace detail {
+
+template <cursor Cur, bool Bounded>
+struct slice_data {
+    Cur first;
+    Cur last;
+};
+
+template <cursor Cur>
+struct slice_data<Cur, false> {
+    Cur first;
+};
+
+template <sequence Base, bool Bounded>
+    requires (!Bounded || regular_cursor<cursor_t<Base>>)
+struct subsequence : inline_sequence_base<subsequence<Base, Bounded>>
+{
+private:
+    Base* base_;
+    FLUX_NO_UNIQUE_ADDRESS slice_data<cursor_t<Base>, Bounded> data_;
+
+    friend struct sequence_traits<subsequence>;
+
+public:
+    constexpr subsequence(Base& base, cursor_t<Base>&& from,
+                          cursor_t<Base>&& to)
+        requires Bounded
+        : base_(std::addressof(base)),
+          data_{std::move(from), std::move(to)}
+    {}
+
+    constexpr subsequence(Base& base, cursor_t<Base>&& from)
+        requires (!Bounded)
+        : base_(std::addressof(base)),
+          data_{std::move(from)}
+    {}
+
+    constexpr auto base() const -> Base& { return *base_; };
+};
+
+template <sequence Seq>
+subsequence(Seq&, cursor_t<Seq>, cursor_t<Seq>) -> subsequence<Seq, true>;
+
+template <sequence Seq>
+subsequence(Seq&, cursor_t<Seq>) -> subsequence<Seq, false>;
+
+template <typename Seq>
+concept has_overloaded_slice =
+    requires (Seq& seq, cursor_t<Seq> cur) {
+        { traits_t<Seq>::slice(seq, std::move(cur)) } -> sequence;
+        { traits_t<Seq>::slice(seq, std::move(cur), std::move(cur)) } -> sequence;
+    };
+
+struct slice_fn {
+    template <sequence Seq>
+    constexpr auto operator()(Seq& seq, cursor_t<Seq> from,
+                              cursor_t<Seq> to) const
+        -> sequence auto
+    {
+        if constexpr (has_overloaded_slice<Seq>) {
+            return traits_t<Seq>::slice(seq, std::move(from), std::move(to));
+        } else {
+            return subsequence(seq, std::move(from), std::move(to));
+        }
+    }
+
+    template <sequence Seq>
+    constexpr auto operator()(Seq& seq, cursor_t<Seq> from, last_fn) const
+        -> sequence auto
+    {
+        if constexpr (has_overloaded_slice<Seq>) {
+            return traits_t<Seq>::slice(seq, std::move(from));
+        } else {
+            return subsequence(seq, std::move(from));
+        }
+    }
+};
+
+} // namespace detail
+
+using detail::subsequence;
+
+template <typename Base, bool Bounded>
+struct sequence_traits<subsequence<Base, Bounded>>
+    : detail::passthrough_traits_base<Base>
+{
+    using value_type = value_t<Base>;
+    using self_t = subsequence<Base, Bounded>;
+
+    static constexpr auto first(self_t& self) -> cursor_t<Base>
+    {
+        if constexpr (std::copy_constructible<decltype(self.data_.first)>) {
+            return self.data_.first;
+        } else {
+            return std::move(self.data_.first);
+        }
+    }
+
+    static constexpr bool is_last(self_t& self, cursor_t<Base> const& cur) {
+        if constexpr (Bounded) {
+            return cur == self.data_.last;
+        } else {
+            return flux::is_last(*self.base_, cur);
+        }
+    }
+
+    static constexpr auto last(self_t& self) -> cursor_t<Base>
+        requires (Bounded || bounded_sequence<Base>)
+    {
+        if constexpr (Bounded) {
+            return self.data_.last;
+        } else {
+            return flux::last(*self.base_);
+        }
+    }
+
+    static constexpr auto data(self_t& self)
+        requires contiguous_sequence<Base>
+    {
+        return flux::data(*self.base_) +
+               flux::distance(*self.base_, flux::first(*self.base_), self.data_.first);
+    }
+
+    void size() = delete;
+    void for_each_while() = delete;
+};
+
+inline constexpr auto slice = detail::slice_fn{};
+
+#if 0
+template <typename Derived>
+template <std::same_as<Derived> D>
+constexpr auto inline_sequence_base<Derived>::slice(cursor_t<D> from, cursor_t<D> to) &
+{
+    return flux::slice(derived(), std::move(from), std::move(to));
+}
+
+template <typename Derived>
+template <std::same_as<Derived> D>
+constexpr auto inline_sequence_base<Derived>::slice_from(cursor_t<D> from) &
+{
+    return flux::slice(derived(), std::move(from));
+}
+#endif
+
+} // namespace flux
+
+#endif // namespace FLUX_OP_SLICE_HPP_INCLUDED
+
+
 namespace flux {
 
 template <typename T>
@@ -3886,7 +4964,7 @@ struct min_op {
         requires std::predicate<Cmp&, std::invoke_result_t<Proj, value_t<Seq>>, projected_t<Proj, Seq>>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}, Proj proj = Proj{}) const
-        -> std::optional<value_t<Seq>>
+        -> flux::optional<value_t<Seq>>
     {
         return flux::fold_first(FLUX_FWD(seq), [&](auto min, auto&& elem) -> value_t<Seq> {
             if (std::invoke(cmp, std::invoke(proj, elem), std::invoke(proj, min))) {
@@ -3904,7 +4982,7 @@ struct max_op {
         requires std::predicate<Cmp&, std::invoke_result_t<Proj, value_t<Seq>>, projected_t<Proj, Seq>>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}, Proj proj = Proj{}) const
-        -> std::optional<value_t<Seq>>
+        -> flux::optional<value_t<Seq>>
     {
         return flux::fold_first(FLUX_FWD(seq), [&](auto max, auto&& elem) -> value_t<Seq> {
             if (!std::invoke(cmp, std::invoke(proj, elem), std::invoke(proj, max))) {
@@ -3922,7 +5000,7 @@ struct minmax_op {
         requires std::predicate<Cmp&, std::invoke_result_t<Proj, value_t<Seq>>, projected_t<Proj, Seq>>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}, Proj proj = Proj{}) const
-        -> std::optional<minmax_result<value_t<Seq>>>
+        -> flux::optional<minmax_result<value_t<Seq>>>
     {
         using R = minmax_result<value_t<Seq>>;
 
@@ -3931,8 +5009,8 @@ struct minmax_op {
             return std::nullopt;
         }
 
-        R init = R{value_t<Seq>(flux::unchecked_read_at(seq, cur)),
-                   value_t<Seq>(flux::unchecked_read_at(seq, cur))};
+        R init = R{value_t<Seq>(flux::read_at(seq, cur)),
+                   value_t<Seq>(flux::read_at(seq, cur))};
 
         auto fold_fn = [&](R mm, auto&& elem) -> R {
             if (std::invoke(cmp, std::invoke(proj, elem), std::invoke(proj, mm.min))) {
@@ -3944,7 +5022,7 @@ struct minmax_op {
             return mm;
         };
 
-        return std::optional<R>(std::in_place,
+        return flux::optional<R>(std::in_place,
                                 flux::fold(flux::slice(seq, std::move(cur), flux::last), fold_fn, std::move(init)));
     }
 };
@@ -4230,8 +5308,6 @@ inline constexpr auto search = detail::search_fn{};
 
 
 
-#include <cassert>
-
 namespace flux {
 
 namespace detail {
@@ -4299,20 +5375,20 @@ public:
 
     static constexpr auto read_at(auto& self, [[maybe_unused]] cursor_type cur) -> auto&
     {
-        assert(cur == cursor_type::valid);
+        FLUX_DEBUG_ASSERT(cur == cursor_type::valid);
         return self.obj_;
     }
 
     static constexpr auto inc(self_t const&, cursor_type& cur) -> cursor_type&
     {
-        assert(cur == cursor_type::valid);
+        FLUX_DEBUG_ASSERT(cur == cursor_type::valid);
         cur = cursor_type::done;
         return cur;
     }
 
     static constexpr auto dec(self_t const&, cursor_type& cur) -> cursor_type&
     {
-        assert(cur == cursor_type::done);
+        FLUX_DEBUG_ASSERT(cur == cursor_type::done);
         cur = cursor_type::valid;
         return cur;
     }
@@ -4321,10 +5397,10 @@ public:
         -> cursor_type&
     {
         if (off > 0) {
-            assert(cur == cursor_type::valid && off == 1);
+            FLUX_DEBUG_ASSERT(cur == cursor_type::valid && off == 1);
             cur = cursor_type::done;
         } else if (off < 0) {
-            assert(cur == cursor_type::done && off == -1);
+            FLUX_DEBUG_ASSERT(cur == cursor_type::done && off == -1);
             cur = cursor_type::valid;
         }
         return cur;
@@ -4398,9 +5474,6 @@ struct split_fn {
     }
 };
 
-template <typename From, typename To>
-using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
-
 template <typename>
 inline constexpr bool is_single_seq = false;
 
@@ -4413,14 +5486,12 @@ template <typename Base, typename Pattern>
 struct sequence_traits<detail::split_adaptor<Base, Pattern>>
 {
 private:
-    template <typename Self, typename B = detail::const_like_t<Self, Base>>
     struct cursor_type {
-        cursor_t<B> cur;
-        bounds_t<B> next;
+        cursor_t<Base> cur;
+        bounds_t<Base> next;
         bool trailing_empty = false;
 
-        friend bool operator==(cursor_type const&,
-                               cursor_type const&) = default;
+        friend bool operator==(cursor_type const&, cursor_type const&) = default;
     };
 
     static constexpr auto find_next(auto& self, auto const& from)
@@ -4444,31 +5515,24 @@ public:
 
     static constexpr bool is_infinite = infinite_sequence<Base>;
 
-    template <typename Self>
-    static constexpr auto first(Self& self)
-        requires sequence<decltype(self.base_)>
+    static constexpr auto first(auto& self) -> cursor_type
     {
         auto bounds = flux::search(self.base_, self.pattern_);
-        return cursor_type<Self>(flux::first(self.base_), std::move(bounds));
+        return cursor_type(flux::first(self.base_), std::move(bounds));
     }
 
-    template <typename Self>
-    static constexpr auto is_last(Self& self, cursor_type<Self> const& cur)
-        requires sequence<decltype(self.base_)>
+    static constexpr auto is_last(auto& self, cursor_type const& cur) -> bool
     {
         return flux::is_last(self.base_, cur.cur) && !cur.trailing_empty;
     }
 
-    template <typename Self>
-    static constexpr auto read_at(Self& self, cursor_type<Self> const& cur)
-        requires sequence<decltype(self.base_)>
+    static constexpr auto read_at(auto& self, cursor_type const& cur)
+        requires sequence<decltype((self.base_))>
     {
         return flux::slice(self.base_, cur.cur, cur.next.from);
     }
 
-    template <typename Self>
-    static constexpr auto inc(Self& self, cursor_type<Self>& cur) -> cursor_type<Self>&
-        requires sequence<decltype(self.base_)>
+    static constexpr auto inc(auto& self, cursor_type& cur)
     {
         cur.cur = cur.next.from;
         if (!flux::is_last(self.base_, cur.cur)) {
@@ -4482,7 +5546,6 @@ public:
         } else {
             cur.trailing_empty = false;
         }
-        return cur;
     }
 };
 
@@ -5493,21 +6556,6 @@ private:
     Base base_;
     distance_t count_;
 
-    template <bool IsConst>
-    struct cursor_type {
-    private:
-        using base_t = std::conditional_t<IsConst, Base const, Base>;
-
-    public:
-        cursor_t<base_t> base_cur;
-        distance_t length;
-
-        friend bool operator==(cursor_type const&, cursor_type const&) = default;
-        friend auto operator<=>(cursor_type const& lhs, cursor_type const& rhs) = default;
-    };
-
-    friend struct sequence_traits<take_adaptor>;
-
 public:
     constexpr take_adaptor(decays_to<Base> auto&& base, distance_t count)
         : base_(FLUX_FWD(base)),
@@ -5516,6 +6564,108 @@ public:
 
     [[nodiscard]] constexpr auto base() const& -> Base const& { return base_; }
     [[nodiscard]] constexpr auto base() && -> Base&& { return std::move(base_); }
+
+    struct flux_sequence_traits {
+    private:
+        struct cursor_type {
+            cursor_t<Base> base_cur;
+            distance_t length;
+
+            friend bool operator==(cursor_type const&, cursor_type const&) = default;
+            friend auto operator<=>(cursor_type const& lhs, cursor_type const& rhs) = default;
+        };
+
+    public:
+
+        static constexpr auto first(auto& self) -> cursor_type
+        {
+            return cursor_type{.base_cur = flux::first(self.base_),
+                               .length = self.count_};
+        }
+
+        static constexpr auto is_last(auto& self, cursor_type const& cur) -> bool
+        {
+            return cur.length <= 0 || flux::is_last(self.base_, cur.base_cur);
+        }
+
+        static constexpr auto inc(auto& self, cursor_type& cur)
+        {
+            flux::inc(self.base_, cur.base_cur);
+            cur.length = num::checked_sub(cur.length, distance_t{1});
+        }
+
+        static constexpr auto read_at(auto& self, cursor_type const& cur)
+            -> decltype(auto)
+            requires sequence<decltype((self.base_))>
+        {
+            return flux::read_at(self.base_, cur.base_cur);
+        }
+
+        static constexpr auto move_at(auto& self, cursor_type const& cur)
+            -> decltype(auto)
+            requires sequence<decltype((self.base_))>
+        {
+            return flux::move_at(self.base_, cur.base_cur);
+        }
+
+        static constexpr auto read_at_unchecked(auto& self, cursor_type const& cur)
+            -> decltype(auto)
+            requires sequence<decltype((self.base_))>
+        {
+            return flux::read_at_unchecked(self.base_, cur.base_cur);
+        }
+
+        static constexpr auto move_at_unchecked(auto& self, cursor_type const& cur)
+            -> decltype(auto)
+            requires sequence<decltype((self.base_))>
+        {
+            return flux::move_at_unchecked(self.base_, cur.base_cur);
+        }
+
+        static constexpr auto dec(auto& self, cursor_type& cur)
+            requires bidirectional_sequence<Base>
+        {
+            flux::dec(self.base_, cur.base_cur);
+            cur.length = num::checked_add(cur.length, distance_t{1});
+        }
+
+        static constexpr auto inc(auto& self, cursor_type& cur, distance_t offset)
+            requires random_access_sequence<Base>
+        {
+            flux::inc(self.base_, cur.base_cur, offset);
+            cur.length = num::checked_sub(cur.length, offset);
+        }
+
+        static constexpr auto distance(auto& self, cursor_type const& from, cursor_type const& to)
+            -> distance_t
+            requires random_access_sequence<Base>
+        {
+            return std::min(flux::distance(self.base_, from.base_cur, to.base_cur),
+                            num::checked_sub(from.length, to.length));
+        }
+
+        static constexpr auto data(auto& self)
+            -> decltype(flux::data(self.base_))
+            requires contiguous_sequence<Base>
+        {
+            return flux::data(self.base_);
+        }
+
+        static constexpr auto size(auto& self)
+            requires sized_sequence<Base>
+        {
+            return std::min(flux::size(self.base_), self.count_);
+        }
+
+        static constexpr auto last(auto& self) -> cursor_type
+            requires random_access_sequence<Base> && sized_sequence<Base>
+        {
+            return cursor_type{
+                .base_cur = flux::next(self.base_, flux::first(self.base_), size(self)),
+                .length = 0
+            };
+        }
+    };
 };
 
 struct take_fn {
@@ -5535,105 +6685,6 @@ struct take_fn {
 };
 
 } // namespace detail
-
-template <typename Base>
-struct sequence_traits<detail::take_adaptor<Base>> {
-
-    template <typename Self>
-    using cursor_t =
-        typename std::remove_const_t<Self>::template cursor_type<std::is_const_v<Self>>;
-
-    using value_type = value_t<Base>;
-
-    static constexpr bool disable_multipass = !multipass_sequence<Base>;
-
-    template <typename Self>
-    static constexpr auto first(Self& self)
-    {
-        return cursor_t<Self>{
-            .base_cur = flux::first(self.base_),
-            .length = self.count_
-        };
-    }
-
-    template <typename Self>
-    static constexpr auto is_last(Self& self, cursor_t<Self> const& cur) -> bool
-    {
-        return cur.length <= 0 || flux::is_last(self.base_, cur.base_cur);
-    }
-
-    template <typename Self>
-    static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
-        -> decltype(auto)
-    {
-        return flux::read_at(self.base_, cur.base_cur);
-    }
-
-    template <typename Self>
-    static constexpr auto inc(Self& self, cursor_t<Self>& cur) -> cursor_t<Self>&
-    {
-        flux::inc(self.base_, cur.base_cur);
-        --cur.length;
-        return cur;
-    }
-
-    template <typename Self>
-    static constexpr auto dec(Self& self, cursor_t<Self>& cur) -> cursor_t<Self>&
-        requires bidirectional_sequence<Base>
-    {
-        flux::dec(self.base_, cur.base_cur);
-        ++cur.length;
-        return cur;
-    }
-
-    template <typename Self>
-    static constexpr auto inc(Self& self, cursor_t<Self>& cur, distance_t offset)
-        -> cursor_t<Self>&
-        requires random_access_sequence<Base>
-    {
-        flux::inc(self.base_, cur.base_cur, offset);
-        cur.length -= offset;
-        return cur;
-    }
-
-    template <typename Self>
-    static constexpr auto distance(Self& self, cursor_t<Self> const& from, cursor_t<Self> const& to)
-        requires random_access_sequence<Base>
-    {
-        return std::min(flux::distance(self.base_, from.base_cur, to.base_cur),
-                        from.length - to.length);
-    }
-
-    template <typename Self>
-    static constexpr auto data(Self& self)
-    {
-        return flux::data(self.base_);
-    }
-
-    template <typename Self>
-    static constexpr auto last(Self& self)
-        requires random_access_sequence<Base> && sized_sequence<Base>
-    {
-        return cursor_t<Self>{
-            .base_cur = flux::next(self.base_, flux::first(self.base_), size(self)),
-            .length = 0
-        };
-    }
-
-    template <typename Self>
-    static constexpr auto size(Self& self)
-        requires sized_sequence<Base>
-    {
-        return std::min(flux::size(self.base_), self.count_);
-    }
-
-    template <typename Self>
-    static constexpr auto move_at(Self& self, cursor_t<Self> const& cur)
-        -> decltype(auto)
-    {
-        return flux::move_at(self.base_, cur.base_cur);
-    }
-};
 
 inline constexpr auto take = detail::take_fn{};
 
@@ -5803,7 +6854,7 @@ public:
             } else {
                 std::memmove(std::to_address(iter), flux::data(seq),
                              flux::usize(seq) * sizeof(value_t<Seq>));
-                return iter + narrow_cast<std::iter_difference_t<Iter>>(flux::size(seq));
+                return iter + checked_cast<std::iter_difference_t<Iter>>(flux::size(seq));
             }
         } else {
             return impl(seq, iter);
@@ -5829,298 +6880,6 @@ constexpr auto inline_sequence_base<D>::output_to(Iter iter) -> Iter
 #endif
 
 
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_RANGES_VIEW_HPP_INCLUDED
-#define FLUX_RANGES_VIEW_HPP_INCLUDED
-
-
-
-
-#include <ranges>
-
-namespace flux {
-
-namespace detail {
-
-template <sequence Base>
-consteval auto get_iterator_tag()
-{
-    if constexpr (contiguous_sequence<Base>) {
-        return std::contiguous_iterator_tag{};
-    } else if constexpr (random_access_sequence<Base>) {
-        return std::random_access_iterator_tag{};
-    } else if constexpr (bidirectional_sequence<Base>) {
-        return std::bidirectional_iterator_tag{};
-    } else if constexpr (multipass_sequence<Base>) {
-        return std::forward_iterator_tag{};
-    } else {
-        return std::input_iterator_tag{};
-    }
-}
-
-template <sequence Base>
-struct view_adaptor : std::ranges::view_interface<view_adaptor<Base>>
-{
-private:
-    [[no_unique_address]] Base base_;
-
-    template <bool IsConst>
-    class iterator {
-        using S = std::conditional_t<IsConst, Base const, Base>;
-        S* base_ = nullptr;
-        cursor_t<S> cur_{};
-
-    public:
-        using value_type = value_t<S>;
-        using difference_type = distance_t;
-        using element_type = value_t<S>;
-        using iterator_concept = decltype(get_iterator_tag<S>());
-
-        iterator() requires std::default_initializable<cursor_t<S>> = default;
-
-        constexpr iterator(S& base, cursor_t<S> cur)
-            : base_(std::addressof(base)),
-              cur_(std::move(cur))
-        {}
-
-        constexpr iterator(iterator<!IsConst> other)
-            requires IsConst && std::convertible_to<cursor_t<Base>,
-                            cursor_t<S>>
-            : base_(other.base_),
-              cur_(std::move(other.cur_))
-        {}
-
-        constexpr auto operator*() const -> element_t<S>
-        {
-            return flux::read_at(*base_, cur_);
-        }
-
-        constexpr auto operator++() -> iterator&
-        {
-            flux::inc(*base_, cur_);
-            return *this;
-        }
-
-        constexpr void operator++(int) { flux::inc(*base_, cur_); }
-
-        constexpr auto operator++(int) -> iterator
-            requires multipass_sequence<S>
-        {
-            auto temp = *this;
-            ++*this;
-            return temp;
-        }
-
-        constexpr auto operator--() -> iterator&
-            requires bidirectional_sequence<S>
-        {
-            flux::dec(*base_, cur_);
-            return *this;
-        }
-
-        constexpr auto operator--(int) -> iterator
-            requires bidirectional_sequence<S>
-        {
-            auto temp = *this;
-            --*this;
-            return temp;
-        }
-
-        constexpr auto operator+=(difference_type n) -> iterator&
-            requires random_access_sequence<S>
-        {
-            flux::inc(*base_, cur_, n);
-            return *this;
-        }
-
-        constexpr auto operator-=(difference_type n) -> iterator&
-            requires random_access_sequence<S>
-        {
-            flux::inc(*base_, cur_, -n);
-            return *this;
-        }
-
-        constexpr auto operator[](difference_type n) const -> element_t<S>
-            requires random_access_sequence<S>
-        {
-            auto i = flux::first(*base_);
-            flux::inc(*base_, i, n);
-            return flux::read_at(*base_, i);
-        }
-
-        constexpr auto operator->() const -> std::add_pointer_t<element_t<S>>
-            requires contiguous_sequence<S>
-        {
-            return flux::data(*base_) + flux::distance(*base_, flux::first(*base_), cur_);
-        }
-
-        friend constexpr bool operator==(iterator const& self, std::default_sentinel_t)
-        {
-            return flux::is_last(*self.base_, self.cur_);
-        }
-
-        friend bool operator==(iterator const&, iterator const&)
-            requires multipass_sequence<S>
-            = default;
-
-        friend std::strong_ordering operator<=>(iterator const&, iterator const&)
-            requires random_access_sequence<S>
-            = default;
-
-        friend constexpr auto operator+(iterator self, difference_type n) -> iterator
-            requires random_access_sequence<S>
-        {
-            flux::inc(*self.base_, self.cur_, n);
-            return self;
-        }
-
-        friend constexpr auto operator+(difference_type n, iterator self) -> iterator
-            requires random_access_sequence<S>
-        {
-            flux::inc(*self.base_, self.cur_, n);
-            return self;
-        }
-
-        friend constexpr auto operator-(iterator self, difference_type n) -> iterator
-            requires random_access_sequence<S>
-        {
-            flux::inc(*self.base_, self.cur_, -n);
-            return self;
-        }
-
-        friend constexpr auto operator-(iterator const& lhs, iterator const& rhs)
-            -> difference_type
-            requires random_access_sequence<S>
-        {
-            return flux::distance(*lhs.base_, rhs.cur_, lhs.cur_);
-        }
-
-        friend constexpr auto iter_move(iterator const& self)
-            -> rvalue_element_t<S>
-        {
-            return flux::move_at(*self.base_, self.cur_);
-        }
-
-        friend constexpr void iter_swap(iterator const& lhs, iterator const& rhs)
-            requires element_swappable_with<S, S>
-        {
-            flux::swap_with(*lhs.base_, lhs.cur_, *rhs.base_, rhs.cur_);
-        }
-    };
-
-public:
-    constexpr view_adaptor() requires std::default_initializable<Base> = default;
-
-    constexpr explicit view_adaptor(Base&& base)
-        : base_(std::move(base))
-    {}
-
-    constexpr auto begin()
-    {
-        return iterator<false>(base_, flux::first(base_));
-    }
-
-    constexpr auto begin() const
-        requires sequence<Base const>
-    {
-        return iterator<true>(base_, flux::first(base_));
-    }
-
-    constexpr auto end()
-    {
-        // Ranges requires sentinels to be copy-constructible
-        if constexpr (bounded_sequence<Base> &&
-                      std::copy_constructible<cursor_t<Base>>) {
-            return iterator<false>(base_, flux::last(base_));
-        } else {
-            return std::default_sentinel;
-        }
-    }
-
-    constexpr auto end() const
-        requires sequence<Base const>
-    {
-        if constexpr (bounded_sequence<Base const> &&
-                      std::copy_constructible<cursor_t<Base const>>) {
-            return iterator<true>(base_, flux::last(base_));
-        } else {
-            return std::default_sentinel;
-        }
-    }
-
-    constexpr auto size() requires sized_sequence<Base>
-    {
-        return flux::size(base_);
-    }
-
-    constexpr auto size() const requires sized_sequence<Base const>
-    {
-        return flux::size(base_);
-    }
-
-    constexpr auto data() requires contiguous_sequence<Base>
-    {
-        return flux::data(base_);
-    }
-
-    constexpr auto data() const requires contiguous_sequence<Base const>
-    {
-        return flux::data(base_);
-    }
-};
-
-struct view_fn {
-    template <sequence Seq>
-    constexpr auto operator()(Seq&& seq) const
-    {
-        if constexpr (std::ranges::viewable_range<Seq>) {
-            return std::views::all(FLUX_FWD(seq));
-        } else {
-            if constexpr (std::is_lvalue_reference_v<Seq>) {
-                return view_adaptor(flux::ref(FLUX_FWD(seq)));
-            } else {
-                return view_adaptor(FLUX_FWD(seq));
-            }
-        }
-    }
-};
-
-} // namespace detail
-
-inline constexpr auto view = detail::view_fn{};
-
-template <typename D>
-constexpr auto inline_sequence_base<D>::view() &
-{
-    return flux::view(derived());
-}
-
-template <typename D>
-constexpr auto inline_sequence_base<D>::view() const& requires sequence<D const>
-{
-    return flux::view(derived());
-}
-
-template <typename D>
-constexpr auto inline_sequence_base<D>::view() &&
-{
-    return flux::view(std::move(derived()));
-}
-
-template <typename D>
-constexpr auto inline_sequence_base<D>::view() const&& requires sequence<D const>
-{
-    return flux::view(std::move(derived()));
-}
-
-} // namespace flux
-
-#endif // FLUX_RANGE_VIEW_HPP_INCLUDED
-
-
 namespace flux {
 
 struct from_sequence_t {
@@ -6139,19 +6898,13 @@ template <typename C, typename Seq, typename... Args>
 concept from_sequence_constructible =
     std::constructible_from<C, from_sequence_t, Seq, Args...>;
 
-template <sequence Seq>
-using view_t = decltype(flux::view(FLUX_DECLVAL(Seq)));
-
 template <typename C>
 using container_value_t = typename C::value_type; // Let's just assume it exists
 
 template <sequence Seq>
 using common_iterator_t =
-    std::ranges::iterator_t<decltype(std::views::common(FLUX_DECLVAL(view_t<Seq>)))>;
+    std::ranges::iterator_t<decltype(std::views::common(FLUX_DECLVAL(Seq)))>;
 
-template <typename C, typename Seq, typename... Args>
-concept direct_view_constructible =
-    std::constructible_from<C, view_t<Seq>, Args...>;
 
 template <typename C, typename Seq, typename... Args>
 concept cpp17_range_constructible =
@@ -6168,7 +6921,6 @@ template <typename C, typename Seq, typename... Args>
 concept container_convertible =
     direct_sequence_constructible<C, Seq, Args...> ||
     from_sequence_constructible<C, Seq, Args...> ||
-    direct_view_constructible<C, Seq, Args...> ||
     cpp17_range_constructible<C, Seq, Args...> ||
     (  std::constructible_from<C, Args...> &&
         container_insertable<C, element_t<Seq>>);
@@ -6199,16 +6951,12 @@ template <template <typename...> typename C, typename Seq, typename... Args>
 using ctad_from_seq = decltype((C(from_sequence, FLUX_DECLVAL(Seq), FLUX_DECLVAL(Args)...)));
 
 template <template <typename...> typename C, typename Seq, typename... Args>
-using ctad_from_view = decltype(C(FLUX_DECLVAL(view_t<Seq>), FLUX_DECLVAL(Args)...));
-
-template <template <typename...> typename C, typename Seq, typename... Args>
 using ctad_from_iters = decltype(C(FLUX_DECLVAL(common_iterator_t<Seq>), FLUX_DECLVAL(common_iterator_t<Seq>), FLUX_DECLVAL(Args)...));
 
 template <template <typename...> typename C, typename Seq, typename... Args>
 concept can_deduce_container_type =
     requires { typename ctad_direct_seq<C, Seq, Args...>; } ||
     requires { typename ctad_from_seq<C, Seq, Args...>; } ||
-    requires { typename ctad_from_view<C, Seq, Args...>; } ||
     requires { typename ctad_from_iters<C, Seq, Args...>; } ||
     ( sizeof...(Args) == 0 && requires { typename C<value_t<Seq>>; });
 
@@ -6223,8 +6971,6 @@ consteval auto deduce_container_type()
         return type_t<decltype(C(FLUX_DECLVAL(Seq), FLUX_DECLVAL(Args)...))>{};
     } else if constexpr (requires { typename ctad_from_seq<C, Seq, Args...>; }) {
         return type_t<decltype((C(from_sequence, FLUX_DECLVAL(Seq), FLUX_DECLVAL(Args)...)))>{};
-    } else if constexpr (requires { typename ctad_from_view<C, Seq, Args...>; }) {
-        return type_t<decltype(C(FLUX_DECLVAL(view_t<Seq>), FLUX_DECLVAL(Args)...))>{};
     } else if constexpr (requires { typename ctad_from_iters<C, Seq, Args...>; }) {
         using I = common_iterator_t<Seq>;
         return type_t<decltype(C(FLUX_DECLVAL(I), FLUX_DECLVAL(I), FLUX_DECLVAL(Args)...))>{};
@@ -6252,10 +6998,8 @@ constexpr auto to(Seq&& seq, Args&&... args) -> Container
             return Container(FLUX_FWD(seq), FLUX_FWD(args)...);
         } else if constexpr (detail::from_sequence_constructible<Container, Seq, Args...>) {
             return Container(from_sequence, FLUX_FWD(seq), FLUX_FWD(args)...);
-        } else if constexpr (detail::direct_view_constructible<Container, Seq, Args...>) {
-            return Container(flux::view(FLUX_FWD(seq)), FLUX_FWD(args)...);
         } else if constexpr (detail::cpp17_range_constructible<Container, Seq, Args...>) {
-            auto view_ = std::views::common(flux::view(FLUX_FWD(seq)));
+            auto view_ = std::views::common(FLUX_FWD(seq));
             return Container(view_.begin(), view_.end(), FLUX_FWD(args)...);
         } else {
             auto c = Container(FLUX_FWD(args)...);
@@ -6380,8 +7124,6 @@ auto inline_sequence_base<Derived>::write_to(std::ostream& os) -> std::ostream&
 
 
 
-#include <cassert>
-
 namespace flux {
 
 namespace detail {
@@ -6421,11 +7163,10 @@ struct empty_sequence : inline_sequence_base<empty_sequence<T>> {
         static constexpr auto size(empty_sequence) -> std::ptrdiff_t { return 0; }
         static constexpr auto data(empty_sequence) -> T* { return nullptr; }
 
+        [[noreturn]]
         static constexpr auto read_at(empty_sequence, cursor_type) -> T&
         {
-            assert(false && "Attempted read of flux::empty");
-            /* Guaranteed UB... */
-            return *static_cast<T*>(nullptr);
+            runtime_error("Attempted read of flux::empty");
         }
     };
 };
@@ -6497,15 +7238,18 @@ private:
     using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
 
     template <std::size_t I>
-    static constexpr decltype(auto) read_at_(auto& self, auto const& cur)
+    static constexpr decltype(auto) read1_(auto fn, auto& self, auto const& cur)
     {
-        return flux::read_at(std::get<I>(self.bases_), std::get<I>(cur));
+        return fn(std::get<I>(self.bases_), std::get<I>(cur));
     }
 
-    template <std::size_t I>
-    static constexpr decltype(auto) move_at_(auto& self, auto const& cur)
+    static constexpr auto read_(auto fn, auto& self, auto const& cur)
     {
-        return flux::move_at(std::get<I>(self.bases_), std::get<I>(cur));
+        return [&]<std::size_t... I>(std::index_sequence<I...>) {
+          return tuple_t<decltype(read1_<I>(fn, self, cur))...> {
+              read1_<I>(fn, self, cur)...
+          };
+        }(std::index_sequence_for<Bases...>{});
     }
 
 public:
@@ -6531,11 +7275,7 @@ public:
     template <typename Self>
     static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
     {
-        return [&]<std::size_t... I>(std::index_sequence<I...>) {
-            return tuple_t<decltype(read_at_<I>(self, cur))...> {
-                read_at_<I>(self, cur)...
-            };
-        }(std::index_sequence_for<Bases...>{});
+        return read_(flux::read_at, self, cur);
     }
 
     template <typename Self>
@@ -6601,11 +7341,19 @@ public:
     template <typename Self>
     static constexpr auto move_at(Self& self, cursor_t<Self> const& cur)
     {
-        return [&]<std::size_t... I>(std::index_sequence<I...>) {
-            return tuple_t<decltype(move_at_<I>(self, cur))...>{
-                move_at_<I>(self, cur)...
-            };
-        }(std::index_sequence_for<Bases...>{});
+        return read_(flux::move_at, self, cur);
+    }
+
+    template <typename Self>
+    static constexpr auto read_at_unchecked(Self& self, cursor_t<Self> const& cur)
+    {
+        return read_(flux::read_at_unchecked, self, cur);
+    }
+
+    template <typename Self>
+    static constexpr auto move_at_unchecked(Self& self, cursor_t<Self> const& cur)
+    {
+        return read_(flux::move_at_unchecked, self, cur);
     }
 };
 
@@ -6615,6 +7363,158 @@ inline constexpr auto zip = detail::zip_fn{};
 
 #endif // FLUX_OP_ZIP_HPP_INCLUDED
 
+
+
+// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_SOURCE_ARRAY_PTR_HPP_INCLUDED
+#define FLUX_SOURCE_ARRAY_PTR_HPP_INCLUDED
+
+
+
+namespace flux {
+
+namespace detail {
+
+template <typename From, typename To>
+concept non_slicing_ptr_convertible = std::convertible_to<From (*)[], To (*)[]>;
+
+struct make_array_ptr_unchecked_fn;
+
+}
+
+template <typename T>
+    requires (std::is_object_v<T> && !std::is_abstract_v<T>)
+struct array_ptr : inline_sequence_base<array_ptr<T>> {
+private:
+    T* data_ = nullptr;
+    distance_t sz_ = 0;
+
+    friend struct detail::make_array_ptr_unchecked_fn;
+
+    constexpr array_ptr(T* ptr, distance_t sz) noexcept
+        : data_(ptr),
+          sz_(sz)
+    {}
+
+public:
+    array_ptr() = default;
+
+    template <typename U>
+        requires detail::non_slicing_ptr_convertible<U, T>
+    constexpr explicit(false) array_ptr(array_ptr<U> const& other) noexcept
+        : data_(flux::data(other)),
+          sz_(flux::size(other))
+    {}
+
+    template <typename Seq>
+        requires (!decays_to<Seq, array_ptr> &&
+                  contiguous_sequence<Seq> &&
+                  sized_sequence<Seq> &&
+                  detail::non_slicing_ptr_convertible<std::remove_reference_t<element_t<Seq>>, T>)
+    constexpr explicit array_ptr(Seq& seq)
+        : data_(flux::data(seq)),
+          sz_(flux::size(seq))
+    {}
+
+    friend constexpr auto operator==(array_ptr lhs, array_ptr rhs) -> bool
+    {
+        return std::ranges::equal_to{}(lhs.data_, rhs.data_) && lhs.sz_ == rhs.sz_;
+    }
+
+    struct flux_sequence_traits {
+
+        static constexpr auto first(array_ptr) -> index_t { return 0; }
+
+        static constexpr auto is_last(array_ptr self, index_t idx) -> bool
+        {
+            return idx >= self.sz_;
+        }
+
+        static constexpr auto inc(array_ptr self, index_t& idx) -> void
+        {
+            FLUX_DEBUG_ASSERT(idx < self.sz_);
+            idx = num::checked_add(idx, distance_t{1});
+        }
+
+        static constexpr auto read_at(array_ptr self, index_t idx) -> T&
+        {
+            bounds_check(idx >= 0);
+            bounds_check(idx < self.sz_);
+            return self.data_[idx];
+        }
+
+        static constexpr auto read_at_unchecked(array_ptr self, index_t idx) -> T&
+        {
+            return self.data_[idx];
+        }
+
+        static constexpr auto dec(array_ptr, index_t& idx) -> void
+        {
+            FLUX_DEBUG_ASSERT(idx > 0);
+            --idx;
+        }
+
+        static constexpr auto last(array_ptr self) -> index_t { return self.sz_; }
+
+        static constexpr auto inc(array_ptr self, index_t& idx, distance_t offset)
+            -> void
+        {
+            index_t nxt = num::checked_add(idx, offset);
+            FLUX_DEBUG_ASSERT(nxt >= 0);
+            FLUX_DEBUG_ASSERT(nxt <= self.sz_);
+            idx = nxt;
+        }
+
+        static constexpr auto distance(array_ptr, index_t from, index_t to)
+            -> distance_t
+        {
+            return num::checked_sub(to, from);
+        }
+
+        static constexpr auto size(array_ptr self) -> distance_t
+        {
+            return self.sz_;
+        }
+
+        static constexpr auto data(array_ptr self) -> T* { return self.data_; }
+
+        static constexpr auto for_each_while(array_ptr self, auto&& pred)
+        {
+            index_t idx = 0;
+            for (; idx < self.sz_; idx++) {
+                if (!std::invoke(pred, self.data_[idx])) {
+                    break;
+                }
+            }
+            return idx;
+        }
+    };
+};
+
+template <contiguous_sequence Seq>
+array_ptr(Seq&) -> array_ptr<std::remove_reference_t<element_t<Seq>>>;
+
+namespace detail {
+
+struct make_array_ptr_unchecked_fn {
+    template <typename T>
+        requires (std::is_object_v<T> && !std::is_abstract_v<T>)
+    constexpr auto operator()(T* ptr, std::integral auto size) const -> array_ptr<T>
+    {
+        return array_ptr<T>(ptr, checked_cast<distance_t>(size));
+    }
+};
+
+} // namespace detail
+
+inline constexpr auto make_array_ptr_unchecked = detail::make_array_ptr_unchecked_fn{};
+
+} // namespace flux
+
+#endif
 
 
 
@@ -6794,7 +7694,8 @@ public:
 
         static constexpr auto inc(self_t& self, cursor_type& cur) -> cursor_type&
         {
-            assert(self.is_);
+            flux::assert_(self.is_ != nullptr,
+                         "flux::getlines::inc(): attempt to iterate after stream EOF");
             if (!std::getline(*self.is_, self.str_, self.delim_)) {
                 self.is_ = nullptr;
             }
@@ -6930,19 +7831,19 @@ struct iota_sequence_traits {
         -> cursor_type&
         requires advancable<T>
     {
-        return cur += narrow_cast<std::iter_difference_t<T>>(offset);
+        return cur += checked_cast<std::iter_difference_t<T>>(offset);
     }
 
     static constexpr auto distance(auto&, cursor_type const& from, cursor_type const& to)
         requires advancable<T>
     {
-        return from <= to ? narrow_cast<distance_t>(to - from) : -narrow_cast<distance_t>(from - to);
+        return from <= to ? checked_cast<distance_t>(to - from) : -checked_cast<distance_t>(from - to);
     }
 
     static constexpr auto size(auto& self) -> distance_t
         requires advancable<T> && (Traits.has_start && Traits.has_end)
     {
-        return narrow_cast<distance_t>(self.end_ - self.start_);
+        return checked_cast<distance_t>(self.end_ - self.start_);
     }
 };
 
@@ -7148,7 +8049,7 @@ struct from_istreambuf_fn {
     [[nodiscard]]
     auto operator()(std::basic_streambuf<CharT, Traits>* streambuf) const -> sequence auto
     {
-        assert(streambuf != nullptr);
+        FLUX_ASSERT(streambuf != nullptr);
         return flux::from(*streambuf);
     }
 
@@ -7204,22 +8105,12 @@ inline constexpr auto from_istreambuf = detail::from_istreambuf_fn{};
 #endif
 
 
-
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_RANGES_HPP_INCLUDED
-#define FLUX_RANGES_HPP_INCLUDED
-
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_RANGES_FROM_RANGE_HPP_INCLUDED
-#define FLUX_RANGES_FROM_RANGE_HPP_INCLUDED
+#ifndef FLUX_RANGES_SOURCE_RANGE_HPP_INCLUDED
+#define FLUX_RANGES_SOURCE_RANGE_HPP_INCLUDED
 
 
 
@@ -7230,231 +8121,229 @@ namespace flux {
 namespace detail {
 
 template <typename R>
-concept contiguous_and_sized_range = std::ranges::contiguous_range<R> && std::ranges::sized_range<R>;
+concept can_const_iterate =
+    std::ranges::input_range<R> && std::ranges::input_range<R const> &&
+    std::same_as<std::ranges::iterator_t<R>, std::ranges::iterator_t<R const>>;
 
-}
+template <typename R, bool IsConst>
+struct range_sequence : inline_sequence_base<range_sequence<R, IsConst>> {
+private:
+    R rng_;
 
-template <typename R>
-    requires (!detail::derived_from_inline_sequence_base<R> &&
-              std::ranges::input_range<R> &&
-              !detail::contiguous_and_sized_range<R>)
-struct sequence_traits<R> {
+    using V = std::conditional_t<IsConst, R const, R>;
 
-    using value_type = std::ranges::range_value_t<R>;
+public:
+    struct flux_sequence_traits {
+    private:
+        class cursor_type {
 
-    static constexpr bool disable_multipass = !std::ranges::forward_range<R>;
+            std::ranges::iterator_t<V> iter;
 
-    template <decays_to<R> Self>
-        requires std::ranges::range<Self>
-    static constexpr auto first(Self& self)
-    {
-        return std::ranges::begin(self);
-    }
+            friend struct flux_sequence_traits;
 
-    template <decays_to<R> Self>
-        requires std::ranges::range<Self>
-    static constexpr bool is_last(Self& self, cursor_t<Self> const& cur)
-    {
-        return cur == std::ranges::end(self);
-    }
+            constexpr explicit cursor_type(std::ranges::iterator_t<V> iter) : iter(std::move(iter)) {}
+        public:
+            cursor_type() = default;
+            cursor_type(cursor_type&&) = default;
+            cursor_type& operator=(cursor_type&&) = default;
+            cursor_type(cursor_type const&) requires std::ranges::forward_range<V>
+                = default;
+            cursor_type& operator=(cursor_type const&) requires std::ranges::forward_range<V>
+                = default;
 
-    template <decays_to<R> Self>
-    static constexpr auto read_at(Self&, cursor_t<Self> const& cur)
-        -> decltype(auto)
-    {
-        return *cur;
-    }
+            friend auto operator==(cursor_type const&, cursor_type const&) -> bool = default;
+            friend auto operator<=>(cursor_type const&, cursor_type const&) = default;
+        };
 
-    template <decays_to<R> Self>
-    static constexpr auto inc(Self&, cursor_t<Self>& cur)
-        -> cursor_t<Self>&
-    {
-        return ++cur;
-    }
+    public:
+        using value_type = std::ranges::range_value_t<R>;
 
-    template <decays_to<R> Self>
-        requires std::bidirectional_iterator<cursor_t<Self>>
-    static constexpr auto dec(Self&, cursor_t<Self>& cur)
-        -> cursor_t<Self>&
-    {
-        return --cur;
-    }
-
-    template <decays_to<R> Self>
-        requires std::random_access_iterator<cursor_t<Self>>
-    static constexpr auto inc(Self&, cursor_t<Self>& cur, distance_t offset)
-        -> cursor_t<Self>&
-    {
-        return cur += narrow_cast<std::ranges::range_difference_t<Self>>(offset);
-    }
-
-    template <decays_to<R> Self>
-        requires std::random_access_iterator<cursor_t<Self>>
-    static constexpr auto distance(Self&, cursor_t<Self> const& from,
-                                   cursor_t<Self> const& to)
-    {
-        return to - from;
-    }
-
-    template <decays_to<R> Self>
-        requires std::ranges::contiguous_range<Self>
-    static constexpr auto data(Self& self)
-    {
-        return std::ranges::data(self);
-    }
-
-    template <decays_to<R> Self>
-        requires std::ranges::common_range<Self>
-    static constexpr auto last(Self& self) -> cursor_t<Self>
-    {
-        return std::ranges::end(self);
-    }
-
-    template <decays_to<R> Self>
-        requires std::ranges::sized_range<Self>
-    static constexpr auto size(Self& self)
-    {
-        return std::ranges::size(self);
-    }
-
-    template <decays_to<R> Self>
-    static constexpr auto move_at(Self&, cursor_t<Self> const& cur)
-        -> decltype(auto)
-    {
-        return std::ranges::iter_move(cur);
-    }
-
-    template <decays_to<R> Self>
-    static constexpr auto slice(Self& self, cursor_t<Self> from)
-    {
-        return std::ranges::subrange(std::move(from), std::ranges::end(self));
-    }
-
-    template <decays_to<R> Self>
-    static constexpr auto slice(Self&, cursor_t<Self> from, cursor_t<Self> to)
-    {
-        return std::ranges::subrange(std::move(from), std::move(to));
-    }
-
-    template <decays_to<R> Self>
-        requires std::ranges::range<Self>
-    static constexpr auto for_each_while(Self& self, auto&& pred)
-    {
-        auto iter = std::ranges::begin(self);
-        auto const last = std::ranges::end(self);
-
-        for ( ; iter != last; ++iter) {
-            if (!std::invoke(pred, *iter)) {
-                break;
+        template <typename Self>
+            requires (!std::is_const_v<Self> || can_const_iterate<V>)
+        static constexpr auto first(Self& self) -> cursor_type
+        {
+            if constexpr (IsConst) {
+                return cursor_type{std::ranges::cbegin(self.rng_)};
+            } else {
+                return cursor_type{std::ranges::begin(self.rng_)};
             }
         }
 
-        return iter;
-    }
-};
-
-template <typename R>
-    requires (!detail::derived_from_inline_sequence_base<R> && detail::contiguous_and_sized_range<R>)
-struct sequence_traits<R> {
-
-    using cursor_type = std::ranges::range_size_t<R>;
-    using value_type = std::ranges::range_value_t<R>;
-
-    template <decays_to<R> Self>
-        requires std::ranges::range<Self>
-    static constexpr auto first(Self&) -> cursor_type
-    {
-        return 0;
-    }
-
-    template <decays_to<R> Self>
-        requires std::ranges::sized_range<Self>
-    static constexpr auto is_last(Self& self, cursor_type cur) -> bool
-    {
-        return cur == std::ranges::size(self);
-    }
-
-    template <decays_to<R> Self>
-        requires std::ranges::range<Self>
-    static constexpr auto inc(Self&, cursor_type& cur) -> cursor_type&
-    {
-        return ++cur;
-    }
-
-    template <decays_to<R> Self>
-        requires std::ranges::contiguous_range<Self>
-    static constexpr auto read_at(Self& self, cursor_type cur) -> decltype(auto)
-    {
-        return *(std::ranges::data(self) + cur);
-    }
-
-    template <decays_to<R> Self>
-        requires std::ranges::range<Self>
-    static constexpr auto dec(Self&, cursor_type& cur) -> cursor_type&
-    {
-        return --cur;
-    }
-
-    template <decays_to<R> Self>
-        requires std::ranges::sized_range<Self>
-    static constexpr auto last(Self& self) -> cursor_type
-    {
-        return std::ranges::size(self);
-    }
-
-    template <decays_to<R> Self>
-        requires std::ranges::sized_range<Self>
-    static constexpr auto size(Self& self) -> std::ranges::range_size_t<R>
-    {
-        return std::ranges::size(self);
-    }
-
-    template <decays_to<R> Self>
-        requires std::ranges::range<Self>
-    static constexpr auto inc(Self&, cursor_type& cur, distance_t off) -> cursor_type&
-    {
-        return cur += narrow_cast<std::ptrdiff_t>(off);
-    }
-
-    template <decays_to<R> Self>
-        requires std::ranges::range<Self>
-    static constexpr auto distance(Self&, cursor_type from, cursor_type to) -> distance_t
-    {
-        return narrow_cast<distance_t>(to) - narrow_cast<distance_t>(from);
-    }
-
-    template <decays_to<R> Self>
-        requires std::ranges::contiguous_range<Self>
-    static constexpr auto data(Self& self)
-    {
-        return std::ranges::data(self);
-    }
-
-    template <decays_to<R> Self, typename Pred>
-        requires std::ranges::range<Self>
-    static constexpr auto for_each_while(Self& self, Pred pred) -> cursor_type
-    {
-        cursor_type idx = 0;
-        cursor_type const last = std::ranges::size(self);
-        auto* data = std::ranges::data(self);
-
-        for (; idx != last; ++idx) {
-            if (!std::invoke(pred, data[idx])) {
-                break;
+        template <typename Self>
+            requires (!std::is_const_v<Self> || can_const_iterate<V>)
+        static constexpr auto is_last(Self& self, cursor_type const& cur) -> bool
+        {
+            if constexpr (IsConst) {
+                return cur.iter == std::ranges::cend(self.rng_);
+            } else {
+                return cur.iter == std::ranges::end(self.rng_);
             }
         }
 
-        return idx;
+        template <typename Self>
+            requires (!std::is_const_v<Self> || can_const_iterate<V>)
+        static constexpr auto inc(Self& self, cursor_type& cur)
+        {
+            bounds_check(!is_last(self, cur));
+            ++cur.iter;
+        }
+
+        template <typename Self>
+            requires (!std::is_const_v<Self> || can_const_iterate<V>)
+        static constexpr auto read_at(Self& self, cursor_type const& cur) -> decltype(auto)
+        {
+            bounds_check(!is_last(self, cur));
+            return *cur.iter;
+        }
+
+        template <typename Self>
+            requires (!std::is_const_v<Self> || can_const_iterate<V>)
+        static constexpr auto move_at(Self& self, cursor_type const& cur) -> decltype(auto)
+        {
+            bounds_check(!is_last(self, cur));
+            return std::ranges::iter_move(cur.iter);
+        }
+
+        template <typename Self>
+            requires (!std::is_const_v<Self> || can_const_iterate<V>)
+        static constexpr auto dec(Self& self, cursor_type& cur)
+            requires std::ranges::bidirectional_range<R>
+        {
+            bounds_check(cur != first(self));
+            --cur.iter;
+        }
+
+        template <typename Self>
+            requires (!std::is_const_v<Self> || can_const_iterate<V>)
+        static constexpr auto inc(Self& self, cursor_type& cur, distance_t offset)
+            requires std::ranges::random_access_range<R>
+        {
+            if (offset < 0) {
+                bounds_check(num::checked_add(offset, distance(self, first(self), cur)) >= 0);
+            } else if (offset > 0) {
+                bounds_check(offset < distance(self, cur, last(self)));
+            }
+
+            cur.iter += checked_cast<std::ranges::range_difference_t<V>>(offset);
+        }
+
+        template <typename Self>
+            requires (!std::is_const_v<Self> || can_const_iterate<V>)
+        static constexpr auto distance(Self&, cursor_type const& from, cursor_type const& to)
+            -> distance_t
+            requires std::ranges::random_access_range<R>
+        {
+            return checked_cast<distance_t>(std::ranges::distance(from.iter, to.iter));
+        }
+
+        template <typename Self>
+            requires (!std::is_const_v<Self> || can_const_iterate<V>)
+        static constexpr auto data(Self& self)
+            requires std::ranges::contiguous_range<R>
+        {
+            if constexpr (IsConst) {
+                return std::ranges::cdata(self.rng_);
+            } else {
+                return std::ranges::data(self.rng_);
+            }
+        }
+
+        template <typename Self>
+            requires (!std::is_const_v<Self> || can_const_iterate<V>)
+        static constexpr auto last(Self& self) -> cursor_type
+            requires std::ranges::common_range<R>
+        {
+            return cursor_type{std::ranges::end(self.rng_)};
+        }
+
+        template <typename Self>
+            requires (!std::is_const_v<Self> || can_const_iterate<V>)
+        static constexpr auto size(Self& self) -> distance_t
+            requires std::ranges::sized_range<R>
+        {
+            return checked_cast<distance_t>(std::ranges::ssize(self.rng_));
+        }
+
+        template <typename Self>
+            requires (!std::is_const_v<Self> || can_const_iterate<V>)
+        static constexpr auto for_each_while(Self& self, auto&& pred) -> cursor_type
+        {
+            auto iter = std::ranges::begin(self.rng_);
+            auto const end = std::ranges::end(self.rng_);
+
+            while (iter != end) {
+                if (!std::invoke(pred, *iter)) {
+                    break;
+                }
+                ++iter;
+            }
+            return cursor_type{std::move(iter)};
+        }
+    };
+
+    constexpr explicit range_sequence(R rng) : rng_(std::move(rng)) {}
+
+    constexpr auto begin()
+    {
+        if constexpr (IsConst) {
+            return std::ranges::cbegin(rng_);
+        } else {
+            return std::ranges::begin(rng_);
+        }
+    }
+
+    constexpr auto begin() const requires std::ranges::range<R const>
+    {
+        return std::ranges::begin(rng_);
+    }
+
+    constexpr auto end()
+    {
+        if constexpr (IsConst) {
+            return std::ranges::cend(rng_);
+        } else {
+            return std::ranges::end(rng_);
+        }
+    }
+
+    constexpr auto end() const requires std::ranges::range<R const>
+    {
+        return std::ranges::end(rng_);
     }
 };
+
+struct from_range_fn {
+    template <std::ranges::viewable_range R>
+    requires std::ranges::input_range<R>
+    constexpr auto operator()(R&& rng) const
+    {
+        return range_sequence<std::views::all_t<R>, false>(std::views::all(FLUX_FWD(rng)));
+    }
+};
+
+struct from_crange_fn {
+    template <typename R, typename C = std::remove_reference_t<R> const&>
+        requires std::ranges::input_range<C> &&
+                 std::ranges::viewable_range<C>
+    constexpr auto operator()(R&& rng) const
+    {
+        if constexpr (std::is_lvalue_reference_v<R>) {
+            return range_sequence<std::views::all_t<C>, true>(std::views::all(static_cast<C>(rng)));
+        } else {
+            return range_sequence<std::views::all_t<R>, true>(std::views::all(FLUX_FWD(rng)));
+        }
+    }
+};
+
+} // namespace detail
+
+inline constexpr auto from_range = detail::from_range_fn{};
+inline constexpr auto from_crange = detail::from_crange_fn{};
 
 } // namespace flux
 
-#endif // FLUX_RANGE_FROM_RANGE_HPP_INCLUDED
+#endif
 
-
-
-#endif // FLUX_RANGES_HPP_INCLUDED
 
 
 #endif
