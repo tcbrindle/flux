@@ -40,6 +40,7 @@
 #include <flux/op/take.hpp>
 #include <flux/op/take_while.hpp>
 #include <flux/op/to.hpp>
+#include <flux/op/unchecked.hpp>
 #include <flux/op/write_to.hpp>
 #include <flux/op/zip.hpp>
 
