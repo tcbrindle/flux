@@ -87,7 +87,7 @@ public:
 
         static constexpr auto dec(array_ptr, index_t& idx) -> void
         {
-            FLUX_DEBUG_ASSERT(idx >= 0);
+            FLUX_DEBUG_ASSERT(idx > 0);
             --idx;
         }
 
