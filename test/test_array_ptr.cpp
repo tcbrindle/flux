@@ -324,10 +324,13 @@ constexpr bool test_array_ptr_sequence_impl()
 
     // Internal iteration works as expected
     {
-        std::array const arr{1, 2, 3, 4, 5};
+        std::array const arr{0, 1, 2, 3, 4};
         auto ptr = flux::array_ptr(arr);
 
-        STATIC_CHECK(flux::sum(ptr) == 15);
+        STATIC_CHECK(flux::sum(ptr) == 10);
+
+        auto idx = ptr.find(3);
+        STATIC_CHECK(idx == 3);
     }
 
     // Range interface works as expected
