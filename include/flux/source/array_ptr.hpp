@@ -15,6 +15,8 @@ namespace detail {
 template <typename From, typename To>
 concept non_slicing_ptr_convertible = std::convertible_to<From (*)[], To (*)[]>;
 
+struct make_array_ptr_unchecked_fn;
+
 }
 
 template <typename T>
@@ -23,6 +25,13 @@ struct array_ptr : inline_sequence_base<array_ptr<T>> {
 private:
     T* data_ = nullptr;
     distance_t sz_ = 0;
+
+    friend struct detail::make_array_ptr_unchecked_fn;
+
+    constexpr array_ptr(T* ptr, distance_t sz) noexcept
+        : data_(ptr),
+          sz_(sz)
+    {}
 
 public:
     array_ptr() = default;
@@ -43,15 +52,6 @@ public:
         : data_(flux::data(seq)),
           sz_(flux::size(seq))
     {}
-
-    template <typename U, std::integral S>
-        requires detail::non_slicing_ptr_convertible<U, T>
-    constexpr array_ptr(U* ptr, S size)
-        : data_(ptr),
-          sz_(checked_cast<distance_t>(size))
-    {
-        FLUX_DEBUG_ASSERT(size >= 0);
-    }
 
     friend constexpr auto operator==(array_ptr lhs, array_ptr rhs) -> bool
     {
@@ -131,8 +131,20 @@ public:
 template <contiguous_sequence Seq>
 array_ptr(Seq&) -> array_ptr<std::remove_reference_t<element_t<Seq>>>;
 
-template <typename T, std::integral Sz>
-array_ptr(T*, Sz) -> array_ptr<T>;
+namespace detail {
+
+struct make_array_ptr_unchecked_fn {
+    template <typename T>
+        requires (std::is_object_v<T> && !std::is_abstract_v<T>)
+    constexpr auto operator()(T* ptr, std::integral auto size) const -> array_ptr<T>
+    {
+        return array_ptr<T>(ptr, checked_cast<distance_t>(size));
+    }
+};
+
+} // namespace detail
+
+inline constexpr auto make_array_ptr_unchecked = detail::make_array_ptr_unchecked_fn{};
 
 } // namespace flux
 

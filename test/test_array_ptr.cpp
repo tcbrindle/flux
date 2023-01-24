@@ -155,31 +155,6 @@ constexpr bool test_array_ptr_ctor()
     static_assert(not std::is_convertible_v<flux::array_ptr<Derived>, flux::array_ptr<Base>>);
     static_assert(not std::is_convertible_v<flux::array_ptr<Base>, flux::array_ptr<Derived>>);
 
-    // (ptr, size) constructor
-    {
-        int arr[] = {1, 2, 3};
-
-        flux::array_ptr<int> ap(arr, 2);
-        STATIC_CHECK(ap.size() == 2);
-        STATIC_CHECK(ap.data() == arr);
-
-        flux::array_ptr<int const> cap(arr, 2);
-        STATIC_CHECK(cap.size() == 2);
-        STATIC_CHECK(cap.data() == arr);
-
-        // constructor is non-explicit
-        auto fn = [](flux::array_ptr<int const>) {};
-        (void) fn({arr, 3});
-    }
-
-    // Cannot use (ptr, size) ctor to lessen cv-qualifiers, do derived->base conversion,
-    // or construct from void*
-    static_assert(not std::constructible_from<flux::array_ptr<int>, int const*, int>);
-    static_assert(not std::constructible_from<flux::array_ptr<int const>, int const volatile*, int>);
-    static_assert(not std::constructible_from<flux::array_ptr<Base>, Derived*, int>);
-    static_assert(not std::constructible_from<flux::array_ptr<Derived>, Base*, int>);
-    static_assert(not std::constructible_from<flux::array_ptr<int>, void*, int>);
-
     return true;
 }
 static_assert(test_array_ptr_ctor());
@@ -206,16 +181,6 @@ constexpr bool test_array_ptr_ctad()
         static_assert(std::same_as<flux::array_ptr<int volatile const>, decltype(ap2)>);
     }
 
-    {
-        int* ptr = nullptr;
-        auto ap = flux::array_ptr(ptr, 3);
-        static_assert(std::same_as<decltype(ap), flux::array_ptr<int>>);
-
-        int volatile* const vptr = ptr;
-        auto ap2 = flux::array_ptr(vptr, 10);
-        static_assert(std::same_as<decltype(ap2), flux::array_ptr<int volatile>>);
-    }
-
     return true;
 }
 static_assert(test_array_ptr_ctad());
@@ -228,8 +193,8 @@ constexpr bool test_array_ptr_equality()
         int arr[] = {1, 2, 3};
         int arr2[] = {1, 2, 3};
 
-        auto ap = flux::array_ptr(arr, 3);
-        auto ap2 = flux::array_ptr(arr2, 3);
+        auto ap = flux::array_ptr(arr);
+        auto ap2 = flux::array_ptr(arr2);
 
         STATIC_CHECK(ap == ap);
         STATIC_CHECK(not (ap != ap));
@@ -241,8 +206,8 @@ constexpr bool test_array_ptr_equality()
     {
         int arr[] = {1, 2, 3};
 
-        auto ap = flux::array_ptr(arr, 3);
-        auto ap2 = flux::array_ptr(arr, 2);
+        auto ap = flux::make_array_ptr_unchecked(arr, 3);
+        auto ap2 = flux::make_array_ptr_unchecked(arr, 2);
 
         STATIC_CHECK(ap == ap);
         STATIC_CHECK(not (ap != ap));
@@ -365,9 +330,43 @@ constexpr bool test_array_ptr_sequence_impl()
         STATIC_CHECK(flux::sum(ptr) == 15);
     }
 
+    // Range interface works as expected
+    {
+        std::array arr{5, 4, 3, 2, 1};
+        auto ptr = flux::array_ptr(arr);
+        std::ranges::sort(ptr);
+        static_assert(std::ranges::contiguous_range<flux::array_ptr<int>>);
+        STATIC_CHECK(std::ranges::is_sorted(arr));
+    }
+
     return true;
 }
 static_assert(test_array_ptr_sequence_impl());
+
+constexpr bool test_make_array_ptr()
+{
+    {
+        int* p = nullptr;
+        auto arr = flux::make_array_ptr_unchecked(p, 0);
+
+        STATIC_CHECK(arr.size() == 0);
+        STATIC_CHECK(arr.data() == nullptr);
+    }
+
+    {
+        int arr[] = {5, 4, 3, 2, 1};
+        auto ap = flux::make_array_ptr_unchecked(arr, 4);
+        STATIC_CHECK(ap.size() == 4);
+        STATIC_CHECK(ap.data() == arr);
+
+        std::ranges::sort(ap);
+
+        STATIC_CHECK(check_equal(arr, {2, 3, 4, 5, 1}));
+    }
+
+    return true;
+}
+static_assert(test_make_array_ptr());
 
 }
 
@@ -377,6 +376,7 @@ TEST_CASE("array_ptr")
     REQUIRE(test_array_ptr_ctad());
     REQUIRE(test_array_ptr_equality());
     REQUIRE(test_array_ptr_sequence_impl());
+    REQUIRE(test_make_array_ptr());
 
     SECTION("bounds checking") {
         int arr[] = {0, 1, 2};
