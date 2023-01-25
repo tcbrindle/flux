@@ -18,7 +18,7 @@ private:
     Base base_;
 
 public:
-    constexpr unchecked_adaptor(decays_to<Base> auto&& base)
+    constexpr explicit unchecked_adaptor(decays_to<Base> auto&& base)
         : base_(FLUX_FWD(base))
     {}
 
@@ -45,12 +45,19 @@ public:
     };
 };
 
+struct unchecked_fn {
+    template <adaptable_sequence Seq>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq) const
+        -> unchecked_adaptor<std::decay_t<Seq>>
+    {
+        return unchecked_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq));
+    }
+};
+
 } // namespace detail
 
-inline constexpr auto unchecked =
-[]<adaptable_sequence Seq> [[nodiscard]] (Seq&& seq) -> sequence auto {
-    return detail::unchecked_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq));
-};
+inline constexpr auto unchecked = detail::unchecked_fn{};
 
 } // namespace flux
 
