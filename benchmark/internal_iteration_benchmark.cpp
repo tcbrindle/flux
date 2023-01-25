@@ -9,11 +9,6 @@
 
 #include <flux.hpp>
 
-//#define USE_FLOW
-#ifdef USE_FLOW
-#include "flow.hpp"
-#endif
-
 #include "ranges_concat.hpp"
 
 #include <algorithm>
@@ -54,14 +49,6 @@ int main(int argc, char** argv)
             an::doNotOptimizeAway(res);
         });
 
-#ifdef USE_FLOW
-        bench.run("transform_filter_flow", [&] {
-            int res =
-                flow::from(bunch_of_ints).map(triple).filter(is_even).sum();
-            an::doNotOptimizeAway(res);
-        });
-#endif
-
         bench.run("transform_filter_flux", [&] {
             auto r = flux::from(bunch_of_ints).map(triple).filter(is_even);
             int res = r.sum();
@@ -89,13 +76,6 @@ int main(int argc, char** argv)
             for (int i : r) { res += i; }
             an::doNotOptimizeAway(res);
         });
-
-#ifdef USE_FLOW
-        bench.run("concat_flow", [&] {
-            int res = flow::chain(bunch_of_ints, moar_ints).sum();
-            an::doNotOptimizeAway(res);
-        });
-#endif
 
         bench.run("concat_flux", [&] {
             auto r =
@@ -135,17 +115,6 @@ int main(int argc, char** argv)
             for (int i : r) { res += i; }
             an::doNotOptimizeAway(res);
         });
-
-#ifdef USE_FLOW
-        bench.run("concat_take_transform_filter_flow", [&] {
-            auto r = flow::chain(bunch_of_ints, moar_ints)
-                         .take(1'500'000)
-                         .map(triple)
-                         .filter(is_even);
-            int res = r.sum();
-            an::doNotOptimizeAway(res);
-        });
-#endif
 
         bench.run("concat_take_transform_filter_flux", [&] {
             int res =
