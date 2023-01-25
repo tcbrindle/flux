@@ -9,6 +9,7 @@
 #include <flux/core/assert.hpp>
 #include <flux/core/utils.hpp>
 
+#include <functional>
 #include <optional>
 
 namespace flux {

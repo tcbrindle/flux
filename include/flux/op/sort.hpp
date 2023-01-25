@@ -4,6 +4,7 @@
 
 #include <flux/core.hpp>
 #include <flux/op/detail/pdqsort.hpp>
+#include <flux/op/unchecked.hpp>
 
 namespace flux {
 
@@ -17,7 +18,8 @@ struct sort_fn {
                  std::predicate<Cmp&, projected_t<Proj, Seq>, projected_t<Proj, Seq>>
     constexpr auto operator()(Seq&& seq, Cmp cmp = {}, Proj proj = {}) const
     {
-        detail::pdqsort(seq, cmp, proj);
+        auto wrapper = flux::unchecked(flux::ref(seq));
+        detail::pdqsort(wrapper, cmp, proj);
     }
 };
 

@@ -185,14 +185,14 @@ template <typename Seq>
 concept has_custom_move_at_unchecked =
     sequence<Seq> &&
     requires (Seq& seq, cursor_t<Seq> const& cur) {
-        { traits_t<Seq>::read_at_unchecked(seq, cur) } -> std::same_as<rvalue_element_t<Seq>>;
+        { traits_t<Seq>::move_at_unchecked(seq, cur) } -> std::same_as<rvalue_element_t<Seq>>;
 };
 
 struct move_at_unchecked_fn {
     template <sequence Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq& seq, cursor_t<Seq> const& cur) const
-        -> rvalue_element_type<Seq>
+        -> rvalue_element_t<Seq>
     {
         if constexpr (has_custom_move_at_unchecked<Seq>) {
             return traits_t<Seq>::move_at_unchecked(seq, cur);
