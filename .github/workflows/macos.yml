@@ -32,6 +32,7 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       run: |
         cmake -GNinja -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DCMAKE_CXX_COMPILER=${{matrix.cxx}} \
+               -DFLUX_BUILD_BENCHMARKS=${{matrix.build_type == 'Release'}} \
                $GITHUB_WORKSPACE
 
     - name: Build

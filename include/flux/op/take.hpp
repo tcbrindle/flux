@@ -130,22 +130,25 @@ public:
                 .length = 0
             };
         }
+
+        static constexpr auto for_each_while(auto& self, auto&& pred) -> cursor_type
+        {
+            distance_t len = self.count_;
+            auto cur = flux::for_each_while(self.base_, [&](auto&& elem) {
+                return (len-- > 0) && std::invoke(pred, FLUX_FWD(elem));
+            });
+
+            return cursor_type{.base_cur = std::move(cur), .length = len};
+        }
     };
 };
 
 struct take_fn {
-
     template <adaptable_sequence Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, distance_t count) const
     {
-        if constexpr (random_access_sequence<Seq> && std::is_lvalue_reference_v<Seq>) {
-            auto first = flux::first(seq);
-            auto last = flux::next(seq, first, count);
-            return flux::from(flux::slice(seq, std::move(first), std::move(last)));
-        } else {
-            return take_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq), count);
-        }
+        return take_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq), count);
     }
 };
 

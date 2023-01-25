@@ -12,11 +12,11 @@ namespace an = ankerl::nanobench;
 static constexpr int test_sz = 100'000;
 
 template <typename SortFn, typename Vec>
-static void test_sort(const char* name, SortFn, const Vec& vec, an::Bench& bench)
+static void test_sort(const char* name, SortFn& sort, const Vec& vec, an::Bench& bench)
 {
     bench.run(name, [&] {
         Vec copy = vec;
-        SortFn{}(copy);
+        sort(copy);
         bench.doNotOptimizeAway(copy);
     });
 }
