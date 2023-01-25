@@ -7,7 +7,7 @@
 //
 // Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2019-2022 Martin Ankerl <martin.ankerl@gmail.com>
+// Copyright (c) 2019-2022 Martin Leitner-Ankerl <martin.ankerl@gmail.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -33,17 +33,18 @@
 // see https://semver.org/
 #define ANKERL_NANOBENCH_VERSION_MAJOR 4 // incompatible API changes
 #define ANKERL_NANOBENCH_VERSION_MINOR 3 // backwards-compatible changes
-#define ANKERL_NANOBENCH_VERSION_PATCH 7 // backwards-compatible bug fixes
+#define ANKERL_NANOBENCH_VERSION_PATCH 9 // backwards-compatible bug fixes
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // public facing api - as minimal as possible
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include <chrono>  // high_resolution_clock
-#include <cstring> // memcpy
-#include <iosfwd>  // for std::ostream* custom output target in Config
-#include <string>  // all names
-#include <vector>  // holds all results
+#include <chrono>        // high_resolution_clock
+#include <cstring>       // memcpy
+#include <iosfwd>        // for std::ostream* custom output target in Config
+#include <string>        // all names
+#include <unordered_map> // holds context information of results
+#include <vector>        // holds all results
 
 #define ANKERL_NANOBENCH(x) ANKERL_NANOBENCH_PRIVATE_##x()
 
@@ -91,7 +92,7 @@
 #define ANKERL_NANOBENCH_PRIVATE_PERF_COUNTERS() 0
 #if defined(__linux__) && !defined(ANKERL_NANOBENCH_DISABLE_PERF_COUNTERS)
 #    include <linux/version.h>
-#    if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 14, 0)
+#    if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 3, 0)
 // PERF_COUNT_HW_REF_CPU_CYCLES only available since kernel 3.3
 // PERF_FLAG_FD_CLOEXEC since kernel 3.14
 #        undef ANKERL_NANOBENCH_PRIVATE_PERF_COUNTERS
@@ -144,43 +145,45 @@ class BigO;
  * * `{{#result}}` Marks the begin of the result layer. Whatever comes after this will be instantiated as often as
  *   a benchmark result is available. Within it, you can use these tags:
  *
- *    * `{{title}}` See Bench::title().
+ *    * `{{title}}` See Bench::title.
  *
- *    * `{{name}}` Benchmark name, usually directly provided with Bench::run(), but can also be set with Bench::name().
+ *    * `{{name}}` Benchmark name, usually directly provided with Bench::run, but can also be set with Bench::name.
  *
- *    * `{{unit}}` Unit, e.g. `byte`. Defaults to `op`, see Bench::title().
+ *    * `{{unit}}` Unit, e.g. `byte`. Defaults to `op`, see Bench::unit.
  *
- *    * `{{batch}}` Batch size, see Bench::batch().
+ *    * `{{batch}}` Batch size, see Bench::batch.
  *
- *    * `{{complexityN}}` Value used for asymptotic complexity calculation. See Bench::complexityN().
+ *    * `{{complexityN}}` Value used for asymptotic complexity calculation. See Bench::complexityN.
  *
- *    * `{{epochs}}` Number of epochs, see Bench::epochs().
+ *    * `{{epochs}}` Number of epochs, see Bench::epochs.
  *
  *    * `{{clockResolution}}` Accuracy of the clock, i.e. what's the smallest time possible to measure with the clock.
  *      For modern systems, this can be around 20 ns. This value is automatically determined by nanobench at the first
  *      benchmark that is run, and used as a static variable throughout the application's runtime.
  *
- *    * `{{clockResolutionMultiple}}` Configuration multiplier for `clockResolution`. See Bench::clockResolutionMultiple().
+ *    * `{{clockResolutionMultiple}}` Configuration multiplier for `clockResolution`. See Bench::clockResolutionMultiple.
  *      This is the target runtime for each measurement (epoch). That means the more accurate your clock is, the faster
  *      will be the benchmark. Basing the measurement's runtime on the clock resolution is the main reason why nanobench is so fast.
  *
  *    * `{{maxEpochTime}}` Configuration for a maximum time each measurement (epoch) is allowed to take. Note that at least
- *      a single iteration will be performed, even when that takes longer than maxEpochTime. See Bench::maxEpochTime().
+ *      a single iteration will be performed, even when that takes longer than maxEpochTime. See Bench::maxEpochTime.
  *
- *    * `{{minEpochTime}}` Minimum epoch time, defaults to 1ms. See Bench::minEpochTime().
+ *    * `{{minEpochTime}}` Minimum epoch time, defaults to 1ms. See Bench::minEpochTime.
  *
- *    * `{{minEpochIterations}}` See Bench::minEpochIterations().
+ *    * `{{minEpochIterations}}` See Bench::minEpochIterations.
  *
- *    * `{{epochIterations}}` See Bench::epochIterations().
+ *    * `{{epochIterations}}` See Bench::epochIterations.
  *
- *    * `{{warmup}}` Number of iterations used before measuring starts. See Bench::warmup().
+ *    * `{{warmup}}` Number of iterations used before measuring starts. See Bench::warmup.
  *
- *    * `{{relative}}` True or false, depending on the setting you have used. See Bench::relative().
+ *    * `{{relative}}` True or false, depending on the setting you have used. See Bench::relative.
+ *
+ *    * `{{context(variableName)}}` See Bench::context.
  *
  *    Apart from these tags, it is also possible to use some mathematical operations on the measurement data. The operations
  *    are of the form `{{command(name)}}`.  Currently `name` can be one of `elapsed`, `iterations`. If performance counters
  *    are available (currently only on current Linux systems), you also have `pagefaults`, `cpucycles`,
- *    `contextswitches`, `instructions`, `branchinstructions`, and `branchmisses`. All the measuers (except `iterations`) are
+ *    `contextswitches`, `instructions`, `branchinstructions`, and `branchmisses`. All the measures (except `iterations`) are
  *    provided for a single iteration (so `elapsed` is the time a single iteration took). The following tags are available:
  *
  *    * `{{median(<name>)}}` Calculate median of a measurement data set, e.g. `{{median(elapsed)}}`.
@@ -201,7 +204,7 @@ class BigO;
  *      This measurement is a bit hard to interpret, but it is very robust against outliers. E.g. a value of 5% means that half of the
  *      measurements deviate less than 5% from the median, and the other deviate more than 5% from the median.
  *
- *    * `{{sum(<name>)}}` Sums of all the measurements. E.g. `{{sum(iterations)}}` will give you the total number of iterations
+ *    * `{{sum(<name>)}}` Sum of all the measurements. E.g. `{{sum(iterations)}}` will give you the total number of iterations
 *        measured in this benchmark.
  *
  *    * `{{minimum(<name>)}}` Minimum of all measurements.
@@ -244,21 +247,21 @@ class BigO;
  *  For the layer tags *result* and *measurement* you additionally can use these special markers:
  *
  *  * ``{{#-first}}`` - Begin marker of a template that will be instantiated *only for the first* entry in the layer. Use is only
- *    allowed between the begin and end marker of the layer allowed. So between ``{{#result}}`` and ``{{/result}}``, or between
+ *    allowed between the begin and end marker of the layer. So between ``{{#result}}`` and ``{{/result}}``, or between
  *    ``{{#measurement}}`` and ``{{/measurement}}``. Finish the template with ``{{/-first}}``.
  *
  *  * ``{{^-first}}`` - Begin marker of a template that will be instantiated *for each except the first* entry in the layer. This,
- *    this is basically the inversion of ``{{#-first}}``. Use is only allowed between the begin and end marker of the layer allowed.
+ *    this is basically the inversion of ``{{#-first}}``. Use is only allowed between the begin and end marker of the layer.
  *    So between ``{{#result}}`` and ``{{/result}}``, or between ``{{#measurement}}`` and ``{{/measurement}}``.
  *
  *  * ``{{/-first}}`` - End marker for either ``{{#-first}}`` or ``{{^-first}}``.
  *
  *  * ``{{#-last}}`` - Begin marker of a template that will be instantiated *only for the last* entry in the layer. Use is only
- *    allowed between the begin and end marker of the layer allowed. So between ``{{#result}}`` and ``{{/result}}``, or between
+ *    allowed between the begin and end marker of the layer. So between ``{{#result}}`` and ``{{/result}}``, or between
  *    ``{{#measurement}}`` and ``{{/measurement}}``. Finish the template with ``{{/-last}}``.
  *
  *  * ``{{^-last}}`` - Begin marker of a template that will be instantiated *for each except the last* entry in the layer. This,
- *    this is basically the inversion of ``{{#-last}}``. Use is only allowed between the begin and end marker of the layer allowed.
+ *    this is basically the inversion of ``{{#-last}}``. Use is only allowed between the begin and end marker of the layer.
  *    So between ``{{#result}}`` and ``{{/result}}``, or between ``{{#measurement}}`` and ``{{/measurement}}``.
  *
  *  * ``{{/-last}}`` - End marker for either ``{{#-last}}`` or ``{{^-last}}``.
@@ -316,7 +319,7 @@ char const* csv() noexcept;
   See the tutorial at :ref:`tutorial-template-html` for an example.
   @endverbatim
 
-  @see ankerl::nanobench::render()
+  @see also ankerl::nanobench::render()
  */
 char const* htmlBoxplot() noexcept;
 
@@ -395,6 +398,7 @@ struct Config {
     std::string mTimeUnitName = "ns";
     bool mShowPerformanceCounters = true;
     bool mIsRelative = false;
+    std::unordered_map<std::string, std::string> mContext{};
 
     Config();
     ~Config();
@@ -442,6 +446,8 @@ public:
     ANKERL_NANOBENCH(NODISCARD) double sumProduct(Measure m1, Measure m2) const noexcept;
     ANKERL_NANOBENCH(NODISCARD) double minimum(Measure m) const noexcept;
     ANKERL_NANOBENCH(NODISCARD) double maximum(Measure m) const noexcept;
+    ANKERL_NANOBENCH(NODISCARD) std::string const& context(char const*) const;
+    ANKERL_NANOBENCH(NODISCARD) std::string const& context(std::string const&) const;
 
     ANKERL_NANOBENCH(NODISCARD) bool has(Measure m) const noexcept;
     ANKERL_NANOBENCH(NODISCARD) double get(size_t idx, Measure m) const;
@@ -485,9 +491,9 @@ public:
     static constexpr uint64_t(max)();
 
     /**
-     * As a safety precausion, we don't allow copying. Copying a PRNG would mean you would have two random generators that produce the
+     * As a safety precaution, we don't allow copying. Copying a PRNG would mean you would have two random generators that produce the
      * same sequence, which is generally not what one wants. Instead create a new rng with the default constructor Rng(), which is
-     * automatically seeded from `std::random_device`. If you really need a copy, use copy().
+     * automatically seeded from `std::random_device`. If you really need a copy, use `copy()`.
      */
     Rng(Rng const&) = delete;
 
@@ -667,12 +673,41 @@ public:
      */
     Bench& title(char const* benchmarkTitle);
     Bench& title(std::string const& benchmarkTitle);
+
+    /**
+     * @brief Gets the title of the benchmark
+     */
     ANKERL_NANOBENCH(NODISCARD) std::string const& title() const noexcept;
 
     /// Name of the benchmark, will be shown in the table row.
     Bench& name(char const* benchmarkName);
     Bench& name(std::string const& benchmarkName);
     ANKERL_NANOBENCH(NODISCARD) std::string const& name() const noexcept;
+
+    /**
+     * @brief Set context information.
+     *
+     * The information can be accessed using custom render templates via `{{context(variableName)}}`.
+     * Trying to render a variable that hasn't been set before raises an exception.
+     * Not included in (default) markdown table.
+     *
+     * @see clearContext, render
+     *
+     * @param variableName The name of the context variable.
+     * @param variableValue The value of the context variable.
+     */
+    Bench& context(char const* variableName, char const* variableValue);
+    Bench& context(std::string const& variableName, std::string const& variableValue);
+
+    /**
+     * @brief Reset context information.
+     *
+     * This may improve efficiency when using many context entries,
+     * or improve robustness by removing spurious context entries.
+     *
+     * @see context
+     */
+    Bench& clearContext();
 
     /**
      * @brief Sets the batch size.
@@ -766,10 +801,10 @@ public:
     /**
      * @brief Upper limit for the runtime of each epoch.
      *
-     * As a safety precausion if the clock is not very accurate, we can set an upper limit for the maximum evaluation time per
+     * As a safety precaution if the clock is not very accurate, we can set an upper limit for the maximum evaluation time per
      * epoch. Default is 100ms. At least a single evaluation of the benchmark is performed.
      *
-     * @see minEpochTime(), minEpochIterations()
+     * @see minEpochTime, minEpochIterations
      *
      * @param t Maximum target runtime for a single epoch.
      */
@@ -782,7 +817,7 @@ public:
      * Default is zero, so we are fully relying on clockResolutionMultiple(). In most cases this is exactly what you want. If you see
      * that the evaluation is unreliable with a high `err%`, you can increase either minEpochTime() or minEpochIterations().
      *
-     * @see maxEpochTime(), minEpochIterations()
+     * @see maxEpochTim), minEpochIterations
      *
      * @param t Minimum time each epoch should take.
      */
@@ -793,9 +828,9 @@ public:
      * @brief Sets the minimum number of iterations each epoch should take.
      *
      * Default is 1, and we rely on clockResolutionMultiple(). If the `err%` is high and you want a more smooth result, you might want
-     * to increase the minimum number or iterations, or increase the minEpochTime().
+     * to increase the minimum number of iterations, or increase the minEpochTime().
      *
-     * @see minEpochTime(), maxEpochTime(), minEpochIterations()
+     * @see minEpochTime, maxEpochTime, minEpochIterations
      *
      * @param numIters Minimum number of iterations per epoch.
      */
@@ -1143,11 +1178,16 @@ double Rng::uniform01() noexcept {
 
 template <typename Container>
 void Rng::shuffle(Container& container) noexcept {
-    auto size = static_cast<uint32_t>(container.size());
-    for (auto i = size; i > 1U; --i) {
+    auto i = container.size();
+    while (i > 1U) {
         using std::swap;
-        auto p = bounded(i); // number in [0, i)
-        swap(container[i - 1], container[p]);
+        auto n = operator()();
+        // using decltype(i) instead of size_t to be compatible to containers with 32bit index (see #80)
+        auto b1 = static_cast<decltype(i)>((static_cast<uint32_t>(n) * static_cast<uint64_t>(i)) >> 32U);
+        swap(container[--i], container[b1]);
+
+        auto b2 = static_cast<decltype(i)>(((n >> 32U) * static_cast<uint64_t>(i)) >> 32U);
+        swap(container[--i], container[b2]);
     }
 }
 
@@ -1596,6 +1636,10 @@ static std::ostream& generateResultTag(Node const& n, Result const& r, std::ostr
     std::vector<std::string> matchResult;
     if (matchCmdArgs(std::string(n.begin, n.end), matchResult)) {
         if (matchResult.size() == 2) {
+            if (matchResult[0] == "context") {
+                return out << r.context(matchResult[1]);
+            }
+
             auto m = Result::fromString(matchResult[1]);
             if (m == Result::Measure::_size) {
                 return out << 0.0;
@@ -2987,6 +3031,14 @@ double Result::maximum(Measure m) const noexcept {
     return *std::max_element(data.begin(), data.end());
 }
 
+std::string const& Result::context(char const* variableName) const {
+    return mConfig.mContext.at(variableName);
+}
+
+std::string const& Result::context(std::string const& variableName) const {
+    return mConfig.mContext.at(variableName);
+}
+
 Result::Measure Result::fromString(std::string const& str) {
     if (str == "elapsed") {
         return Measure::elapsed;
@@ -3112,6 +3164,21 @@ Bench& Bench::name(std::string const& benchmarkName) {
 
 std::string const& Bench::name() const noexcept {
     return mConfig.mBenchmarkName;
+}
+
+Bench& Bench::context(char const* variableName, char const* variableValue) {
+    mConfig.mContext[variableName] = variableValue;
+    return *this;
+}
+
+Bench& Bench::context(std::string const& variableName, std::string const& variableValue) {
+    mConfig.mContext[variableName] = variableValue;
+    return *this;
+}
+
+Bench& Bench::clearContext() {
+    mConfig.mContext.clear();
+    return *this;
 }
 
 // Number of epochs to evaluate. The reported result will be the median of evaluation of each epoch.
