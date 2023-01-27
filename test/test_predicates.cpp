@@ -17,8 +17,8 @@ namespace {
 namespace pred = flux::pred;
 using namespace std::string_view_literals;
 
-auto const& all_of = std::ranges::all_of;
-auto const& none_of = std::ranges::none_of;
+constexpr auto& all_of = std::ranges::all_of;
+constexpr auto& none_of = std::ranges::none_of;
 
 constexpr bool test_predicate_comparators()
 {
