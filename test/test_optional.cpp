@@ -306,7 +306,7 @@ constexpr bool test_optional_in_place_ctor()
     }
 
     {
-        flux::optional<Tester> o(std::in_place, 1, 2.0);
+        flux::optional<Tester> o(std::in_place, 1, 2.0f);
         STATIC_CHECK(o.has_value());
         STATIC_CHECK(o->i == 1);
         STATIC_CHECK(o->f == 2.0f);
