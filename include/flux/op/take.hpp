@@ -60,29 +60,25 @@ public:
         }
 
         static constexpr auto read_at(auto& self, cursor_type const& cur)
-            -> decltype(auto)
-            requires sequence<decltype((self.base_))>
+            -> decltype(flux::read_at(self.base_, cur.base_cur))
         {
             return flux::read_at(self.base_, cur.base_cur);
         }
 
         static constexpr auto move_at(auto& self, cursor_type const& cur)
-            -> decltype(auto)
-            requires sequence<decltype((self.base_))>
+            -> decltype(flux::move_at(self.base_, cur.base_cur))
         {
             return flux::move_at(self.base_, cur.base_cur);
         }
 
         static constexpr auto read_at_unchecked(auto& self, cursor_type const& cur)
-            -> decltype(auto)
-            requires sequence<decltype((self.base_))>
+            -> decltype(flux::read_at_unchecked(self.base_, cur.base_cur))
         {
             return flux::read_at_unchecked(self.base_, cur.base_cur);
         }
 
         static constexpr auto move_at_unchecked(auto& self, cursor_type const& cur)
-            -> decltype(auto)
-            requires sequence<decltype((self.base_))>
+            -> decltype(flux::move_at_unchecked(self.base_, cur.base_cur))
         {
             return flux::move_at_unchecked(self.base_, cur.base_cur);
         }
