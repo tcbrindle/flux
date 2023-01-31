@@ -271,7 +271,7 @@ public:
     /// Returns the number of elements in the sequence which are equal to `value`
     template <typename Value, typename Proj = std::identity>
         requires std::equality_comparable_with<projected_t<Proj, Derived>, Value const&>
-    constexpr auto count(Value const& value, Proj proj = {});
+    constexpr auto count_eq(Value const& value, Proj proj = {});
 
     template <typename Pred, typename Proj = std::identity>
         requires predicate_for<Pred, Derived, Proj>

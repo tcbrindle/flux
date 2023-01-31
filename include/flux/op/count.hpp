@@ -28,7 +28,9 @@ struct count_fn {
             return counter;
         }
     }
+};
 
+struct count_eq_fn {
     template <sequence Seq, typename Value, typename Proj = std::identity>
         requires std::equality_comparable_with<projected_t<Proj, Seq>, Value const&>
     [[nodiscard]]
@@ -67,6 +69,7 @@ struct count_if_fn {
 } // namespace detail
 
 inline constexpr auto count = detail::count_fn{};
+inline constexpr auto count_eq = detail::count_eq_fn{};
 inline constexpr auto count_if = detail::count_if_fn{};
 
 template <typename D>
@@ -78,9 +81,9 @@ constexpr auto inline_sequence_base<D>::count()
 template <typename D>
 template <typename Value, typename Proj>
     requires std::equality_comparable_with<projected_t<Proj, D>, Value const&>
-constexpr auto inline_sequence_base<D>::count(Value const& value, Proj proj)
+constexpr auto inline_sequence_base<D>::count_eq(Value const& value, Proj proj)
 {
-    return flux::count(derived(), value, std::move(proj));
+    return flux::count_eq(derived(), value, std::move(proj));
 }
 
 template <typename D>
