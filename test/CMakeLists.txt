@@ -28,6 +28,7 @@ add_executable(test-libflux
     test_fill.cpp
     test_filter.cpp
     test_find.cpp
+    test_flatten.cpp
     test_for_each.cpp
     test_fold.cpp
     test_front_back.cpp
