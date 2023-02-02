@@ -55,6 +55,8 @@ public:
         }
 
     public:
+        using value_type = value_t<InnerSeq>;
+
         static constexpr auto first(self_t& self) -> cursor_type
         {
             cursor_type cur(flux::first(self.base_));
@@ -138,6 +140,8 @@ public:
         }
 
     public:
+        using value_type = value_t<InnerSeq>;
+
         template <typename Self>
             requires can_flatten<Self>
         static constexpr auto first(Self& self) -> cursor_type
