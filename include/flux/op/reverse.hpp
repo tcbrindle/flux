@@ -143,13 +143,13 @@ struct sequence_traits<detail::reverse_adaptor<Base>>
         const auto end = flux::first(self.base_);
 
         while (cur != end) {
-            if (!std::invoke(pred, flux::read_at(self.base_, flux::prev(self.base_, cur)))) {
+            flux::dec(self.base_, cur);
+            if (!std::invoke(pred, flux::read_at(self.base_, cur))) {
                 break;
             }
-            flux::dec(self.base_, cur);
         }
 
-        return detail::rev_cur(cur);
+        return detail::rev_cur(flux::inc(self.base_, cur));
     }
 };
 

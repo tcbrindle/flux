@@ -208,12 +208,16 @@ public:
 
     template <typename Pred>
         requires std::predicate<Pred&, element_t<Derived>>
+    [[nodiscard]]
     constexpr auto drop_while(Pred pred) &&;
 
     template <typename Pred>
         requires std::predicate<Pred&, element_t<Derived>&>
     [[nodiscard]]
     constexpr auto filter(Pred pred) &&;
+
+    [[nodiscard]]
+    constexpr auto flatten() && requires sequence<element_t<Derived>>;
 
     template <typename Func>
         requires std::invocable<Func&, element_t<Derived>>

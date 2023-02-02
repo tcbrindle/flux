@@ -15,19 +15,21 @@ inline namespace test_utils {
 
 inline constexpr struct {
 private:
-    static constexpr bool impl(flux::sequence auto seq1, flux::sequence auto seq2)
+    static constexpr bool impl(flux::sequence auto&& seq1, flux::sequence auto&& seq2)
     {
-        auto cur1 = seq1.first();
-        auto cur2 = seq2.first();
+        using namespace flux;
 
-        while (!seq1.is_last(cur1) && !seq2.is_last(cur2)) {
-            if (seq1[cur1] != seq2[cur2]) { return false; }
+        auto cur1 = first(seq1);
+        auto cur2 = first(seq2);
 
-            seq1.inc(cur1);
-            seq2.inc(cur2);
+        while (!is_last(seq1, cur1) && !is_last(seq2, cur2)) {
+            if (read_at(seq1, cur1) != read_at(seq2, cur2)) { return false; }
+
+            inc(seq1, cur1);
+            inc(seq2, cur2);
         }
 
-        return seq1.is_last(cur1) == seq2.is_last(cur2);
+        return is_last(seq1, cur1) == is_last(seq2, cur2);
     }
 
 public:
@@ -35,13 +37,13 @@ public:
     constexpr bool operator()(flux::sequence auto&& seq,
                               std::initializer_list<T> ilist) const
     {
-        return impl(flux::from(FLUX_FWD(seq)), flux::from(ilist));
+        return impl(FLUX_FWD(seq), ilist);
     }
 
     constexpr bool operator()(flux::sequence auto&& seq1,
                               flux::sequence auto&& seq2) const
     {
-        return impl(flux::from(FLUX_FWD(seq1)), flux::from(FLUX_FWD(seq2)));
+        return impl(FLUX_FWD(seq1), FLUX_FWD(seq2));
     }
 
 } check_equal;
@@ -86,35 +88,34 @@ struct flux::sequence_traits<single_pass_only<Base>>
 
     static constexpr auto first(self_t& self)
     {
-        return cursor_t(self.base_.first());
+        return cursor_t(flux::first(self.base_));
     }
 
     static constexpr auto is_last(self_t& self, cursor_t const& cur)
     {
-        return self.base_.is_last(cur.base_cur);
+        return flux::is_last(self.base_, cur.base_cur);
     }
 
-    static constexpr auto& inc(self_t& self, cursor_t& cur)
+    static constexpr void inc(self_t& self, cursor_t& cur)
     {
-        self.base_.inc(cur.base_cur);
-        return cur;
+        flux::inc(self.base_, cur.base_cur);
     }
 
     static constexpr decltype(auto) read_at(self_t& self, cursor_t const& cur)
     {
-        return self.base_.read_at(cur.base_cur);
+        return flux::read_at(self.base_, cur.base_cur);
     }
 
     static constexpr auto last(self_t& self)
         requires bounded_sequence<Base>
     {
-        return cursor_t(self.base_.last());
+        return cursor_t(flux::last(self.base_));
     }
 
     static constexpr auto size(self_t& self)
         requires sized_sequence<Base>
     {
-        return self.base_.size();
+        return flux::size(self.base_);
     }
 };
 
