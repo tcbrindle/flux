@@ -123,9 +123,6 @@ public:
             cursor_t<InnerSeq> inner_cur{};
 
             friend auto operator==(cursor_type const&, cursor_type const&) -> bool = default;
-            friend auto operator<=>(cursor_type const&, cursor_type const&)
-                requires ordered_cursor<cursor_t<Base>> && ordered_cursor<cursor_t<InnerSeq>>
-                = default;
         };
 
         static constexpr auto satisfy(auto& self, cursor_type& cur) -> void
@@ -216,8 +213,8 @@ public:
                     return;
                 } else {
                     flux::dec(self.base_, cur.outer_cur);
-                    auto&& inner = flux::read_at(self.base_, cur.outer_cur);
-                    cur.inner_cur = flux::last(inner);
+                    auto&& next_inner = flux::read_at(self.base_, cur.outer_cur);
+                    cur.inner_cur = flux::last(next_inner);
                 }
             }
         }
