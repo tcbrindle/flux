@@ -199,9 +199,16 @@ public:
      * Adaptors
      */
 
+    [[nodiscard]]
     constexpr auto cache_last() &&
             requires bounded_sequence<Derived> ||
                      (multipass_sequence<Derived> && not infinite_sequence<Derived>);
+
+    template <typename Pred>
+        requires multipass_sequence<Derived> &&
+                 std::predicate<Pred&, element_t<Derived>, element_t<Derived>>
+    [[nodiscard]]
+    constexpr auto chunk_by(Pred pred) &&;
 
     [[nodiscard]]
     constexpr auto drop(distance_t count) &&;
