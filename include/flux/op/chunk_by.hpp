@@ -75,6 +75,12 @@ public:
         {
             return flux::slice(self.base_, cur.from, cur.to);
         }
+
+        static constexpr auto last(auto& self) -> cursor_type
+            requires bounded_sequence<Base>
+        {
+            return cursor_type{flux::last(self.base_), flux::last(self.base_)};
+        }
     };
 };
 

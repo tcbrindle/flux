@@ -52,9 +52,9 @@ constexpr bool test_chunk_by() {
 
         static_assert(flux::multipass_sequence<S>);
         static_assert(not flux::bidirectional_sequence<S>);
+        static_assert(flux::bounded_sequence<S>);
         static_assert(not flux::random_access_sequence<S>);
         static_assert(not flux::sized_sequence<S>);
-        static_assert(not flux::bounded_sequence<S>);
 
         STATIC_CHECK(seq.count() == 3);
 
@@ -66,6 +66,11 @@ constexpr bool test_chunk_by() {
 
         seq.inc(cur);
         STATIC_CHECK(check_equal(seq[cur], {P{2, 3}, P{2, 3}, P{2, 3}, P{2, 3}}));
+
+        cur = seq.last();
+        STATIC_CHECK(flux::is_last(seq, cur));
+        
+        seq[cur];
     }
 
 
