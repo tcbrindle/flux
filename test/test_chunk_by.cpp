@@ -51,7 +51,7 @@ constexpr bool test_chunk_by() {
         using S = decltype(seq);
 
         static_assert(flux::multipass_sequence<S>);
-        static_assert(not flux::bidirectional_sequence<S>);
+        static_assert(flux::bidirectional_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(not flux::random_access_sequence<S>);
         static_assert(not flux::sized_sequence<S>);
@@ -69,11 +69,9 @@ constexpr bool test_chunk_by() {
 
         cur = seq.last();
         STATIC_CHECK(flux::is_last(seq, cur));
-        
-        seq[cur];
     }
 
-
+    // chunk_by is const-iterable when the underlying sequence is
     {
         auto const seq = flux::ref(arr).chunk_by([](P p0, P p1) { return p0.first == p1.first; });
 
@@ -85,6 +83,27 @@ constexpr bool test_chunk_by() {
 
         STATIC_CHECK(check_equal(flux::read_at(seq, flux::next(seq, cur)),
                                  {P{2, 2}, P{2, 2}, P{2, 3}, P{2, 3}, P{2, 3}, P{2, 3}}));
+    }
+
+    // chunk_by is reversible when the underlying sequence is
+    {
+        auto seq = flux::ref(arr)
+                                        .chunk_by([](P p0, P p1) { return p0.first == p1.first; })
+                                        .reverse();
+
+        STATIC_CHECK(flux::count(seq) == 2);
+
+        // Note that chunk_by().reverse() delivers the chunks in reverse order,
+        // but within each chunk the elements are still in forward order
+        // Compare with reverse().chunk_by(), which reverses the elements and
+        // *then* splits them into chunks
+
+        auto cur = flux::first(seq);
+        STATIC_CHECK(check_equal(flux::read_at(seq, cur),
+                                 {P{2, 2}, P{2, 2}, P{2, 3}, P{2, 3}, P{2, 3}, P{2, 3}}));
+
+        STATIC_CHECK(check_equal(flux::read_at(seq, flux::next(seq, cur)),
+                                 {P{1, 1}, P{1, 1}, P{1, 2}, P{1, 2}, P{1, 2}, P{1, 2}}));
 
     }
 
@@ -144,4 +163,10 @@ TEST_CASE("chunk_by")
 {
     bool res = test_chunk_by();
     REQUIRE(res);
+
+    {
+        flux::chunk_by(std::vector{1, 1, 2, 2, 2, 3, 3, 3}, std::equal_to<>{})
+            .reverse()
+            .write_to(std::cout);
+    }
 }

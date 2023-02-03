@@ -27,7 +27,15 @@ public:
 
     struct flux_sequence_traits {
     private:
-        using cursor_type = bounds_t<Base>;
+        struct cursor_type {
+            cursor_t<Base> from;
+            cursor_t<Base> to;
+
+            friend constexpr auto operator==(cursor_type const& lhs, cursor_type const& rhs) -> bool
+            {
+                return lhs.from == rhs.from;
+            }
+        };
 
         static constexpr auto find_next(auto& self, cursor_t<Base> cur) -> cursor_t<Base>
         {
@@ -46,6 +54,25 @@ public:
             }
 
             return nxt;
+        }
+
+        static constexpr auto find_prev(auto& self, cursor_t<Base> cur) -> cursor_t<Base>
+        {
+            auto const fst = flux::first(self.base_);
+
+            if (cur == fst || flux::dec(self.base_, cur) == fst) {
+                return cur;
+            }
+
+            do {
+                auto prv = flux::prev(self.base_, cur);
+                if (!std::invoke(self.pred_, flux::read_at(self.base_, prv), flux::read_at(self.base_, cur))) {
+                    break;
+                }
+                cur = std::move(prv);
+            } while (cur != fst);
+
+            return cur;
         }
 
     public:
@@ -80,6 +107,15 @@ public:
             requires bounded_sequence<Base>
         {
             return cursor_type{flux::last(self.base_), flux::last(self.base_)};
+        }
+
+        static constexpr auto dec(auto& self, cursor_type& cur) -> void
+            requires bidirectional_sequence<Base>
+        {
+            cur = cursor_type{
+                .from = find_prev(self, cur.from),
+                .to = cur.from
+            };
         }
     };
 };
