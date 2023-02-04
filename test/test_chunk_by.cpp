@@ -153,6 +153,30 @@ constexpr bool test_chunk_by() {
         STATIC_CHECK(check_equal(seq[seq.inc(cur)], {0}));
     }
 
+    // calling inc() on the last cursor doesn't get us in trouble
+    {
+        std::array arr4{1, 1, 1, 2, 2};
+
+        auto seq = flux::chunk_by(arr4, std::equal_to<>{});
+
+        auto cur = seq.last();
+        seq.inc(cur);
+
+        STATIC_CHECK(seq.is_last(cur));
+    }
+
+    // Calling dec() on the first cursor doesn't get us in trouble
+    {
+        std::array arr4{1, 1, 1, 2, 2};
+
+        auto seq = flux::chunk_by(arr4, std::equal_to<>{});
+
+        auto cur = seq.first();
+        seq.dec(cur);
+
+        STATIC_CHECK(cur == seq.first());
+    }
+
     return true;
 }
 static_assert(test_chunk_by());
@@ -163,10 +187,4 @@ TEST_CASE("chunk_by")
 {
     bool res = test_chunk_by();
     REQUIRE(res);
-
-    {
-        flux::chunk_by(std::vector{1, 1, 2, 2, 2, 3, 3, 3}, std::equal_to<>{})
-            .reverse()
-            .write_to(std::cout);
-    }
 }
