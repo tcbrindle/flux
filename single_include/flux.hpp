@@ -2119,9 +2119,16 @@ public:
      * Adaptors
      */
 
+    [[nodiscard]]
     constexpr auto cache_last() &&
             requires bounded_sequence<Derived> ||
                      (multipass_sequence<Derived> && not infinite_sequence<Derived>);
+
+    template <typename Pred>
+        requires multipass_sequence<Derived> &&
+                 std::predicate<Pred&, element_t<Derived>, element_t<Derived>>
+    [[nodiscard]]
+    constexpr auto chunk_by(Pred pred) &&;
 
     [[nodiscard]]
     constexpr auto drop(distance_t count) &&;
@@ -3929,6 +3936,317 @@ inline constexpr auto chain = detail::chain_fn{};
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
+#ifndef FLUX_OP_CHUNK_BY_HPP_INCLUDED
+#define FLUX_OP_CHUNK_BY_HPP_INCLUDED
+
+
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_OP_SLICE_HPP_INCLUDED
+#define FLUX_OP_SLICE_HPP_INCLUDED
+
+
+
+
+namespace flux {
+
+namespace detail {
+
+template <cursor Cur, bool Bounded>
+struct slice_data {
+    Cur first;
+    Cur last;
+};
+
+template <cursor Cur>
+struct slice_data<Cur, false> {
+    Cur first;
+};
+
+template <sequence Base, bool Bounded>
+    requires (!Bounded || regular_cursor<cursor_t<Base>>)
+struct subsequence : inline_sequence_base<subsequence<Base, Bounded>>
+{
+private:
+    Base* base_;
+    FLUX_NO_UNIQUE_ADDRESS slice_data<cursor_t<Base>, Bounded> data_;
+
+    friend struct sequence_traits<subsequence>;
+
+public:
+    constexpr subsequence(Base& base, cursor_t<Base>&& from,
+                          cursor_t<Base>&& to)
+        requires Bounded
+        : base_(std::addressof(base)),
+          data_{std::move(from), std::move(to)}
+    {}
+
+    constexpr subsequence(Base& base, cursor_t<Base>&& from)
+        requires (!Bounded)
+        : base_(std::addressof(base)),
+          data_{std::move(from)}
+    {}
+
+    constexpr auto base() const -> Base& { return *base_; };
+};
+
+template <sequence Seq>
+subsequence(Seq&, cursor_t<Seq>, cursor_t<Seq>) -> subsequence<Seq, true>;
+
+template <sequence Seq>
+subsequence(Seq&, cursor_t<Seq>) -> subsequence<Seq, false>;
+
+template <typename Seq>
+concept has_overloaded_slice =
+    requires (Seq& seq, cursor_t<Seq> cur) {
+        { traits_t<Seq>::slice(seq, std::move(cur)) } -> sequence;
+        { traits_t<Seq>::slice(seq, std::move(cur), std::move(cur)) } -> sequence;
+    };
+
+struct slice_fn {
+    template <sequence Seq>
+    constexpr auto operator()(Seq& seq, cursor_t<Seq> from,
+                              cursor_t<Seq> to) const
+        -> sequence auto
+    {
+        if constexpr (has_overloaded_slice<Seq>) {
+            return traits_t<Seq>::slice(seq, std::move(from), std::move(to));
+        } else {
+            return subsequence(seq, std::move(from), std::move(to));
+        }
+    }
+
+    template <sequence Seq>
+    constexpr auto operator()(Seq& seq, cursor_t<Seq> from, last_fn) const
+        -> sequence auto
+    {
+        if constexpr (has_overloaded_slice<Seq>) {
+            return traits_t<Seq>::slice(seq, std::move(from));
+        } else {
+            return subsequence(seq, std::move(from));
+        }
+    }
+};
+
+} // namespace detail
+
+using detail::subsequence;
+
+template <typename Base, bool Bounded>
+struct sequence_traits<subsequence<Base, Bounded>>
+    : detail::passthrough_traits_base<Base>
+{
+    using value_type = value_t<Base>;
+    using self_t = subsequence<Base, Bounded>;
+
+    static constexpr auto first(self_t& self) -> cursor_t<Base>
+    {
+        if constexpr (std::copy_constructible<decltype(self.data_.first)>) {
+            return self.data_.first;
+        } else {
+            return std::move(self.data_.first);
+        }
+    }
+
+    static constexpr bool is_last(self_t& self, cursor_t<Base> const& cur) {
+        if constexpr (Bounded) {
+            return cur == self.data_.last;
+        } else {
+            return flux::is_last(*self.base_, cur);
+        }
+    }
+
+    static constexpr auto last(self_t& self) -> cursor_t<Base>
+        requires (Bounded || bounded_sequence<Base>)
+    {
+        if constexpr (Bounded) {
+            return self.data_.last;
+        } else {
+            return flux::last(*self.base_);
+        }
+    }
+
+    static constexpr auto data(self_t& self)
+        requires contiguous_sequence<Base>
+    {
+        return flux::data(*self.base_) +
+               flux::distance(*self.base_, flux::first(*self.base_), self.data_.first);
+    }
+
+    void size() = delete;
+    void for_each_while() = delete;
+};
+
+inline constexpr auto slice = detail::slice_fn{};
+
+#if 0
+template <typename Derived>
+template <std::same_as<Derived> D>
+constexpr auto inline_sequence_base<Derived>::slice(cursor_t<D> from, cursor_t<D> to) &
+{
+    return flux::slice(derived(), std::move(from), std::move(to));
+}
+
+template <typename Derived>
+template <std::same_as<Derived> D>
+constexpr auto inline_sequence_base<Derived>::slice_from(cursor_t<D> from) &
+{
+    return flux::slice(derived(), std::move(from));
+}
+#endif
+
+} // namespace flux
+
+#endif // namespace FLUX_OP_SLICE_HPP_INCLUDED
+
+
+namespace flux {
+
+namespace detail {
+
+template <multipass_sequence Base, typename Pred>
+struct chunk_by_adaptor : inline_sequence_base<chunk_by_adaptor<Base, Pred>> {
+private:
+    FLUX_NO_UNIQUE_ADDRESS Base base_;
+    FLUX_NO_UNIQUE_ADDRESS Pred pred_;
+
+public:
+    constexpr explicit chunk_by_adaptor(decays_to<Base> auto&& base, Pred&& pred)
+        : base_(FLUX_FWD(base)),
+          pred_(std::move(pred))
+    {}
+
+    struct flux_sequence_traits {
+    private:
+        struct cursor_type {
+            cursor_t<Base> from;
+            cursor_t<Base> to;
+
+            friend constexpr auto operator==(cursor_type const& lhs, cursor_type const& rhs) -> bool
+            {
+                return lhs.from == rhs.from;
+            }
+        };
+
+        static constexpr auto find_next(auto& self, cursor_t<Base> cur) -> cursor_t<Base>
+        {
+            if (flux::is_last(self.base_, cur)) {
+                return cur;
+            }
+
+            auto nxt = flux::next(self.base_, cur);
+
+            while (!flux::is_last(self.base_, nxt)) {
+                if (!std::invoke(self.pred_, flux::read_at(self.base_, cur), flux::read_at(self.base_, nxt))) {
+                    break;
+                }
+                cur = nxt;
+                flux::inc(self.base_, nxt);
+            }
+
+            return nxt;
+        }
+
+        static constexpr auto find_prev(auto& self, cursor_t<Base> cur) -> cursor_t<Base>
+        {
+            auto const fst = flux::first(self.base_);
+
+            if (cur == fst || flux::dec(self.base_, cur) == fst) {
+                return cur;
+            }
+
+            do {
+                auto prv = flux::prev(self.base_, cur);
+                if (!std::invoke(self.pred_, flux::read_at(self.base_, prv), flux::read_at(self.base_, cur))) {
+                    break;
+                }
+                cur = std::move(prv);
+            } while (cur != fst);
+
+            return cur;
+        }
+
+    public:
+        static constexpr auto first(auto& self) -> cursor_type
+        {
+            return cursor_type{
+                .from = flux::first(self.base_),
+                .to = find_next(self, flux::first(self.base_))
+            };
+        }
+
+        static constexpr auto is_last(auto&, cursor_type const& cur) -> bool
+        {
+            return cur.from == cur.to;
+        }
+
+        static constexpr auto inc(auto& self, cursor_type& cur) -> void
+        {
+            cur = cursor_type{
+                .from = cur.to,
+                .to = find_next(self, cur.to)
+            };
+        }
+
+        static constexpr auto read_at(auto& self, cursor_type const& cur)
+            -> decltype(flux::slice(self.base_, cur.from, cur.to))
+        {
+            return flux::slice(self.base_, cur.from, cur.to);
+        }
+
+        static constexpr auto last(auto& self) -> cursor_type
+            requires bounded_sequence<Base>
+        {
+            return cursor_type{flux::last(self.base_), flux::last(self.base_)};
+        }
+
+        static constexpr auto dec(auto& self, cursor_type& cur) -> void
+            requires bidirectional_sequence<Base>
+        {
+            cur = cursor_type{
+                .from = find_prev(self, cur.from),
+                .to = cur.from
+            };
+        }
+    };
+};
+
+struct chunk_by_fn {
+    template <adaptable_sequence Seq, typename Pred>
+        requires multipass_sequence<Seq> &&
+                 std::predicate<Pred&, element_t<Seq>, element_t<Seq>>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq, Pred pred) const -> multipass_sequence auto
+    {
+        return chunk_by_adaptor<std::decay_t<Seq>, Pred>(FLUX_FWD(seq), std::move(pred));
+    }
+};
+
+} // namespace detail
+
+inline constexpr auto chunk_by = detail::chunk_by_fn{};
+
+template <typename Derived>
+template <typename Pred>
+    requires multipass_sequence<Derived> &&
+             std::predicate<Pred&, element_t<Derived>, element_t<Derived>>
+constexpr auto inline_sequence_base<Derived>::chunk_by(Pred pred) &&
+{
+    return flux::chunk_by(std::move(derived()), std::move(pred));
+}
+
+} // namespace flux
+
+#endif
+
+
+// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
 #ifndef FLUX_OP_COMPARE_HPP_INCLUDED
 #define FLUX_OP_COMPARE_HPP_INCLUDED
 
@@ -5190,167 +5508,6 @@ constexpr auto inline_sequence_base<Derived>::map(Func func) &&
 
 
 
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_SLICE_HPP_INCLUDED
-#define FLUX_OP_SLICE_HPP_INCLUDED
-
-
-
-
-namespace flux {
-
-namespace detail {
-
-template <cursor Cur, bool Bounded>
-struct slice_data {
-    Cur first;
-    Cur last;
-};
-
-template <cursor Cur>
-struct slice_data<Cur, false> {
-    Cur first;
-};
-
-template <sequence Base, bool Bounded>
-    requires (!Bounded || regular_cursor<cursor_t<Base>>)
-struct subsequence : inline_sequence_base<subsequence<Base, Bounded>>
-{
-private:
-    Base* base_;
-    FLUX_NO_UNIQUE_ADDRESS slice_data<cursor_t<Base>, Bounded> data_;
-
-    friend struct sequence_traits<subsequence>;
-
-public:
-    constexpr subsequence(Base& base, cursor_t<Base>&& from,
-                          cursor_t<Base>&& to)
-        requires Bounded
-        : base_(std::addressof(base)),
-          data_{std::move(from), std::move(to)}
-    {}
-
-    constexpr subsequence(Base& base, cursor_t<Base>&& from)
-        requires (!Bounded)
-        : base_(std::addressof(base)),
-          data_{std::move(from)}
-    {}
-
-    constexpr auto base() const -> Base& { return *base_; };
-};
-
-template <sequence Seq>
-subsequence(Seq&, cursor_t<Seq>, cursor_t<Seq>) -> subsequence<Seq, true>;
-
-template <sequence Seq>
-subsequence(Seq&, cursor_t<Seq>) -> subsequence<Seq, false>;
-
-template <typename Seq>
-concept has_overloaded_slice =
-    requires (Seq& seq, cursor_t<Seq> cur) {
-        { traits_t<Seq>::slice(seq, std::move(cur)) } -> sequence;
-        { traits_t<Seq>::slice(seq, std::move(cur), std::move(cur)) } -> sequence;
-    };
-
-struct slice_fn {
-    template <sequence Seq>
-    constexpr auto operator()(Seq& seq, cursor_t<Seq> from,
-                              cursor_t<Seq> to) const
-        -> sequence auto
-    {
-        if constexpr (has_overloaded_slice<Seq>) {
-            return traits_t<Seq>::slice(seq, std::move(from), std::move(to));
-        } else {
-            return subsequence(seq, std::move(from), std::move(to));
-        }
-    }
-
-    template <sequence Seq>
-    constexpr auto operator()(Seq& seq, cursor_t<Seq> from, last_fn) const
-        -> sequence auto
-    {
-        if constexpr (has_overloaded_slice<Seq>) {
-            return traits_t<Seq>::slice(seq, std::move(from));
-        } else {
-            return subsequence(seq, std::move(from));
-        }
-    }
-};
-
-} // namespace detail
-
-using detail::subsequence;
-
-template <typename Base, bool Bounded>
-struct sequence_traits<subsequence<Base, Bounded>>
-    : detail::passthrough_traits_base<Base>
-{
-    using value_type = value_t<Base>;
-    using self_t = subsequence<Base, Bounded>;
-
-    static constexpr auto first(self_t& self) -> cursor_t<Base>
-    {
-        if constexpr (std::copy_constructible<decltype(self.data_.first)>) {
-            return self.data_.first;
-        } else {
-            return std::move(self.data_.first);
-        }
-    }
-
-    static constexpr bool is_last(self_t& self, cursor_t<Base> const& cur) {
-        if constexpr (Bounded) {
-            return cur == self.data_.last;
-        } else {
-            return flux::is_last(*self.base_, cur);
-        }
-    }
-
-    static constexpr auto last(self_t& self) -> cursor_t<Base>
-        requires (Bounded || bounded_sequence<Base>)
-    {
-        if constexpr (Bounded) {
-            return self.data_.last;
-        } else {
-            return flux::last(*self.base_);
-        }
-    }
-
-    static constexpr auto data(self_t& self)
-        requires contiguous_sequence<Base>
-    {
-        return flux::data(*self.base_) +
-               flux::distance(*self.base_, flux::first(*self.base_), self.data_.first);
-    }
-
-    void size() = delete;
-    void for_each_while() = delete;
-};
-
-inline constexpr auto slice = detail::slice_fn{};
-
-#if 0
-template <typename Derived>
-template <std::same_as<Derived> D>
-constexpr auto inline_sequence_base<Derived>::slice(cursor_t<D> from, cursor_t<D> to) &
-{
-    return flux::slice(derived(), std::move(from), std::move(to));
-}
-
-template <typename Derived>
-template <std::same_as<Derived> D>
-constexpr auto inline_sequence_base<Derived>::slice_from(cursor_t<D> from) &
-{
-    return flux::slice(derived(), std::move(from));
-}
-#endif
-
-} // namespace flux
-
-#endif // namespace FLUX_OP_SLICE_HPP_INCLUDED
 
 
 namespace flux {
