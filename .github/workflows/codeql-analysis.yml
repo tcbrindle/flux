@@ -37,7 +37,7 @@ jobs:
         # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
         include:
           - install: |
-              brew install gcc@12 ninja
+              brew install gcc@12 ninja binutils
               brew link --force binutils
 
     steps:
