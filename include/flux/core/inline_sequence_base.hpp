@@ -250,6 +250,9 @@ public:
     constexpr auto split_string(Pattern&& pattern) &&;
 
     [[nodiscard]]
+    constexpr auto stride(std::integral auto by) &&;
+
+    [[nodiscard]]
     constexpr auto take(distance_t count) &&;
 
     template <typename Pred>
