@@ -15,7 +15,7 @@ jobs:
         include:
           - cxx: g++-12
             install: |
-              brew install gcc@12 ninja
+              brew install gcc@12 ninja binutils
               brew link --force binutils
 
     steps:
