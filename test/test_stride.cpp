@@ -264,7 +264,7 @@ constexpr bool test_stride_bidir()
         auto cur = seq.first();
         seq.inc(cur, 2);
 
-        STATIC_CHECK(seq[cur] = 6);
+        STATIC_CHECK(seq[cur] == 6);
 
         seq.inc(cur, -2);
 
