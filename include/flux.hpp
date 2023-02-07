@@ -14,6 +14,7 @@
 #include <flux/op/cartesian_product.hpp>
 #include <flux/op/cartesian_product_with.hpp>
 #include <flux/op/chain.hpp>
+#include <flux/op/chunk.hpp>
 #include <flux/op/chunk_by.hpp>
 #include <flux/op/compare.hpp>
 #include <flux/op/contains.hpp>

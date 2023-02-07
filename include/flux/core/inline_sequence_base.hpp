@@ -204,6 +204,9 @@ public:
             requires bounded_sequence<Derived> ||
                      (multipass_sequence<Derived> && not infinite_sequence<Derived>);
 
+    [[nodiscard]]
+    constexpr auto chunk(std::integral auto chunk_sz) &&;
+
     template <typename Pred>
         requires multipass_sequence<Derived> &&
                  std::predicate<Pred&, element_t<Derived>, element_t<Derived>>
