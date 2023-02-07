@@ -41,7 +41,7 @@ constexpr bool test_chunk_multipass()
         static_assert(flux::multipass_sequence<S>);
         static_assert(not flux::bidirectional_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(flux::sized_sequence<S>);
 
         auto cur = seq.first();
         STATIC_CHECK(check_equal(seq[cur], {1, 2}));
@@ -50,6 +50,7 @@ constexpr bool test_chunk_multipass()
         STATIC_CHECK(seq.is_last(seq.inc(cur)));
 
         STATIC_CHECK(cur == seq.last());
+        STATIC_CHECK(seq.size() == 3);
     }
 
     // Basic multipass chunk, const iteration
@@ -62,7 +63,7 @@ constexpr bool test_chunk_multipass()
         static_assert(flux::multipass_sequence<S>);
         static_assert(not flux::bidirectional_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(flux::sized_sequence<S>);
 
         auto cur = flux::first(seq);
         STATIC_CHECK(check_equal(flux::read_at(seq, cur), {1, 2}));
@@ -71,6 +72,8 @@ constexpr bool test_chunk_multipass()
         STATIC_CHECK(flux::is_last(seq, flux::inc(seq, cur)));
 
         STATIC_CHECK(cur == flux::last(seq));
+
+        STATIC_CHECK(flux::size(seq) == 3);
     }
 
     // Multipass, chunk size equal to seq size
@@ -84,6 +87,8 @@ constexpr bool test_chunk_multipass()
         STATIC_CHECK(check_equal(seq[cur], {1, 2, 3, 4, 5}));
         seq.inc(cur);
         STATIC_CHECK(seq.is_last(cur));
+
+        STATIC_CHECK(flux::size(seq) == 1);
     }
 
     // Multipass w/ oversized chunks
@@ -92,7 +97,7 @@ constexpr bool test_chunk_multipass()
 
         auto seq = NotBidir(arr).chunk(10);
 
-        STATIC_CHECK(seq.count() == 1);
+        STATIC_CHECK(seq.size() == 1);
         STATIC_CHECK(check_equal(seq.front().value(), {1, 2, 3, 4, 5}));
     }
 
@@ -104,7 +109,7 @@ constexpr bool test_chunk_multipass()
 
         auto seq = NotBidir(arr).chunk(max);
 
-        STATIC_CHECK(seq.count() == 1);
+        STATIC_CHECK(seq.size() == 1);
         STATIC_CHECK(check_equal(seq.front().value(), {1, 2, 3, 4, 5}));
     }
 
@@ -112,7 +117,23 @@ constexpr bool test_chunk_multipass()
     {
         auto seq = flux::chunk(flux::empty<int>, 10);
 
-        STATIC_CHECK(flux::is_empty(seq));
+        STATIC_CHECK(flux::size(seq) == 0);
+        STATIC_CHECK(flux::is_last(seq, flux::first(seq)));
+    }
+
+    // Test chunks of size 1
+    {
+        auto seq = NotBidir(std::array{1, 2, 3, 4, 5}).chunk(1);
+
+        STATIC_CHECK(seq.size() == 5);
+
+        auto cur = seq.first();
+        STATIC_CHECK(check_equal(seq[cur], {1}));
+        STATIC_CHECK(check_equal(seq[seq.inc(cur)], {2}));
+        STATIC_CHECK(check_equal(seq[seq.inc(cur)], {3}));
+        STATIC_CHECK(check_equal(seq[seq.inc(cur)], {4}));
+        STATIC_CHECK(check_equal(seq[seq.inc(cur)], {5}));
+        STATIC_CHECK(seq.is_last(seq.inc(cur)));
     }
 
     return true;

@@ -59,6 +59,13 @@ public:
         {
             return flux::last(self.base_);
         }
+
+        static constexpr auto size(auto& self) -> distance_t
+            requires sized_sequence<Base>
+        {
+            auto s = flux::size(self.base_);
+            return s/self.chunk_sz_ + (s % self.chunk_sz_ == 0 ? 0 : 1);
+        }
     };
 };
 
