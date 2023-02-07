@@ -71,6 +71,115 @@ public:
     };
 };
 
+template <bidirectional_sequence Base>
+struct chunk_adaptor<Base> : inline_sequence_base<chunk_adaptor<Base>> {
+private:
+    Base base_;
+    distance_t chunk_sz_;
+
+public:
+    constexpr chunk_adaptor(decays_to<Base> auto&& base, distance_t chunk_sz)
+        : base_(FLUX_FWD(base)),
+          chunk_sz_(chunk_sz)
+    {}
+
+    struct flux_sequence_traits {
+    private:
+        struct cursor_type {
+            cursor_t<Base> cur{};
+            distance_t missing = 0;
+
+            friend constexpr auto operator==(cursor_type const& lhs, cursor_type const& rhs) -> bool
+            {
+                return lhs.cur == rhs.cur;
+            }
+
+            friend constexpr auto operator<=>(cursor_type const& lhs, cursor_type const& rhs)
+                -> std::strong_ordering
+                requires ordered_cursor<cursor_t<Base>>
+            {
+                return lhs.cur <=> rhs.cur;
+            }
+        };
+
+    public:
+
+        static inline constexpr bool is_infinite = infinite_sequence<Base>;
+
+        static constexpr auto first(auto& self) -> cursor_type
+        {
+            return cursor_type{
+                .cur = flux::first(self.base_),
+                .missing = 0
+            };
+        }
+
+        static constexpr auto is_last(auto& self, cursor_type const& cur) -> bool
+        {
+            return flux::is_last(self.base_, cur.cur);
+        }
+
+        static constexpr auto inc(auto& self, cursor_type& cur) -> void
+        {
+            cur.missing = advance(self.base_, cur.cur, self.chunk_sz_);
+        }
+
+        static constexpr auto read_at(auto& self, cursor_type const& cur)
+            requires sequence<decltype((self.base_))>
+        {
+            if constexpr (random_access_sequence<Base>) {
+                auto end_cur = cur.cur;
+                advance(self.base_, end_cur, self.chunk_sz_);
+                return flux::slice(self.base_, cur.cur, std::move(end_cur));
+            } else {
+                return flux::take(flux::slice(self.base_, cur.cur, flux::last), self.chunk_sz_);
+            }
+        }
+
+        static constexpr auto dec(auto& self, cursor_type& cur)
+        {
+            advance(self.base_, cur.cur, cur.missing - self.chunk_sz_);
+            cur.missing = 0;
+        }
+
+        static constexpr auto last(auto& self) -> cursor_type
+            requires bounded_sequence<Base> && sized_sequence<Base>
+        {
+            distance_t missing =
+                (self.chunk_sz_ - flux::size(self.base_) % self.chunk_sz_) % self.chunk_sz_;
+            return cursor_type{
+                .cur = flux::last(self.base_),
+                .missing = missing
+            };
+        }
+
+        static constexpr auto size(auto& self) -> distance_t
+            requires sized_sequence<Base>
+        {
+            auto s = flux::size(self.base_);
+            return s/self.chunk_sz_ + (s % self.chunk_sz_ == 0 ? 0 : 1);
+        }
+
+        static constexpr auto distance(auto& self, cursor_type const& from, cursor_type const& to)
+            -> distance_t
+            requires random_access_sequence<Base>
+        {
+            return (flux::distance(self.base_, from.cur, to.cur) - from.missing + to.missing)/self.chunk_sz_;
+        }
+
+        static constexpr auto inc(auto& self, cursor_type& cur, distance_t offset) -> void
+            requires random_access_sequence<Base>
+        {
+            if (offset > 0) {
+                cur.missing = advance(self.base_, cur.cur, num::checked_mul(offset, self.chunk_sz_)) % self.chunk_sz_;
+            } else if (offset < 0) {
+                advance(self.base_, cur.cur, num::checked_add(num::checked_mul(offset, self.chunk_sz_), cur.missing));
+                cur.missing = 0;
+            }
+        }
+    };
+};
+
 struct chunk_fn {
     template <adaptable_sequence Seq>
     [[nodiscard]]

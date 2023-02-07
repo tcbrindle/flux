@@ -136,6 +136,8 @@ public:
             }
 
             friend constexpr auto operator<=>(cursor_type const& lhs, cursor_type const& rhs)
+                -> std::strong_ordering
+                requires ordered_cursor<cursor_t<Base>>
             {
                 return lhs.cur <=> rhs.cur;
             }
