@@ -269,6 +269,9 @@ constexpr bool test_stride_bidir()
         seq.inc(cur, -2);
 
         STATIC_CHECK(seq[cur] == 0);
+
+        // Jump of zero size does nothing
+        STATIC_CHECK(flux::next(seq, cur, 0) == cur);
     }
 
     // Out-of-bounds RA jumps are saturating
@@ -347,5 +350,32 @@ TEST_CASE("stride")
 
         REQUIRE(check_equal(rev, {7, 4, 1}));
         REQUIRE(rev.sum() == 12);
+    }
+
+    // detail::advance tests to keep CodeCov happy
+    {
+        {
+            auto seq = NotBidir(std::array{1, 2, 3, 4, 5});
+            auto cur = seq.first();
+            auto cur2 = cur;
+
+            // advance by zero places should do nothing
+            auto r = flux::detail::advance(seq, cur, 0);
+            REQUIRE(cur == cur2);
+            REQUIRE(r == 0);
+
+            // advance with negative offset for non-bidir sequence is a runtime error
+            REQUIRE_THROWS_AS(flux::detail::advance(seq, cur, -2), flux::unrecoverable_error);
+        }
+
+        {
+            auto seq = flux::from(std::array{1, 2, 3, 4, 5}).stride(2);
+            auto cur = seq.first();
+            auto cur2 = cur;
+
+            auto r = flux::detail::advance(seq, cur, 0);
+            REQUIRE(cur <=> cur2 == std::strong_ordering::equal);
+            REQUIRE(r == 0);
+        }
     }
 }
