@@ -32,6 +32,8 @@ public:
     {}
 
     struct flux_sequence_traits {
+        static inline constexpr bool is_infinite = infinite_sequence<Base>;
+
         static constexpr auto first(auto& self) -> cursor_t<Base>
         {
             return flux::first(self.base_);
