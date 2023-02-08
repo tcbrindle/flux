@@ -16,6 +16,14 @@
 
 namespace {
 
+#ifdef _MSC_VER
+#define COMPILER_IS_MSVC 1
+#else
+#define COMPILER_IS_MSVC 0
+#endif
+
+constexpr bool compiler_is_msvc = COMPILER_IS_MSVC;
+
 template <flux::sequence Base>
 struct NotBidir : flux::inline_sequence_base<NotBidir<Base>> {
     Base base_;
@@ -117,7 +125,19 @@ constexpr bool test_chunk_single_pass()
     {
         auto seq = single_pass_only(std::array{1, 2, 3, 4, 5}).chunk(2).flatten();
 
-        STATIC_CHECK(check_equal(seq, {1, 2, 3, 4, 5}));
+        // FIXME: MSVC doesn't like this during constexpr evaluation
+        // Specifically, the problem occurs in the first call to inc(seq, cur),
+        // complaining of a read of an uninitialised union member inside
+        // optional<inner_cur>. (The same happens if we use std::optional rather
+        // than flux::optional inside flatten_adaptor(), so I'm inclined to think
+        // it's not a bug in our optional implementation).
+        //
+        // The same check passes constexpr evaluation in GCC, and runtime
+        // eval with both GCC and MSVC (including GCC + UBSan), so I'm inclined
+        // to think it's
+        if (!(std::is_constant_evaluated() && compiler_is_msvc)) {
+            STATIC_CHECK(check_equal(seq, {1, 2, 3, 4, 5}));
+        }
     }
 
     return true;
