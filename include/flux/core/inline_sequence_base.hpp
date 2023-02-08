@@ -119,7 +119,11 @@ public:
 
     /// Returns true if the sequence contains no elements
     [[nodiscard]]
-    constexpr auto is_empty() requires multipass_sequence<Derived> { return flux::is_empty(derived()); }
+    constexpr auto is_empty()
+        requires (multipass_sequence<Derived> || sized_sequence<Derived>)
+    {
+        return flux::is_empty(derived());
+    }
 
     template <std::same_as<Derived> D = Derived>
     [[nodiscard]]
@@ -203,6 +207,9 @@ public:
     constexpr auto cache_last() &&
             requires bounded_sequence<Derived> ||
                      (multipass_sequence<Derived> && not infinite_sequence<Derived>);
+
+    [[nodiscard]]
+    constexpr auto chunk(std::integral auto chunk_sz) &&;
 
     template <typename Pred>
         requires multipass_sequence<Derived> &&

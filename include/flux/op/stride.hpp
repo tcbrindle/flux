@@ -1,5 +1,5 @@
 
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -136,6 +136,8 @@ public:
             }
 
             friend constexpr auto operator<=>(cursor_type const& lhs, cursor_type const& rhs)
+                -> std::strong_ordering
+                requires ordered_cursor<cursor_t<Base>>
             {
                 return lhs.cur <=> rhs.cur;
             }
