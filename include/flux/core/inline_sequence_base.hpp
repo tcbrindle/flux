@@ -119,7 +119,11 @@ public:
 
     /// Returns true if the sequence contains no elements
     [[nodiscard]]
-    constexpr auto is_empty() requires multipass_sequence<Derived> { return flux::is_empty(derived()); }
+    constexpr auto is_empty()
+        requires (multipass_sequence<Derived> || sized_sequence<Derived>)
+    {
+        return flux::is_empty(derived());
+    }
 
     template <std::same_as<Derived> D = Derived>
     [[nodiscard]]

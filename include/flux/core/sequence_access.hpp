@@ -274,7 +274,8 @@ struct prev_fn {
 };
 
 struct is_empty_fn {
-    template <multipass_sequence Seq>
+    template <sequence Seq>
+        requires (multipass_sequence<Seq> || sized_sequence<Seq>)
     [[nodiscard]]
     constexpr auto operator()(Seq& seq) const -> bool
     {
