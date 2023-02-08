@@ -293,6 +293,19 @@ constexpr bool test_chunk_bidir()
         STATIC_CHECK(check_equal(seq[seq.inc(cur)], {1, 2, 3}));
     }
 
+    // RA jumps in a chunked sequence work as expected
+    {
+        auto seq = flux::chunk(std::array{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, 3);
+
+        auto cur = seq.first();
+
+        seq.inc(cur, 3);
+        STATIC_CHECK(check_equal(seq[cur], {10}));
+
+        seq.inc(cur, -2);
+        STATIC_CHECK(check_equal(seq[cur], {4, 5, 6}));
+    }
+
     return true;
 }
 static_assert(test_chunk_bidir());
