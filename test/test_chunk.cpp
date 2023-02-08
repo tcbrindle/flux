@@ -422,7 +422,10 @@ static_assert(test_chunk_bidir());
 
 TEST_CASE("chunk")
 {
-    bool res = test_chunk_multipass();
+    bool res = test_chunk_single_pass();
+    REQUIRE(res);
+
+    res = test_chunk_multipass();
     REQUIRE(res);
 
     res = test_chunk_bidir();
