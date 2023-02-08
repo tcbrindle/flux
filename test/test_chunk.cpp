@@ -50,7 +50,7 @@ constexpr bool test_chunk_single_pass()
         static_assert(flux::sequence<S>);
         static_assert(not flux::multipass_sequence<S>);
         static_assert(not flux::bounded_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(flux::sized_sequence<S>);
 
         auto cur = seq.first();
         STATIC_CHECK(check_equal(seq[cur], {1, 2}));
@@ -58,13 +58,14 @@ constexpr bool test_chunk_single_pass()
         STATIC_CHECK(check_equal(seq[seq.inc(cur)], {5}));
         STATIC_CHECK(seq.is_last(seq.inc(cur)));
 
-        //STATIC_CHECK(cur == seq.last());
-        //STATIC_CHECK(seq.size() == 3);
+        STATIC_CHECK(seq.size() == 3);
     }
 
     // Single-pass chunk, not consuming inner sequences
     {
         auto seq = single_pass_only(std::array{1, 2, 3, 4, 5}).chunk(2);
+
+        STATIC_CHECK(seq.size() == 3);
 
         auto cur = seq.first();
         for (int i = 0; i < 3; i++) {
@@ -78,6 +79,8 @@ constexpr bool test_chunk_single_pass()
     {
         auto seq = single_pass_only(std::array{1, 2, 3, 4, 5}).chunk(5);
 
+        STATIC_CHECK(seq.size() == 1);
+
         auto cur = seq.first();
         STATIC_CHECK(check_equal(seq[cur], {1, 2, 3, 4, 5}));
         seq.inc(cur);
@@ -87,6 +90,8 @@ constexpr bool test_chunk_single_pass()
     // Single-pass chunk, chunk sz == seq sz, not consuming
     {
         auto seq = single_pass_only(std::array{1, 2, 3, 4, 5}).chunk(5);
+
+        STATIC_CHECK(seq.size() == 1);
 
         auto cur = seq.first();
         STATIC_CHECK(seq[cur][seq[cur].first()] == 1);
@@ -98,6 +103,8 @@ constexpr bool test_chunk_single_pass()
     {
         auto seq = single_pass_only(std::array{1, 2, 3, 4, 5}).chunk(99999);
 
+        STATIC_CHECK(seq.size() == 1);
+
         auto cur = seq.first();
         STATIC_CHECK(check_equal(seq[cur], {1, 2, 3, 4, 5}));
         seq.inc(cur);
@@ -107,6 +114,8 @@ constexpr bool test_chunk_single_pass()
     // Single-pass chunk, chunk sz > seq sz, not consuming
     {
         auto seq = single_pass_only(std::array{1, 2, 3, 4, 5}).chunk(99999);
+
+        STATIC_CHECK(seq.size() == 1);
 
         auto cur = seq.first();
         STATIC_CHECK(seq[cur][seq[cur].first()] == 1);
@@ -118,6 +127,7 @@ constexpr bool test_chunk_single_pass()
     {
         auto seq = single_pass_only(flux::copy(flux::empty<int>)).chunk(3);
 
+        STATIC_CHECK(seq.is_empty());
         STATIC_CHECK(flux::is_last(seq, flux::first(seq)));
     }
 
@@ -127,14 +137,15 @@ constexpr bool test_chunk_single_pass()
 
         // FIXME: MSVC doesn't like this during constexpr evaluation
         // Specifically, the problem occurs in the first call to inc(seq, cur),
-        // complaining of a read of an uninitialised union member inside
+        // complaining of a read of an uninitialised union member inside flatten's
         // optional<inner_cur>. (The same happens if we use std::optional rather
-        // than flux::optional inside flatten_adaptor(), so I'm inclined to think
-        // it's not a bug in our optional implementation).
+        // than flux::optional inside flatten_adaptor(), so it doesn't seem to
+        // be a bug in our optional implementation.)
         //
         // The same check passes constexpr evaluation in GCC, and runtime
         // eval with both GCC and MSVC (including GCC + UBSan), so I'm inclined
-        // to think it's
+        // to think it's a compiler bug rather than a Flux bug, although it is a
+        // little worrisome.
         if (!(std::is_constant_evaluated() && compiler_is_msvc)) {
             STATIC_CHECK(check_equal(seq, {1, 2, 3, 4, 5}));
         }
