@@ -17,7 +17,115 @@ namespace flux {
 namespace detail {
 
 template <typename Base>
-struct chunk_adaptor;
+struct chunk_adaptor : inline_sequence_base<chunk_adaptor<Base>> {
+private:
+    Base base_;
+    distance_t chunk_sz_;
+    optional<cursor_t<Base>> cur_ = nullopt;
+    distance_t rem_ = chunk_sz_;
+
+public:
+    constexpr chunk_adaptor(decays_to<Base> auto&& base, distance_t chunk_sz)
+        : base_(FLUX_FWD(base)),
+          chunk_sz_(chunk_sz)
+    {}
+
+    chunk_adaptor(chunk_adaptor&&) = default;
+    chunk_adaptor& operator=(chunk_adaptor&&) = default;
+
+    struct flux_sequence_traits {
+    private:
+        struct outer_cursor {
+            outer_cursor(outer_cursor&&) = default;
+            outer_cursor& operator=(outer_cursor&&) = default;
+
+            friend struct flux_sequence_traits;
+
+        private:
+            explicit outer_cursor() = default;
+        };
+
+        using self_t = chunk_adaptor;
+
+    public:
+        struct value_type : inline_sequence_base<value_type> {
+        private:
+            chunk_adaptor* parent_;
+            constexpr explicit value_type(chunk_adaptor& parent)
+                : parent_(std::addressof(parent))
+            {}
+
+            friend struct self_t::flux_sequence_traits;
+
+        public:
+            value_type(value_type&&) = default;
+            value_type& operator=(value_type&&) = default;
+
+            struct flux_sequence_traits {
+            private:
+                struct inner_cursor {
+                    inner_cursor(inner_cursor&&) = default;
+                    inner_cursor& operator=(inner_cursor&&) = default;
+
+                    friend struct value_type::flux_sequence_traits;
+
+                private:
+                    explicit inner_cursor() = default;
+                };
+
+            public:
+                static constexpr auto first(value_type&) -> inner_cursor
+                {
+                    return inner_cursor{};
+                }
+
+                static constexpr auto is_last(value_type& self, inner_cursor const&) -> bool
+                {
+                    return self.parent_->rem_ == 0;
+                }
+
+                static constexpr auto inc(value_type& self, inner_cursor&) -> void
+                {
+                    flux::inc(self.parent_->base_, *self.parent_->cur_);
+                    if (flux::is_last(self.parent_->base_, *self.parent_->cur_)) {
+                        self.parent_->rem_ = 0;
+                    } else {
+                        --self.parent_->rem_;
+                    }
+                }
+
+                static constexpr auto read_at(value_type& self, inner_cursor const&)
+                    -> element_t<Base>
+                {
+                    return flux::read_at(self.parent_->base_, *self.parent_->cur_);
+                }
+            };
+        };
+
+        static constexpr auto first(self_t& self) -> outer_cursor
+        {
+            self.cur_ = optional<cursor_t<Base>>(flux::first(self.base_));
+            self.rem_ = self.chunk_sz_;
+            return outer_cursor{};
+        }
+
+        static constexpr auto is_last(self_t& self, outer_cursor const&) -> bool
+        {
+            return self.rem_ != 0 && flux::is_last(self.base_, *self.cur_);
+        }
+
+        static constexpr auto inc(self_t& self, outer_cursor&) -> void
+        {
+            advance(self.base_, *self.cur_, self.rem_);
+            self.rem_ = self.chunk_sz_;
+        }
+
+        static constexpr auto read_at(self_t& self, outer_cursor const&) -> value_type
+        {
+            return value_type(self);
+        }
+    };
+};
 
 template <multipass_sequence Base>
 struct chunk_adaptor<Base> : inline_sequence_base<chunk_adaptor<Base>> {

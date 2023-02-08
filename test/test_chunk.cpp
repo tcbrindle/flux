@@ -12,7 +12,7 @@
 #include <array>
 #include <limits>
 #include <list>
-#include <iostream>
+#include <sstream>
 
 namespace {
 
@@ -29,6 +29,100 @@ struct NotBidir : flux::inline_sequence_base<NotBidir<Base>> {
         static void dec(...) = delete;
     };
 };
+
+constexpr bool test_chunk_single_pass()
+{
+    // Basic single-pass chunk
+    {
+        std::array arr{1, 2, 3, 4, 5};
+
+        auto seq = single_pass_only(std::move(arr)).chunk(2);
+
+        using S = decltype(seq);
+        static_assert(flux::sequence<S>);
+        static_assert(not flux::multipass_sequence<S>);
+        static_assert(not flux::bounded_sequence<S>);
+        static_assert(not flux::sized_sequence<S>);
+
+        auto cur = seq.first();
+        STATIC_CHECK(check_equal(seq[cur], {1, 2}));
+        STATIC_CHECK(check_equal(seq[seq.inc(cur)], {3, 4}));
+        STATIC_CHECK(check_equal(seq[seq.inc(cur)], {5}));
+        STATIC_CHECK(seq.is_last(seq.inc(cur)));
+
+        //STATIC_CHECK(cur == seq.last());
+        //STATIC_CHECK(seq.size() == 3);
+    }
+
+    // Single-pass chunk, not consuming inner sequences
+    {
+        auto seq = single_pass_only(std::array{1, 2, 3, 4, 5}).chunk(2);
+
+        auto cur = seq.first();
+        for (int i = 0; i < 3; i++) {
+            seq.inc(cur);
+        }
+
+        STATIC_CHECK(seq.is_last(cur));
+    }
+
+    // Single-pass chunk, chunk sz == seq sz, consuming
+    {
+        auto seq = single_pass_only(std::array{1, 2, 3, 4, 5}).chunk(5);
+
+        auto cur = seq.first();
+        STATIC_CHECK(check_equal(seq[cur], {1, 2, 3, 4, 5}));
+        seq.inc(cur);
+        STATIC_CHECK(seq.is_last(cur));
+    }
+
+    // Single-pass chunk, chunk sz == seq sz, not consuming
+    {
+        auto seq = single_pass_only(std::array{1, 2, 3, 4, 5}).chunk(5);
+
+        auto cur = seq.first();
+        STATIC_CHECK(seq[cur][seq[cur].first()] == 1);
+        seq.inc(cur);
+        STATIC_CHECK(seq.is_last(cur));
+    }
+
+    // Single-pass chunk, chunk sz > seq sz, consuming
+    {
+        auto seq = single_pass_only(std::array{1, 2, 3, 4, 5}).chunk(99999);
+
+        auto cur = seq.first();
+        STATIC_CHECK(check_equal(seq[cur], {1, 2, 3, 4, 5}));
+        seq.inc(cur);
+        STATIC_CHECK(seq.is_last(cur));
+    }
+
+    // Single-pass chunk, chunk sz > seq sz, not consuming
+    {
+        auto seq = single_pass_only(std::array{1, 2, 3, 4, 5}).chunk(99999);
+
+        auto cur = seq.first();
+        STATIC_CHECK(seq[cur][seq[cur].first()] == 1);
+        seq.inc(cur);
+        STATIC_CHECK(seq.is_last(cur));
+    }
+
+    // Chunked empty single-pass sequence => empty sequence
+    {
+        auto seq = single_pass_only(flux::copy(flux::empty<int>)).chunk(3);
+
+        STATIC_CHECK(flux::is_last(seq, flux::first(seq)));
+    }
+
+    // Test round-tripping, chunk -> flatten
+    {
+        auto seq = single_pass_only(std::array{1, 2, 3, 4, 5}).chunk(2).flatten();
+
+        STATIC_CHECK(check_equal(seq, {1, 2, 3, 4, 5}));
+    }
+
+    return true;
+}
+static_assert(test_chunk_single_pass());
 
 constexpr bool test_chunk_multipass()
 {
@@ -144,6 +238,13 @@ constexpr bool test_chunk_multipass()
         auto r = std::move(seq).map(flux::product).sum();
 
         STATIC_CHECK(r == (1 * 2) + (3 * 4) + 5);
+    }
+
+    // Test round-tripping with flatten
+    {
+        auto seq = NotBidir(std::array{1, 2, 3, 4, 5}).chunk(2).flatten();
+
+        STATIC_CHECK(check_equal(seq, {1, 2, 3, 4, 5}));
     }
 
     return true;
@@ -268,6 +369,13 @@ constexpr bool test_chunk_bidir()
         STATIC_CHECK(r == (1 * 2) + (3 * 4) + 5);
     }
 
+    // Test round-tripping with flatten
+    {
+        auto seq = NotBidir(std::array{1, 2, 3, 4, 5}).chunk(2).flatten();
+
+        STATIC_CHECK(check_equal(seq, {1, 2, 3, 4, 5}));
+    }
+
     // Reversing a chunked sequence works as expected
     {
         auto seq = flux::chunk(std::array{1, 2, 3, 4, 5}, 2).reverse();
@@ -320,7 +428,19 @@ TEST_CASE("chunk")
     res = test_chunk_bidir();
     REQUIRE(res);
 
-    // Test chunk with bidir (only) sequence
+    SECTION("...with istream sequence")
+    {
+        std::istringstream iss("1 2 3 4 5");
+        std::ostringstream out;
+
+        flux::from_istream<int>(iss)
+                .chunk(2)
+                .write_to(out);
+
+        REQUIRE(out.str() == "[[1, 2], [3, 4], [5]]");
+    }
+
+    SECTION("...with bidir only sequence")
     {
         std::list<int> list{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
