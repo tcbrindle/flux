@@ -40,6 +40,7 @@ add_executable(test-libflux
     test_output_to.cpp
     test_range_iface.cpp
     test_reverse.cpp
+    test_slide.cpp
     test_split.cpp
     test_sort.cpp
     test_stride.cpp

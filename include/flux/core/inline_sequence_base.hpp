@@ -242,6 +242,9 @@ public:
     constexpr auto reverse() &&
             requires bidirectional_sequence<Derived> && bounded_sequence<Derived>;
 
+    [[nodiscard]]
+    constexpr auto slide(std::integral auto win_sz) && requires multipass_sequence<Derived>;
+
     template <multipass_sequence Pattern>
         requires std::equality_comparable_with<element_t<Derived>, element_t<Pattern>>
     [[nodiscard]]
