@@ -225,6 +225,11 @@ public:
     [[nodiscard]]
     constexpr auto drop_while(Pred pred) &&;
 
+    template <typename Func, typename Init>
+        requires foldable<Derived, Func, Init>
+    [[nodiscard]]
+    constexpr auto exclusive_scan(Func func, Init init) &&;
+
     template <typename Pred>
         requires std::predicate<Pred&, element_t<Derived>&>
     [[nodiscard]]
@@ -241,6 +246,11 @@ public:
     [[nodiscard]]
     constexpr auto reverse() &&
             requires bidirectional_sequence<Derived> && bounded_sequence<Derived>;
+
+    template <typename D = Derived, typename Func, typename Init = value_t<D>>
+        requires foldable<Derived, Func, Init>
+    [[nodiscard]]
+    constexpr auto scan(Func func, Init init = Init{}) &&;
 
     template <multipass_sequence Pattern>
         requires std::equality_comparable_with<element_t<Derived>, element_t<Pattern>>
