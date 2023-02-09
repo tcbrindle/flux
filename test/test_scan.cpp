@@ -10,8 +10,8 @@
 #include "test_utils.hpp"
 
 #include <array>
+#include <numeric>
 #include <sstream>
-#include <iostream>
 
 namespace {
 

@@ -9,6 +9,8 @@
 #include <flux/core.hpp>
 #include <flux/op/fold.hpp>
 
+#include <utility> // for std::as_const
+
 namespace flux {
 
 namespace detail {
