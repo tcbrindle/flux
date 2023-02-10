@@ -36,6 +36,7 @@
 #include <flux/op/ref.hpp>
 #include <flux/op/reverse.hpp>
 #include <flux/op/slice.hpp>
+#include <flux/op/slide.hpp>
 #include <flux/op/split.hpp>
 #include <flux/op/split_string.hpp>
 #include <flux/op/sort.hpp>
