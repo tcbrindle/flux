@@ -36,7 +36,7 @@ constexpr bool test_pairwise()
 
         using S = decltype(seq);
         static_assert(flux::multipass_sequence<S>);
-        static_assert(not flux::bidirectional_sequence<S>);
+        static_assert(flux::bidirectional_sequence<S>);
         static_assert(not flux::random_access_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(not flux::sized_sequence<S>);
@@ -66,7 +66,7 @@ constexpr bool test_pairwise()
 
         using S = decltype(seq);
         static_assert(flux::multipass_sequence<S>);
-        static_assert(not flux::bidirectional_sequence<S>);
+        static_assert(flux::bidirectional_sequence<S>);
         static_assert(not flux::random_access_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(not flux::sized_sequence<S>);
@@ -101,29 +101,27 @@ constexpr bool test_pairwise()
         STATIC_CHECK(tuple_equal(seq.front().value(), std::pair{1, 2}));
     }
 
-#if 0
     // Reverse iteration works when underlying is bidir + bounded
     {
-        auto seq = flux::pairwise(std::array{1, 2, 3, 4, 5}, 2).reverse();
+        auto seq = flux::pairwise(std::array{1, 2, 3, 4, 5}).reverse();
 
         using S = decltype(seq);
         static_assert(flux::multipass_sequence<S>);
         static_assert(flux::bidirectional_sequence<S>);
-        static_assert(flux::random_access_sequence<S>);
+        static_assert(not flux::random_access_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(not flux::sized_sequence<S>);
 
         auto cur = flux::first(seq);
-        STATIC_CHECK(check_equal(seq[cur], {4, 5}));
-        STATIC_CHECK(check_equal(seq[seq.inc(cur)], {3, 4}));
-        STATIC_CHECK(check_equal(seq[seq.inc(cur)], {2, 3}));
-        STATIC_CHECK(check_equal(seq[seq.inc(cur)], {1, 2}));
+        STATIC_CHECK(tuple_equal(seq[cur], std::pair{4, 5}));
+        STATIC_CHECK(tuple_equal(seq[seq.inc(cur)], std::pair{3, 4}));
+        STATIC_CHECK(tuple_equal(seq[seq.inc(cur)], std::pair{2, 3}));
+        STATIC_CHECK(tuple_equal(seq[seq.inc(cur)], std::pair{1, 2}));
         STATIC_CHECK(seq.is_last(seq.inc(cur)));
 
         STATIC_CHECK(cur == seq.last());
         STATIC_CHECK(seq.is_last(seq.last()));
     }
-#endif
 
     return true;
 }
@@ -139,7 +137,7 @@ constexpr bool test_adjacent()
 
         using S = decltype(seq);
         static_assert(flux::multipass_sequence<S>);
-        static_assert(not flux::bidirectional_sequence<S>);
+        static_assert(flux::bidirectional_sequence<S>);
         static_assert(not flux::random_access_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(not flux::sized_sequence<S>);
@@ -163,7 +161,7 @@ constexpr bool test_adjacent()
 
         using S = decltype(seq);
         static_assert(flux::multipass_sequence<S>);
-        static_assert(not flux::bidirectional_sequence<S>);
+        static_assert(flux::bidirectional_sequence<S>);
         static_assert(not flux::random_access_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(not flux::sized_sequence<S>);
@@ -222,7 +220,7 @@ constexpr bool test_adjacent()
 
         STATIC_CHECK(flux::equal(adj_n_stride, chunk, flux::equal, tuple_to_array));
     }
-#if 0
+
     // Reverse iteration works when underlying is bidir + bounded
     {
         auto seq = flux::adjacent<3>(std::array{1, 2, 3, 4, 5}).reverse();
@@ -230,21 +228,20 @@ constexpr bool test_adjacent()
         using S = decltype(seq);
         static_assert(flux::multipass_sequence<S>);
         static_assert(flux::bidirectional_sequence<S>);
-        static_assert(flux::random_access_sequence<S>);
+        static_assert(not flux::random_access_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(not flux::sized_sequence<S>);
 
         auto cur = flux::first(seq);
-        STATIC_CHECK(check_equal(seq[cur], {4, 5}));
-        STATIC_CHECK(check_equal(seq[seq.inc(cur)], {3, 4}));
-        STATIC_CHECK(check_equal(seq[seq.inc(cur)], {2, 3}));
-        STATIC_CHECK(check_equal(seq[seq.inc(cur)], {1, 2}));
+        STATIC_CHECK(tuple_equal(seq[cur], std::array{3, 4, 5}));
+        STATIC_CHECK(tuple_equal(seq[seq.inc(cur)], std::array{2, 3, 4}));
+        STATIC_CHECK(tuple_equal(seq[seq.inc(cur)], std::array{1, 2, 3}));
         STATIC_CHECK(seq.is_last(seq.inc(cur)));
 
         STATIC_CHECK(cur == seq.last());
         STATIC_CHECK(seq.is_last(seq.last()));
     }
-#endif
+
     return true;
 }
 static_assert(test_adjacent());

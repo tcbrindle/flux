@@ -9,6 +9,7 @@
 #include <flux/core.hpp>
 
 #include <flux/op/begin_end.hpp>
+#include <flux/op/reverse.hpp>
 #include <flux/op/zip.hpp>
 #include <flux/source/iota.hpp>
 
@@ -116,11 +117,22 @@ public:
         }
 
         static constexpr auto last(auto& self) -> cursor_type
-            requires bounded_sequence<Base>
+            requires (bidirectional_sequence<Base> && bounded_sequence<Base>)
         {
             cursor_type out{};
             out.arr.back() = flux::last(self.base_);
+            for (auto i : flux::ints(0, N-1).reverse()) {
+                out.arr[i] = flux::prev(self.base_, out.arr[i+1]);
+            }
             return out;
+        }
+
+        static constexpr auto dec(auto& self, cursor_type& cur) -> void
+            requires bidirectional_sequence<Base>
+        {
+            std::apply([&self](auto&... curs) {
+                (flux::dec(self.base_, curs), ...);
+            }, cur.arr);
         }
     };
 };
