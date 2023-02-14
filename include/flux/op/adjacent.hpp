@@ -114,6 +114,14 @@ public:
         {
             return do_read(flux::move_at_unchecked, self, cur);
         }
+
+        static constexpr auto last(auto& self) -> cursor_type
+            requires bounded_sequence<Base>
+        {
+            cursor_type out{};
+            out.arr.back() = flux::last(self.base_);
+            return out;
+        }
     };
 };
 

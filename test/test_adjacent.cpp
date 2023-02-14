@@ -38,7 +38,7 @@ constexpr bool test_pairwise()
         static_assert(flux::multipass_sequence<S>);
         static_assert(not flux::bidirectional_sequence<S>);
         static_assert(not flux::random_access_sequence<S>);
-        static_assert(not flux::bounded_sequence<S>);
+        static_assert(flux::bounded_sequence<S>);
         static_assert(not flux::sized_sequence<S>);
 
         static_assert(std::same_as<flux::element_t<S>, std::pair<int&, int&>>);
@@ -56,8 +56,8 @@ constexpr bool test_pairwise()
         STATIC_CHECK(tuple_equal(seq[seq.inc(cur)], std::pair{4, 5}));
         STATIC_CHECK(seq.is_last(seq.inc(cur)));
 
-//        STATIC_CHECK(cur == seq.last());
-//        STATIC_CHECK(seq.is_last(seq.last()));
+        STATIC_CHECK(cur == seq.last());
+        STATIC_CHECK(seq.is_last(seq.last()));
     }
 
     // const iteration works if the underlying is const-iterable
@@ -68,7 +68,7 @@ constexpr bool test_pairwise()
         static_assert(flux::multipass_sequence<S>);
         static_assert(not flux::bidirectional_sequence<S>);
         static_assert(not flux::random_access_sequence<S>);
-        static_assert(not flux::bounded_sequence<S>);
+        static_assert(flux::bounded_sequence<S>);
         static_assert(not flux::sized_sequence<S>);
 
 //        STATIC_CHECK(flux::size(seq) == 4);
@@ -141,7 +141,7 @@ constexpr bool test_adjacent()
         static_assert(flux::multipass_sequence<S>);
         static_assert(not flux::bidirectional_sequence<S>);
         static_assert(not flux::random_access_sequence<S>);
-        static_assert(not flux::bounded_sequence<S>);
+        static_assert(flux::bounded_sequence<S>);
         static_assert(not flux::sized_sequence<S>);
 
 //        STATIC_CHECK(seq.size() == 4);
@@ -153,8 +153,8 @@ constexpr bool test_adjacent()
         STATIC_CHECK(tuple_equal(seq[seq.inc(cur)], std::array{3, 4, 5}));
         STATIC_CHECK(seq.is_last(seq.inc(cur)));
 
-   //     STATIC_CHECK(cur == seq.last());
-   //     STATIC_CHECK(seq.is_last(seq.last()));
+        STATIC_CHECK(cur == seq.last());
+        STATIC_CHECK(seq.is_last(seq.last()));
     }
 
     // const iteration works if the underlying is const-iterable
@@ -165,7 +165,7 @@ constexpr bool test_adjacent()
         static_assert(flux::multipass_sequence<S>);
         static_assert(not flux::bidirectional_sequence<S>);
         static_assert(not flux::random_access_sequence<S>);
-        static_assert(not flux::bounded_sequence<S>);
+        static_assert(flux::bounded_sequence<S>);
         static_assert(not flux::sized_sequence<S>);
 
         //STATIC_CHECK(flux::size(seq) == 3);
