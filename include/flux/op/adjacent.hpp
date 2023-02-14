@@ -121,8 +121,12 @@ public:
         {
             cursor_type out{};
             out.arr.back() = flux::last(self.base_);
+            auto const first = flux::first(self.base_);
             for (auto i : flux::ints(0, N-1).reverse()) {
-                out.arr[i] = flux::prev(self.base_, out.arr[i+1]);
+                out.arr[i] = out.arr[i + 1];
+                if (out.arr[i] != first) {
+                    flux::dec(self.base_, out.arr[i]);
+                }
             }
             return out;
         }
@@ -133,6 +137,21 @@ public:
             std::apply([&self](auto&... curs) {
                 (flux::dec(self.base_, curs), ...);
             }, cur.arr);
+        }
+
+        static constexpr auto inc(auto& self, cursor_type& cur, distance_t offset) -> void
+            requires random_access_sequence<Base>
+        {
+            std::apply([&self, offset](auto&... curs) {
+                (flux::inc(self.base_, curs, offset), ...);
+            }, cur.arr);
+        }
+
+        static constexpr auto distance(auto& self, cursor_type const& from, cursor_type const& to)
+            -> distance_t
+            requires random_access_sequence<Base>
+        {
+            return flux::distance(self.base_, from.arr.back(), to.arr.back());
         }
     };
 };
