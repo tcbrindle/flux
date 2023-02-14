@@ -203,6 +203,10 @@ public:
      * Adaptors
      */
 
+    template <distance_t N>
+    [[nodiscard]]
+    constexpr auto adjacent() && requires multipass_sequence<Derived>;
+
     [[nodiscard]]
     constexpr auto cache_last() &&
             requires bounded_sequence<Derived> ||
@@ -237,6 +241,9 @@ public:
         requires std::invocable<Func&, element_t<Derived>>
     [[nodiscard]]
     constexpr auto map(Func func) &&;
+
+    [[nodiscard]]
+    constexpr auto pairwise() && requires multipass_sequence<Derived>;
 
     [[nodiscard]]
     constexpr auto reverse() &&

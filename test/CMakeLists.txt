@@ -12,6 +12,7 @@ add_executable(test-libflux
     test_simple_sequence.cpp
     test_apply.cpp
 
+    test_adjacent.cpp
     test_all_any_none.cpp
     test_bounds_checked.cpp
     test_cache_last.cpp

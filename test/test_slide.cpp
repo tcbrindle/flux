@@ -15,7 +15,7 @@ namespace {
 
 constexpr bool test_slide()
 {
-    // Basic striding
+    // Basic sliding
     {
         std::array arr{1, 2, 3, 4, 5};
 
