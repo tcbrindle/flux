@@ -153,6 +153,13 @@ public:
         {
             return flux::distance(self.base_, from.arr.back(), to.arr.back());
         }
+
+        static constexpr auto size(auto& self) -> distance_t
+            requires sized_sequence<Base>
+        {
+            auto s = (flux::size(self.base_) - N) + 1;
+            return (std::max)(s, distance_t{0});
+        }
     };
 };
 
