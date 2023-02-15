@@ -19,39 +19,123 @@ namespace flux {
 namespace detail {
 
 template <typename Base, distance_t N>
+struct adjacent_sequence_traits_base {
+protected:
+    struct cursor_type {
+        std::array<cursor_t<Base>, N> arr{};
+
+        friend constexpr auto operator==(cursor_type const& lhs, cursor_type const& rhs)
+            -> bool
+        {
+            return lhs.arr.back() == rhs.arr.back();
+        }
+
+        friend constexpr auto operator<=>(cursor_type const& lhs, cursor_type const& rhs)
+            -> std::strong_ordering
+            requires ordered_cursor<cursor_t<Base>>
+        {
+            return lhs.arr.back() <=> rhs.arr.back();
+        }
+    };
+
+public:
+
+    static inline constexpr bool is_infinite = infinite_sequence<Base>;
+
+    static constexpr auto first(auto& self) -> cursor_type
+    {
+        cursor_type out{flux::first(self.base_), };
+
+        for (auto i : flux::ints(1, N)) {
+            out.arr[i] = out.arr[i - 1];
+            if (!flux::is_last(self.base_, out.arr[i])) {
+                flux::inc(self.base_, out.arr[i]);
+            }
+        }
+        return out;
+    }
+
+    static constexpr auto is_last(auto& self, cursor_type const& cur) -> bool
+    {
+        return flux::is_last(self.base_, cur.arr.back());
+    }
+
+    static constexpr auto inc(auto& self, cursor_type& cur) -> void
+    {
+        std::apply([&](auto&... curs) {
+            (flux::inc(self.base_, curs), ...);
+        }, cur.arr);
+    }
+
+    static constexpr auto last(auto& self) -> cursor_type
+        requires (bidirectional_sequence<Base> && bounded_sequence<Base>)
+    {
+        cursor_type out{};
+        out.arr.back() = flux::last(self.base_);
+        auto const first = flux::first(self.base_);
+        for (auto i : flux::ints(0, N-1).reverse()) {
+            out.arr[i] = out.arr[i + 1];
+            if (out.arr[i] != first) {
+                flux::dec(self.base_, out.arr[i]);
+            }
+        }
+        return out;
+    }
+
+    static constexpr auto dec(auto& self, cursor_type& cur) -> void
+        requires bidirectional_sequence<Base>
+    {
+        std::apply([&self](auto&... curs) {
+            (flux::dec(self.base_, curs), ...);
+        }, cur.arr);
+    }
+
+    static constexpr auto inc(auto& self, cursor_type& cur, distance_t offset) -> void
+        requires random_access_sequence<Base>
+    {
+        std::apply([&self, offset](auto&... curs) {
+            (flux::inc(self.base_, curs, offset), ...);
+        }, cur.arr);
+    }
+
+    static constexpr auto distance(auto& self, cursor_type const& from, cursor_type const& to)
+        -> distance_t
+        requires random_access_sequence<Base>
+    {
+        return flux::distance(self.base_, from.arr.back(), to.arr.back());
+    }
+
+    static constexpr auto size(auto& self) -> distance_t
+        requires sized_sequence<Base>
+    {
+        auto s = (flux::size(self.base_) - N) + 1;
+        return (std::max)(s, distance_t{0});
+    }
+};
+
+template <typename Base, distance_t N>
 struct adjacent_adaptor : inline_sequence_base<adjacent_adaptor<Base, N>> {
 private:
     Base base_;
+
+    friend struct adjacent_sequence_traits_base<Base, N>;
 
 public:
     constexpr explicit adjacent_adaptor(decays_to<Base> auto&& base)
         : base_(FLUX_FWD(base))
     {}
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : adjacent_sequence_traits_base<Base, N> {
     private:
-        struct cursor_type {
-            std::array<cursor_t<Base>, N> arr{};
 
-            friend constexpr auto operator==(cursor_type const& lhs, cursor_type const& rhs)
-                -> bool
-            {
-                return lhs.arr.back() == rhs.arr.back();
-            }
+        using cursor_type = adjacent_sequence_traits_base<Base, N>::cursor_type;
 
-            friend constexpr auto operator<=>(cursor_type const& lhs, cursor_type const& rhs)
-                -> std::strong_ordering
-                requires ordered_cursor<cursor_t<Base>>
-            {
-                return lhs.arr.back() <=> rhs.arr.back();
-            }
-        };
-
-        static constexpr auto do_read(auto const& fn, auto& self, cursor_type const& cur)
+        template <auto& ReadFn>
+        static constexpr auto do_read(auto& self, cursor_type const& cur)
         {
             return std::apply([&](auto const&... curs) {
-                return pair_or_tuple_t<decltype(fn(self.base_, curs))...>(
-                    fn(self.base_, curs)...);
+                return pair_or_tuple_t<decltype(ReadFn(self.base_, curs))...>(
+                    ReadFn(self.base_, curs)...);
             }, cur.arr);
         }
 
@@ -62,103 +146,30 @@ public:
         static auto make_value_type(std::index_sequence<Is...>) -> pair_or_tuple_t<base_value_t<Is>...>;
 
     public:
-
-        static inline constexpr bool is_infinite = infinite_sequence<Base>;
-
         using value_type = decltype(make_value_type(std::make_index_sequence<N>{}));
 
-        static constexpr auto first(auto& self) -> cursor_type
-        {
-            cursor_type out{flux::first(self.base_), };
-
-            for (auto i : flux::ints(1, N)) {
-                out.arr[i] = out.arr[i - 1];
-                if (!flux::is_last(self.base_, out.arr[i])) {
-                    flux::inc(self.base_, out.arr[i]);
-                }
-            }
-            return out;
-        }
-
-        static constexpr auto is_last(auto& self, cursor_type const& cur) -> bool
-        {
-            return flux::is_last(self.base_, cur.arr.back());
-        }
-
-        static constexpr auto inc(auto& self, cursor_type& cur) -> void
-        {
-            std::apply([&](auto&... curs) {
-                (flux::inc(self.base_, curs), ...);
-            }, cur.arr);
-        }
-
         static constexpr auto read_at(auto& self, cursor_type const& cur)
-            -> decltype(do_read(flux::read_at, self, cur))
+            -> decltype(do_read<flux::read_at>(self, cur))
         {
-            return do_read(flux::read_at, self, cur);
+            return do_read<flux::read_at>(self, cur);
         }
 
         static constexpr auto move_at(auto& self, cursor_type const& cur)
-            -> decltype(do_read(flux::move_at, self, cur))
+            -> decltype(do_read<flux::move_at>( self, cur))
         {
-            return do_read(flux::move_at, self, cur);
+            return do_read<flux::move_at>( self, cur);
         }
 
         static constexpr auto read_at_unchecked(auto& self, cursor_type const& cur)
-            -> decltype(do_read(flux::read_at_unchecked, self, cur))
+            -> decltype(do_read<flux::read_at_unchecked>(self, cur))
         {
-            return do_read(flux::read_at_unchecked, self, cur);
+            return do_read<flux::read_at_unchecked>(self, cur);
         }
 
         static constexpr auto move_at_unchecked(auto& self, cursor_type const& cur)
-            -> decltype(do_read(flux::move_at_unchecked, self, cur))
+            -> decltype(do_read<flux::move_at_unchecked>(self, cur))
         {
-            return do_read(flux::move_at_unchecked, self, cur);
-        }
-
-        static constexpr auto last(auto& self) -> cursor_type
-            requires (bidirectional_sequence<Base> && bounded_sequence<Base>)
-        {
-            cursor_type out{};
-            out.arr.back() = flux::last(self.base_);
-            auto const first = flux::first(self.base_);
-            for (auto i : flux::ints(0, N-1).reverse()) {
-                out.arr[i] = out.arr[i + 1];
-                if (out.arr[i] != first) {
-                    flux::dec(self.base_, out.arr[i]);
-                }
-            }
-            return out;
-        }
-
-        static constexpr auto dec(auto& self, cursor_type& cur) -> void
-            requires bidirectional_sequence<Base>
-        {
-            std::apply([&self](auto&... curs) {
-                (flux::dec(self.base_, curs), ...);
-            }, cur.arr);
-        }
-
-        static constexpr auto inc(auto& self, cursor_type& cur, distance_t offset) -> void
-            requires random_access_sequence<Base>
-        {
-            std::apply([&self, offset](auto&... curs) {
-                (flux::inc(self.base_, curs, offset), ...);
-            }, cur.arr);
-        }
-
-        static constexpr auto distance(auto& self, cursor_type const& from, cursor_type const& to)
-            -> distance_t
-            requires random_access_sequence<Base>
-        {
-            return flux::distance(self.base_, from.arr.back(), to.arr.back());
-        }
-
-        static constexpr auto size(auto& self) -> distance_t
-            requires sized_sequence<Base>
-        {
-            auto s = (flux::size(self.base_) - N) + 1;
-            return (std::max)(s, distance_t{0});
+            return do_read<flux::move_at_unchecked>(self, cur);
         }
     };
 };
