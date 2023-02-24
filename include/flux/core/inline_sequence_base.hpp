@@ -207,6 +207,11 @@ public:
     [[nodiscard]]
     constexpr auto adjacent() && requires multipass_sequence<Derived>;
 
+    template <distance_t N, typename Func>
+        requires multipass_sequence<Derived>
+    [[nodiscard]]
+    constexpr auto adjacent_map(Func func) &&;
+
     [[nodiscard]]
     constexpr auto cache_last() &&
             requires bounded_sequence<Derived> ||
@@ -244,6 +249,11 @@ public:
 
     [[nodiscard]]
     constexpr auto pairwise() && requires multipass_sequence<Derived>;
+
+    template <typename Func>
+        requires multipass_sequence<Derived>
+    [[nodiscard]]
+    constexpr auto pairwise_map(Func func) &&;
 
     [[nodiscard]]
     constexpr auto reverse() &&

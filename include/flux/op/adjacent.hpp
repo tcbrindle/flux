@@ -174,6 +174,46 @@ public:
     };
 };
 
+template <typename Func, typename E, distance_t N>
+struct adjacent_invocable_helper {
+    template <std::size_t I>
+    using repeater = E;
+
+    static inline constexpr bool value = []<std::size_t... Is> (std::index_sequence<Is...>) consteval {
+        return std::regular_invocable<Func, repeater<Is>...>;
+    }(std::make_index_sequence<N>{});
+};
+
+template <typename Func, typename E, distance_t N>
+concept adjacent_invocable = adjacent_invocable_helper<Func, E, N>::value;
+
+template <typename Base, distance_t N, typename Func>
+struct adjacent_map_adaptor : inline_sequence_base<adjacent_map_adaptor<Base, N, Func>> {
+private:
+    Base base_;
+    Func func_;
+
+    friend struct adjacent_sequence_traits_base<Base, N>;
+
+public:
+    constexpr explicit adjacent_map_adaptor(decays_to<Base> auto&& base, Func&& func)
+        : base_(FLUX_FWD(base)),
+          func_(std::move(func))
+    {}
+
+    struct flux_sequence_traits : adjacent_sequence_traits_base<Base, N> {
+        template <typename Self>
+        static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
+            -> decltype(auto)
+            requires adjacent_invocable<decltype((self.func_)), element_t<decltype((self.base_))>, N>
+        {
+            return std::apply([&](auto const&... curs) {
+                return std::invoke(self.func_, flux::read_at(self.base_, curs)...);
+            }, cur.arr);
+        }
+    };
+};
+
 template <distance_t N>
 struct adjacent_fn {
     template <adaptable_sequence Seq>
@@ -185,6 +225,19 @@ struct adjacent_fn {
     }
 };
 
+template <distance_t N>
+struct adjacent_map_fn {
+    template <adaptable_sequence Seq, typename Func>
+        requires multipass_sequence<Seq> &&
+                 adjacent_invocable<Func, element_t<Seq>, N>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq, Func func) const -> multipass_sequence auto
+    {
+        return adjacent_map_adaptor<std::decay_t<Seq>, N, Func>(
+            FLUX_FWD(seq), std::move(func));
+    }
+};
+
 } // namespace detail
 
 template <distance_t N>
@@ -192,6 +245,12 @@ template <distance_t N>
 inline constexpr auto adjacent = detail::adjacent_fn<N>{};
 
 inline constexpr auto pairwise = adjacent<2>;
+
+template <distance_t N>
+    requires (N > 0)
+inline constexpr auto adjacent_map = detail::adjacent_map_fn<N>{};
+
+inline constexpr auto pairwise_map = adjacent_map<2>;
 
 template <typename D>
 template <distance_t N>
@@ -206,6 +265,22 @@ constexpr auto inline_sequence_base<D>::pairwise() &&
     requires multipass_sequence<D>
 {
     return flux::pairwise(std::move(derived()));
+}
+
+template <typename D>
+template <distance_t N, typename Func>
+    requires multipass_sequence<D>
+constexpr auto inline_sequence_base<D>::adjacent_map(Func func) &&
+{
+    return flux::adjacent_map<N>(std::move(derived()), std::move(func));
+}
+
+template <typename D>
+template <typename Func>
+    requires multipass_sequence<D>
+constexpr auto inline_sequence_base<D>::pairwise_map(Func func) &&
+{
+    return flux::pairwise_map(std::move(derived()), std::move(func));
 }
 
 } // namespace flux

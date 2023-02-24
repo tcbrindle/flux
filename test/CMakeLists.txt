@@ -13,6 +13,7 @@ add_executable(test-libflux
     test_apply.cpp
 
     test_adjacent.cpp
+    test_adjacent_map.cpp
     test_all_any_none.cpp
     test_bounds_checked.cpp
     test_cache_last.cpp

@@ -11,7 +11,6 @@
 
 #include <array>
 
-#include <iostream>
 
 namespace {
 
