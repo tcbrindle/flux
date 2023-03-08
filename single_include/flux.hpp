@@ -3757,6 +3757,8 @@ inline constexpr auto ints = detail::ints_fn{};
 #endif // FLUX_SOURCE_IOTA_HPP_INCLUDED
 
 
+#include <array>
+
 
 namespace flux {
 
