@@ -1,0 +1,25 @@
+
+find_package(Sphinx REQUIRED)
+
+set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR})
+set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR}/html)
+set(SPHINX_INDEX_FILE ${SPHINX_BUILD}/index.html)
+
+add_custom_command(
+    OUTPUT ${SPHINX_INDEX_FILE}
+    COMMAND
+    ${SPHINX_EXECUTABLE} -b html ${SPHINX_SOURCE} ${SPHINX_BUILD}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/index.rst
+    MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/conf.py
+    COMMENT "Generating documentation with Sphinx"
+)
+
+add_custom_target(Sphinx ALL DEPENDS ${SPHINX_INDEX_FILE})
+
+include(GNUInstallDirs)
+install(
+    DIRECTORY ${SPHINX_BUILD}
+    DESTINATION ${CMAKE_INSTALL_DOCDIR}
+)
