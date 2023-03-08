@@ -1,4 +1,4 @@
-name: Generate and publish documentation
+name: Documentation
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  documentation:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -16,3 +16,27 @@ jobs:
         with:
           build-command: "sphinx-build -b html . html"
           docs-folder: 'docs/'
+      - name: Upload pages artifact
+        if: github.ref_name == 'main'
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: docs/html/
+
+  deploy:
+    if: github.ref_name == 'main'
+
+    needs: build
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Github Pages
+        id: deployment
+        uses: actions/deploy-pages@v1
