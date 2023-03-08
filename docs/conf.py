@@ -64,4 +64,7 @@ html_static_path = ['_static']
 
 # Configuration for the theme
 html_theme_options = {
+    "source_repository": "https://github.com/tcbrindle/flux/",
+    "source_branch": "main",
+    "source_directory": "docs/",
 }
