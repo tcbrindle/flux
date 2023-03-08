@@ -13,6 +13,8 @@
 #include <flux/op/zip.hpp>
 #include <flux/source/iota.hpp>
 
+#include <array>
+
 
 namespace flux {
 
