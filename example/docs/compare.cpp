@@ -10,6 +10,12 @@
 #include <limits>
 #include <vector>
 
+#ifdef _GLIBCXX_RELEASE
+#if _GLIBCXX_RELEASE < 12
+#define COMPILER_IS_GCC11
+#endif
+#endif
+
 int main()
 {
     std::vector<int> v1{1, 2, 3, 4, 5};
@@ -37,8 +43,11 @@ int main()
 
     // On most systems we can use std::strong_order as a custom comparator
     // to get a total order for IEEE floats
+    // (Note that this is not supported with GCC 11)
+    #ifndef COMPILER_IS_GCC11
     if constexpr (std::numeric_limits<double>::is_iec559) {
         assert(flux::compare(v5, v6, std::strong_order) ==
-               std::strong_ordering::less);
+                 std::strong_ordering::less);
     }
+    #endif
 }
