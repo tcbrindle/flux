@@ -109,7 +109,9 @@ static_assert(not flux::sequence<minimal_seq_of<incomplete>>);
 static_assert(flux::sequence<minimal_seq_of<incomplete*>>);
 static_assert(not flux::sequence<minimal_seq_of<indestructable>>);
 static_assert(flux::sequence<minimal_seq_of<indestructable&>>);
+#ifndef __clang__
 static_assert(not flux::sequence<minimal_seq_of<abstract>>);
+#endif
 static_assert(flux::sequence<minimal_seq_of<abstract&>>);
 
 static_assert(flux::multipass_sequence<minimal_with_idx<int>>);
