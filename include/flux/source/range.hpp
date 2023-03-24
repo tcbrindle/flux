@@ -46,7 +46,11 @@ public:
                 = default;
 
             friend auto operator==(cursor_type const&, cursor_type const&) -> bool = default;
-            friend auto operator<=>(cursor_type const&, cursor_type const&) = default;
+
+            friend auto operator<=>(cursor_type const& lhs, cursor_type const& rhs)
+                -> std::strong_ordering
+                = default;
+
         };
 
     public:
