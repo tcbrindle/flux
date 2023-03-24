@@ -986,7 +986,7 @@ public:
         return *this;
     }
 
-    optional& operator=(optional&&)
+    constexpr optional& operator=(optional&&)
         requires std::movable<T> &&
                  std::is_trivially_move_assignable_v<T>
         = default;
@@ -1062,7 +1062,7 @@ public:
 private:
     template <typename Cmp>
     static constexpr auto do_compare(optional const& lhs, optional const& rhs, Cmp cmp)
-        -> std::invoke_result_t<Cmp&, T const&, T const&>
+        -> std::decay_t<std::invoke_result_t<Cmp&, T const&, T const&>>
     {
         if (lhs.has_value() && rhs.has_value()) {
             return cmp(lhs.value_unchecked(), rhs.value_unchecked());
@@ -1940,6 +1940,9 @@ struct bounds {
 
     friend bool operator==(bounds const&, bounds const&) = default;
 };
+
+template <cursor Cur>
+bounds(Cur, Cur) -> bounds<Cur>;
 
 template <sequence Seq>
 using bounds_t = bounds<cursor_t<Seq>>;
@@ -5968,10 +5971,10 @@ struct compare_fn {
     template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way,
               typename Proj1 = std::identity, typename Proj2 = std::identity>
         requires std::invocable<Cmp&, projected_t<Proj1, Seq1>, projected_t<Proj2, Seq2>> &&
-                 is_comparison_category<std::invoke_result_t<Cmp&, projected_t<Proj1, Seq1>, projected_t<Proj2, Seq2>>>
+                 is_comparison_category<std::decay_t<std::invoke_result_t<Cmp&, projected_t<Proj1, Seq1>, projected_t<Proj2, Seq2>>>>
     constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {},
                               Proj1 proj1 = {}, Proj2 proj2 = {}) const
-        -> std::invoke_result_t<Cmp&, projected_t<Proj1, Seq1>, projected_t<Proj2, Seq2>>
+        -> std::decay_t<std::invoke_result_t<Cmp&, projected_t<Proj1, Seq1>, projected_t<Proj2, Seq2>>>
     {
         auto cur1 = flux::first(seq1);
         auto cur2 = flux::first(seq2);
@@ -9841,7 +9844,11 @@ public:
                 = default;
 
             friend auto operator==(cursor_type const&, cursor_type const&) -> bool = default;
-            friend auto operator<=>(cursor_type const&, cursor_type const&) = default;
+
+            friend auto operator<=>(cursor_type const& lhs, cursor_type const& rhs)
+                -> std::strong_ordering
+                = default;
+
         };
 
     public:
