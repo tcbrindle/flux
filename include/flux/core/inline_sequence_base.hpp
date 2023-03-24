@@ -20,6 +20,9 @@ struct bounds {
     friend bool operator==(bounds const&, bounds const&) = default;
 };
 
+template <cursor Cur>
+bounds(Cur, Cur) -> bounds<Cur>;
+
 template <sequence Seq>
 using bounds_t = bounds<cursor_t<Seq>>;
 
