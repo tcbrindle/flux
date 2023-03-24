@@ -24,10 +24,10 @@ struct compare_fn {
     template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way,
               typename Proj1 = std::identity, typename Proj2 = std::identity>
         requires std::invocable<Cmp&, projected_t<Proj1, Seq1>, projected_t<Proj2, Seq2>> &&
-                 is_comparison_category<std::invoke_result_t<Cmp&, projected_t<Proj1, Seq1>, projected_t<Proj2, Seq2>>>
+                 is_comparison_category<std::decay_t<std::invoke_result_t<Cmp&, projected_t<Proj1, Seq1>, projected_t<Proj2, Seq2>>>>
     constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {},
                               Proj1 proj1 = {}, Proj2 proj2 = {}) const
-        -> std::invoke_result_t<Cmp&, projected_t<Proj1, Seq1>, projected_t<Proj2, Seq2>>
+        -> std::decay_t<std::invoke_result_t<Cmp&, projected_t<Proj1, Seq1>, projected_t<Proj2, Seq2>>>
     {
         auto cur1 = flux::first(seq1);
         auto cur2 = flux::first(seq2);

@@ -164,7 +164,7 @@ public:
         return *this;
     }
 
-    optional& operator=(optional&&)
+    constexpr optional& operator=(optional&&)
         requires std::movable<T> &&
                  std::is_trivially_move_assignable_v<T>
         = default;
@@ -240,7 +240,7 @@ public:
 private:
     template <typename Cmp>
     static constexpr auto do_compare(optional const& lhs, optional const& rhs, Cmp cmp)
-        -> std::invoke_result_t<Cmp&, T const&, T const&>
+        -> std::decay_t<std::invoke_result_t<Cmp&, T const&, T const&>>
     {
         if (lhs.has_value() && rhs.has_value()) {
             return cmp(lhs.value_unchecked(), rhs.value_unchecked());

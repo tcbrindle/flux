@@ -45,6 +45,9 @@ struct span_seq {
     };
 };
 
+template <typename T>
+span_seq(T*, size_t) -> span_seq<T>;
+
 constexpr bool test_sort_contexpr()
 {
     {
