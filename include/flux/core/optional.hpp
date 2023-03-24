@@ -164,7 +164,7 @@ public:
         return *this;
     }
 
-    optional& operator=(optional&&)
+    constexpr optional& operator=(optional&&)
         requires std::movable<T> &&
                  std::is_trivially_move_assignable_v<T>
         = default;
