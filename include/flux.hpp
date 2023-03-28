@@ -35,6 +35,7 @@
 #include <flux/op/inplace_reverse.hpp>
 #include <flux/op/map.hpp>
 #include <flux/op/minmax.hpp>
+#include <flux/op/read_only.hpp>
 #include <flux/op/ref.hpp>
 #include <flux/op/reverse.hpp>
 #include <flux/op/scan.hpp>

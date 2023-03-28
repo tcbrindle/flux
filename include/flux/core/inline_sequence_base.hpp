@@ -264,6 +264,9 @@ public:
     constexpr auto prescan(Func func, Init init) &&;
 
     [[nodiscard]]
+    constexpr auto read_only() &&;
+
+    [[nodiscard]]
     constexpr auto reverse() &&
             requires bidirectional_sequence<Derived> && bounded_sequence<Derived>;
 

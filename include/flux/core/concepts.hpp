@@ -101,6 +101,9 @@ using rvalue_element_t = typename detail::rvalue_element_type<Seq>::type;
 template <typename Seq>
 using common_element_t = std::common_reference_t<element_t<Seq>, value_t<Seq>&>;
 
+template <typename Seq>
+using const_element_t = std::common_reference_t<value_t<Seq> const&&, element_t<Seq>>;
+
 namespace detail {
 
 template <typename B>
@@ -255,6 +258,11 @@ template <typename Seq>
 concept infinite_sequence =
     sequence<Seq> &&
     detail::is_infinite_seq<detail::traits_t<Seq>>;
+
+template <typename Seq>
+concept read_only_sequence =
+    sequence<Seq> &&
+    std::same_as<element_t<Seq>, const_element_t<Seq>>;
 
 namespace detail {
 
