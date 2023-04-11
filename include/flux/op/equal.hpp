@@ -13,11 +13,9 @@ namespace flux {
 namespace detail {
 
 struct equal_fn {
-    template <sequence Seq1, sequence Seq2, typename Cmp = std::equal_to<>,
-              typename Proj1 = std::identity, typename Proj2 = std::identity>
-        requires std::predicate<Cmp&, projected_t<Proj1, Seq1>, projected_t<Proj2, Seq2>>
-    constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {},
-                              Proj1 proj1 = {}, Proj2 proj2 = {}) const -> bool
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::equal_to>
+        requires std::predicate<Cmp&, element_t<Seq1>, element_t<Seq2>>
+    constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const -> bool
     {
         if constexpr (sized_sequence<Seq1> && sized_sequence<Seq2>) {
             if (flux::size(seq1) != flux::size(seq2)) {
@@ -29,8 +27,7 @@ struct equal_fn {
         auto cur2 = flux::first(seq2);
 
         while (!flux::is_last(seq1, cur1) && !flux::is_last(seq2, cur2)) {
-            if (!std::invoke(cmp, std::invoke(proj1, flux::read_at(seq1, cur1)),
-                             std::invoke(proj2, flux::read_at(seq2, cur2)))) {
+            if (!std::invoke(cmp, flux::read_at(seq1, cur1), flux::read_at(seq2, cur2))) {
                 return false;
             }
             flux::inc(seq1, cur1);

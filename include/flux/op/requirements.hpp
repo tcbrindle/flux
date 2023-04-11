@@ -30,6 +30,16 @@ concept foldable =
     std::invocable<Func&, Init, element_t<Seq>> &&
     detail::foldable_<Seq, Func, Init>;
 
+template <typename Fn, typename Seq1, typename Seq2 = Seq1>
+concept strict_weak_order_for =
+    sequence<Seq1> &&
+    sequence<Seq2> &&
+    std::strict_weak_order<Fn&, element_t<Seq1>, element_t<Seq2>> &&
+    std::strict_weak_order<Fn&, value_t<Seq1>&, element_t<Seq2>> &&
+    std::strict_weak_order<Fn&, element_t<Seq1>, value_t<Seq2>&> &&
+    std::strict_weak_order<Fn&, value_t<Seq1>&, value_t<Seq2>&> &&
+    std::strict_weak_order<Fn&, common_element_t<Seq1>, common_element_t<Seq2>>;
+
 } // namespace flux
 
 #endif // FLUX_OP_REQUIREMENTS_HPP_INCLUDED

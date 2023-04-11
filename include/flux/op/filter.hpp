@@ -15,7 +15,6 @@ namespace flux {
 namespace detail {
 
 template <sequence Base, typename Pred>
-    requires std::predicate<Pred&, element_t<Base>&>
 class filter_adaptor : public inline_sequence_base<filter_adaptor<Base, Pred>>
 {
     FLUX_NO_UNIQUE_ADDRESS Base base_;
@@ -113,8 +112,8 @@ public:
 
 
 struct filter_fn {
-    template <adaptable_sequence Seq, typename Pred>
-        requires std::predicate<Pred&, element_t<Seq>&>
+    template <adaptable_sequence Seq, std::move_constructible Pred>
+        requires std::predicate<Pred&, element_t<Seq>>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Pred pred) const
     {
@@ -128,7 +127,7 @@ inline constexpr auto filter = detail::filter_fn{};
 
 template <typename D>
 template <typename Pred>
-    requires std::predicate<Pred&, element_t<D>&>
+    requires std::predicate<Pred&, element_t<D>>
 constexpr auto inline_sequence_base<D>::filter(Pred pred) &&
 {
     return detail::filter_adaptor<D, Pred>(std::move(derived()), std::move(pred));

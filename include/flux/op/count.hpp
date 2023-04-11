@@ -31,15 +31,15 @@ struct count_fn {
 };
 
 struct count_eq_fn {
-    template <sequence Seq, typename Value, typename Proj = std::identity>
-        requires std::equality_comparable_with<projected_t<Proj, Seq>, Value const&>
+    template <sequence Seq, typename Value>
+        requires std::equality_comparable_with<element_t<Seq>, Value const&>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Value const& value, Proj proj = {}) const
+    constexpr auto operator()(Seq&& seq, Value const& value) const
         -> distance_t
     {
         distance_t counter = 0;
         flux::for_each_while(seq, [&](auto&& elem) {
-            if (value == std::invoke(proj, FLUX_FWD(elem))) {
+            if (value == FLUX_FWD(elem)) {
                 ++counter;
             }
             return true;
@@ -49,15 +49,15 @@ struct count_eq_fn {
 };
 
 struct count_if_fn {
-    template <sequence Seq, typename Pred, typename Proj = std::identity>
-        requires predicate_for<Pred, Seq, Proj>
+    template <sequence Seq, typename Pred>
+        requires std::predicate<Pred&, element_t<Seq>>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Pred pred, Proj proj = {}) const
+    constexpr auto operator()(Seq&& seq, Pred pred) const
         -> distance_t
     {
         distance_t counter = 0;
         flux::for_each_while(seq, [&](auto&& elem) {
-            if (std::invoke(pred, std::invoke(proj, FLUX_FWD(elem)))) {
+            if (std::invoke(pred, FLUX_FWD(elem))) {
                 ++counter;
             }
             return true;
@@ -79,19 +79,19 @@ constexpr auto inline_sequence_base<D>::count()
 }
 
 template <typename D>
-template <typename Value, typename Proj>
-    requires std::equality_comparable_with<projected_t<Proj, D>, Value const&>
-constexpr auto inline_sequence_base<D>::count_eq(Value const& value, Proj proj)
+template <typename Value>
+    requires std::equality_comparable_with<element_t<D>, Value const&>
+constexpr auto inline_sequence_base<D>::count_eq(Value const& value)
 {
-    return flux::count_eq(derived(), value, std::move(proj));
+    return flux::count_eq(derived(), value);
 }
 
 template <typename D>
-template <typename Pred, typename Proj>
-    requires predicate_for<Pred, D, Proj>
-constexpr auto inline_sequence_base<D>::count_if(Pred pred, Proj proj)
+template <typename Pred>
+    requires std::predicate<Pred&, element_t<D>>
+constexpr auto inline_sequence_base<D>::count_if(Pred pred)
 {
-    return flux::count_if(derived(), std::move(pred), std::move(proj));
+    return flux::count_if(derived(), std::move(pred));
 }
 
 } // namespace flux

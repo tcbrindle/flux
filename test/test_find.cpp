@@ -30,12 +30,6 @@ static_assert(not std::invocable<find_fn, int[10], S>);
 // Not equality comparable
 static_assert(not std::invocable<find_fn, S[10], S>);
 
-// Okay
-static_assert(std::invocable<find_fn, S[10], int, decltype(&S::i_)>);
-
-// Non-callable projection
-static_assert(not std::invocable<find_fn, int[10], int, int>);
-
 constexpr bool test_find()
 {
     {
@@ -60,20 +54,6 @@ constexpr bool test_find()
 
         cur = lens.find(99);
         if (!lens.is_last(cur)) {
-            return false;
-        }
-    }
-
-    {
-        S ss[] = { S{1}, S{2}, S{3}, S{4}, S{5} };
-
-        auto cur = flux::find(ss, 3, &S::i_);
-        if (cur != 2) {
-            return false;
-        }
-
-        cur = flux::find(ss, 99, &S::i_);
-        if (!flux::is_last(ss, cur)) {
             return false;
         }
     }

@@ -54,16 +54,6 @@ constexpr bool test_count()
         STATIC_CHECK(seq.count_eq(99) == 0);
     }
 
-    {
-        S arr[] = {1, 2, 2, 2, 3, 4, 5};
-
-        STATIC_CHECK(flux::count_eq(arr, 2, &S::i) == 3);
-        STATIC_CHECK(flux::from(arr).count_eq(2, &S::get) == 3);
-
-        STATIC_CHECK(flux::count_eq(arr, 99, &S::i) == 0);
-        STATIC_CHECK(flux::from(arr).count_eq(99, &S::get) == 0);
-    }
-
     return true;
 }
 static_assert(test_count());

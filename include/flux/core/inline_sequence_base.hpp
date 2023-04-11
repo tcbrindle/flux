@@ -238,7 +238,7 @@ public:
     constexpr auto drop_while(Pred pred) &&;
 
     template <typename Pred>
-        requires std::predicate<Pred&, element_t<Derived>&>
+        requires std::predicate<Pred&, element_t<Derived>>
     [[nodiscard]]
     constexpr auto filter(Pred pred) &&;
 
@@ -295,51 +295,51 @@ public:
      */
 
     /// Returns `true` if every element of the sequence satisfies the predicate
-    template <typename Pred, typename Proj = std::identity>
-        requires predicate_for<Pred, Derived, Proj>
+    template <typename Pred>
+        requires std::predicate<Pred&, element_t<Derived>>
     [[nodiscard]]
-    constexpr auto all(Pred pred, Proj proj = {});
+    constexpr auto all(Pred pred);
 
-    template <typename Pred, typename Proj = std::identity>
-        requires predicate_for<Pred, Derived, Proj>
+    template <typename Pred>
+        requires std::predicate<Pred&, element_t<Derived>>
     [[nodiscard]]
-    constexpr auto any(Pred pred, Proj proj = {});
+    constexpr auto any(Pred pred);
 
-    template <typename Value, typename Proj = std::identity>
-        requires std::equality_comparable_with<projected_t<Proj, Derived>, Value const&>
-    constexpr auto contains(Value const& value, Proj proj = {}) -> bool;
+    template <typename Value>
+        requires std::equality_comparable_with<element_t<Derived>, Value const&>
+    constexpr auto contains(Value const& value) -> bool;
 
     /// Returns the number of elements in the sequence
     constexpr auto count();
 
     /// Returns the number of elements in the sequence which are equal to `value`
-    template <typename Value, typename Proj = std::identity>
-        requires std::equality_comparable_with<projected_t<Proj, Derived>, Value const&>
-    constexpr auto count_eq(Value const& value, Proj proj = {});
+    template <typename Value>
+        requires std::equality_comparable_with<element_t<Derived>, Value const&>
+    constexpr auto count_eq(Value const& value);
 
-    template <typename Pred, typename Proj = std::identity>
-        requires predicate_for<Pred, Derived, Proj>
-    constexpr auto count_if(Pred pred, Proj proj = {});
+    template <typename Pred>
+        requires std::predicate<Pred&, element_t<Derived>>
+    constexpr auto count_if(Pred pred);
 
     template <typename Value>
         requires writable_sequence_of<Derived, Value const&>
     constexpr auto fill(Value const& value) -> void;
 
     /// Returns a cursor pointing to the first occurrence of `value` in the sequence
-    template <typename Value, typename Proj = std::identity>
-        requires std::equality_comparable_with<projected_t<Proj, Derived>, Value const&>
+    template <typename Value>
+        requires std::equality_comparable_with<element_t<Derived>, Value const&>
     [[nodiscard]]
-    constexpr auto find(Value const&, Proj proj = {});
+    constexpr auto find(Value const&);
 
-    template <typename Pred, typename Proj = std::identity>
-        requires predicate_for<Pred, Derived, Proj>
+    template <typename Pred>
+        requires std::predicate<Pred&, element_t<Derived>>
     [[nodiscard]]
-    constexpr auto find_if(Pred pred, Proj proj = {});
+    constexpr auto find_if(Pred pred);
 
-    template <typename Pred, typename Proj = std::identity>
-        requires predicate_for<Pred, Derived, Proj>
+    template <typename Pred>
+        requires std::predicate<Pred&, element_t<Derived>>
     [[nodiscard]]
-    constexpr auto find_if_not(Pred pred, Proj proj = {});
+    constexpr auto find_if_not(Pred pred);
 
     template <typename D = Derived, typename Func, typename Init>
         requires foldable<Derived, Func, Init>
@@ -352,9 +352,9 @@ public:
     [[nodiscard]]
     constexpr auto fold_first(Func func);
 
-    template <typename Func, typename Proj = std::identity>
-        requires std::invocable<Func&, projected_t<Proj, Derived>>
-    constexpr auto for_each(Func func, Proj proj = {}) -> Func;
+    template <typename Func>
+        requires std::invocable<Func&, element_t<Derived>>
+    constexpr auto for_each(Func func) -> Func;
 
     template <typename Pred>
         requires std::invocable<Pred&, element_t<Derived>> &&
@@ -365,19 +365,22 @@ public:
         requires bounded_sequence<Derived> &&
                  detail::element_swappable_with<Derived, Derived>;
 
-    template <typename Cmp = std::ranges::less, typename Proj = std::identity>
-    constexpr auto max(Cmp cmp = Cmp{}, Proj proj = Proj{});
+    template <typename Cmp = std::ranges::less>
+        requires strict_weak_order_for<Cmp, Derived>
+    constexpr auto max(Cmp cmp = Cmp{});
 
-    template <typename Cmp = std::ranges::less, typename Proj = std::identity>
-    constexpr auto min(Cmp cmp = Cmp{}, Proj proj = Proj{});
+    template <typename Cmp = std::ranges::less>
+        requires strict_weak_order_for<Cmp, Derived>
+    constexpr auto min(Cmp cmp = Cmp{});
 
-    template <typename Cmp = std::ranges::less, typename Proj = std::identity>
-    constexpr auto minmax(Cmp cmp = Cmp{}, Proj proj = Proj{});
+    template <typename Cmp = std::ranges::less>
+        requires strict_weak_order_for<Cmp, Derived>
+    constexpr auto minmax(Cmp cmp = Cmp{});
 
-    template <typename Pred, typename Proj = std::identity>
-        requires predicate_for<Pred, Derived, Proj>
+    template <typename Pred>
+        requires std::predicate<Pred&, element_t<Derived>>
     [[nodiscard]]
-    constexpr auto none(Pred pred, Proj proj = {});
+    constexpr auto none(Pred pred);
 
     template <typename Iter>
         requires std::weakly_incrementable<Iter> &&
@@ -388,12 +391,12 @@ public:
         requires foldable<Derived, std::plus<>, value_t<Derived>> &&
                  std::default_initializable<value_t<Derived>>;
 
-    template <typename Cmp = std::less<>, typename Proj = std::identity>
+    template <typename Cmp = std::ranges::less>
         requires random_access_sequence<Derived> &&
                  bounded_sequence<Derived> &&
                  detail::element_swappable_with<Derived, Derived> &&
-                 std::predicate<Cmp&, projected_t<Proj, Derived>, projected_t<Proj, Derived>>
-    constexpr void sort(Cmp cmp = {}, Proj proj = {});
+                 strict_weak_order_for<Cmp, Derived>
+    constexpr void sort(Cmp cmp = {});
 
     constexpr auto product()
         requires foldable<Derived, std::multiplies<>, value_t<Derived>> &&

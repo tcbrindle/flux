@@ -14,12 +14,12 @@ namespace flux {
 namespace all_detail {
 
 struct fn {
-    template <sequence Seq, typename Proj = std::identity,
-              predicate_for<Seq, Proj> Pred>
-    constexpr bool operator()(Seq&& seq, Pred pred, Proj proj = {}) const
+    template <sequence Seq, typename Pred>
+        requires std::predicate<Pred&, element_t<Seq>>
+    constexpr bool operator()(Seq&& seq, Pred pred) const
     {
         return is_last(seq, for_each_while(seq, [&](auto&& elem) {
-            return std::invoke(pred, std::invoke(proj, FLUX_FWD(elem)));
+            return std::invoke(pred, FLUX_FWD(elem));
         }));
     }
 };
@@ -31,12 +31,12 @@ inline constexpr auto all = all_detail::fn{};
 namespace none_detail {
 
 struct fn {
-    template <sequence Seq, typename Proj = std::identity,
-              predicate_for<Seq, Proj> Pred>
-    constexpr bool operator()(Seq&& seq, Pred pred, Proj proj = {}) const
+    template <sequence Seq, typename Pred>
+        requires std::predicate<Pred&, element_t<Seq>>
+    constexpr bool operator()(Seq&& seq, Pred pred) const
     {
         return is_last(seq, for_each_while(seq, [&](auto&& elem) {
-            return !std::invoke(pred, std::invoke(proj, FLUX_FWD(elem)));
+            return !std::invoke(pred, FLUX_FWD(elem));
         }));
     }
 };
@@ -48,12 +48,12 @@ inline constexpr auto none = none_detail::fn{};
 namespace any_detail {
 
 struct fn {
-    template <sequence Seq, typename Proj = std::identity,
-              predicate_for<Seq, Proj> Pred>
-    constexpr bool operator()(Seq&& seq, Pred pred, Proj proj = {}) const
+    template <sequence Seq, typename Pred>
+        requires std::predicate<Pred&, element_t<Seq>>
+    constexpr bool operator()(Seq&& seq, Pred pred) const
     {
         return !is_last(seq, for_each_while(seq, [&](auto&& elem) {
-            return !std::invoke(pred, std::invoke(proj, FLUX_FWD(elem)));
+            return !std::invoke(pred, FLUX_FWD(elem));
         }));
     }
 };
@@ -63,27 +63,27 @@ struct fn {
 inline constexpr auto any = any_detail::fn{};
 
 template <typename D>
-template <typename Pred, typename Proj>
-    requires predicate_for<Pred, D, Proj>
-constexpr auto inline_sequence_base<D>::all(Pred pred, Proj proj)
+template <typename Pred>
+    requires std::predicate<Pred&, element_t<D>>
+constexpr auto inline_sequence_base<D>::all(Pred pred)
 {
-    return flux::all(derived(), std::move(pred), std::move(proj));
+    return flux::all(derived(), std::move(pred));
 }
 
 template <typename D>
-template <typename Pred, typename Proj>
-    requires predicate_for<Pred, D, Proj>
-constexpr auto inline_sequence_base<D>::any(Pred pred, Proj proj)
+template <typename Pred>
+    requires std::predicate<Pred&, element_t<D>>
+constexpr auto inline_sequence_base<D>::any(Pred pred)
 {
-    return flux::any(derived(), std::move(pred), std::move(proj));
+    return flux::any(derived(), std::move(pred));
 }
 
 template <typename D>
-template <typename Pred, typename Proj>
-    requires predicate_for<Pred, D, Proj>
-constexpr auto inline_sequence_base<D>::none(Pred pred, Proj proj)
+template <typename Pred>
+    requires std::predicate<Pred&, element_t<D>>
+constexpr auto inline_sequence_base<D>::none(Pred pred)
 {
-    return flux::none(derived(), std::move(pred), std::move(proj));
+    return flux::none(derived(), std::move(pred));
 }
 
 } // namespace flux

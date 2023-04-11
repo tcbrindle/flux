@@ -82,8 +82,8 @@ constexpr bool test_sort_contexpr()
         };
 
         flux::zip(std::array{3, 2, 4, 1}, flux::ref(arr))
-            .sort(std::ranges::greater{},
-                  [](auto const& elem) { return std::get<0>(elem); });
+            .sort(flux::proj(std::ranges::greater{},
+                           [](auto const& elem) { return std::get<0>(elem); }));
 
         STATIC_CHECK(check_equal(arr, {"charlie"sv, "alpha"sv, "bravo"sv, "delta"sv}));
     }
@@ -158,7 +158,7 @@ void test_sort_projected(int sz)
     std::iota(ptr, ptr + sz, Int{0});
     std::shuffle(ptr, ptr + sz, gen);
 
-    flux::sort(span_seq(ptr, sz), {}, &Int::i);
+    flux::sort(span_seq(ptr, sz), flux::proj(std::less<>{}, &Int::i));
 
     CHECK(std::is_sorted(ptr, ptr + sz, [](Int lhs, Int rhs) {
         return lhs.i < rhs.i;
@@ -174,9 +174,8 @@ void test_heapsort(int sz)
 
     auto seq = span_seq(ptr, sz);
     auto cmp = std::ranges::less{};
-    auto proj = std::identity{};
-    flux::detail::make_heap(seq, cmp, proj);
-    flux::detail::sort_heap(seq, cmp, proj);
+    flux::detail::make_heap(seq, cmp);
+    flux::detail::sort_heap(seq, cmp);
 
     CHECK(std::is_sorted(ptr, ptr + sz));
     delete[] ptr;

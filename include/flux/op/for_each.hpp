@@ -14,13 +14,13 @@ namespace detail {
 
 struct for_each_fn {
 
-    template <sequence Seq, typename Func, typename Proj = std::identity>
-        requires (std::invocable<Func&, projected_t<Proj, Seq>> &&
+    template <sequence Seq, typename Func>
+        requires (std::invocable<Func&, element_t<Seq>> &&
                   !infinite_sequence<Seq>)
-    constexpr auto operator()(Seq&& seq, Func func, Proj proj = {}) const -> Func
+    constexpr auto operator()(Seq&& seq, Func func) const -> Func
     {
         (void) flux::for_each_while(FLUX_FWD(seq), [&](auto&& elem) {
-            std::invoke(func, std::invoke(proj, FLUX_FWD(elem)));
+            std::invoke(func, FLUX_FWD(elem));
             return true;
         });
         return func;
@@ -32,11 +32,11 @@ struct for_each_fn {
 inline constexpr auto for_each = detail::for_each_fn{};
 
 template <typename D>
-template <typename Func, typename Proj>
-    requires std::invocable<Func&, projected_t<Proj, D>>
-constexpr auto inline_sequence_base<D>::for_each(Func func, Proj proj) -> Func
+template <typename Func>
+    requires std::invocable<Func&, element_t<D>>
+constexpr auto inline_sequence_base<D>::for_each(Func func) -> Func
 {
-    return flux::for_each(derived(), std::move(func), std::move(proj));
+    return flux::for_each(derived(), std::move(func));
 }
 
 } // namespace flux

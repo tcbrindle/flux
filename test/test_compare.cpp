@@ -111,7 +111,8 @@ constexpr bool test_compare()
         std::array<Test, 3> arr1{Test{1}, {2}, {3}};
         Test arr2[] = {{1}, {2}, {3}};
 
-        auto r = flux::compare(arr1, arr2, {}, &Test::i, [](Test t) { return t.i; });
+        auto r = flux::compare(arr1, arr2,
+                               flux::proj2(std::compare_three_way{}, &Test::i, [](Test t) { return t.i; }));
         static_assert(std::same_as<decltype(r), std::strong_ordering>);
         STATIC_CHECK(r == std::strong_ordering::equal);
     }

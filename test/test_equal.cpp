@@ -76,7 +76,7 @@ constexpr bool test_equal()
         S arr1[] = {1, 2, 3, 4, 5};
         T arr2[] = {1, 2, 3, 4, 5};
 
-        STATIC_CHECK(flux::equal(arr1, arr2, {}, &S::i, &T::get));
+        STATIC_CHECK(flux::equal(arr1, arr2, flux::proj2(std::equal_to<>{}, &S::i, &T::get)));
     }
 
     // Two empty sequences compare equal if their element types are comparable
