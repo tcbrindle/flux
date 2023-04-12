@@ -32,6 +32,14 @@ constexpr bool test_equal()
         STATIC_CHECK(flux::equal(arr1, arr2));
     }
 
+    // Basic equal, same size but different elements
+    {
+        int arr1[] = {1, 2, 3, 4, 5};
+        int arr2[] = {1, 2, 99, 4, 5};
+
+        STATIC_CHECK(not flux::equal(arr1, arr2));
+    }
+
     // Different but comparable element types
     {
         int arr1[] = {1, 2, 3, 4, 5};
