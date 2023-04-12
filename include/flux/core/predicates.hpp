@@ -16,22 +16,22 @@ namespace flux {
 template <typename Fn, typename Proj = std::identity>
 struct proj {
     Fn fn;
-    Proj proj{};
+    Proj prj{};
 
     template <typename... Args>
     constexpr auto operator()(Args&&... args)
-        noexcept(noexcept(std::invoke(fn, std::invoke(proj, FLUX_FWD(args))...)))
-        -> decltype(std::invoke(fn, std::invoke(proj, FLUX_FWD(args))...))
+        noexcept(noexcept(std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...)))
+        -> decltype(std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...))
     {
-        return std::invoke(fn, std::invoke(proj, FLUX_FWD(args))...);
+        return std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...);
     }
 
     template <typename... Args>
     constexpr auto operator()(Args&&... args) const
-        noexcept(noexcept(std::invoke(fn, std::invoke(proj, FLUX_FWD(args))...)))
-        -> decltype(std::invoke(fn, std::invoke(proj, FLUX_FWD(args))...))
+        noexcept(noexcept(std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...)))
+        -> decltype(std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...))
     {
-        return std::invoke(fn, std::invoke(proj, FLUX_FWD(args))...);
+        return std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...);
     }
 };
 
