@@ -772,15 +772,6 @@ concept derived_from_inline_sequence_base = requires(T t) {
 
 } // namespace detail
 
-/*
- * More useful concepts and associated types
- */
-template <typename Proj, sequence Seq>
-using projected_t = std::invoke_result_t<Proj&, element_t<Seq>>;
-
-template <typename Pred, typename Seq, typename Proj>
-concept predicate_for =
-    std::predicate<Pred&, std::invoke_result_t<Proj&, element_t<Seq>>>;
 
 /*
  * Default sequence_traits implementation
@@ -1926,6 +1917,16 @@ concept foldable =
     std::invocable<Func&, Init, element_t<Seq>> &&
     detail::foldable_<Seq, Func, Init>;
 
+template <typename Fn, typename Seq1, typename Seq2 = Seq1>
+concept strict_weak_order_for =
+    sequence<Seq1> &&
+    sequence<Seq2> &&
+    std::strict_weak_order<Fn&, element_t<Seq1>, element_t<Seq2>> &&
+    std::strict_weak_order<Fn&, value_t<Seq1>&, element_t<Seq2>> &&
+    std::strict_weak_order<Fn&, element_t<Seq1>, value_t<Seq2>&> &&
+    std::strict_weak_order<Fn&, value_t<Seq1>&, value_t<Seq2>&> &&
+    std::strict_weak_order<Fn&, common_element_t<Seq1>, common_element_t<Seq2>>;
+
 } // namespace flux
 
 #endif // FLUX_OP_REQUIREMENTS_HPP_INCLUDED
@@ -2159,7 +2160,7 @@ public:
     constexpr auto drop_while(Pred pred) &&;
 
     template <typename Pred>
-        requires std::predicate<Pred&, element_t<Derived>&>
+        requires std::predicate<Pred&, element_t<Derived>>
     [[nodiscard]]
     constexpr auto filter(Pred pred) &&;
 
@@ -2216,51 +2217,51 @@ public:
      */
 
     /// Returns `true` if every element of the sequence satisfies the predicate
-    template <typename Pred, typename Proj = std::identity>
-        requires predicate_for<Pred, Derived, Proj>
+    template <typename Pred>
+        requires std::predicate<Pred&, element_t<Derived>>
     [[nodiscard]]
-    constexpr auto all(Pred pred, Proj proj = {});
+    constexpr auto all(Pred pred);
 
-    template <typename Pred, typename Proj = std::identity>
-        requires predicate_for<Pred, Derived, Proj>
+    template <typename Pred>
+        requires std::predicate<Pred&, element_t<Derived>>
     [[nodiscard]]
-    constexpr auto any(Pred pred, Proj proj = {});
+    constexpr auto any(Pred pred);
 
-    template <typename Value, typename Proj = std::identity>
-        requires std::equality_comparable_with<projected_t<Proj, Derived>, Value const&>
-    constexpr auto contains(Value const& value, Proj proj = {}) -> bool;
+    template <typename Value>
+        requires std::equality_comparable_with<element_t<Derived>, Value const&>
+    constexpr auto contains(Value const& value) -> bool;
 
     /// Returns the number of elements in the sequence
     constexpr auto count();
 
     /// Returns the number of elements in the sequence which are equal to `value`
-    template <typename Value, typename Proj = std::identity>
-        requires std::equality_comparable_with<projected_t<Proj, Derived>, Value const&>
-    constexpr auto count_eq(Value const& value, Proj proj = {});
+    template <typename Value>
+        requires std::equality_comparable_with<element_t<Derived>, Value const&>
+    constexpr auto count_eq(Value const& value);
 
-    template <typename Pred, typename Proj = std::identity>
-        requires predicate_for<Pred, Derived, Proj>
-    constexpr auto count_if(Pred pred, Proj proj = {});
+    template <typename Pred>
+        requires std::predicate<Pred&, element_t<Derived>>
+    constexpr auto count_if(Pred pred);
 
     template <typename Value>
         requires writable_sequence_of<Derived, Value const&>
     constexpr auto fill(Value const& value) -> void;
 
     /// Returns a cursor pointing to the first occurrence of `value` in the sequence
-    template <typename Value, typename Proj = std::identity>
-        requires std::equality_comparable_with<projected_t<Proj, Derived>, Value const&>
+    template <typename Value>
+        requires std::equality_comparable_with<element_t<Derived>, Value const&>
     [[nodiscard]]
-    constexpr auto find(Value const&, Proj proj = {});
+    constexpr auto find(Value const&);
 
-    template <typename Pred, typename Proj = std::identity>
-        requires predicate_for<Pred, Derived, Proj>
+    template <typename Pred>
+        requires std::predicate<Pred&, element_t<Derived>>
     [[nodiscard]]
-    constexpr auto find_if(Pred pred, Proj proj = {});
+    constexpr auto find_if(Pred pred);
 
-    template <typename Pred, typename Proj = std::identity>
-        requires predicate_for<Pred, Derived, Proj>
+    template <typename Pred>
+        requires std::predicate<Pred&, element_t<Derived>>
     [[nodiscard]]
-    constexpr auto find_if_not(Pred pred, Proj proj = {});
+    constexpr auto find_if_not(Pred pred);
 
     template <typename D = Derived, typename Func, typename Init>
         requires foldable<Derived, Func, Init>
@@ -2273,9 +2274,9 @@ public:
     [[nodiscard]]
     constexpr auto fold_first(Func func);
 
-    template <typename Func, typename Proj = std::identity>
-        requires std::invocable<Func&, projected_t<Proj, Derived>>
-    constexpr auto for_each(Func func, Proj proj = {}) -> Func;
+    template <typename Func>
+        requires std::invocable<Func&, element_t<Derived>>
+    constexpr auto for_each(Func func) -> Func;
 
     template <typename Pred>
         requires std::invocable<Pred&, element_t<Derived>> &&
@@ -2286,19 +2287,22 @@ public:
         requires bounded_sequence<Derived> &&
                  detail::element_swappable_with<Derived, Derived>;
 
-    template <typename Cmp = std::ranges::less, typename Proj = std::identity>
-    constexpr auto max(Cmp cmp = Cmp{}, Proj proj = Proj{});
+    template <typename Cmp = std::ranges::less>
+        requires strict_weak_order_for<Cmp, Derived>
+    constexpr auto max(Cmp cmp = Cmp{});
 
-    template <typename Cmp = std::ranges::less, typename Proj = std::identity>
-    constexpr auto min(Cmp cmp = Cmp{}, Proj proj = Proj{});
+    template <typename Cmp = std::ranges::less>
+        requires strict_weak_order_for<Cmp, Derived>
+    constexpr auto min(Cmp cmp = Cmp{});
 
-    template <typename Cmp = std::ranges::less, typename Proj = std::identity>
-    constexpr auto minmax(Cmp cmp = Cmp{}, Proj proj = Proj{});
+    template <typename Cmp = std::ranges::less>
+        requires strict_weak_order_for<Cmp, Derived>
+    constexpr auto minmax(Cmp cmp = Cmp{});
 
-    template <typename Pred, typename Proj = std::identity>
-        requires predicate_for<Pred, Derived, Proj>
+    template <typename Pred>
+        requires std::predicate<Pred&, element_t<Derived>>
     [[nodiscard]]
-    constexpr auto none(Pred pred, Proj proj = {});
+    constexpr auto none(Pred pred);
 
     template <typename Iter>
         requires std::weakly_incrementable<Iter> &&
@@ -2309,12 +2313,12 @@ public:
         requires foldable<Derived, std::plus<>, value_t<Derived>> &&
                  std::default_initializable<value_t<Derived>>;
 
-    template <typename Cmp = std::less<>, typename Proj = std::identity>
+    template <typename Cmp = std::ranges::less>
         requires random_access_sequence<Derived> &&
                  bounded_sequence<Derived> &&
                  detail::element_swappable_with<Derived, Derived> &&
-                 std::predicate<Cmp&, projected_t<Proj, Derived>, projected_t<Proj, Derived>>
-    constexpr void sort(Cmp cmp = {}, Proj proj = {});
+                 strict_weak_order_for<Cmp, Derived>
+    constexpr void sort(Cmp cmp = {});
 
     constexpr auto product()
         requires foldable<Derived, std::multiplies<>, value_t<Derived>> &&
@@ -2349,7 +2353,66 @@ public:
 #include <functional>
 #include <type_traits>
 
-namespace flux::pred {
+namespace flux {
+
+template <typename Fn, typename Proj = std::identity>
+struct proj {
+    Fn fn;
+    Proj prj{};
+
+    template <typename... Args>
+    constexpr auto operator()(Args&&... args)
+        noexcept(noexcept(std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...)))
+        -> decltype(std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...))
+    {
+        return std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...);
+    }
+
+    template <typename... Args>
+    constexpr auto operator()(Args&&... args) const
+        noexcept(noexcept(std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...)))
+        -> decltype(std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...))
+    {
+        return std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...);
+    }
+};
+
+template <typename F, typename P = std::identity>
+proj(F, P = {}) -> proj<F, P>;
+
+template <typename Fn, typename Lhs = std::identity, typename Rhs = std::identity>
+struct proj2 {
+    Fn fn;
+    Lhs lhs{};
+    Rhs rhs{};
+
+    template <typename Arg1, typename Arg2>
+    constexpr auto operator()(Arg1&& arg1, Arg2&& arg2)
+        noexcept(noexcept(std::invoke(fn, std::invoke(lhs, FLUX_FWD(arg1)),
+                                          std::invoke(rhs, FLUX_FWD(arg2)))))
+        -> decltype(std::invoke(fn, std::invoke(lhs, FLUX_FWD(arg1)),
+                                    std::invoke(rhs, FLUX_FWD(arg2))))
+    {
+        return std::invoke(fn, std::invoke(lhs, FLUX_FWD(arg1)),
+                           std::invoke(rhs, FLUX_FWD(arg2)));
+    }
+
+    template <typename Arg1, typename Arg2>
+    constexpr auto operator()(Arg1&& arg1, Arg2&& arg2) const
+        noexcept(noexcept(std::invoke(fn, std::invoke(lhs, FLUX_FWD(arg1)),
+                                      std::invoke(rhs, FLUX_FWD(arg2)))))
+            -> decltype(std::invoke(fn, std::invoke(lhs, FLUX_FWD(arg1)),
+                                    std::invoke(rhs, FLUX_FWD(arg2))))
+    {
+        return std::invoke(fn, std::invoke(lhs, FLUX_FWD(arg1)),
+                           std::invoke(rhs, FLUX_FWD(arg2)));
+    }
+};
+
+template <typename F, typename L = std::identity, typename R = std::identity>
+proj2(F, L = {}, R = {}) -> proj2<F, L, R>;
+
+namespace pred {
 
 namespace detail {
 
@@ -2476,7 +2539,9 @@ inline constexpr auto odd = detail::predicate([](auto const& val) -> bool {
   return val % decltype(val){2} != decltype(val){0};
 });
 
-} // namespaces
+} // namespace pred
+
+} // namespace flux
 
 #endif
 
@@ -4052,12 +4117,12 @@ namespace flux {
 namespace all_detail {
 
 struct fn {
-    template <sequence Seq, typename Proj = std::identity,
-              predicate_for<Seq, Proj> Pred>
-    constexpr bool operator()(Seq&& seq, Pred pred, Proj proj = {}) const
+    template <sequence Seq, typename Pred>
+        requires std::predicate<Pred&, element_t<Seq>>
+    constexpr bool operator()(Seq&& seq, Pred pred) const
     {
         return is_last(seq, for_each_while(seq, [&](auto&& elem) {
-            return std::invoke(pred, std::invoke(proj, FLUX_FWD(elem)));
+            return std::invoke(pred, FLUX_FWD(elem));
         }));
     }
 };
@@ -4069,12 +4134,12 @@ inline constexpr auto all = all_detail::fn{};
 namespace none_detail {
 
 struct fn {
-    template <sequence Seq, typename Proj = std::identity,
-              predicate_for<Seq, Proj> Pred>
-    constexpr bool operator()(Seq&& seq, Pred pred, Proj proj = {}) const
+    template <sequence Seq, typename Pred>
+        requires std::predicate<Pred&, element_t<Seq>>
+    constexpr bool operator()(Seq&& seq, Pred pred) const
     {
         return is_last(seq, for_each_while(seq, [&](auto&& elem) {
-            return !std::invoke(pred, std::invoke(proj, FLUX_FWD(elem)));
+            return !std::invoke(pred, FLUX_FWD(elem));
         }));
     }
 };
@@ -4086,12 +4151,12 @@ inline constexpr auto none = none_detail::fn{};
 namespace any_detail {
 
 struct fn {
-    template <sequence Seq, typename Proj = std::identity,
-              predicate_for<Seq, Proj> Pred>
-    constexpr bool operator()(Seq&& seq, Pred pred, Proj proj = {}) const
+    template <sequence Seq, typename Pred>
+        requires std::predicate<Pred&, element_t<Seq>>
+    constexpr bool operator()(Seq&& seq, Pred pred) const
     {
         return !is_last(seq, for_each_while(seq, [&](auto&& elem) {
-            return !std::invoke(pred, std::invoke(proj, FLUX_FWD(elem)));
+            return !std::invoke(pred, FLUX_FWD(elem));
         }));
     }
 };
@@ -4101,27 +4166,27 @@ struct fn {
 inline constexpr auto any = any_detail::fn{};
 
 template <typename D>
-template <typename Pred, typename Proj>
-    requires predicate_for<Pred, D, Proj>
-constexpr auto inline_sequence_base<D>::all(Pred pred, Proj proj)
+template <typename Pred>
+    requires std::predicate<Pred&, element_t<D>>
+constexpr auto inline_sequence_base<D>::all(Pred pred)
 {
-    return flux::all(derived(), std::move(pred), std::move(proj));
+    return flux::all(derived(), std::move(pred));
 }
 
 template <typename D>
-template <typename Pred, typename Proj>
-    requires predicate_for<Pred, D, Proj>
-constexpr auto inline_sequence_base<D>::any(Pred pred, Proj proj)
+template <typename Pred>
+    requires std::predicate<Pred&, element_t<D>>
+constexpr auto inline_sequence_base<D>::any(Pred pred)
 {
-    return flux::any(derived(), std::move(pred), std::move(proj));
+    return flux::any(derived(), std::move(pred));
 }
 
 template <typename D>
-template <typename Pred, typename Proj>
-    requires predicate_for<Pred, D, Proj>
-constexpr auto inline_sequence_base<D>::none(Pred pred, Proj proj)
+template <typename Pred>
+    requires std::predicate<Pred&, element_t<D>>
+constexpr auto inline_sequence_base<D>::none(Pred pred)
 {
-    return flux::none(derived(), std::move(pred), std::move(proj));
+    return flux::none(derived(), std::move(pred));
 }
 
 } // namespace flux
@@ -5918,7 +5983,7 @@ public:
 };
 
 struct chunk_by_fn {
-    template <adaptable_sequence Seq, typename Pred>
+    template <adaptable_sequence Seq, std::move_constructible Pred>
         requires multipass_sequence<Seq> &&
                  std::predicate<Pred&, element_t<Seq>, element_t<Seq>>
     [[nodiscard]]
@@ -5968,20 +6033,18 @@ concept is_comparison_category =
     std::same_as<Cmp, std::partial_ordering>;
 
 struct compare_fn {
-    template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way,
-              typename Proj1 = std::identity, typename Proj2 = std::identity>
-        requires std::invocable<Cmp&, projected_t<Proj1, Seq1>, projected_t<Proj2, Seq2>> &&
-                 is_comparison_category<std::decay_t<std::invoke_result_t<Cmp&, projected_t<Proj1, Seq1>, projected_t<Proj2, Seq2>>>>
-    constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {},
-                              Proj1 proj1 = {}, Proj2 proj2 = {}) const
-        -> std::decay_t<std::invoke_result_t<Cmp&, projected_t<Proj1, Seq1>, projected_t<Proj2, Seq2>>>
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way>
+        requires std::invocable<Cmp&, element_t<Seq1>, element_t<Seq2>> &&
+                 is_comparison_category<std::decay_t<std::invoke_result_t<Cmp&, element_t<Seq1>, element_t<Seq2>>>>
+    constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const
+        -> std::decay_t<std::invoke_result_t<Cmp&, element_t<Seq1>, element_t<Seq2>>>
     {
         auto cur1 = flux::first(seq1);
         auto cur2 = flux::first(seq2);
 
         while (!flux::is_last(seq1, cur1) && !flux::is_last(seq2, cur2)) {
-            if (auto r = std::invoke(cmp, std::invoke(proj1, flux::read_at(seq1, cur1)),
-                                          std::invoke(proj2, flux::read_at(seq2, cur2))); r != 0) {
+            if (auto r = std::invoke(cmp, flux::read_at(seq1, cur1), flux::read_at(seq2, cur2));
+                r != 0) {
                 return r;
             }
             flux::inc(seq1, cur1);
@@ -6018,13 +6081,13 @@ namespace flux {
 namespace detail {
 
 struct contains_fn {
-    template <sequence Seq, typename Value, typename Proj = std::identity>
-        requires std::equality_comparable_with<projected_t<Proj, Seq>, Value const&>
-    constexpr auto operator()(Seq&& seq, Value const& value, Proj proj = {}) const
+    template <sequence Seq, typename Value>
+        requires std::equality_comparable_with<element_t<Seq>, Value const&>
+    constexpr auto operator()(Seq&& seq, Value const& value) const
         -> bool
     {
         return !flux::is_last(seq, flux::for_each_while(seq, [&](auto&& elem) {
-            return std::invoke(proj, FLUX_FWD(elem)) != value;
+            return FLUX_FWD(elem) != value;
         }));
     }
 };
@@ -6035,11 +6098,11 @@ struct contains_fn {
 inline constexpr auto contains = detail::contains_fn{};
 
 template <typename D>
-template <typename Value, typename Proj>
-    requires std::equality_comparable_with<projected_t<Proj, D>, Value const&>
-constexpr auto inline_sequence_base<D>::contains(Value const& value, Proj proj) -> bool
+template <typename Value>
+    requires std::equality_comparable_with<element_t<D>, Value const&>
+constexpr auto inline_sequence_base<D>::contains(Value const& value) -> bool
 {
-    return flux::contains(derived(), value, std::move(proj));
+    return flux::contains(derived(), value);
 }
 
 } // namespace flux
@@ -6079,15 +6142,15 @@ struct count_fn {
 };
 
 struct count_eq_fn {
-    template <sequence Seq, typename Value, typename Proj = std::identity>
-        requires std::equality_comparable_with<projected_t<Proj, Seq>, Value const&>
+    template <sequence Seq, typename Value>
+        requires std::equality_comparable_with<element_t<Seq>, Value const&>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Value const& value, Proj proj = {}) const
+    constexpr auto operator()(Seq&& seq, Value const& value) const
         -> distance_t
     {
         distance_t counter = 0;
         flux::for_each_while(seq, [&](auto&& elem) {
-            if (value == std::invoke(proj, FLUX_FWD(elem))) {
+            if (value == FLUX_FWD(elem)) {
                 ++counter;
             }
             return true;
@@ -6097,15 +6160,15 @@ struct count_eq_fn {
 };
 
 struct count_if_fn {
-    template <sequence Seq, typename Pred, typename Proj = std::identity>
-        requires predicate_for<Pred, Seq, Proj>
+    template <sequence Seq, typename Pred>
+        requires std::predicate<Pred&, element_t<Seq>>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Pred pred, Proj proj = {}) const
+    constexpr auto operator()(Seq&& seq, Pred pred) const
         -> distance_t
     {
         distance_t counter = 0;
         flux::for_each_while(seq, [&](auto&& elem) {
-            if (std::invoke(pred, std::invoke(proj, FLUX_FWD(elem)))) {
+            if (std::invoke(pred, FLUX_FWD(elem))) {
                 ++counter;
             }
             return true;
@@ -6127,19 +6190,19 @@ constexpr auto inline_sequence_base<D>::count()
 }
 
 template <typename D>
-template <typename Value, typename Proj>
-    requires std::equality_comparable_with<projected_t<Proj, D>, Value const&>
-constexpr auto inline_sequence_base<D>::count_eq(Value const& value, Proj proj)
+template <typename Value>
+    requires std::equality_comparable_with<element_t<D>, Value const&>
+constexpr auto inline_sequence_base<D>::count_eq(Value const& value)
 {
-    return flux::count_eq(derived(), value, std::move(proj));
+    return flux::count_eq(derived(), value);
 }
 
 template <typename D>
-template <typename Pred, typename Proj>
-    requires predicate_for<Pred, D, Proj>
-constexpr auto inline_sequence_base<D>::count_if(Pred pred, Proj proj)
+template <typename Pred>
+    requires std::predicate<Pred&, element_t<D>>
+constexpr auto inline_sequence_base<D>::count_if(Pred pred)
 {
-    return flux::count_if(derived(), std::move(pred), std::move(proj));
+    return flux::count_if(derived(), std::move(pred));
 }
 
 } // namespace flux
@@ -6299,7 +6362,7 @@ public:
 };
 
 struct drop_while_fn {
-    template <adaptable_sequence Seq, typename Pred>
+    template <adaptable_sequence Seq, std::move_constructible Pred>
         requires std::predicate<Pred&, element_t<Seq>>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Pred pred) const
@@ -6339,11 +6402,9 @@ namespace flux {
 namespace detail {
 
 struct equal_fn {
-    template <sequence Seq1, sequence Seq2, typename Cmp = std::equal_to<>,
-              typename Proj1 = std::identity, typename Proj2 = std::identity>
-        requires std::predicate<Cmp&, projected_t<Proj1, Seq1>, projected_t<Proj2, Seq2>>
-    constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {},
-                              Proj1 proj1 = {}, Proj2 proj2 = {}) const -> bool
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::equal_to>
+        requires std::predicate<Cmp&, element_t<Seq1>, element_t<Seq2>>
+    constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const -> bool
     {
         if constexpr (sized_sequence<Seq1> && sized_sequence<Seq2>) {
             if (flux::size(seq1) != flux::size(seq2)) {
@@ -6355,8 +6416,7 @@ struct equal_fn {
         auto cur2 = flux::first(seq2);
 
         while (!flux::is_last(seq1, cur1) && !flux::is_last(seq2, cur2)) {
-            if (!std::invoke(cmp, std::invoke(proj1, flux::read_at(seq1, cur1)),
-                             std::invoke(proj2, flux::read_at(seq2, cur2)))) {
+            if (!std::invoke(cmp, flux::read_at(seq1, cur1), flux::read_at(seq2, cur2))) {
                 return false;
             }
             flux::inc(seq1, cur1);
@@ -6399,13 +6459,13 @@ namespace detail {
 
 struct for_each_fn {
 
-    template <sequence Seq, typename Func, typename Proj = std::identity>
-        requires (std::invocable<Func&, projected_t<Proj, Seq>> &&
+    template <sequence Seq, typename Func>
+        requires (std::invocable<Func&, element_t<Seq>> &&
                   !infinite_sequence<Seq>)
-    constexpr auto operator()(Seq&& seq, Func func, Proj proj = {}) const -> Func
+    constexpr auto operator()(Seq&& seq, Func func) const -> Func
     {
         (void) flux::for_each_while(FLUX_FWD(seq), [&](auto&& elem) {
-            std::invoke(func, std::invoke(proj, FLUX_FWD(elem)));
+            std::invoke(func, FLUX_FWD(elem));
             return true;
         });
         return func;
@@ -6417,11 +6477,11 @@ struct for_each_fn {
 inline constexpr auto for_each = detail::for_each_fn{};
 
 template <typename D>
-template <typename Func, typename Proj>
-    requires std::invocable<Func&, projected_t<Proj, D>>
-constexpr auto inline_sequence_base<D>::for_each(Func func, Proj proj) -> Func
+template <typename Func>
+    requires std::invocable<Func&, element_t<D>>
+constexpr auto inline_sequence_base<D>::for_each(Func func) -> Func
 {
-    return flux::for_each(derived(), std::move(func), std::move(proj));
+    return flux::for_each(derived(), std::move(func));
 }
 
 } // namespace flux
@@ -6476,7 +6536,6 @@ namespace flux {
 namespace detail {
 
 template <sequence Base, typename Pred>
-    requires std::predicate<Pred&, element_t<Base>&>
 class filter_adaptor : public inline_sequence_base<filter_adaptor<Base, Pred>>
 {
     FLUX_NO_UNIQUE_ADDRESS Base base_;
@@ -6574,8 +6633,8 @@ public:
 
 
 struct filter_fn {
-    template <adaptable_sequence Seq, typename Pred>
-        requires std::predicate<Pred&, element_t<Seq>&>
+    template <adaptable_sequence Seq, std::move_constructible Pred>
+        requires std::predicate<Pred&, element_t<Seq>>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Pred pred) const
     {
@@ -6589,7 +6648,7 @@ inline constexpr auto filter = detail::filter_fn{};
 
 template <typename D>
 template <typename Pred>
-    requires std::predicate<Pred&, element_t<D>&>
+    requires std::predicate<Pred&, element_t<D>>
 constexpr auto inline_sequence_base<D>::filter(Pred pred) &&
 {
     return detail::filter_adaptor<D, Pred>(std::move(derived()), std::move(pred));
@@ -6616,37 +6675,36 @@ namespace flux {
 namespace detail {
 
 struct find_fn {
-    template <sequence Seq, typename Value, typename Proj = std::identity>
-        requires std::equality_comparable_with<projected_t<Proj, Seq>, Value const&>
-    constexpr auto operator()(Seq&& seq, Value const& value,
-                              Proj proj = {}) const -> cursor_t<Seq>
+    template <sequence Seq, typename Value>
+        requires std::equality_comparable_with<element_t<Seq>, Value const&>
+    constexpr auto operator()(Seq&& seq, Value const& value) const -> cursor_t<Seq>
     {
         return for_each_while(seq, [&](auto&& elem) {
-            return std::invoke(proj, FLUX_FWD(elem)) != value;
+            return FLUX_FWD(elem) != value;
         });
     }
 };
 
 struct find_if_fn {
-    template <sequence Seq, typename Pred, typename Proj = std::identity>
-        requires std::predicate<Pred&, projected_t<Proj, Seq>>
-    constexpr auto operator()(Seq&& seq, Pred pred, Proj proj = {}) const
+    template <sequence Seq, typename Pred>
+        requires std::predicate<Pred&, element_t<Seq>>
+    constexpr auto operator()(Seq&& seq, Pred pred) const
         -> cursor_t<Seq>
     {
         return for_each_while(seq, [&](auto&& elem) {
-            return !std::invoke(pred, std::invoke(proj, FLUX_FWD(elem)));
+            return !std::invoke(pred, FLUX_FWD(elem));
         });
     }
 };
 
 struct find_if_not_fn {
-    template <sequence Seq, typename Pred, typename Proj = std::identity>
-        requires std::predicate<Pred&, projected_t<Proj, Seq>>
-    constexpr auto operator()(Seq&& seq, Pred pred, Proj proj = {}) const
+    template <sequence Seq, typename Pred>
+        requires std::predicate<Pred&, element_t<Seq>>
+    constexpr auto operator()(Seq&& seq, Pred pred) const
         -> cursor_t<Seq>
     {
         return for_each_while(seq, [&](auto&& elem) {
-            return std::invoke(pred, std::invoke(proj, FLUX_FWD(elem)));
+            return std::invoke(pred, FLUX_FWD(elem));
         });
     }
 };
@@ -6658,27 +6716,27 @@ inline constexpr auto find_if = detail::find_if_fn{};
 inline constexpr auto find_if_not = detail::find_if_not_fn{};
 
 template <typename D>
-template <typename Value, typename Proj>
-    requires std::equality_comparable_with<projected_t<Proj, D>, Value const&>
-constexpr auto inline_sequence_base<D>::find(Value const& val, Proj proj)
+template <typename Value>
+    requires std::equality_comparable_with<element_t<D>, Value const&>
+constexpr auto inline_sequence_base<D>::find(Value const& val)
 {
-    return flux::find(derived(), val, std::ref(proj));
+    return flux::find(derived(), val);
 }
 
 template <typename D>
-template <typename Pred, typename Proj>
-    requires predicate_for<Pred, D, Proj>
-constexpr auto inline_sequence_base<D>::find_if(Pred pred, Proj proj)
+template <typename Pred>
+    requires std::predicate<Pred&, element_t<D>>
+constexpr auto inline_sequence_base<D>::find_if(Pred pred)
 {
-    return flux::find_if(derived(), std::ref(pred), std::ref(proj));
+    return flux::find_if(derived(), std::ref(pred));
 }
 
 template <typename D>
-template <typename Pred, typename Proj>
-    requires predicate_for<Pred, D, Proj>
-constexpr auto inline_sequence_base<D>::find_if_not(Pred pred, Proj proj)
+template <typename Pred>
+    requires std::predicate<Pred&, element_t<D>>
+constexpr auto inline_sequence_base<D>::find_if_not(Pred pred)
 {
-    return flux::find_if_not(derived(), std::ref(pred), std::ref(proj));
+    return flux::find_if_not(derived(), std::ref(pred));
 }
 
 } // namespace flux
@@ -7224,15 +7282,13 @@ struct minmax_result {
 namespace detail {
 
 struct min_op {
-    template <sequence Seq, typename Cmp = std::ranges::less,
-              typename Proj = std::identity>
-        requires std::predicate<Cmp&, std::invoke_result_t<Proj, value_t<Seq>>, projected_t<Proj, Seq>>
+    template <sequence Seq, strict_weak_order_for<Seq> Cmp = std::ranges::less>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}, Proj proj = Proj{}) const
+    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
         -> flux::optional<value_t<Seq>>
     {
         return flux::fold_first(FLUX_FWD(seq), [&](auto min, auto&& elem) -> value_t<Seq> {
-            if (std::invoke(cmp, std::invoke(proj, elem), std::invoke(proj, min))) {
+            if (std::invoke(cmp, elem, min)) {
                 return value_t<Seq>(FLUX_FWD(elem));
             } else {
                 return min;
@@ -7242,15 +7298,13 @@ struct min_op {
 };
 
 struct max_op {
-    template <sequence Seq, typename Cmp = std::ranges::less,
-              typename Proj = std::identity>
-        requires std::predicate<Cmp&, std::invoke_result_t<Proj, value_t<Seq>>, projected_t<Proj, Seq>>
+    template <sequence Seq, strict_weak_order_for<Seq> Cmp = std::ranges::less>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}, Proj proj = Proj{}) const
+    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
         -> flux::optional<value_t<Seq>>
     {
         return flux::fold_first(FLUX_FWD(seq), [&](auto max, auto&& elem) -> value_t<Seq> {
-            if (!std::invoke(cmp, std::invoke(proj, elem), std::invoke(proj, max))) {
+            if (!std::invoke(cmp, elem, max)) {
                 return value_t<Seq>(FLUX_FWD(elem));
             } else {
                 return max;
@@ -7260,11 +7314,9 @@ struct max_op {
 };
 
 struct minmax_op {
-    template <sequence Seq, typename Cmp = std::ranges::less,
-              typename Proj = std::identity>
-        requires std::predicate<Cmp&, std::invoke_result_t<Proj, value_t<Seq>>, projected_t<Proj, Seq>>
+    template <sequence Seq, strict_weak_order_for<Seq> Cmp = std::ranges::less>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}, Proj proj = Proj{}) const
+    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
         -> flux::optional<minmax_result<value_t<Seq>>>
     {
         using R = minmax_result<value_t<Seq>>;
@@ -7278,10 +7330,10 @@ struct minmax_op {
                    value_t<Seq>(flux::read_at(seq, cur))};
 
         auto fold_fn = [&](R mm, auto&& elem) -> R {
-            if (std::invoke(cmp, std::invoke(proj, elem), std::invoke(proj, mm.min))) {
+            if (std::invoke(cmp, elem, mm.min)) {
                 mm.min = value_t<Seq>(elem);
             }
-            if (!std::invoke(cmp, std::invoke(proj, elem), std::invoke(proj, mm.max))) {
+            if (!std::invoke(cmp, elem, mm.max)) {
                 mm.max = value_t<Seq>(FLUX_FWD(elem));
             }
             return mm;
@@ -7299,24 +7351,27 @@ inline constexpr auto max = detail::max_op{};
 inline constexpr auto minmax = detail::minmax_op{};
 
 template <typename Derived>
-template <typename Cmp, typename Proj>
-constexpr auto inline_sequence_base<Derived>::max(Cmp cmp, Proj proj)
+template <typename Cmp>
+    requires strict_weak_order_for<Cmp, Derived>
+constexpr auto inline_sequence_base<Derived>::max(Cmp cmp)
 {
-    return flux::max(derived(), std::move(cmp), std::move(proj));
+    return flux::max(derived(), std::move(cmp));
 }
 
 template <typename Derived>
-template <typename Cmp, typename Proj>
-constexpr auto inline_sequence_base<Derived>::min(Cmp cmp, Proj proj)
+template <typename Cmp>
+    requires strict_weak_order_for<Cmp, Derived>
+constexpr auto inline_sequence_base<Derived>::min(Cmp cmp)
 {
-    return flux::min(derived(), std::move(cmp), std::move(proj));
+    return flux::min(derived(), std::move(cmp));
 }
 
 template <typename Derived>
-template <typename Cmp, typename Proj>
-constexpr auto inline_sequence_base<Derived>::minmax(Cmp cmp, Proj proj)
+template <typename Cmp>
+    requires strict_weak_order_for<Cmp, Derived>
+constexpr auto inline_sequence_base<Derived>::minmax(Cmp cmp)
 {
-    return flux::minmax(derived(), std::move(cmp), std::move(proj));
+    return flux::minmax(derived(), std::move(cmp));
 }
 
 } // namespace flux
@@ -7493,9 +7548,10 @@ namespace flux {
 namespace detail {
 
 struct search_fn {
-    template <multipass_sequence Haystack, multipass_sequence Needle>
-        // Requires...
-    constexpr auto operator()(Haystack&& h, Needle&& n) const
+    template <multipass_sequence Haystack, multipass_sequence Needle,
+              typename Cmp = std::ranges::equal_to>
+        requires std::predicate<Cmp&, element_t<Haystack>, element_t<Needle>>
+    constexpr auto operator()(Haystack&& h, Needle&& n, Cmp cmp = {}) const
         -> bounds_t<Haystack>
     {
         auto hfirst = flux::first(h);
@@ -7513,7 +7569,7 @@ struct search_fn {
                     return {cur1, cur1};
                 }
 
-                if (read_at(h, cur1) != read_at(n, cur2)) {
+                if (!std::invoke(cmp, read_at(h, cur1), read_at(n, cur2))) {
                     break;
                 }
 
@@ -7941,8 +7997,8 @@ constexpr auto inline_sequence_base<D>::split_string(auto&& pattern) &&
 
 namespace flux::detail {
 
-template <typename Seq, typename Comp, typename Proj>
-constexpr void sift_up_n(Seq& seq, distance_t n, Comp& comp, Proj& proj)
+template <typename Seq, typename Comp>
+constexpr void sift_up_n(Seq& seq, distance_t n, Comp& comp)
 {
     cursor_t<Seq> first = flux::first(seq);
 
@@ -7950,8 +8006,7 @@ constexpr void sift_up_n(Seq& seq, distance_t n, Comp& comp, Proj& proj)
         cursor_t<Seq> last = flux::next(seq, first, n);
         n = (n - 2) / 2;
         cursor_t<Seq> i = first + n;
-        if (std::invoke(comp, std::invoke(proj, read_at(seq, i)),
-                         std::invoke(proj, read_at(seq, dec(seq, last))))) {
+        if (std::invoke(comp, read_at(seq, i), read_at(seq, dec(seq, last)))) {
             value_t<Seq> v = move_at(seq, last);
             do {
                 read_at(seq, last) = move_at(seq, i);
@@ -7961,16 +8016,15 @@ constexpr void sift_up_n(Seq& seq, distance_t n, Comp& comp, Proj& proj)
                 }
                 n = (n - 1) / 2;
                 i = next(seq, first, n);
-            } while (std::invoke(comp, std::invoke(proj, read_at(seq, i)),
-                                  std::invoke(proj, v)));
+            } while (std::invoke(comp, read_at(seq, i), v));
             read_at(seq, last) = std::move(v);
         }
     }
 }
 
-template <typename Seq, typename Comp, typename Proj>
+template <typename Seq, typename Comp>
 constexpr void sift_down_n(Seq& seq, distance_t n, cursor_t<Seq> start,
-                           Comp& comp, Proj& proj)
+                           Comp& comp)
 {
     cursor_t<Seq> first = flux::first(seq);
 
@@ -7986,16 +8040,16 @@ constexpr void sift_down_n(Seq& seq, distance_t n, cursor_t<Seq> start,
     child = 2 * child + 1;
     cursor_t<Seq> child_i = flux::next(seq, first, child);
 
-    if ((child + 1) < n && std::invoke(comp, std::invoke(proj, read_at(seq, child_i)),
-                                        std::invoke(proj, read_at(seq, next(seq, child_i))))) {
+    if ((child + 1) < n && std::invoke(comp, read_at(seq, child_i),
+                                       read_at(seq, next(seq, child_i)))) {
         // right-child exists and is greater than left-child
         flux::inc(seq, child_i);
         ++child;
     }
 
     // check if we are in heap-order
-    if (std::invoke(comp, std::invoke(proj, read_at(seq, child_i)),
-                     std::invoke(proj, read_at(seq, start)))) {
+    if (std::invoke(comp, read_at(seq, child_i),
+                     read_at(seq, start))) {
         // we are, start is larger than its largest child
         return;
     }
@@ -8016,44 +8070,43 @@ constexpr void sift_down_n(Seq& seq, distance_t n, cursor_t<Seq> start,
         child_i = next(seq, first, child); //child_i = first + child;
 
         if ((child + 1) < n &&
-            std::invoke(comp, std::invoke(proj, read_at(seq, child_i)),
-                         std::invoke(proj, read_at(seq, next(seq, child_i))))) {
+            std::invoke(comp, read_at(seq, child_i),
+                         read_at(seq, next(seq, child_i)))) {
             // right-child exists and is greater than left-child
             inc(seq, child_i);
             ++child;
         }
 
         // check if we are in heap-order
-    } while (!std::invoke(comp, std::invoke(proj, read_at(seq, child_i)),
-                           std::invoke(proj, top)));
+    } while (!std::invoke(comp, read_at(seq, child_i), top));
     read_at(seq, start) = std::move(top);
 }
 
-template <sequence Seq, typename Comp, typename Proj >
-constexpr void make_heap(Seq& seq, Comp& comp, Proj& proj)
+template <sequence Seq, typename Comp>
+constexpr void make_heap(Seq& seq, Comp& comp)
 {
     distance_t n = flux::size(seq);
     auto first = flux::first(seq);
 
     if (n > 1) {
         for (auto start = (n - 2) / 2; start >= 0; --start) {
-            detail::sift_down_n(seq, n, flux::next(seq, first, start), comp, proj);
+            detail::sift_down_n(seq, n, flux::next(seq, first, start), comp);
         }
     }
 }
 
-template <sequence Seq, typename Comp, typename Proj>
-constexpr void pop_heap(Seq& seq, distance_t n, Comp& comp, Proj& proj)
+template <sequence Seq, typename Comp>
+constexpr void pop_heap(Seq& seq, distance_t n, Comp& comp)
 {
     auto first = flux::first(seq);
     if (n > 1) {
         swap_at(seq, first, next(seq, first, n - 1));
-        detail::sift_down_n(seq, n - 1, first, comp, proj);
+        detail::sift_down_n(seq, n - 1, first, comp);
     }
 }
 
-template <sequence Seq, typename Comp, typename Proj>
-constexpr void sort_heap(Seq& seq, Comp& comp, Proj& proj)
+template <sequence Seq, typename Comp>
+constexpr void sort_heap(Seq& seq, Comp& comp)
 {
     auto n = flux::size(seq);
 
@@ -8062,7 +8115,7 @@ constexpr void sort_heap(Seq& seq, Comp& comp, Proj& proj)
     }
 
     for (auto i = n; i > 1; --i) {
-        pop_heap(seq, i, comp, proj);
+        pop_heap(seq, i, comp);
     }
 }
 
@@ -8617,9 +8670,8 @@ constexpr void pdqsort_loop(Seq& seq, Cur begin, Cur end, Comp& comp,
             // guarantee O(n log n).
             if (--bad_allowed == 0) {
                 auto subseq = flux::slice(seq, begin, end);
-                auto id = std::identity{};
-                detail::make_heap(subseq, comp, id);
-                detail::sort_heap(subseq, comp, id);
+                detail::make_heap(subseq, comp);
+                detail::sort_heap(subseq, comp);
                 return;
             }
 
@@ -8664,8 +8716,8 @@ constexpr void pdqsort_loop(Seq& seq, Cur begin, Cur end, Comp& comp,
     }
 }
 
-template <typename Seq, typename Comp, typename Proj>
-constexpr void pdqsort(Seq& seq, Comp& comp, Proj& proj)
+template <typename Seq, typename Comp>
+constexpr void pdqsort(Seq& seq, Comp& comp)
 {
     if (is_empty(seq)) {
         return;
@@ -8673,22 +8725,12 @@ constexpr void pdqsort(Seq& seq, Comp& comp, Proj& proj)
 
     constexpr bool Branchless =
          is_default_compare_v<std::remove_const_t<Comp>> &&
-         std::same_as<Proj, std::identity> &&
          std::is_arithmetic_v<value_t<Seq>>;
-
-    auto comparator = [&comp, &proj](auto&& lhs, auto&& rhs) {
-        if constexpr (std::same_as<Proj, std::identity>) {
-            return std::invoke(comp, FLUX_FWD(lhs), FLUX_FWD(rhs));
-        } else {
-            return std::invoke(comp, std::invoke(proj, FLUX_FWD(lhs)),
-                               std::invoke(proj, FLUX_FWD(rhs)));
-        }
-    };
 
     detail::pdqsort_loop<Branchless>(seq,
                                      first(seq),
                                      last(seq),
-                                     comparator,
+                                     comp,
                                      detail::log2(size(seq)));
 }
 
@@ -8769,15 +8811,14 @@ namespace flux {
 namespace detail {
 
 struct sort_fn {
-    template <random_access_sequence Seq, typename Cmp = std::less<>,
-              typename Proj = std::identity>
+    template <random_access_sequence Seq, typename Cmp = std::ranges::less>
         requires bounded_sequence<Seq> &&
                  element_swappable_with<Seq, Seq> &&
-                 std::predicate<Cmp&, projected_t<Proj, Seq>, projected_t<Proj, Seq>>
-    constexpr auto operator()(Seq&& seq, Cmp cmp = {}, Proj proj = {}) const
+                 strict_weak_order_for<Cmp, Seq>
+    constexpr auto operator()(Seq&& seq, Cmp cmp = {}) const
     {
         auto wrapper = flux::unchecked(flux::ref(seq));
-        detail::pdqsort(wrapper, cmp, proj);
+        detail::pdqsort(wrapper, cmp);
     }
 };
 
@@ -8786,14 +8827,14 @@ struct sort_fn {
 inline constexpr auto sort = detail::sort_fn{};
 
 template <typename D>
-template <typename Cmp, typename Proj>
+template <typename Cmp>
     requires random_access_sequence<D> &&
              bounded_sequence<D> &&
              detail::element_swappable_with<D, D> &&
-             std::predicate<Cmp&, projected_t<Proj, D>, projected_t<Proj, D>>
-constexpr void inline_sequence_base<D>::sort(Cmp cmp, Proj proj)
+             strict_weak_order_for<Cmp, D>
+constexpr void inline_sequence_base<D>::sort(Cmp cmp)
 {
-    return flux::sort(derived(), std::move(cmp), std::move(proj));
+    return flux::sort(derived(), std::ref(cmp));
 }
 
 } // namespace flux
@@ -8877,8 +8918,8 @@ public:
 };
 
 struct take_while_fn {
-    template <adaptable_sequence Seq, typename Pred>
-        requires std::predicate<Pred&, element_t<Seq>&>
+    template <adaptable_sequence Seq, std::move_constructible Pred>
+        requires std::predicate<Pred&, element_t<Seq>>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Pred pred) const
     {
