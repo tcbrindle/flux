@@ -11,15 +11,14 @@ namespace flux {
 namespace detail {
 
 struct sort_fn {
-    template <random_access_sequence Seq, typename Cmp = std::less<>,
-              typename Proj = std::identity>
+    template <random_access_sequence Seq, typename Cmp = std::ranges::less>
         requires bounded_sequence<Seq> &&
                  element_swappable_with<Seq, Seq> &&
-                 std::predicate<Cmp&, projected_t<Proj, Seq>, projected_t<Proj, Seq>>
-    constexpr auto operator()(Seq&& seq, Cmp cmp = {}, Proj proj = {}) const
+                 strict_weak_order_for<Cmp, Seq>
+    constexpr auto operator()(Seq&& seq, Cmp cmp = {}) const
     {
         auto wrapper = flux::unchecked(flux::ref(seq));
-        detail::pdqsort(wrapper, cmp, proj);
+        detail::pdqsort(wrapper, cmp);
     }
 };
 
@@ -28,14 +27,14 @@ struct sort_fn {
 inline constexpr auto sort = detail::sort_fn{};
 
 template <typename D>
-template <typename Cmp, typename Proj>
+template <typename Cmp>
     requires random_access_sequence<D> &&
              bounded_sequence<D> &&
              detail::element_swappable_with<D, D> &&
-             std::predicate<Cmp&, projected_t<Proj, D>, projected_t<Proj, D>>
-constexpr void inline_sequence_base<D>::sort(Cmp cmp, Proj proj)
+             strict_weak_order_for<Cmp, D>
+constexpr void inline_sequence_base<D>::sort(Cmp cmp)
 {
-    return flux::sort(derived(), std::move(cmp), std::move(proj));
+    return flux::sort(derived(), std::ref(cmp));
 }
 
 } // namespace flux

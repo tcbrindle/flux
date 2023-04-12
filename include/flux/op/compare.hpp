@@ -21,20 +21,18 @@ concept is_comparison_category =
     std::same_as<Cmp, std::partial_ordering>;
 
 struct compare_fn {
-    template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way,
-              typename Proj1 = std::identity, typename Proj2 = std::identity>
-        requires std::invocable<Cmp&, projected_t<Proj1, Seq1>, projected_t<Proj2, Seq2>> &&
-                 is_comparison_category<std::decay_t<std::invoke_result_t<Cmp&, projected_t<Proj1, Seq1>, projected_t<Proj2, Seq2>>>>
-    constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {},
-                              Proj1 proj1 = {}, Proj2 proj2 = {}) const
-        -> std::decay_t<std::invoke_result_t<Cmp&, projected_t<Proj1, Seq1>, projected_t<Proj2, Seq2>>>
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way>
+        requires std::invocable<Cmp&, element_t<Seq1>, element_t<Seq2>> &&
+                 is_comparison_category<std::decay_t<std::invoke_result_t<Cmp&, element_t<Seq1>, element_t<Seq2>>>>
+    constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const
+        -> std::decay_t<std::invoke_result_t<Cmp&, element_t<Seq1>, element_t<Seq2>>>
     {
         auto cur1 = flux::first(seq1);
         auto cur2 = flux::first(seq2);
 
         while (!flux::is_last(seq1, cur1) && !flux::is_last(seq2, cur2)) {
-            if (auto r = std::invoke(cmp, std::invoke(proj1, flux::read_at(seq1, cur1)),
-                                          std::invoke(proj2, flux::read_at(seq2, cur2))); r != 0) {
+            if (auto r = std::invoke(cmp, flux::read_at(seq1, cur1), flux::read_at(seq2, cur2));
+                r != 0) {
                 return r;
             }
             flux::inc(seq1, cur1);

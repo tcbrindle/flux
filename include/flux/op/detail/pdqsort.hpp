@@ -562,9 +562,8 @@ constexpr void pdqsort_loop(Seq& seq, Cur begin, Cur end, Comp& comp,
             // guarantee O(n log n).
             if (--bad_allowed == 0) {
                 auto subseq = flux::slice(seq, begin, end);
-                auto id = std::identity{};
-                detail::make_heap(subseq, comp, id);
-                detail::sort_heap(subseq, comp, id);
+                detail::make_heap(subseq, comp);
+                detail::sort_heap(subseq, comp);
                 return;
             }
 
@@ -609,8 +608,8 @@ constexpr void pdqsort_loop(Seq& seq, Cur begin, Cur end, Comp& comp,
     }
 }
 
-template <typename Seq, typename Comp, typename Proj>
-constexpr void pdqsort(Seq& seq, Comp& comp, Proj& proj)
+template <typename Seq, typename Comp>
+constexpr void pdqsort(Seq& seq, Comp& comp)
 {
     if (is_empty(seq)) {
         return;
@@ -618,22 +617,12 @@ constexpr void pdqsort(Seq& seq, Comp& comp, Proj& proj)
 
     constexpr bool Branchless =
          is_default_compare_v<std::remove_const_t<Comp>> &&
-         std::same_as<Proj, std::identity> &&
          std::is_arithmetic_v<value_t<Seq>>;
-
-    auto comparator = [&comp, &proj](auto&& lhs, auto&& rhs) {
-        if constexpr (std::same_as<Proj, std::identity>) {
-            return std::invoke(comp, FLUX_FWD(lhs), FLUX_FWD(rhs));
-        } else {
-            return std::invoke(comp, std::invoke(proj, FLUX_FWD(lhs)),
-                               std::invoke(proj, FLUX_FWD(rhs)));
-        }
-    };
 
     detail::pdqsort_loop<Branchless>(seq,
                                      first(seq),
                                      last(seq),
-                                     comparator,
+                                     comp,
                                      detail::log2(size(seq)));
 }
 

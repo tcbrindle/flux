@@ -209,15 +209,16 @@ constexpr bool test_adjacent()
 
         auto chunk = flux::chunk(arr, 3);
 
-        auto tuple_to_array = []<typename T>(T&& tuple) {
-            using array_t =  std::array<std::decay_t<std::tuple_element_t<0, T>>,
-                                        std::tuple_size_v<T>>;
+        auto tuple_to_array = []<typename T, typename D = std::decay_t<T>>(T&& tuple) {
+            using array_t =  std::array<std::decay_t<std::tuple_element_t<0, D>>,
+                                        std::tuple_size_v<D>>;
             return std::apply([](auto&&... args) {
                 return array_t{FLUX_FWD(args)...};
             }, FLUX_FWD(tuple));
         };
 
-        STATIC_CHECK(flux::equal(adj_n_stride, chunk, flux::equal, tuple_to_array));
+        STATIC_CHECK(flux::equal(adj_n_stride, chunk,
+                                 flux::proj2(flux::equal, tuple_to_array)));
     }
 
     // Reverse iteration works when underlying is bidir + bounded

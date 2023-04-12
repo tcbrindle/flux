@@ -37,9 +37,9 @@ constexpr bool test_count_if()
     {
         S arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-        STATIC_CHECK(flux::count_if(arr, is_even, &S::i));
+        STATIC_CHECK(flux::count_if(arr, flux::proj(is_even, &S::i)));
 
-        STATIC_CHECK(flux::from(arr).count_if(is_even, &S::get));
+        STATIC_CHECK(flux::from(arr).count_if(flux::proj(is_even, &S::i)));
     }
 
     return true;

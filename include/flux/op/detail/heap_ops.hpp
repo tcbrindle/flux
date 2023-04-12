@@ -32,8 +32,8 @@
 
 namespace flux::detail {
 
-template <typename Seq, typename Comp, typename Proj>
-constexpr void sift_up_n(Seq& seq, distance_t n, Comp& comp, Proj& proj)
+template <typename Seq, typename Comp>
+constexpr void sift_up_n(Seq& seq, distance_t n, Comp& comp)
 {
     cursor_t<Seq> first = flux::first(seq);
 
@@ -41,8 +41,7 @@ constexpr void sift_up_n(Seq& seq, distance_t n, Comp& comp, Proj& proj)
         cursor_t<Seq> last = flux::next(seq, first, n);
         n = (n - 2) / 2;
         cursor_t<Seq> i = first + n;
-        if (std::invoke(comp, std::invoke(proj, read_at(seq, i)),
-                         std::invoke(proj, read_at(seq, dec(seq, last))))) {
+        if (std::invoke(comp, read_at(seq, i), read_at(seq, dec(seq, last)))) {
             value_t<Seq> v = move_at(seq, last);
             do {
                 read_at(seq, last) = move_at(seq, i);
@@ -52,16 +51,15 @@ constexpr void sift_up_n(Seq& seq, distance_t n, Comp& comp, Proj& proj)
                 }
                 n = (n - 1) / 2;
                 i = next(seq, first, n);
-            } while (std::invoke(comp, std::invoke(proj, read_at(seq, i)),
-                                  std::invoke(proj, v)));
+            } while (std::invoke(comp, read_at(seq, i), v));
             read_at(seq, last) = std::move(v);
         }
     }
 }
 
-template <typename Seq, typename Comp, typename Proj>
+template <typename Seq, typename Comp>
 constexpr void sift_down_n(Seq& seq, distance_t n, cursor_t<Seq> start,
-                           Comp& comp, Proj& proj)
+                           Comp& comp)
 {
     cursor_t<Seq> first = flux::first(seq);
 
@@ -77,16 +75,16 @@ constexpr void sift_down_n(Seq& seq, distance_t n, cursor_t<Seq> start,
     child = 2 * child + 1;
     cursor_t<Seq> child_i = flux::next(seq, first, child);
 
-    if ((child + 1) < n && std::invoke(comp, std::invoke(proj, read_at(seq, child_i)),
-                                        std::invoke(proj, read_at(seq, next(seq, child_i))))) {
+    if ((child + 1) < n && std::invoke(comp, read_at(seq, child_i),
+                                       read_at(seq, next(seq, child_i)))) {
         // right-child exists and is greater than left-child
         flux::inc(seq, child_i);
         ++child;
     }
 
     // check if we are in heap-order
-    if (std::invoke(comp, std::invoke(proj, read_at(seq, child_i)),
-                     std::invoke(proj, read_at(seq, start)))) {
+    if (std::invoke(comp, read_at(seq, child_i),
+                     read_at(seq, start))) {
         // we are, start is larger than its largest child
         return;
     }
@@ -107,44 +105,43 @@ constexpr void sift_down_n(Seq& seq, distance_t n, cursor_t<Seq> start,
         child_i = next(seq, first, child); //child_i = first + child;
 
         if ((child + 1) < n &&
-            std::invoke(comp, std::invoke(proj, read_at(seq, child_i)),
-                         std::invoke(proj, read_at(seq, next(seq, child_i))))) {
+            std::invoke(comp, read_at(seq, child_i),
+                         read_at(seq, next(seq, child_i)))) {
             // right-child exists and is greater than left-child
             inc(seq, child_i);
             ++child;
         }
 
         // check if we are in heap-order
-    } while (!std::invoke(comp, std::invoke(proj, read_at(seq, child_i)),
-                           std::invoke(proj, top)));
+    } while (!std::invoke(comp, read_at(seq, child_i), top));
     read_at(seq, start) = std::move(top);
 }
 
-template <sequence Seq, typename Comp, typename Proj >
-constexpr void make_heap(Seq& seq, Comp& comp, Proj& proj)
+template <sequence Seq, typename Comp>
+constexpr void make_heap(Seq& seq, Comp& comp)
 {
     distance_t n = flux::size(seq);
     auto first = flux::first(seq);
 
     if (n > 1) {
         for (auto start = (n - 2) / 2; start >= 0; --start) {
-            detail::sift_down_n(seq, n, flux::next(seq, first, start), comp, proj);
+            detail::sift_down_n(seq, n, flux::next(seq, first, start), comp);
         }
     }
 }
 
-template <sequence Seq, typename Comp, typename Proj>
-constexpr void pop_heap(Seq& seq, distance_t n, Comp& comp, Proj& proj)
+template <sequence Seq, typename Comp>
+constexpr void pop_heap(Seq& seq, distance_t n, Comp& comp)
 {
     auto first = flux::first(seq);
     if (n > 1) {
         swap_at(seq, first, next(seq, first, n - 1));
-        detail::sift_down_n(seq, n - 1, first, comp, proj);
+        detail::sift_down_n(seq, n - 1, first, comp);
     }
 }
 
-template <sequence Seq, typename Comp, typename Proj>
-constexpr void sort_heap(Seq& seq, Comp& comp, Proj& proj)
+template <sequence Seq, typename Comp>
+constexpr void sort_heap(Seq& seq, Comp& comp)
 {
     auto n = flux::size(seq);
 
@@ -153,7 +150,7 @@ constexpr void sort_heap(Seq& seq, Comp& comp, Proj& proj)
     }
 
     for (auto i = n; i > 1; --i) {
-        pop_heap(seq, i, comp, proj);
+        pop_heap(seq, i, comp);
     }
 }
 

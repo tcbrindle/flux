@@ -13,9 +13,10 @@ namespace flux {
 namespace detail {
 
 struct search_fn {
-    template <multipass_sequence Haystack, multipass_sequence Needle>
-        // Requires...
-    constexpr auto operator()(Haystack&& h, Needle&& n) const
+    template <multipass_sequence Haystack, multipass_sequence Needle,
+              typename Cmp = std::ranges::equal_to>
+        requires std::predicate<Cmp&, element_t<Haystack>, element_t<Needle>>
+    constexpr auto operator()(Haystack&& h, Needle&& n, Cmp cmp = {}) const
         -> bounds_t<Haystack>
     {
         auto hfirst = flux::first(h);
@@ -33,7 +34,7 @@ struct search_fn {
                     return {cur1, cur1};
                 }
 
-                if (read_at(h, cur1) != read_at(n, cur2)) {
+                if (!std::invoke(cmp, read_at(h, cur1), read_at(n, cur2))) {
                     break;
                 }
 

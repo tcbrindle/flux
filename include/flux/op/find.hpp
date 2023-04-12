@@ -13,37 +13,36 @@ namespace flux {
 namespace detail {
 
 struct find_fn {
-    template <sequence Seq, typename Value, typename Proj = std::identity>
-        requires std::equality_comparable_with<projected_t<Proj, Seq>, Value const&>
-    constexpr auto operator()(Seq&& seq, Value const& value,
-                              Proj proj = {}) const -> cursor_t<Seq>
+    template <sequence Seq, typename Value>
+        requires std::equality_comparable_with<element_t<Seq>, Value const&>
+    constexpr auto operator()(Seq&& seq, Value const& value) const -> cursor_t<Seq>
     {
         return for_each_while(seq, [&](auto&& elem) {
-            return std::invoke(proj, FLUX_FWD(elem)) != value;
+            return FLUX_FWD(elem) != value;
         });
     }
 };
 
 struct find_if_fn {
-    template <sequence Seq, typename Pred, typename Proj = std::identity>
-        requires std::predicate<Pred&, projected_t<Proj, Seq>>
-    constexpr auto operator()(Seq&& seq, Pred pred, Proj proj = {}) const
+    template <sequence Seq, typename Pred>
+        requires std::predicate<Pred&, element_t<Seq>>
+    constexpr auto operator()(Seq&& seq, Pred pred) const
         -> cursor_t<Seq>
     {
         return for_each_while(seq, [&](auto&& elem) {
-            return !std::invoke(pred, std::invoke(proj, FLUX_FWD(elem)));
+            return !std::invoke(pred, FLUX_FWD(elem));
         });
     }
 };
 
 struct find_if_not_fn {
-    template <sequence Seq, typename Pred, typename Proj = std::identity>
-        requires std::predicate<Pred&, projected_t<Proj, Seq>>
-    constexpr auto operator()(Seq&& seq, Pred pred, Proj proj = {}) const
+    template <sequence Seq, typename Pred>
+        requires std::predicate<Pred&, element_t<Seq>>
+    constexpr auto operator()(Seq&& seq, Pred pred) const
         -> cursor_t<Seq>
     {
         return for_each_while(seq, [&](auto&& elem) {
-            return std::invoke(pred, std::invoke(proj, FLUX_FWD(elem)));
+            return std::invoke(pred, FLUX_FWD(elem));
         });
     }
 };
@@ -55,27 +54,27 @@ inline constexpr auto find_if = detail::find_if_fn{};
 inline constexpr auto find_if_not = detail::find_if_not_fn{};
 
 template <typename D>
-template <typename Value, typename Proj>
-    requires std::equality_comparable_with<projected_t<Proj, D>, Value const&>
-constexpr auto inline_sequence_base<D>::find(Value const& val, Proj proj)
+template <typename Value>
+    requires std::equality_comparable_with<element_t<D>, Value const&>
+constexpr auto inline_sequence_base<D>::find(Value const& val)
 {
-    return flux::find(derived(), val, std::ref(proj));
+    return flux::find(derived(), val);
 }
 
 template <typename D>
-template <typename Pred, typename Proj>
-    requires predicate_for<Pred, D, Proj>
-constexpr auto inline_sequence_base<D>::find_if(Pred pred, Proj proj)
+template <typename Pred>
+    requires std::predicate<Pred&, element_t<D>>
+constexpr auto inline_sequence_base<D>::find_if(Pred pred)
 {
-    return flux::find_if(derived(), std::ref(pred), std::ref(proj));
+    return flux::find_if(derived(), std::ref(pred));
 }
 
 template <typename D>
-template <typename Pred, typename Proj>
-    requires predicate_for<Pred, D, Proj>
-constexpr auto inline_sequence_base<D>::find_if_not(Pred pred, Proj proj)
+template <typename Pred>
+    requires std::predicate<Pred&, element_t<D>>
+constexpr auto inline_sequence_base<D>::find_if_not(Pred pred)
 {
-    return flux::find_if_not(derived(), std::ref(pred), std::ref(proj));
+    return flux::find_if_not(derived(), std::ref(pred));
 }
 
 } // namespace flux
