@@ -23,7 +23,7 @@ Try it [on Compiler Explorer](https://godbolt.org/z/WvqeKr1h3)
 
 ## Getting Started ##
 
-Right now the easiest way to get started with Flux is to download the [latest automatically generated single header file](https://godbolt.org/z/WvqeKr1h3) and `#include` it in your sources like any other header.
+Right now the easiest way to get started with Flux is to download the [latest automatically generated single header file](https://raw.githubusercontent.com/tcbrindle/flux/main/single_include/flux.hpp) and `#include` it in your sources like any other header.
 
 ## Compiler support ##
 
