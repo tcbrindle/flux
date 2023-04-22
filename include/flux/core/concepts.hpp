@@ -266,8 +266,8 @@ constexpr bool is_ilist<T, std::initializer_list<E>> = true;
 
 template <typename Seq>
 concept rvalue_sequence =
-    !std::is_reference_v<Seq> &&
-    std::movable<Seq> &&
+    std::is_object_v<Seq> &&
+    std::move_constructible<Seq> &&
     sequence<Seq>;
 
 template <typename Seq>

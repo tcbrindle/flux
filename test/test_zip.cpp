@@ -166,10 +166,25 @@ constexpr bool test_zip()
 }
 static_assert(test_zip());
 
+// https://github.com/tcbrindle/flux/issues/47
+constexpr bool issue_47()
+{
+    std::array v = {1, 2, 3, 4, 5};
+    auto res = flux::zip(flux::ints(), flux::from(v).filter(flux::pred::gt(3)));
+
+    for ([[maybe_unused]] auto [a, b] : res) {}
+
+    return true;
+}
+static_assert(issue_47());
+
 }
 
 TEST_CASE("zip")
 {
     bool result = test_zip();
+    REQUIRE(result);
+
+    result = issue_47();
     REQUIRE(result);
 }
