@@ -737,8 +737,8 @@ constexpr bool is_ilist<T, std::initializer_list<E>> = true;
 
 template <typename Seq>
 concept rvalue_sequence =
-    !std::is_reference_v<Seq> &&
-    std::movable<Seq> &&
+    std::is_object_v<Seq> &&
+    std::move_constructible<Seq> &&
     sequence<Seq>;
 
 template <typename Seq>
@@ -3523,7 +3523,9 @@ public:
 
     static constexpr bool is_infinite = (infinite_sequence<Bases> && ...);
 
-    static constexpr auto first(auto& self)
+    template <typename Self>
+        requires (sequence<const_like_t<Self, Bases>> && ...)
+    static constexpr auto first(Self& self)
     {
         return std::apply([](auto&&... args) {
             return tuple_t<decltype(flux::first(FLUX_FWD(args)))...>(flux::first(FLUX_FWD(args))...);
@@ -3531,6 +3533,7 @@ public:
     }
 
     template <typename Self>
+        requires (sequence<const_like_t<Self, Bases>> && ...)
     static constexpr bool is_last(Self& self, cursor_t<Self> const& cur)
     {
         return [&self, &cur]<std::size_t... I>(std::index_sequence<I...>) {
@@ -3539,12 +3542,14 @@ public:
     }
 
     template <typename Self>
+        requires (sequence<const_like_t<Self, Bases>> && ...)
     static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
     {
         return read_(flux::read_at, self, cur);
     }
 
     template <typename Self>
+        requires (sequence<const_like_t<Self, Bases>> && ...)
     static constexpr auto& inc(Self& self, cursor_t<Self>& cur)
     {
         [&]<std::size_t... I>(std::index_sequence<I...>) {
@@ -3555,8 +3560,8 @@ public:
     }
 
     template <typename Self>
-    static constexpr auto& dec(Self& self, cursor_t<Self>& cur)
         requires (bidirectional_sequence<const_like_t<Self, Bases>> && ...)
+    static constexpr auto& dec(Self& self, cursor_t<Self>& cur)
     {
         [&]<std::size_t... I>(std::index_sequence<I...>) {
             (flux::dec(std::get<I>(self.bases_), std::get<I>(cur)), ...);
@@ -3566,8 +3571,8 @@ public:
     }
 
     template <typename Self>
-    static constexpr auto& inc(Self& self, cursor_t<Self>& cur, distance_t offset)
         requires (random_access_sequence<const_like_t<Self, Bases>> && ...)
+    static constexpr auto& inc(Self& self, cursor_t<Self>& cur, distance_t offset)
     {
         [&]<std::size_t... I>(std::index_sequence<I...>) {
             (flux::inc(std::get<I>(self.bases_), std::get<I>(cur), offset), ...);
@@ -3577,9 +3582,9 @@ public:
     }
 
     template <typename Self>
+        requires (random_access_sequence<const_like_t<Self, Bases>> && ...)
     static constexpr auto distance(Self& self, cursor_t<Self> const& from,
                                    cursor_t<Self> const& to)
-        requires (random_access_sequence<const_like_t<Self, Bases>> && ...)
     {
         return [&]<std::size_t... I>(std::index_sequence<I...>) {
             return std::min({flux::distance(std::get<I>(self.bases_), std::get<I>(from), std::get<I>(to))...});
@@ -3587,17 +3592,17 @@ public:
     }
 
     template <typename Self>
-    static constexpr auto last(Self& self)
         requires (random_access_sequence<const_like_t<Self, Bases>> && ...)
-            && (sized_sequence<const_like_t<Self, Bases>> && ...)
+                && (sized_sequence<const_like_t<Self, Bases>> && ...)
+    static constexpr auto last(Self& self)
     {
         auto cur = first(self);
         return inc(self, cur, size(self));
     }
 
     template <typename Self>
-    static constexpr auto size(Self& self)
         requires (sized_sequence<const_like_t<Self, Bases>> && ...)
+    static constexpr auto size(Self& self)
     {
         return std::apply([&](auto&... args) {
             return std::min({flux::size(args)...});
@@ -3605,18 +3610,21 @@ public:
     }
 
     template <typename Self>
+        requires (sequence<const_like_t<Self, Bases>> && ...)
     static constexpr auto move_at(Self& self, cursor_t<Self> const& cur)
     {
         return read_(flux::move_at, self, cur);
     }
 
     template <typename Self>
+        requires (sequence<const_like_t<Self, Bases>> && ...)
     static constexpr auto read_at_unchecked(Self& self, cursor_t<Self> const& cur)
     {
         return read_(flux::read_at_unchecked, self, cur);
     }
 
     template <typename Self>
+        requires (sequence<const_like_t<Self, Bases>> && ...)
     static constexpr auto move_at_unchecked(Self& self, cursor_t<Self> const& cur)
     {
         return read_(flux::move_at_unchecked, self, cur);
