@@ -6,6 +6,7 @@ function(ADD_EXAMPLE NAME SOURCE)
 endfunction()
 
 add_example(example-config-parser config_parser.cpp)
+add_example(example-calendar calendar.cpp)
 
 add_example(example-docs-adjacent docs/adjacent.cpp)
 add_example(example-docs-all docs/all.cpp)
