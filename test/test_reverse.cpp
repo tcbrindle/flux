@@ -86,11 +86,34 @@ constexpr bool test_reverse()
 }
 static_assert(test_reverse());
 
+// Regression test for #52
+// https://github.com/tcbrindle/flux/issues/52
+constexpr bool issue_52()
+{
+    std::string_view in = "   abc   ";
+    std::string_view out = "abc";
+
+    auto is_space = flux::pred::in(' ', '\t', '\n', '\r');
+
+    auto seq = flux::drop_while(in, is_space)
+                    .reverse()
+                    .drop_while(is_space)
+                    .reverse();
+
+    STATIC_CHECK(check_equal(seq, out));
+
+    return true;
+}
+static_assert(issue_52());
+
 }
 
 TEST_CASE("reverse")
 {
     bool result = test_reverse();
+    REQUIRE(result);
+
+    result = issue_52();
     REQUIRE(result);
 
     {
@@ -106,6 +129,6 @@ TEST_CASE("reverse")
         // static_assert(flux::sized_sequence<R>);
        // static_assert(flux::bounded_sequence<R>);
 
-       // REQUIRE(check_equal(rlist, {4, 3, 2, 1, 0}));
+        REQUIRE(check_equal(rlist, {4, 3, 2, 1, 0}));
     }
 }
