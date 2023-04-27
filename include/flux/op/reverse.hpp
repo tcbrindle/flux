@@ -28,9 +28,6 @@ struct rev_cur {
     }
 };
 
-template <typename B>
-rev_cur(B&&) -> rev_cur<std::remove_cvref_t<B>>;
-
 template <bidirectional_sequence Base>
     requires bounded_sequence<Base>
 struct reverse_adaptor : inline_sequence_base<reverse_adaptor<Base>>
@@ -80,12 +77,12 @@ struct sequence_traits<detail::reverse_adaptor<Base>>
 
     static constexpr auto first(auto& self)
     {
-        return detail::rev_cur(flux::last(self.base_));
+        return detail::rev_cur<cursor_t<Base>>(flux::last(self.base_));
     }
 
     static constexpr auto last(auto& self)
     {
-        return detail::rev_cur(flux::first(self.base_));
+        return detail::rev_cur<cursor_t<Base>>(flux::first(self.base_));
     }
 
     static constexpr auto is_last(auto& self, auto const& cur) -> bool
@@ -149,7 +146,7 @@ struct sequence_traits<detail::reverse_adaptor<Base>>
             }
         }
 
-        return detail::rev_cur(flux::inc(self.base_, cur));
+        return detail::rev_cur<cursor_t<Base>>(flux::inc(self.base_, cur));
     }
 };
 
