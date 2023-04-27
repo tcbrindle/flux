@@ -24,10 +24,10 @@ bool is_overlapped(interval_t a, interval_t b)
     return a.end >= b.begin;
 }
 
-auto merge = [](auto seq) -> interval_t
+auto merge = [](flux::sequence auto seq) -> interval_t
 {
     auto begin = flux::front(seq)->begin;
-    auto end = flux::from(seq).max(flux::proj(std::less<>{}, &interval_t::end))->end;
+    auto end = flux::max(seq, flux::proj(std::less<>{}, &interval_t::end))->end;
     return {begin, end};
 };
 
@@ -38,14 +38,12 @@ int main()
     // sort intervals according begin
     flux::sort(intervals, flux::proj(std::less<>{}, &interval_t::begin));
 
-    auto merged = flux::from(intervals)
-                       .chunk_by(is_overlapped)
-                       .map(merge);
+    flux::from(intervals)
+         .chunk_by(is_overlapped)
+         .map(merge)
+         .write_to(std::cout);
                 
-    flux::write_to(merged, std::cout);
     std::cout << std::endl;
 
     // prints [(0,4), (6,9), (11,13)]
-
-    return 0;
 }
