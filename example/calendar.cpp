@@ -101,7 +101,7 @@ auto to_columns = [](auto&& month_chunk)
 
 const auto current_year = ymd{floor<days>(system_clock::now())}.year();
 
-struct app_args {
+struct app_args_t {
     bool help;
     unsigned per_line = 3;
     ymd from = current_year / January / 1d;
@@ -114,9 +114,9 @@ struct app_args {
     exit(0);
 }
 
-app_args parse_args(int argc, char** argv)
+app_args_t parse_args(int argc, char** argv)
 {
-    app_args result;
+    app_args_t result;
     std::string_view app_name = argv[0];
     std::vector<std::string> args(std::next(argv), std::next(argv, argc));
 
@@ -132,12 +132,12 @@ app_args parse_args(int argc, char** argv)
 
     auto to_pair = [](const auto& s) {
         auto pos = flux::find(flux::ref(s), '=');
-        return std::pair{s.substr(0, pos), s.substr(std::min(s.size(), pos + 1UL))};
+        return std::pair{s.substr(0, pos), s.substr(std::min(flux::count(s), pos + 1))};
     };
 
     for (const auto& [key, val] : flux::from(args).map(to_pair)) {
         if (auto it = args_map.find(key); it != args_map.end())
-            it->second(val);
+            std::invoke(it->second, val);
         else
             throw std::runtime_error("Unknown option "s + key + ". Use --help for more info.");
     }
