@@ -104,6 +104,27 @@ Adaptors
 ..  function::
     auto drop(sequence auto seq, std::integral auto count) -> sequence auto;
 
+    Given a sequence :var:`seq` and a non-negative integral value :var:`count`, returns a new sequence which skips the first :var:`count` elements of :var:`seq`.
+
+    The returned sequence is always a :concept:`sequence`, with the same category of :var:`seq`. If :var:`seq` has fewer than :var:`count` elements, the adapted sequence is out of range.
+
+    :param seq: A sequence.
+    :param count: A non-negative integral value indicating the number of elements to be skipped.
+
+    :returns: A sequence adaptor that yields the remaining elements of :var:`seq`, with the first :var:`count` elements skipped.
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/drop.cpp
+        :language: cpp
+        :dedent:
+        :lines: 14-19
+
+    :see also:
+
+        * `std::views::drop <https://en.cppreference.com/w/cpp/ranges/drop_view>`_ (C++20)
+        * :func:`flux::take`
+
 ``drop_while``
 ^^^^^^^^^^^^^^
 

@@ -13,4 +13,5 @@ add_example(example-docs-any docs/any.cpp)
 add_example(example-docs-compare docs/compare.cpp)
 add_example(example-docs-contains docs/contains.cpp)
 add_example(example-docs-count docs/count.cpp)
+add_example(example-docs-drop docs/drop.cpp)
 
