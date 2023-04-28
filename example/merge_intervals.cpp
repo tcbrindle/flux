@@ -35,8 +35,8 @@ int main()
 {
     std::vector<interval_t> intervals = {{2, 4}, {7, 9}, {11, 13}, {6, 7}, {0, 3}};
 
-    // sort intervals according begin
-    flux::sort(intervals, flux::proj(std::less<>{}, &interval_t::begin));
+    // sort intervals according to begin
+    flux::sort(intervals, flux::proj(std::less{}, &interval_t::begin));
 
     flux::from(intervals)
          .chunk_by(is_overlapped)
