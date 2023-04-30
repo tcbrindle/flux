@@ -3218,32 +3218,12 @@ namespace flux {
 
 namespace detail {
 
-template <typename BaseCur>
-struct rev_cur {
-    BaseCur base_cur;
-
-    friend bool operator==(rev_cur const&, rev_cur const&)
-        requires std::equality_comparable<BaseCur>
-        = default;
-
-    friend std::strong_ordering operator<=>(rev_cur const& lhs, rev_cur const& rhs)
-        requires std::three_way_comparable<BaseCur>
-    {
-        return rhs <=> lhs;
-    }
-};
-
-template <typename B>
-rev_cur(B&&) -> rev_cur<std::remove_cvref_t<B>>;
-
 template <bidirectional_sequence Base>
     requires bounded_sequence<Base>
 struct reverse_adaptor : inline_sequence_base<reverse_adaptor<Base>>
 {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
-
-    friend struct sequence_traits<reverse_adaptor>;
 
 public:
     constexpr explicit reverse_adaptor(decays_to<Base> auto&& base)
@@ -3252,6 +3232,107 @@ public:
 
     [[nodiscard]] constexpr auto base() const& -> Base const& { return base_; }
     [[nodiscard]] constexpr auto base() && -> Base&& { return std::move(base_); }
+
+    struct flux_sequence_traits {
+    private:
+        struct cursor_type {
+            cursor_t<Base> base_cur;
+
+            friend bool operator==(cursor_type const&, cursor_type const&)
+                requires std::equality_comparable<cursor_t<Base>>
+            = default;
+
+            friend auto operator<=>(cursor_type const& lhs, cursor_type const& rhs)
+                -> std::strong_ordering
+                requires std::three_way_comparable<cursor_t<Base>, std::strong_ordering>
+            {
+                return rhs <=> lhs;
+            }
+        };
+
+    public:
+        using value_type = value_t<Base>;
+
+        static constexpr auto first(auto& self) -> cursor_type
+        {
+            return cursor_type(flux::last(self.base_));
+        }
+
+        static constexpr auto last(auto& self) -> cursor_type
+        {
+            return cursor_type(flux::first(self.base_));
+        }
+
+        static constexpr auto is_last(auto& self, cursor_type const& cur) -> bool
+        {
+            return cur.base_cur == flux::first(self.base_);
+        }
+
+        static constexpr auto read_at(auto& self, cursor_type const& cur) -> decltype(auto)
+        {
+            return flux::read_at(self.base_, flux::prev(self.base_, cur.base_cur));
+        }
+
+        static constexpr auto read_at_unchecked(auto& self, cursor_type const& cur) -> decltype(auto)
+        {
+            return flux::read_at_unchecked(self.base_, flux::prev(self.base_, cur.base_cur));
+        }
+
+        static constexpr auto move_at(auto& self, cursor_type const& cur) -> decltype(auto)
+        {
+            return flux::move_at(self.base_, flux::prev(self.base_, cur.base_cur));
+        }
+
+        static constexpr auto move_at_unchecked(auto& self, cursor_type const& cur) -> decltype(auto)
+        {
+            return flux::move_at_unchecked(self.base_, flux::prev(self.base_, cur.base_cur));
+        }
+
+        static constexpr auto inc(auto& self, cursor_type& cur) -> void
+        {
+            flux::dec(self.base_, cur.base_cur);
+        }
+
+
+        static constexpr auto dec(auto& self, cursor_type& cur) -> void
+        {
+            flux::inc(self.base_, cur.base_cur);
+        }
+
+        static constexpr auto inc(auto& self, cursor_type& cur, distance_t dist) -> void
+            requires random_access_sequence<decltype(self.base_)>
+        {
+            flux::inc(self.base_, cur.base_cur, -dist);
+        }
+
+        static constexpr auto distance(auto& self, cursor_type const& from, cursor_type const& to)
+            -> distance_t
+            requires random_access_sequence<decltype(self.base_)>
+        {
+            return flux::distance(self.base_, to.base_cur, from.base_cur);
+        }
+
+        static constexpr auto size(auto& self) -> distance_t
+            requires sized_sequence<decltype(self.base_)>
+        {
+            return flux::size(self.base_);
+        }
+
+        static constexpr auto for_each_while(auto& self, auto&& pred)
+        {
+            auto cur = flux::last(self.base_);
+            const auto end = flux::first(self.base_);
+
+            while (cur != end) {
+                flux::dec(self.base_, cur);
+                if (!std::invoke(pred, flux::read_at(self.base_, cur))) {
+                    break;
+                }
+            }
+
+            return cursor_type(flux::inc(self.base_, cur));
+        }
+    };
 };
 
 template <typename>
@@ -3277,86 +3358,6 @@ struct reverse_fn {
 };
 
 } // namespace detail
-
-template <typename Base>
-struct sequence_traits<detail::reverse_adaptor<Base>>
-{
-    using value_type = value_t<Base>;
-
-    static constexpr auto first(auto& self)
-    {
-        return detail::rev_cur(flux::last(self.base_));
-    }
-
-    static constexpr auto last(auto& self)
-    {
-        return detail::rev_cur(flux::first(self.base_));
-    }
-
-    static constexpr auto is_last(auto& self, auto const& cur) -> bool
-    {
-        return cur.base_cur == flux::first(self.base_);
-    }
-
-    static constexpr auto read_at(auto& self, auto const& cur) -> decltype(auto)
-    {
-        return flux::read_at(self.base_, flux::prev(self.base_, cur.base_cur));
-    }
-
-    static constexpr auto inc(auto& self, auto& cur) -> auto&
-    {
-        flux::dec(self.base_, cur.base_cur);
-        return cur;
-    }
-
-    static constexpr auto dec(auto& self, auto& cur) -> auto&
-    {
-        flux::inc(self.base_, cur.base_cur);
-        return cur;
-    }
-
-    static constexpr auto inc(auto& self, auto& cur, auto dist) -> auto&
-        requires random_access_sequence<decltype(self.base_)>
-    {
-        flux::inc(self.base_, cur.base_cur, -dist);
-        return cur;
-    }
-
-    static constexpr auto distance(auto& self, auto const& from, auto const& to)
-        requires random_access_sequence<decltype(self.base_)>
-    {
-        return flux::distance(self.base_, to.base_cur, from.base_cur);
-    }
-
-    // FIXME: GCC11 ICE
-#if GCC_ICE
-    static constexpr auto size(auto& self)
-        requires sized_sequence<decltype(self.base_)>
-    {
-        return flux::size(self.base_);
-    }
-#endif
-
-    static constexpr auto move_at(auto& self, auto const& cur) -> decltype(auto)
-    {
-        return flux::move_at(self.base_, cur.base_cur);
-    }
-
-    static constexpr auto for_each_while(auto& self, auto&& pred)
-    {
-        auto cur = flux::last(self.base_);
-        const auto end = flux::first(self.base_);
-
-        while (cur != end) {
-            flux::dec(self.base_, cur);
-            if (!std::invoke(pred, flux::read_at(self.base_, cur))) {
-                break;
-            }
-        }
-
-        return detail::rev_cur(flux::inc(self.base_, cur));
-    }
-};
 
 inline constexpr auto reverse = detail::reverse_fn{};
 
