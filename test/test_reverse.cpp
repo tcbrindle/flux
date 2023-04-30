@@ -123,11 +123,10 @@ TEST_CASE("reverse")
         using R = decltype(rlist);
 
         static_assert(flux::regular_cursor<flux::cursor_t<R>>);
-      //  static_assert(flux::bidirectional_sequence<R>);
-     //   static_assert(not flux::random_access_sequence<R>);
-        // FIXME: GCC ICE
-        // static_assert(flux::sized_sequence<R>);
-       // static_assert(flux::bounded_sequence<R>);
+        static_assert(flux::bidirectional_sequence<R>);
+        static_assert(not flux::random_access_sequence<R>);
+        static_assert(flux::sized_sequence<R>);
+        static_assert(flux::bounded_sequence<R>);
 
         REQUIRE(check_equal(rlist, {4, 3, 2, 1, 0}));
     }
