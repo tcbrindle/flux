@@ -13,8 +13,8 @@ int main()
 {
     std::vector vec{1, 2, 3, 4, 5};
 
-    auto dropped = flux::from(vec).drop(3);
+    auto dropped = flux::drop(std::move(vec), 3);
 
-    assert(flux::count(dropped) == 2);
+    assert(flux::size(dropped) == 2);
     assert(flux::equal(dropped, std::vector{4, 5}));
 }

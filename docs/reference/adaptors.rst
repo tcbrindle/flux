@@ -106,7 +106,7 @@ Adaptors
 
     Given a sequence :var:`seq` and a non-negative integral value :var:`count`, returns a new sequence which skips the first :var:`count` elements of :var:`seq`.
 
-    The returned sequence is always a :concept:`sequence`, with the same category of :var:`seq`. If :var:`seq` has fewer than :var:`count` elements, the adapted sequence is out of range.
+    The returned sequence has the same capabilities as :var:seq. If :var:`seq` has fewer than :var:`count` elements, the returned sequence is empty.
 
     :param seq: A sequence.
     :param count: A non-negative integral value indicating the number of elements to be skipped.
