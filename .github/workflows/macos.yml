@@ -15,10 +15,12 @@ jobs:
     strategy:
       matrix:
         build_type: [Debug, Release]
-        cxx: [g++-12]
+        cxx: [g++-12, g++-13]
         include:
           - cxx: g++-12
             install: brew install gcc@12 ninja
+          - cxx: g++-13
+            install: brew install gcc@13 ninja
 
     steps:
     - uses: actions/checkout@v3
