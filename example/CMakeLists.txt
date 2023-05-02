@@ -7,6 +7,7 @@ endfunction()
 
 add_example(example-config-parser config_parser.cpp)
 add_example(example-merge-intervals merge_intervals.cpp)
+add_example(example-histogram histogram.cpp)
 
 add_example(example-docs-adjacent docs/adjacent.cpp)
 add_example(example-docs-all docs/all.cpp)
