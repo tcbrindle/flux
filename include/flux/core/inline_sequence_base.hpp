@@ -283,7 +283,7 @@ public:
     constexpr auto stride(std::integral auto by) &&;
 
     [[nodiscard]]
-    constexpr auto take(distance_t count) &&;
+    constexpr auto take(std::integral auto count) &&;
 
     template <typename Pred>
         requires std::predicate<Pred&, element_t<Derived>>
