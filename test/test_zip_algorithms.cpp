@@ -121,6 +121,20 @@ constexpr bool test_zip_find_if()
         STATIC_CHECK(r == 2);
     }
 
+    // Check we can use zip_find_if to implement the STL's mismatch
+    {
+        int const arr1[] = {1, 2, 3, 4, 5};
+        std::array arr2 = {1, 2, 3, 5, 4};
+
+        auto [iter1, iter2] = std::ranges::mismatch(arr1, arr2);
+
+        auto [cur1, cur2] = flux::zip_find_if(std::not_equal_to{}, arr1, arr2);
+
+        STATIC_CHECK(*iter1 == arr1[cur1]);
+        STATIC_CHECK(*iter2 == arr2[cur2]);
+
+    }
+
     return true;
 }
 static_assert(test_zip_find_if());
