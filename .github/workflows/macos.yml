@@ -20,7 +20,9 @@ jobs:
           - cxx: g++-12
             install: brew install gcc@12 ninja
           - cxx: g++-13
-            install: brew install gcc@13 ninja
+            install: |
+              brew update
+              brew install gcc@13 ninja
 
     steps:
     - uses: actions/checkout@v3
