@@ -507,3 +507,38 @@ Algorithms
 ..  function::
     auto write_to(sequence auto&& seq, std::ostream& os) -> std::ostream&;
 
+``zip_find_if``
+---------------
+
+..  function::
+    template <typename Pred, sequence... Seqs> \
+        requires std::predicate<Pred&, element_t<Seqs>...> \
+    auto zip_find_if(Pred pred, Seqs&&... seqs) -> std::tuple<cursor_t<Seqs>...>;
+
+``zip_fold``
+------------
+
+..  type::
+    template <typename Func, typename Init, typename... Seqs> \
+    zip_fold_result_t = std::decay_t<std::invoke_result_t<Func&, Init, element_t<Seqs>...>>;
+
+..  function::
+    template <typename Func, typename Init, sequence... Seqs> \
+        requires see_below \
+    auto zip_fold(Func func, Init init, Seqs&&... seqs) -> zip_fold_result_t<Func, Init, Seqs...>;
+
+``zip_for_each``
+----------------
+
+..  function::
+    template <typename Func, sequence... Seqs> \
+        requires std::invocable<Func&, element_t<Seqs>...> \
+    auto zip_for_each(Func func, Seqs&&... seqs) -> Func;
+
+``zip_for_each_while``
+----------------------
+
+..  function::
+    template <typename Pred, sequence... Seqs> \
+        requires see_below \
+    auto zip_for_each_while(Pred pred, Seqs&&... seqs) -> std::tuple<cursor_t<Seqs>...>;
