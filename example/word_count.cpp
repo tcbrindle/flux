@@ -19,21 +19,29 @@ struct stats_t
 
 auto collect_stats = [](flux::sequence auto&& seq)
 {
-    return flux::fold(FLUX_FWD(seq), [](stats_t&& stats, auto val) 
+    stats_t stats;
+    flux::for_each(FLUX_FWD(seq), [&stats](char val) 
     {
         stats.chars++;
-        if (not stats.is_last_space and std::isspace(val))
+        if (not stats.is_last_space and std::isspace(val)) {
             stats.words++;
-        if (val == '\n')
+        }
+        if (val == '\n') {
             stats.lines++;
+        }
         stats.is_last_space = std::isspace(val);
-        return FLUX_FWD(stats);
-    }, stats_t{});
+    });
+
+    if (not stats.is_last_space) {
+        stats.words++;
+    }
+
+    return stats;
 };
 
-std::ostream& operator<<(std::ostream& s, stats_t stats)
+void print_stats(const stats_t& stats)
 {
-    return s << stats.lines << ' ' << stats.words << ' ' << stats.chars;
+    std::cout << stats.lines << ' ' << stats.words << ' ' << stats.chars << '\n';
 }
 
 int main()
@@ -41,7 +49,5 @@ int main()
     // Print newline, word, and byte counts from std input (like gnu wc)
     std::noskipws(std::cin);
     auto result = flux::from_istream<char>(std::cin)._(collect_stats);
-    if (not result.is_last_space)
-        result.words++;
-    std::cout << result << std::endl;
+    print_stats(result);
 }
