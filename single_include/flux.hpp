@@ -2243,6 +2243,12 @@ public:
         requires std::predicate<Pred&, element_t<Derived>>
     constexpr auto count_if(Pred pred);
 
+    template <sequence Needle, typename Cmp = std::ranges::equal_to>
+        requires std::predicate<Cmp&, element_t<Derived>, element_t<Needle>> &&
+                 (multipass_sequence<Derived> || sized_sequence<Derived>) &&
+                 (multipass_sequence<Needle> || sized_sequence<Needle>)
+    constexpr auto ends_with(Needle&& needle, Cmp cmp = {}) -> bool;
+
     template <typename Value>
         requires writable_sequence_of<Derived, Value const&>
     constexpr auto fill(Value const& value) -> void;
@@ -2323,6 +2329,10 @@ public:
     constexpr auto product()
         requires foldable<Derived, std::multiplies<>, value_t<Derived>> &&
                  requires { value_t<Derived>(1); };
+
+    template <sequence Needle, typename Cmp = std::ranges::equal_to>
+        requires std::predicate<Cmp&, element_t<Derived>, element_t<Needle>>
+    constexpr auto starts_with(Needle&& needle, Cmp cmp = Cmp{}) -> bool;
 
     template <typename Container, typename... Args>
     constexpr auto to(Args&&... args) -> Container;
@@ -6411,6 +6421,15 @@ constexpr auto inline_sequence_base<D>::drop_while(Pred pred) &&
 #endif
 
 
+// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_OP_ENDS_WITH_HPP_INCLUDED
+#define FLUX_OP_ENDS_WITH_HPP_INCLUDED
+
+
+
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -6458,6 +6477,100 @@ inline constexpr auto equal = detail::equal_fn{};
 } // namespace flux
 
 #endif // FLUX_OP_EQUAL_HPP_INCLUDED
+
+
+namespace flux {
+
+namespace detail {
+
+struct ends_with_fn {
+private:
+    template <typename H, typename N>
+    static constexpr auto bidir_impl(H& h, N& n, auto& cmp) -> bool
+    {
+        if constexpr (sized_sequence<H> && sized_sequence<N>) {
+            if (flux::size(h) < flux::size(n)) {
+                return false;
+            }
+        }
+
+        auto cur1 = flux::last(h);
+        auto cur2 = flux::last(n);
+
+        auto const f1 = flux::first(h);
+        auto const f2 = flux::first(n);
+
+        if (cur2 == f2) {
+            return true;
+        } else if (cur1 == f1) {
+            return false;
+        }
+
+        while (true) {
+            flux::dec(h, cur1);
+            flux::dec(n, cur2);
+
+            if (!std::invoke(cmp, flux::read_at(h, cur1), flux::read_at(n, cur2))) {
+                return false;
+            }
+
+            if (cur2 == f2) {
+                return true;
+            } else if (cur1 == f1) {
+                return false;
+            }
+        }
+    }
+
+public:
+    template <sequence Haystack, sequence Needle, typename Cmp = std::ranges::equal_to>
+        requires std::predicate<Cmp&, element_t<Haystack>, element_t<Needle>> &&
+                 (multipass_sequence<Haystack> || sized_sequence<Haystack>) &&
+                 (multipass_sequence<Needle> || sized_sequence<Needle>)
+    constexpr auto operator()(Haystack&& haystack, Needle&& needle, Cmp cmp = Cmp{}) const
+        -> bool
+    {
+        if constexpr(bidirectional_sequence<Haystack> &&
+                     bounded_sequence<Haystack> &&
+                     bidirectional_sequence<Needle> &&
+                     bounded_sequence<Needle>) {
+            return bidir_impl(haystack, needle, cmp);
+        } else {
+            distance_t len1 = flux::count(haystack);
+            distance_t len2 = flux::count(needle);
+
+            if (len1 < len2) {
+                return false;
+            }
+
+            auto cur1 = flux::first(haystack);
+            detail::advance(haystack, cur1, len1 - len2);
+
+            return flux::equal(flux::slice(haystack, std::move(cur1), flux::last),
+                               needle, std::move(cmp));
+        }
+    }
+};
+
+} // namespace detail
+
+inline constexpr auto ends_with = detail::ends_with_fn{};
+
+template <typename Derived>
+template <sequence Needle, typename Cmp>
+    requires std::predicate<Cmp&, element_t<Derived>, element_t<Needle>> &&
+             (multipass_sequence<Derived> || sized_sequence<Derived>) &&
+             (multipass_sequence<Needle> || sized_sequence<Needle>)
+constexpr auto inline_sequence_base<Derived>::ends_with(Needle&& needle, Cmp cmp) -> bool
+{
+    return flux::ends_with(derived(), FLUX_FWD(needle), std::move(cmp));
+}
+
+
+} // namespace flux
+
+#endif // FLUX_OP_ENDS_WITH_HPP_INCLUDED
+
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
@@ -8863,6 +8976,63 @@ constexpr auto inline_sequence_base<D>::split_string(auto&& pattern) &&
 } // namespace flux
 
 #endif
+
+
+// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_OP_STARTS_WITH_HPP_INCLUDED
+#define FLUX_OP_STARTS_WITH_HPP_INCLUDED
+
+
+
+namespace flux {
+
+namespace detail {
+
+struct starts_with_fn {
+    template <sequence Haystack, sequence Needle, typename Cmp = std::ranges::equal_to>
+        requires std::predicate<Cmp&, element_t<Haystack>, element_t<Needle>>
+    constexpr auto operator()(Haystack&& haystack, Needle&& needle, Cmp cmp = Cmp{}) const -> bool
+    {
+        if constexpr (sized_sequence<Haystack> && sized_sequence<Needle>) {
+            if (flux::size(haystack) < flux::size(needle)) {
+                return false;
+            }
+        }
+
+        auto h = flux::first(haystack);
+        auto n = flux::first(needle);
+
+        while (!flux::is_last(haystack, h) && !flux::is_last(needle, n)) {
+            if (!std::invoke(cmp, flux::read_at(haystack, h), flux::read_at(needle, n))) {
+                return false;
+            }
+            flux::inc(haystack, h);
+            flux::inc(needle, n);
+        }
+
+        return flux::is_last(needle, n);
+    }
+};
+
+} // namespace detail
+
+inline constexpr auto starts_with = detail::starts_with_fn{};
+
+template <typename Derived>
+template <sequence Needle, typename Cmp>
+    requires std::predicate<Cmp&, element_t<Derived>, element_t<Needle>>
+constexpr auto inline_sequence_base<Derived>::starts_with(Needle&& needle, Cmp cmp) -> bool
+{
+    return flux::starts_with(derived(), FLUX_FWD(needle), std::move(cmp));
+}
+
+
+} // namespace flux
+
+#endif // FLUX_OP_STARTS_WITH_HPP_INCLUDED
 
 
 
