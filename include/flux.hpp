@@ -22,6 +22,7 @@
 #include <flux/op/count.hpp>
 #include <flux/op/drop.hpp>
 #include <flux/op/drop_while.hpp>
+#include <flux/op/ends_with.hpp>
 #include <flux/op/equal.hpp>
 #include <flux/op/fill.hpp>
 #include <flux/op/filter.hpp>
