@@ -15,7 +15,7 @@
 template<typename T>
 flux::generator<int> randu(T min, T max)
 {
-    std::random_device rng;
+    std::mt19937 rng;
     std::uniform_int_distribution dist(min, max);
 
     while (true)
@@ -34,24 +34,26 @@ flux::generator<int> randn(T mean, T stddev = 1.0)
 
 using hist_t = std::map<int, int>;
 
-auto to_histogram = [](auto&& so_far, auto x)
+auto to_histogram = [](hist_t&& so_far, auto x)
 {
-    ++so_far[std::round(x)];
-    return FLUX_FWD(so_far);
+    ++so_far[x];
+    return std::move(so_far);
 };
 
-std::ostream& operator<<(std::ostream& s, const hist_t& hist)
+void print_histogram(const hist_t& hist)
 {
-    for (auto [bin, count]: hist)
-        s << std::setw(2) << bin << ' ' << std::string(count / 200, '*') << '\n';
-    return s;
+    for (auto [bin, count]: hist){
+        std::cout << std::setw(2) << bin << ' ' << std::string(count / 200, '*') << '\n';
+    }
 };
 
 int main()
 {
     std::cout << "Uniform distribution from 0 to 10\n";
-    std::cout << randu(0, 10).take(10000).fold(to_histogram, hist_t{}) << '\n';
+    print_histogram(randu(0, 10).take(10000).fold(to_histogram, hist_t{}));
+    std::cout << '\n';
 
     std::cout << "Normal distribution with mean 5 and stddev 2\n";
-    std::cout << randn(5.0, 2.0).take(10000).fold(to_histogram, hist_t{}) << '\n';
+    print_histogram(randn(5.0, 2.0).take(10000).fold(to_histogram, hist_t{}));
+    std::cout << '\n';
 }
