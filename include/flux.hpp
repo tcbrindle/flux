@@ -41,6 +41,7 @@
 #include <flux/op/sort.hpp>
 #include <flux/op/split.hpp>
 #include <flux/op/split_string.hpp>
+#include <flux/op/starts_with.hpp>
 #include <flux/op/stride.hpp>
 #include <flux/op/swap_elements.hpp>
 #include <flux/op/take.hpp>

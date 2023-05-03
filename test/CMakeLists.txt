@@ -45,6 +45,7 @@ add_executable(test-libflux
     test_slide.cpp
     test_split.cpp
     test_sort.cpp
+    test_starts_with.cpp
     test_stride.cpp
     test_take.cpp
     test_take_while.cpp

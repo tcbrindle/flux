@@ -402,6 +402,10 @@ public:
         requires foldable<Derived, std::multiplies<>, value_t<Derived>> &&
                  requires { value_t<Derived>(1); };
 
+    template <sequence Needle, typename Cmp = std::ranges::equal_to>
+        requires std::predicate<Cmp&, element_t<Derived>, element_t<Needle>>
+    constexpr auto starts_with(Needle&& needle, Cmp cmp = Cmp{}) -> bool;
+
     template <typename Container, typename... Args>
     constexpr auto to(Args&&... args) -> Container;
 
