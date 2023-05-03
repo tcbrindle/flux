@@ -52,15 +52,6 @@ constexpr bool test_for_each()
     }
 
     {
-        int sum = 0;
-        auto arr = std::array<S, 4>{ S{&sum, 0}, S{&sum, 2}, S{&sum, 4}, S{&sum, 6}};
-
-        flux::for_each(arr, [&sum](int i) { sum += i; },  &S::i_);
-
-        STATIC_CHECK(sum == 12);
-    }
-
-    {
         struct counter {
             constexpr void operator()(int i) { sum += i; }
             int sum = 0;

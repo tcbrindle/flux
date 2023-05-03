@@ -11,7 +11,66 @@
 #include <functional>
 #include <type_traits>
 
-namespace flux::pred {
+namespace flux {
+
+template <typename Fn, typename Proj = std::identity>
+struct proj {
+    Fn fn;
+    Proj prj{};
+
+    template <typename... Args>
+    constexpr auto operator()(Args&&... args)
+        noexcept(noexcept(std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...)))
+        -> decltype(std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...))
+    {
+        return std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...);
+    }
+
+    template <typename... Args>
+    constexpr auto operator()(Args&&... args) const
+        noexcept(noexcept(std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...)))
+        -> decltype(std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...))
+    {
+        return std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...);
+    }
+};
+
+template <typename F, typename P = std::identity>
+proj(F, P = {}) -> proj<F, P>;
+
+template <typename Fn, typename Lhs = std::identity, typename Rhs = std::identity>
+struct proj2 {
+    Fn fn;
+    Lhs lhs{};
+    Rhs rhs{};
+
+    template <typename Arg1, typename Arg2>
+    constexpr auto operator()(Arg1&& arg1, Arg2&& arg2)
+        noexcept(noexcept(std::invoke(fn, std::invoke(lhs, FLUX_FWD(arg1)),
+                                          std::invoke(rhs, FLUX_FWD(arg2)))))
+        -> decltype(std::invoke(fn, std::invoke(lhs, FLUX_FWD(arg1)),
+                                    std::invoke(rhs, FLUX_FWD(arg2))))
+    {
+        return std::invoke(fn, std::invoke(lhs, FLUX_FWD(arg1)),
+                           std::invoke(rhs, FLUX_FWD(arg2)));
+    }
+
+    template <typename Arg1, typename Arg2>
+    constexpr auto operator()(Arg1&& arg1, Arg2&& arg2) const
+        noexcept(noexcept(std::invoke(fn, std::invoke(lhs, FLUX_FWD(arg1)),
+                                      std::invoke(rhs, FLUX_FWD(arg2)))))
+            -> decltype(std::invoke(fn, std::invoke(lhs, FLUX_FWD(arg1)),
+                                    std::invoke(rhs, FLUX_FWD(arg2))))
+    {
+        return std::invoke(fn, std::invoke(lhs, FLUX_FWD(arg1)),
+                           std::invoke(rhs, FLUX_FWD(arg2)));
+    }
+};
+
+template <typename F, typename L = std::identity, typename R = std::identity>
+proj2(F, L = {}, R = {}) -> proj2<F, L, R>;
+
+namespace pred {
 
 namespace detail {
 
@@ -138,6 +197,8 @@ inline constexpr auto odd = detail::predicate([](auto const& val) -> bool {
   return val % decltype(val){2} != decltype(val){0};
 });
 
-} // namespaces
+} // namespace pred
+
+} // namespace flux
 
 #endif

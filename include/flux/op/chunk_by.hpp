@@ -121,7 +121,7 @@ public:
 };
 
 struct chunk_by_fn {
-    template <adaptable_sequence Seq, typename Pred>
+    template <adaptable_sequence Seq, std::move_constructible Pred>
         requires multipass_sequence<Seq> &&
                  std::predicate<Pred&, element_t<Seq>, element_t<Seq>>
     [[nodiscard]]

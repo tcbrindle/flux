@@ -1,0 +1,44 @@
+
+name: "Generate Single Header"
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  run:
+    name: Generate
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.PAT }}
+
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Build
+        run: |
+          brew install gcc@13 binutils
+          brew link --force binutils
+          cmake -E make_directory ${{runner.workspace}}/build
+          cd ${{runner.workspace}}/build
+          cmake ${GITHUB_WORKSPACE} -DCMAKE_CXX_COMPILER=g++-13 -DFLUX_BUILD_TOOLS=On
+          cmake --build . --target make_single_header
+
+      - name: Run
+        working-directory: ${{runner.workspace}}/build
+        run: |
+          ./tools/make_single_header ${GITHUB_WORKSPACE}/include/flux.hpp ${GITHUB_WORKSPACE}/single_include/flux.hpp
+
+      - name: Upload
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Update single header
+          file_pattern: 'single_include/*'
+          commit_user_name: Github Actions Bot

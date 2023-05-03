@@ -35,8 +35,8 @@ public:
 };
 
 struct take_while_fn {
-    template <adaptable_sequence Seq, typename Pred>
-        requires std::predicate<Pred&, element_t<Seq>&>
+    template <adaptable_sequence Seq, std::move_constructible Pred>
+        requires std::predicate<Pred&, element_t<Seq>>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Pred pred) const
     {

@@ -266,8 +266,8 @@ constexpr bool is_ilist<T, std::initializer_list<E>> = true;
 
 template <typename Seq>
 concept rvalue_sequence =
-    !std::is_reference_v<Seq> &&
-    std::movable<Seq> &&
+    std::is_object_v<Seq> &&
+    std::move_constructible<Seq> &&
     sequence<Seq>;
 
 template <typename Seq>
@@ -301,15 +301,6 @@ concept derived_from_inline_sequence_base = requires(T t) {
 
 } // namespace detail
 
-/*
- * More useful concepts and associated types
- */
-template <typename Proj, sequence Seq>
-using projected_t = std::invoke_result_t<Proj&, element_t<Seq>>;
-
-template <typename Pred, typename Seq, typename Proj>
-concept predicate_for =
-    std::predicate<Pred&, std::invoke_result_t<Proj&, element_t<Seq>>>;
 
 /*
  * Default sequence_traits implementation

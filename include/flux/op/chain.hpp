@@ -217,7 +217,7 @@ private:
                 return inc_ra_impl<N+1>(self, cur, offset);
             }
 
-            assert(cur.index() == N);
+            FLUX_DEBUG_ASSERT(cur.index() == N);
             auto& base = std::get<N>(self.bases_);
             auto& base_cur = std::get<N>(cur);
             auto dist = flux::distance(base, base_cur, flux::last(base));

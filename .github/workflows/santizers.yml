@@ -13,9 +13,9 @@ jobs:
       matrix:
         sanitizer: [ubsan, asan]
         include:
-          - cxx: g++-12
+          - cxx: g++-13
             install: |
-              brew install gcc@12 ninja binutils
+              brew install gcc@13 ninja binutils
               brew link --force binutils
 
     steps:
@@ -35,7 +35,7 @@ jobs:
           cmake -GNinja \
                 -DFLUX_ENABLE_ASAN=${{matrix.sanitizer == 'asan'}} \
                 -DFLUX_ENABLE_UBSAN=${{matrix.sanitizer == 'ubsan'}} \
-                -DCMAKE_CXX_COMPILER=g++-12 \
+                -DCMAKE_CXX_COMPILER=g++-13 \
                 $GITHUB_WORKSPACE
 
       - name: Build

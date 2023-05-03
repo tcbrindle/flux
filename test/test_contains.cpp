@@ -38,28 +38,6 @@ constexpr bool test_contains()
         STATIC_CHECK(not seq.contains('Z'));
     }
 
-    // Contains with projection
-    {
-        Test arr[] = { 1, 2, 3, 4, 5 };
-
-        STATIC_CHECK(flux::contains(arr, 3, &Test::get));
-        STATIC_CHECK(flux::contains(arr, 3, [](Test const& t) { return t.i; }));
-        STATIC_CHECK(not flux::contains(arr, 99, &Test::i));
-        STATIC_CHECK(flux::from(arr).contains(5, &Test::get));
-    }
-
-    // Check that contains short-circuits
-    {
-        int counter = 0;
-
-        int arr[] = {10, 20, 30, 40, 50};
-
-        bool b = flux::contains(arr, 40, [&](int i) { ++counter; return i; });
-
-        STATIC_CHECK(b);
-        STATIC_CHECK(counter == 4);
-    }
-
     return true;
 }
 static_assert(test_contains());

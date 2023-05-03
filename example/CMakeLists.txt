@@ -1,0 +1,20 @@
+
+function(ADD_EXAMPLE NAME SOURCE)
+    add_executable(${NAME} ${SOURCE})
+    target_link_libraries(${NAME} flux)
+    add_test(NAME ${NAME} COMMAND ${NAME})
+endfunction()
+
+add_example(example-config-parser config_parser.cpp)
+add_example(example-merge-intervals merge_intervals.cpp)
+add_example(example-prime-numbers prime_numbers.cpp)
+
+add_example(example-docs-adjacent docs/adjacent.cpp)
+add_example(example-docs-all docs/all.cpp)
+add_example(example-docs-any docs/any.cpp)
+add_example(example-docs-compare docs/compare.cpp)
+add_example(example-docs-contains docs/contains.cpp)
+add_example(example-docs-count docs/count.cpp)
+add_example(example-docs-drop docs/drop.cpp)
+add_example(example-docs-ends-with docs/ends_with.cpp)
+add_example(example-docs-starts-with docs/starts_with.cpp)

@@ -48,12 +48,16 @@ constexpr bool test_range_iface()
 
         STATIC_CHECK(std::ranges::equal(std::as_const(seq), std::array{1, 2, 3, 4, 5}));
 
+#if defined(__cpp_lib_three_way_comparison)
+#if __cpp_lib_three_way_comparison >= 201907L
         {
             constexpr auto check = std::array{1, 2, 3, 4, 5};
             auto res = std::lexicographical_compare_three_way(
                 seq.begin(), seq.end(), check.begin(), check.end());
             STATIC_CHECK(std::is_eq(res));
         }
+#endif
+#endif
     }
 
 

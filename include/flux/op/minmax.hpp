@@ -21,15 +21,13 @@ struct minmax_result {
 namespace detail {
 
 struct min_op {
-    template <sequence Seq, typename Cmp = std::ranges::less,
-              typename Proj = std::identity>
-        requires std::predicate<Cmp&, std::invoke_result_t<Proj, value_t<Seq>>, projected_t<Proj, Seq>>
+    template <sequence Seq, strict_weak_order_for<Seq> Cmp = std::ranges::less>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}, Proj proj = Proj{}) const
+    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
         -> flux::optional<value_t<Seq>>
     {
         return flux::fold_first(FLUX_FWD(seq), [&](auto min, auto&& elem) -> value_t<Seq> {
-            if (std::invoke(cmp, std::invoke(proj, elem), std::invoke(proj, min))) {
+            if (std::invoke(cmp, elem, min)) {
                 return value_t<Seq>(FLUX_FWD(elem));
             } else {
                 return min;
@@ -39,15 +37,13 @@ struct min_op {
 };
 
 struct max_op {
-    template <sequence Seq, typename Cmp = std::ranges::less,
-              typename Proj = std::identity>
-        requires std::predicate<Cmp&, std::invoke_result_t<Proj, value_t<Seq>>, projected_t<Proj, Seq>>
+    template <sequence Seq, strict_weak_order_for<Seq> Cmp = std::ranges::less>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}, Proj proj = Proj{}) const
+    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
         -> flux::optional<value_t<Seq>>
     {
         return flux::fold_first(FLUX_FWD(seq), [&](auto max, auto&& elem) -> value_t<Seq> {
-            if (!std::invoke(cmp, std::invoke(proj, elem), std::invoke(proj, max))) {
+            if (!std::invoke(cmp, elem, max)) {
                 return value_t<Seq>(FLUX_FWD(elem));
             } else {
                 return max;
@@ -57,11 +53,9 @@ struct max_op {
 };
 
 struct minmax_op {
-    template <sequence Seq, typename Cmp = std::ranges::less,
-              typename Proj = std::identity>
-        requires std::predicate<Cmp&, std::invoke_result_t<Proj, value_t<Seq>>, projected_t<Proj, Seq>>
+    template <sequence Seq, strict_weak_order_for<Seq> Cmp = std::ranges::less>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}, Proj proj = Proj{}) const
+    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
         -> flux::optional<minmax_result<value_t<Seq>>>
     {
         using R = minmax_result<value_t<Seq>>;
@@ -75,10 +69,10 @@ struct minmax_op {
                    value_t<Seq>(flux::read_at(seq, cur))};
 
         auto fold_fn = [&](R mm, auto&& elem) -> R {
-            if (std::invoke(cmp, std::invoke(proj, elem), std::invoke(proj, mm.min))) {
+            if (std::invoke(cmp, elem, mm.min)) {
                 mm.min = value_t<Seq>(elem);
             }
-            if (!std::invoke(cmp, std::invoke(proj, elem), std::invoke(proj, mm.max))) {
+            if (!std::invoke(cmp, elem, mm.max)) {
                 mm.max = value_t<Seq>(FLUX_FWD(elem));
             }
             return mm;
@@ -96,24 +90,27 @@ inline constexpr auto max = detail::max_op{};
 inline constexpr auto minmax = detail::minmax_op{};
 
 template <typename Derived>
-template <typename Cmp, typename Proj>
-constexpr auto inline_sequence_base<Derived>::max(Cmp cmp, Proj proj)
+template <typename Cmp>
+    requires strict_weak_order_for<Cmp, Derived>
+constexpr auto inline_sequence_base<Derived>::max(Cmp cmp)
 {
-    return flux::max(derived(), std::move(cmp), std::move(proj));
+    return flux::max(derived(), std::move(cmp));
 }
 
 template <typename Derived>
-template <typename Cmp, typename Proj>
-constexpr auto inline_sequence_base<Derived>::min(Cmp cmp, Proj proj)
+template <typename Cmp>
+    requires strict_weak_order_for<Cmp, Derived>
+constexpr auto inline_sequence_base<Derived>::min(Cmp cmp)
 {
-    return flux::min(derived(), std::move(cmp), std::move(proj));
+    return flux::min(derived(), std::move(cmp));
 }
 
 template <typename Derived>
-template <typename Cmp, typename Proj>
-constexpr auto inline_sequence_base<Derived>::minmax(Cmp cmp, Proj proj)
+template <typename Cmp>
+    requires strict_weak_order_for<Cmp, Derived>
+constexpr auto inline_sequence_base<Derived>::minmax(Cmp cmp)
 {
-    return flux::minmax(derived(), std::move(cmp), std::move(proj));
+    return flux::minmax(derived(), std::move(cmp));
 }
 
 } // namespace flux
