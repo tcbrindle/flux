@@ -108,15 +108,49 @@ constexpr bool test_take()
         STATIC_CHECK(taken.data() == arr.data());
     }
 
+    // test for_each_while impl
+    {
+        auto seq = flux::take(std::array{1, 2, 3, 4, 5}, 3);
+
+        auto cur = seq.find_if(flux::pred::odd);
+
+        STATIC_CHECK(cur == seq.first());
+
+        cur = seq.find_if(flux::pred::even);
+
+        STATIC_CHECK(cur == seq.next(seq.first()));
+
+        cur = seq.find_if(flux::pred::gt(100));
+
+        STATIC_CHECK(cur == seq.last());
+        STATIC_CHECK(cur.base_cur == 3);
+        STATIC_CHECK(cur.length == 0);
+    }
+
     return true;
 }
 static_assert(test_take());
+
+// Regression test for #62
+// https://github.com/tcbrindle/flux/issues/62
+constexpr bool issue_62()
+{
+    auto seq = flux::ints(0).take(5).filter(flux::pred::true_);
+
+    STATIC_CHECK(check_equal(seq, {0, 1, 2, 3, 4}));
+
+    return true;
+}
+static_assert(issue_62());
 
 }
 
 TEST_CASE("take")
 {
     bool result = test_take();
+    REQUIRE(result);
+
+    result = issue_62();
     REQUIRE(result);
 
     // test taking a negative number of elements
