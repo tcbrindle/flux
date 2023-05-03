@@ -20,6 +20,14 @@ enum class scan_mode {
     exclusive
 };
 
+template <scan_mode>
+struct scan_cursor_base {};
+
+template <>
+struct scan_cursor_base<scan_mode::exclusive> {
+    bool is_last;
+};
+
 template <typename Base, typename Func, typename R, scan_mode Mode>
 struct scan_adaptor : inline_sequence_base<scan_adaptor<Base, Func, R, Mode>> {
 private:
@@ -40,7 +48,7 @@ public:
     struct flux_sequence_traits {
     private:
 
-        struct cursor_type {
+        struct cursor_type : private scan_cursor_base<Mode> {
             cursor_type(cursor_type&&) = default;
             cursor_type& operator=(cursor_type&&) = default;
 
@@ -72,13 +80,22 @@ public:
             auto cur = flux::first(self.base_);
             if constexpr (Mode == scan_mode::inclusive) {
                 update(self, cur);
+                return cursor_type(std::move(cur));
+            } else if constexpr (Mode == scan_mode::exclusive) {
+                bool last = flux::is_last(self.base_, cur);
+                cursor_type out = cursor_type(std::move(cur));
+                out.is_last = last;
+                return out;
             }
-            return cursor_type(std::move(cur));
         }
 
         static constexpr auto is_last(self_t& self, cursor_type const& cur) -> bool
         {
-            return flux::is_last(self.base_, cur.base_cur);
+            if constexpr (Mode == scan_mode::exclusive) {
+                return cur.is_last;
+            } else {
+                return flux::is_last(self.base_, cur.base_cur);
+            }
         }
 
         static constexpr auto inc(self_t& self, cursor_type& cur) -> void
@@ -88,7 +105,11 @@ public:
                 update(self, cur.base_cur);
             } else {
                 update(self, cur.base_cur);
-                flux::inc(self.base_, cur.base_cur);
+                if (flux::is_last(self.base_, cur.base_cur)) {
+                    cur.is_last = true;
+                } else {
+                    flux::inc(self.base_, cur.base_cur);
+                }
             }
         }
 
@@ -100,29 +121,29 @@ public:
         static constexpr auto last(self_t& self) -> cursor_type
             requires bounded_sequence<Base>
         {
-            return cursor_type(flux::last(self.base_));
+            auto cur = cursor_type(flux::last(self.base_));
+            if constexpr (Mode == scan_mode::exclusive) {
+                cur.is_last = true;
+            }
+            return cur;
         }
 
         static constexpr auto size(self_t& self) -> distance_t
             requires sized_sequence<Base>
         {
-            return flux::size(self.base_);
+            if constexpr (Mode == scan_mode::exclusive) {
+                return num::checked_add(flux::size(self.base_), distance_t{1});
+            } else {
+                return flux::size(self.base_);
+            }
         }
 
         static constexpr auto for_each_while(self_t& self, auto&& pred) -> cursor_type
+            requires (Mode != scan_mode::exclusive)
         {
             return cursor_type(flux::for_each_while(self.base_, [&](auto&& elem) {
-                if constexpr (Mode == scan_mode::inclusive) {
-                    self.accum_ = std::invoke(self.func_, std::move(self.accum_), FLUX_FWD(elem));
-                    return std::invoke(pred, std::as_const(self.accum_));
-                } else {
-                    if (std::invoke(pred, std::as_const(self.accum_))) {
-                        self.accum_ = std::invoke(self.func_, std::move(self.accum_), FLUX_FWD(elem));
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
+                self.accum_ = std::invoke(self.func_, std::move(self.accum_), FLUX_FWD(elem));
+                return std::invoke(pred, std::as_const(self.accum_));
             }));
         }
     };
@@ -141,7 +162,7 @@ struct scan_fn {
     }
 };
 
-struct exclusive_scan_fn {
+struct prescan_fn {
     template <adaptable_sequence Seq, typename Func, std::movable Init,
               typename R = fold_result_t<Seq, Func, Init>>
         requires foldable<Seq, Func, Init>
@@ -157,7 +178,7 @@ struct exclusive_scan_fn {
 } // namespace detail
 
 inline constexpr auto scan = detail::scan_fn{};
-inline constexpr auto exclusive_scan = detail::exclusive_scan_fn{};
+inline constexpr auto prescan = detail::prescan_fn{};
 
 template <typename Derived>
 template <typename D, typename Func, typename Init>
@@ -170,9 +191,9 @@ constexpr auto inline_sequence_base<Derived>::scan(Func func, Init init) &&
 template <typename Derived>
 template <typename Func, typename Init>
     requires foldable<Derived, Func, Init>
-constexpr auto inline_sequence_base<Derived>::exclusive_scan(Func func, Init init) &&
+constexpr auto inline_sequence_base<Derived>::prescan(Func func, Init init) &&
 {
-    return flux::exclusive_scan(std::move(derived()), std::move(func), std::move(init));
+    return flux::prescan(std::move(derived()), std::move(func), std::move(init));
 }
 
 } // namespace flux
