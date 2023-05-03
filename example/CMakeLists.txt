@@ -16,4 +16,5 @@ add_example(example-docs-compare docs/compare.cpp)
 add_example(example-docs-contains docs/contains.cpp)
 add_example(example-docs-count docs/count.cpp)
 add_example(example-docs-drop docs/drop.cpp)
-
+add_example(example-docs-ends-with docs/ends_with.cpp)
+add_example(example-docs-starts-with docs/starts_with.cpp)

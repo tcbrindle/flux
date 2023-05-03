@@ -321,6 +321,12 @@ public:
         requires std::predicate<Pred&, element_t<Derived>>
     constexpr auto count_if(Pred pred);
 
+    template <sequence Needle, typename Cmp = std::ranges::equal_to>
+        requires std::predicate<Cmp&, element_t<Derived>, element_t<Needle>> &&
+                 (multipass_sequence<Derived> || sized_sequence<Derived>) &&
+                 (multipass_sequence<Needle> || sized_sequence<Needle>)
+    constexpr auto ends_with(Needle&& needle, Cmp cmp = {}) -> bool;
+
     template <typename Value>
         requires writable_sequence_of<Derived, Value const&>
     constexpr auto fill(Value const& value) -> void;
@@ -401,6 +407,10 @@ public:
     constexpr auto product()
         requires foldable<Derived, std::multiplies<>, value_t<Derived>> &&
                  requires { value_t<Derived>(1); };
+
+    template <sequence Needle, typename Cmp = std::ranges::equal_to>
+        requires std::predicate<Cmp&, element_t<Derived>, element_t<Needle>>
+    constexpr auto starts_with(Needle&& needle, Cmp cmp = Cmp{}) -> bool;
 
     template <typename Container, typename... Args>
     constexpr auto to(Args&&... args) -> Container;
