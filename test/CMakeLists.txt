@@ -28,6 +28,7 @@ add_executable(test-libflux
     test_count_if.cpp
     test_drop.cpp
     test_drop_while.cpp
+    test_ends_with.cpp
     test_equal.cpp
     test_fill.cpp
     test_filter.cpp
@@ -45,6 +46,7 @@ add_executable(test-libflux
     test_slide.cpp
     test_split.cpp
     test_sort.cpp
+    test_starts_with.cpp
     test_stride.cpp
     test_take.cpp
     test_take_while.cpp
@@ -52,6 +54,7 @@ add_executable(test-libflux
     test_unchecked.cpp
     test_write_to.cpp
     test_zip.cpp
+    test_zip_algorithms.cpp
 
     test_array_ptr.cpp
     test_bitset.cpp

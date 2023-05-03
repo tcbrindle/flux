@@ -230,7 +230,7 @@ public:
     constexpr auto chunk_by(Pred pred) &&;
 
     [[nodiscard]]
-    constexpr auto drop(distance_t count) &&;
+    constexpr auto drop(std::integral auto count) &&;
 
     template <typename Pred>
         requires std::predicate<Pred&, element_t<Derived>>
@@ -283,7 +283,7 @@ public:
     constexpr auto stride(std::integral auto by) &&;
 
     [[nodiscard]]
-    constexpr auto take(distance_t count) &&;
+    constexpr auto take(std::integral auto count) &&;
 
     template <typename Pred>
         requires std::predicate<Pred&, element_t<Derived>>
@@ -320,6 +320,12 @@ public:
     template <typename Pred>
         requires std::predicate<Pred&, element_t<Derived>>
     constexpr auto count_if(Pred pred);
+
+    template <sequence Needle, typename Cmp = std::ranges::equal_to>
+        requires std::predicate<Cmp&, element_t<Derived>, element_t<Needle>> &&
+                 (multipass_sequence<Derived> || sized_sequence<Derived>) &&
+                 (multipass_sequence<Needle> || sized_sequence<Needle>)
+    constexpr auto ends_with(Needle&& needle, Cmp cmp = {}) -> bool;
 
     template <typename Value>
         requires writable_sequence_of<Derived, Value const&>
@@ -401,6 +407,10 @@ public:
     constexpr auto product()
         requires foldable<Derived, std::multiplies<>, value_t<Derived>> &&
                  requires { value_t<Derived>(1); };
+
+    template <sequence Needle, typename Cmp = std::ranges::equal_to>
+        requires std::predicate<Cmp&, element_t<Derived>, element_t<Needle>>
+    constexpr auto starts_with(Needle&& needle, Cmp cmp = Cmp{}) -> bool;
 
     template <typename Container, typename... Args>
     constexpr auto to(Args&&... args) -> Container;

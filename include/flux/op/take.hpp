@@ -101,8 +101,8 @@ public:
             -> distance_t
             requires random_access_sequence<Base>
         {
-            return std::min(flux::distance(self.base_, from.base_cur, to.base_cur),
-                            num::checked_sub(from.length, to.length));
+            return (std::min)(flux::distance(self.base_, from.base_cur, to.base_cur),
+                              num::checked_sub(from.length, to.length));
         }
 
         static constexpr auto data(auto& self)
@@ -115,7 +115,7 @@ public:
         static constexpr auto size(auto& self)
             requires sized_sequence<Base>
         {
-            return std::min(flux::size(self.base_), self.count_);
+            return (std::min)(flux::size(self.base_), self.count_);
         }
 
         static constexpr auto last(auto& self) -> cursor_type
@@ -134,7 +134,7 @@ public:
                 return (len-- > 0) && std::invoke(pred, FLUX_FWD(elem));
             });
 
-            return cursor_type{.base_cur = std::move(cur), .length = len};
+            return cursor_type{.base_cur = std::move(cur), .length = ++len};
         }
     };
 };
@@ -142,9 +142,14 @@ public:
 struct take_fn {
     template <adaptable_sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, distance_t count) const
+    constexpr auto operator()(Seq&& seq, std::integral auto count) const
     {
-        return take_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq), count);
+        auto count_ = checked_cast<distance_t>(count);
+        if (count_ < 0) {
+            runtime_error("Negative argument passed to take()");
+        }
+
+        return take_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq), count_);
     }
 };
 
@@ -153,9 +158,9 @@ struct take_fn {
 inline constexpr auto take = detail::take_fn{};
 
 template <typename Derived>
-constexpr auto inline_sequence_base<Derived>::take(distance_t count) &&
+constexpr auto inline_sequence_base<Derived>::take(std::integral auto count) &&
 {
-    return detail::take_adaptor<Derived>(std::move(derived()), count);
+    return flux::take(std::move(derived()), count);
 }
 
 } // namespace flux
