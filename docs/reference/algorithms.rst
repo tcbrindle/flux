@@ -236,6 +236,41 @@ Algorithms
         * :func:`count_eq`
         * :func:`fold`
 
+``ends_with``
+---------------
+
+..  function::
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::equal_to> \
+        requires see_below \
+    auto ends_with(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) -> bool;
+
+    Returns :texpr:`true` if :var:`seq2` is a suffix of :var:`seq1` according to the comparator :var:`cmp`.
+
+    If :var:`Seq1` and :var:`Seq2` both satisfy :concept:`sized_sequence` and :var:`seq1` has fewer elements than :var:`seq2`, :func:`starts_with` immediately returns :texpr:`false` and no comparisons are performed.
+
+
+    :requires: Both :var:`Seq1` and :var:`Seq2` must model either :concept:`multipass_sequence` or :concept:`sized_sequence`. Additionally, :expr:`std::predicate<Cmp&, element_t<Seq1>, element_t<Seq2>>` must be modelled.
+
+    :param seq1: The "haystack" sequence
+    :param seq2: The "needle" sequence
+    :param cmp: Predicate used to compare sequence elements, defaulting to :type:`std::ranges::equal_to`.
+
+    :returns: :texpr:`true` if :var:`seq1` has :var:`seq2` as its final subsequence.
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/ends_with.cpp
+        :language: cpp
+        :linenos:
+        :dedent:
+        :lines: 16-24
+
+    :see also:
+
+        * `std::ranges::ends_with() <https://en.cppreference.com/w/cpp/algorithm/ranges/ends_with>`_ (C++23)
+        * :func:`flux::starts_with`
+        * :func:`flux::equal`
+
 ``equal``
 ---------
 
@@ -420,6 +455,38 @@ Algorithms
         requires see_below \
     auto sort(Seq&& seq, Cmp cmp = {}) -> void;
 
+``starts_with``
+---------------
+
+..  function::
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::equal_to> \
+        requires std::predicate<Cmp&, element_t<Seq1>, element_t<Seq2>> \
+    auto starts_with(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) -> bool;
+
+    Returns :texpr:`true` if :var:`seq2` is a prefix of :var:`seq1` according to the comparator :var:`cmp`.
+
+    If :var:`Seq1` and :var:`Seq2` both satisfy :concept:`sized_sequence` and :var:`seq1` has fewer elements than :var:`seq2`, :func:`starts_with` immediately returns :texpr:`false` and no comparisons are performed.
+
+    :param seq1: The "haystack" sequence
+    :param seq2: The "needle" sequence
+    :param cmp: Predicate used to compare sequence elements, defaulting to :type:`std::ranges::equal_to`.
+
+    :returns: :texpr:`true` if :var:`seq1` has :var:`seq2` as its initial subsequence.
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/starts_with.cpp
+        :language: cpp
+        :linenos:
+        :dedent:
+        :lines: 16-24
+
+    :see also:
+
+        * `std::ranges::starts_with() <https://en.cppreference.com/w/cpp/algorithm/ranges/starts_with>`_ (C++23)
+        * :func:`flux::ends_with`
+        * :func:`flux::equal`
+
 ``sum``
 -------
 
@@ -507,3 +574,38 @@ Algorithms
 ..  function::
     auto write_to(sequence auto&& seq, std::ostream& os) -> std::ostream&;
 
+``zip_find_if``
+---------------
+
+..  function::
+    template <typename Pred, sequence... Seqs> \
+        requires std::predicate<Pred&, element_t<Seqs>...> \
+    auto zip_find_if(Pred pred, Seqs&&... seqs) -> std::tuple<cursor_t<Seqs>...>;
+
+``zip_fold``
+------------
+
+..  type::
+    template <typename Func, typename Init, typename... Seqs> \
+    zip_fold_result_t = std::decay_t<std::invoke_result_t<Func&, Init, element_t<Seqs>...>>;
+
+..  function::
+    template <typename Func, typename Init, sequence... Seqs> \
+        requires see_below \
+    auto zip_fold(Func func, Init init, Seqs&&... seqs) -> zip_fold_result_t<Func, Init, Seqs...>;
+
+``zip_for_each``
+----------------
+
+..  function::
+    template <typename Func, sequence... Seqs> \
+        requires std::invocable<Func&, element_t<Seqs>...> \
+    auto zip_for_each(Func func, Seqs&&... seqs) -> Func;
+
+``zip_for_each_while``
+----------------------
+
+..  function::
+    template <typename Pred, sequence... Seqs> \
+        requires see_below \
+    auto zip_for_each_while(Pred pred, Seqs&&... seqs) -> std::tuple<cursor_t<Seqs>...>;

@@ -22,6 +22,7 @@
 #include <flux/op/count.hpp>
 #include <flux/op/drop.hpp>
 #include <flux/op/drop_while.hpp>
+#include <flux/op/ends_with.hpp>
 #include <flux/op/equal.hpp>
 #include <flux/op/fill.hpp>
 #include <flux/op/filter.hpp>
@@ -38,9 +39,10 @@
 #include <flux/op/reverse.hpp>
 #include <flux/op/slice.hpp>
 #include <flux/op/slide.hpp>
+#include <flux/op/sort.hpp>
 #include <flux/op/split.hpp>
 #include <flux/op/split_string.hpp>
-#include <flux/op/sort.hpp>
+#include <flux/op/starts_with.hpp>
 #include <flux/op/stride.hpp>
 #include <flux/op/swap_elements.hpp>
 #include <flux/op/take.hpp>
@@ -49,6 +51,7 @@
 #include <flux/op/unchecked.hpp>
 #include <flux/op/write_to.hpp>
 #include <flux/op/zip.hpp>
+#include <flux/op/zip_algorithms.hpp>
 
 #include <flux/source/array_ptr.hpp>
 #include <flux/source/empty.hpp>
