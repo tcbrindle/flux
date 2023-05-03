@@ -5531,7 +5531,7 @@ public:
                 return (len-- > 0) && std::invoke(pred, FLUX_FWD(elem));
             });
 
-            return cursor_type{.base_cur = std::move(cur), .length = len};
+            return cursor_type{.base_cur = std::move(cur), .length = ++len};
         }
     };
 };
