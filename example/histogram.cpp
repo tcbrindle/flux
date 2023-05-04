@@ -18,18 +18,20 @@ flux::generator<int> randu(T min, T max)
     std::mt19937 rng;
     std::uniform_int_distribution dist(min, max);
 
-    while (true)
+    while (true) {
         co_yield dist(rng);
+    }
 }
 
 template<typename T>
 flux::generator<int> randn(T mean, T stddev = 1.0)
 {
-    std::random_device rng;
+    std::mt19937 rng;
     std::normal_distribution dist(mean, stddev);
 
-    while (true)
+    while (true) {
         co_yield std::round(dist(rng));
+    }
 }
 
 using hist_t = std::map<int, int>;
