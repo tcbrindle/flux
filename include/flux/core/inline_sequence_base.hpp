@@ -258,9 +258,24 @@ public:
     [[nodiscard]]
     constexpr auto pairwise_map(Func func) &&;
 
+    template <typename Func, typename Init>
+        requires foldable<Derived, Func, Init>
+    [[nodiscard]]
+    constexpr auto prescan(Func func, Init init) &&;
+
     [[nodiscard]]
     constexpr auto reverse() &&
             requires bidirectional_sequence<Derived> && bounded_sequence<Derived>;
+
+    template <typename D = Derived, typename Func, typename Init = value_t<D>>
+        requires foldable<Derived, Func, Init>
+    [[nodiscard]]
+    constexpr auto scan(Func func, Init init = Init{}) &&;
+
+    template <typename Func>
+        requires foldable<Derived, Func, element_t<Derived>>
+    [[nodiscard]]
+    constexpr auto scan_first(Func func) &&;
 
     [[nodiscard]]
     constexpr auto slide(std::integral auto win_sz) && requires multipass_sequence<Derived>;
