@@ -8,6 +8,7 @@
 
 #include <flux/core.hpp>
 #include <flux/op/from.hpp>
+#include <flux/op/stride.hpp>
 
 namespace flux {
 
@@ -34,30 +35,33 @@ public:
 
         static constexpr bool disable_multipass = !multipass_sequence<Base>;
 
-        static constexpr auto first(drop_adaptor& self)
+        static constexpr auto first(drop_adaptor& self) -> cursor_t<Base>
         {
             if constexpr (std::copy_constructible<cursor_t<Base>>) {
                 if (!self.cached_first_) {
-                    self.cached_first_ = flux::optional(
-                        flux::next(self.base_, flux::first(self.base()), self.count_));
+                    auto cur = flux::first(self.base_);
+                    detail::advance(self.base_, cur, self.count_);
+                    self.cached_first_ = flux::optional(std::move(cur));
                 }
 
                 return self.cached_first_.value_unchecked();
             } else {
-                return flux::next(self.base_, flux::first(self.base()), self.count_);
+                auto cur = flux::first(self.base_);
+                detail::advance(self.base_, cur, self.count_);
+                return cur;
             }
         }
 
         static constexpr auto size(drop_adaptor& self)
             requires sized_sequence<Base>
         {
-            return flux::size(self.base()) - self.count_;
+            return (std::max)(flux::size(self.base()) - self.count_, distance_t{0});
         }
 
         static constexpr auto data(drop_adaptor& self)
-            requires contiguous_sequence<Base>
+            requires contiguous_sequence<Base> && sized_sequence<Base>
         {
-            return flux::data(self.base()) + self.count_;
+            return flux::data(self.base()) + (std::min)(self.count_, flux::size(self.base_));
         }
 
         void for_each_while(...) = delete;
@@ -67,9 +71,14 @@ public:
 struct drop_fn {
     template <adaptable_sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, distance_t count) const
+    constexpr auto operator()(Seq&& seq, std::integral auto count) const
     {
-        return drop_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq), count);
+        auto count_ = checked_cast<distance_t>(count);
+        if (count_ < 0) {
+            runtime_error("Negative argument passed to drop()");
+        }
+
+        return drop_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq), count_);
     }
 
 };
@@ -79,9 +88,9 @@ struct drop_fn {
 inline constexpr auto drop = detail::drop_fn{};
 
 template <typename Derived>
-constexpr auto inline_sequence_base<Derived>::drop(distance_t count) &&
+constexpr auto inline_sequence_base<Derived>::drop(std::integral auto count) &&
 {
-    return detail::drop_adaptor<Derived>(std::move(derived()), count);
+    return flux::drop(std::move(derived()), count);
 }
 
 } // namespace flux

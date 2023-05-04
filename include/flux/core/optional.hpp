@@ -297,6 +297,15 @@ public:
         }
     }
 
+    template <typename... Args>
+        requires std::constructible_from<T, Args...>
+    constexpr auto emplace(Args&&... args) -> T&
+    {
+        reset();
+        construct(FLUX_FWD(args)...);
+        return item_;
+    }
+
     /*
      * Monadic operations
      */

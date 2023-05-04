@@ -104,6 +104,27 @@ Adaptors
 ..  function::
     auto drop(sequence auto seq, std::integral auto count) -> sequence auto;
 
+    Given a sequence :var:`seq` and a non-negative integral value :var:`count`, returns a new sequence which skips the first :var:`count` elements of :var:`seq`.
+
+    The returned sequence has the same capabilities as :var:seq. If :var:`seq` has fewer than :var:`count` elements, the returned sequence is empty.
+
+    :param seq: A sequence.
+    :param count: A non-negative integral value indicating the number of elements to be skipped.
+
+    :returns: A sequence adaptor that yields the remaining elements of :var:`seq`, with the first :var:`count` elements skipped.
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/drop.cpp
+        :language: cpp
+        :dedent:
+        :lines: 14-19
+
+    :see also:
+
+        * `std::views::drop <https://en.cppreference.com/w/cpp/ranges/drop_view>`_ (C++20)
+        * :func:`flux::take`
+
 ``drop_while``
 ^^^^^^^^^^^^^^
 
@@ -157,6 +178,46 @@ Adaptors
              can_reference<std::invoke_result_t<Func&, element_t<Seq>, element_t<Seq>>> \
     auto pairwise_map(Seq seq, Func func) -> multipass_sequence auto;
 
+``prescan``
+^^^^^^^^^^^
+
+..  function::
+    template <sequence Seq, typename Func, std::movable Init> \
+        requires foldable<Seq, Func, Init> \
+    auto prescan(Seq seq, Func func, Init init) -> sequence auto;
+
+    Returns a stateful sequence adaptor which yields "partial folds" using the binary function :var:`func`.
+
+    First, this adaptor initialises an internal variable :var:`state` to :var:`init` and yields a read-only reference to this state. Then, for each successive element :var:`elem` of the underlying sequence, it sets::
+
+        state = func(std::move(state), std::forward(elem));
+
+    and yields a read-only reference to the new state.
+
+    The final value yielded by this adaptor is the same as :expr:`fold(seq, func, init)`.
+
+    Because this adaptor needs to maintain internal state, it is only ever single-pass. However it is a :concept:`bounded_sequence` when the underlying sequence is bounded and a :concept:`sized_sequence` when the underlying sequence is sized.
+
+    Unlike :func:`scan`, this function performs an *exclusive scan*, that is, the Nth element of the adapted sequence does not include the Nth element of the underlying sequence. The adaptor returned by :func:`prescan` always yields at least one element -- the initial value -- followed by the elements that would be yielded by the :func:`scan` adaptor.
+
+    :param seq: A sequence to adapt
+    :param func: A binary callable of the form :expr:`R(R, element_t<Seq>)`, where :type:`R` is constructible from :var:`Init`
+    :param init: The initial value for the scan
+
+    :returns: A sequence adaptor which performs an exclusive scan of the elements of :var:`seq` using :var:`func`.
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/prescan.cpp
+        :language: cpp
+        :dedent:
+        :lines: 13-20
+
+    :see also:
+        * `std::exclusive_scan() <https://en.cppreference.com/w/cpp/algorithm/exclusive_scan>`_
+        * :func:`flux::scan`
+        * :func:`flux::fold`
+
 ``reverse``
 ^^^^^^^^^^^
 
@@ -164,6 +225,86 @@ Adaptors
     template <bidirectional_sequence Seq> \
         requires bounded_sequence<Seq> \
     auto reverse(Seq seq) -> bidirectional_sequence auto;
+
+``scan``
+^^^^^^^^
+
+..  function::
+    template <sequence Seq, typename Func, std::movable Init = value_t<Seq>> \
+        requires foldable<Seq, Func, Init> \
+    auto scan(Seq seq, Func func, Init init = {}) -> sequence auto;
+
+    Returns a stateful sequence adaptor which yields "partial folds" using the binary function :var:`func`.
+
+    First, this adaptor initialises an internal variable :var:`state` to :var:`init`. Then, for each successive element :var:`elem` of the underlying sequence, it sets::
+
+        state = func(std::move(state), std::forward(elem));
+
+    and yields a read-only reference to the new state.
+
+    The final value yielded by this adaptor is the same as :expr:`fold(seq, func, init)`.
+
+    Because this adaptor needs to maintain internal state, it is only ever single-pass. However it is a :concept:`bounded_sequence` when the underlying sequence is bounded and a :concept:`sized_sequence` when the underlying sequence is sized.
+
+    Unlike :func:`prescan`, this function performs an *inclusive scan*, that is, the Nth element of the adapted sequence includes the Nth element of the underlying sequence. The adapted sequence always yields the same number of elements as the underlying sequence.
+
+    :param seq: A sequence to adapt
+    :param func: A binary callable of the form :expr:`R(R, element_t<Seq>)`, where :type:`R` is constructible from :var:`Init`
+    :param init: The initial value for the scan. If not supplied, a default constructed object of type :type:`value_t\<Seq>` is used.
+
+    :returns: A sequence adaptor which performs an inclusive scan of the elements of :var:`seq` using :var:`func`.
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/scan.cpp
+        :language: cpp
+        :dedent:
+        :lines: 13-20
+
+    :see also:
+        * `std::partial_sum() <https://en.cppreference.com/w/cpp/algorithm/partial_sum>`_
+        * `std::inclusive_scan() <https://en.cppreference.com/w/cpp/algorithm/inclusive_scan>`_
+        * :func:`flux::scan_first`
+        * :func:`flux::prescan`
+        * :func:`flux::fold`
+
+``scan_first``
+^^^^^^^^^^^^^^
+
+..  function::
+    template <sequence Seq, typename Func> \
+        requires foldable<Seq, Func, element_t<Seq>> \
+    auto scan_first(Seq seq, Func func) -> sequence auto;
+
+    Returns a stateful sequence adaptor which yields "partial folds" using the binary function :var:`func`.
+
+    When iterated over, the returned sequence first initialises an internal variable ``state`` with the first element of the underlying sequence, and yields a read-only reference to this state. For each subsequent element ``elem``, it sets::
+
+        state = func(std::move(state), std::forward(elem));
+
+    and yields a read-only reference to the internal state. If :var:`seq` is empty, the internal state is never initialised and the resulting sequence is also empty. For a non-empty sequence, the final value yielded by :func:`scan_first` is the same as would be obtained from :expr:`fold_first(seq, func)`.
+
+    Because this adaptor needs to maintain internal state, it is only ever single-pass. However it is a :concept:`bounded_sequence` when the underlying sequence is bounded and a :concept:`sized_sequence` when the underlying sequence is sized.
+
+    Like :func:`scan`, this function performs an *inclusive scan*, that is, the Nth element of the adapted sequence includes the Nth element of the underlying sequence. The adapted sequence always yields the same number of elements as the underlying sequence. Unlike :func:`scan`, the first element of :func:`scan_first` is simply the first element of the underlying sequence, and the supplied :var:`func` is only applied to subsequent elements (this is equivalent to the differing behaviours of :func:`fold` and :func:`fold_first` respectively).
+
+    :param seq: A sequence to adapt
+    :param func: A binary callable of the form :expr:`R(R, element_t<Seq>)`, where :type:`R` is constructible from :expr:`element_t<Seq>`
+
+    :returns: A sequence adaptor which performs an inclusive scan of the elements of :var:`seq` using :var:`func`.
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/scan_first.cpp
+        :language: cpp
+        :dedent:
+        :lines: 13-21
+
+    :see also:
+        * `std::partial_sum() <https://en.cppreference.com/w/cpp/algorithm/partial_sum>`_
+        * `std::inclusive_scan() <https://en.cppreference.com/w/cpp/algorithm/inclusive_scan>`_
+        * :func:`flux::scan`
+        * :func:`flux::fold_first`
 
 ``slide``
 ^^^^^^^^^

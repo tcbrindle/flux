@@ -10,6 +10,7 @@
 #include "test_utils.hpp"
 
 #include <array>
+#include <list>
 
 namespace {
 
@@ -39,6 +40,7 @@ constexpr bool test_take()
         static_assert(flux::sized_sequence<T const>);
 
         STATIC_CHECK(taken.size() == 3);
+        STATIC_CHECK(taken.data() == arr);
         STATIC_CHECK(check_equal(taken, {0, 1, 2}));
     }
 
@@ -71,9 +73,75 @@ constexpr bool test_take()
         STATIC_CHECK(check_equal(taken, {0, 1, 2}));
     }
 
+    // test taking all the elements
+    {
+        auto arr = std::array{1, 2, 3, 4, 5};
+
+        auto taken = flux::ref(arr).take(5);
+
+        STATIC_CHECK(taken.size() == 5);
+        STATIC_CHECK(taken.data() == arr.data());
+        STATIC_CHECK(check_equal(taken, arr));
+    }
+
+    // test taking "too many" elements
+    {
+        auto arr = std::array{1, 2, 3, 4, 5};
+
+        auto taken = flux::take(flux::ref(arr), 1'000'000);
+
+        STATIC_CHECK(taken.usize() == arr.size());
+        STATIC_CHECK(taken.data() == arr.data());
+        STATIC_CHECK(check_equal(taken, arr));
+    }
+
+    // test taking zero elements
+    {
+        auto arr = std::array{1, 2, 3, 4, 5};
+
+        auto taken = flux::take(flux::ref(arr), 0);
+
+        STATIC_CHECK(taken.is_empty());
+        STATIC_CHECK(taken.size() == 0);
+        STATIC_CHECK(taken.distance(taken.first(), taken.last()) == 0);
+        // We still want this to be true
+        STATIC_CHECK(taken.data() == arr.data());
+    }
+
+    // test for_each_while impl
+    {
+        auto seq = flux::take(std::array{1, 2, 3, 4, 5}, 3);
+
+        auto cur = seq.find_if(flux::pred::odd);
+
+        STATIC_CHECK(cur == seq.first());
+
+        cur = seq.find_if(flux::pred::even);
+
+        STATIC_CHECK(cur == seq.next(seq.first()));
+
+        cur = seq.find_if(flux::pred::gt(100));
+
+        STATIC_CHECK(cur == seq.last());
+        STATIC_CHECK(cur.base_cur == 3);
+        STATIC_CHECK(cur.length == 0);
+    }
+
     return true;
 }
 static_assert(test_take());
+
+// Regression test for #62
+// https://github.com/tcbrindle/flux/issues/62
+constexpr bool issue_62()
+{
+    auto seq = flux::ints(0).take(5).filter(flux::pred::true_);
+
+    STATIC_CHECK(check_equal(seq, {0, 1, 2, 3, 4}));
+
+    return true;
+}
+static_assert(issue_62());
 
 }
 
@@ -81,4 +149,16 @@ TEST_CASE("take")
 {
     bool result = test_take();
     REQUIRE(result);
+
+    result = issue_62();
+    REQUIRE(result);
+
+    // test taking a negative number of elements
+    {
+        std::list list{1, 2, 3, 4, 5};
+
+        REQUIRE_THROWS_AS(flux::take(flux::from_range(list), -1000), flux::unrecoverable_error);
+
+        REQUIRE_THROWS_AS(flux::from_range(list).take(-1000), flux::unrecoverable_error);
+    }
 }
