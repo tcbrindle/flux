@@ -147,6 +147,67 @@ constexpr bool test_prescan()
 }
 static_assert(test_prescan());
 
+constexpr bool test_scan_first()
+{
+    // scan_first returns the same as std::inclusive_scan
+    {
+        std::array arr{1, 2, 3, 4, 5};
+
+        auto seq = flux::ref(arr).scan_first(std::plus<>{});
+
+        using S = decltype(seq);
+        static_assert(flux::sequence<S>);
+        static_assert(not flux::multipass_sequence<S>);
+        static_assert(flux::bounded_sequence<S>);
+        static_assert(flux::sized_sequence<S>);
+        static_assert(not flux::infinite_sequence<S>);
+
+        std::array<int, 5> req{};
+        std::inclusive_scan(arr.cbegin(), arr.cend(), req.begin());
+
+        STATIC_CHECK(check_equal(seq, req));
+    }
+
+    // map -> scan_first returns the same as std::transform_inclusive_scan
+    {
+        auto const in = std::array{1, 2, 3, 4, 5};
+
+        auto square = [](int i) { return i * i; };
+
+        std::array<int, 5> out_flux{}, out_std{};
+
+        flux::map(in, square).scan_first(std::plus<>{}).output_to(out_flux.begin());
+
+        std::transform_inclusive_scan(in.cbegin(), in.cend(), out_std.begin(),
+                                      std::plus<>{}, square);
+
+        STATIC_CHECK(out_flux == out_std);
+    }
+
+    // scan_first of an empty sequence is empty
+    {
+        auto seq = flux::scan_first(flux::empty<int>, std::plus<>{});
+
+        STATIC_CHECK(seq.is_empty());
+        STATIC_CHECK(seq.is_last(seq.first()));
+    }
+
+    // Can resume correctly after internal iteration
+    {
+        auto seq = flux::scan_first(std::array{1, 2, 3, 4, 5}, std::plus<>{});
+
+        auto cur = seq.find(6);
+
+        STATIC_CHECK(not seq.is_last(cur));
+        STATIC_CHECK(seq[cur] == 6);
+        STATIC_CHECK(seq[seq.inc(cur)] == 10);
+        STATIC_CHECK(seq[seq.inc(cur)] == 15);
+        STATIC_CHECK(seq.is_last(seq.inc(cur)));
+    }
+    return true;
+}
+static_assert(test_scan_first());
+
 }
 
 TEST_CASE("scan")
@@ -184,5 +245,19 @@ TEST_CASE("scan")
         static_assert(not flux::bounded_sequence<decltype(seq)>);
 
         REQUIRE(check_equal(seq, {100, 101, 103, 106, 110, 115}));
+    }
+
+    SECTION("scan_first with stringstream")
+    {
+        std::istringstream iss("1 2 3 4 5");
+
+        auto seq = flux::from_istream<int>(iss).scan_first(std::plus<>{});
+
+        static_assert(flux::sequence<decltype(seq)>);
+        static_assert(not flux::multipass_sequence<decltype(seq)>);
+        static_assert(not flux::sized_sequence<decltype(seq)>);
+        static_assert(not flux::bounded_sequence<decltype(seq)>);
+
+        REQUIRE(check_equal(seq, {1, 3, 6, 10, 15}));
     }
 }

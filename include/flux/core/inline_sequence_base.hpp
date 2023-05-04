@@ -272,6 +272,11 @@ public:
     [[nodiscard]]
     constexpr auto scan(Func func, Init init = Init{}) &&;
 
+    template <typename Func>
+        requires foldable<Derived, Func, element_t<Derived>>
+    [[nodiscard]]
+    constexpr auto scan_first(Func func) &&;
+
     [[nodiscard]]
     constexpr auto slide(std::integral auto win_sz) && requires multipass_sequence<Derived>;
 
