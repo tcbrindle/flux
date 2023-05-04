@@ -29,27 +29,26 @@ constexpr auto max_weeks_in_month = 6;
 constexpr auto col_sep = "  ";
 constexpr auto row_sep = ' ';
 
-auto dates(ymd from, ymd to)
-{
+auto dates(ymd from, ymd to) {
     return flux::iota(sys_days{from}, sys_days{to});
 }
 
-auto month_num = [](auto d1, auto d2) { 
+auto month_num = [](sys_days d1, sys_days d2) { 
     return ymd(d1).month() == ymd(d2).month(); 
 };
 
-auto week_num = [](auto d1, auto d2) { 
+auto week_num = [](sys_days d1, sys_days d2) { 
     return weekday(d1).iso_encoding() < weekday(d2).iso_encoding();
 };
 
-auto day_to_string = [](auto d) { 
+auto day_to_string = [](sys_days d) { 
     auto day_num = static_cast<unsigned>(ymd(d).day());
     auto day_str = (day_num < 10 ? " "s : ""s) + std::to_string(day_num);
     std::string pad_str(day_pad_size, ' ');
     return pad_str + day_str + pad_str;
 };
 
-auto month_name (auto d) { 
+auto month_name(sys_days d) { 
     constexpr std::array months = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", 
                                    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
     auto year = std::to_string(static_cast<int>(ymd{d}.year()));
@@ -61,42 +60,47 @@ auto month_name (auto d) {
     return aligned_title;
 };
 
-auto week_to_string = [](auto&& w) { 
-    auto week_str = flux::from(FLUX_FWD(w))
+// In: sequence<sys_day> (week days)
+// Out: std::string (week string)
+auto week_to_string = [](flux::sequence auto&& week) { 
+    bool first_week_in_month = ymd(*flux::front(week)).day() == 1d;
+    auto week_str = FLUX_FWD(week)
                      .map(day_to_string)
                      .flatten()
                      .template to<std::string>();                     
-    bool first_week_in_month = ymd(*flux::front(w)).day() == 1d;
-    if (week_str.size() < week_str_size)
-    {
+    if (week_str.size() < week_str_size) {
         std::string padding(week_str_size - week_str.size(), ' ');
         week_str = first_week_in_month ? padding + week_str : week_str + padding;
     }
+
     return week_str;
 };
 
-auto to_week_lines = [](auto&& month) { 
+// In: sequence<sys_day> (month days)
+// Out: sequence<std::string> (month calendar)
+auto to_week_lines = [](flux::sequence auto&& month) { 
     auto month_str = month_name(*flux::front(month));
-    auto week_lines = flux::from(FLUX_FWD(month))
-        .chunk_by(week_num)
-        .map(week_to_string);
+    auto week_lines = FLUX_FWD(month)
+                        .chunk_by(week_num)
+                        .map(week_to_string);
     std::vector<std::string> pad_lines(max_weeks_in_month - flux::count(week_lines), std::string(week_str_size, ' '));
     return flux::chain(flux::single(std::move(month_str)), 
-                       flux::from(std::move(week_lines)), 
-                       flux::from(std::move(pad_lines)),
+                       std::move(week_lines), 
+                       std::move(pad_lines),
                        flux::single(std::string(week_str_size, row_sep)));
 };
 
-auto to_columns = [](auto&& month_chunk)
-{
-    auto n_rows = flux::count(*month_chunk.front());
-    return flux::from(FLUX_FWD(month_chunk)).fold([](auto s, auto&& n) 
-    {
-        return flux::zip(flux::from(s), flux::from(FLUX_FWD(n)).template to<std::vector>())
-                    .map([](const auto& v) {
-                        return std::get<0>(v) + std::get<1>(v) + col_sep;
-                    }).template to<std::vector>();
-    }, std::vector<std::string>(n_rows, col_sep));
+auto append_column = [](std::vector<std::string>&& months_per_line, flux::sequence auto&& month) {
+    return flux::zip(flux::from(std::move(months_per_line)), FLUX_FWD(month).template to<std::vector>())
+        .map([](const auto& v) { return std::get<0>(v) + std::get<1>(v) + col_sep; })
+        .template to<std::vector>();
+};
+
+// In: sequence<sequence<std::string>> (chunks of months per line)
+// Out: std::vector<std::string> (months organized in columns)
+auto to_columns = [](flux::sequence auto&& month_chunk) {
+    auto n_rows = month_chunk.front()->count();
+    return FLUX_FWD(month_chunk).fold(append_column, std::vector<std::string>(n_rows, col_sep));
 };
 
 const auto current_year = ymd{floor<days>(system_clock::now())}.year();
@@ -108,14 +112,12 @@ struct app_args_t {
     ymd to = from + years{1};
 };
 
-[[noreturn]] void print_help_and_exit(std::string_view app_name)
-{
+[[noreturn]] void print_help_and_exit(std::string_view app_name) {
     std::cout << "Usage: " << app_name << " [--help] [--per-line=num] [--from=year] [--to=year]\n\n"; 
     exit(0);
 }
 
-app_args_t parse_args(int argc, char** argv)
-{
+app_args_t parse_args(int argc, char** argv) {
     app_args_t result;
     std::string_view app_name = argv[0];
     std::vector<std::string> args(std::next(argv), std::next(argv, argc));
@@ -136,18 +138,18 @@ app_args_t parse_args(int argc, char** argv)
     };
 
     for (const auto& [key, val] : flux::from(args).map(to_pair)) {
-        if (auto it = args_map.find(key); it != args_map.end())
+        if (auto it = args_map.find(key); it != args_map.end()) {
             std::invoke(it->second, val);
-        else
+        } else {
             throw std::runtime_error("Unknown option "s + key + ". Use --help for more info.");
+        }
     }
     
     return result;
 }
 
 int main(int argc, char** argv)
-try
-{
+try {
     auto args = parse_args(argc, argv);
     dates(args.from, args.to)
         .chunk_by(month_num)
@@ -156,11 +158,8 @@ try
         .map(to_columns)
         .flatten()
         .output_to(std::ostream_iterator<std::string>(std::cout, "\n"));
-    
-    return 0;
 }
-catch (const std::exception& e)
-{
+catch (const std::exception& e) {
     std::cerr << e.what() << std::endl;
     return 1;
 }
