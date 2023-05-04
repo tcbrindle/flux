@@ -22,3 +22,5 @@ add_example(example-docs-prescan docs/prescan.cpp)
 add_example(example-docs-scan docs/scan.cpp)
 add_example(example-docs-scan-first docs/scan_first.cpp)
 add_example(example-docs-starts-with docs/starts_with.cpp)
+
+add_example(example-tutorials-custom-adaptor tutorials/custom_adaptor.cpp)
