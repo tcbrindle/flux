@@ -178,6 +178,46 @@ Adaptors
              can_reference<std::invoke_result_t<Func&, element_t<Seq>, element_t<Seq>>> \
     auto pairwise_map(Seq seq, Func func) -> multipass_sequence auto;
 
+``prescan``
+^^^^^^^^^^^
+
+..  function::
+    template <sequence Seq, typename Func, std::movable Init> \
+        requires foldable<Seq, Func, Init> \
+    auto prescan(Seq seq, Func func, Init init) -> sequence auto;
+
+    Returns a stateful sequence adaptor which yields "partial folds" using the binary function :var:`func`.
+
+    First, this adaptor initialises an internal variable :var:`state` to :var:`init` and yields a read-only reference to this state. Then, for each successive element :var:`elem` of the underlying sequence, it sets::
+
+        state = func(std::move(state), std::forward(elem));
+
+    and yields a read-only reference to the new state.
+
+    The final value yielded by this adaptor is the same as :expr:`fold(seq, func, init)`.
+
+    Because this adaptor needs to maintain internal state, it is only ever single-pass. However it is a :concept:`bounded_sequence` when the underlying sequence is bounded and a :concept:`sized_sequence` when the underlying sequence is sized.
+
+    Unlike :func:`scan`, this function performs an *exclusive scan*, that is, the Nth element of the adapted sequence does not include the Nth element of the underlying sequence. The adaptor returned by :func:`prescan` always yields at least one element -- the initial value -- followed by the elements that would be yielded by the :func:`scan` adaptor.
+
+    :param seq: A sequence to adapt
+    :param func: A binary callable of the form :expr:`R(R, element_t<Seq>)`, where :type:`R` is constructible from :var:`Init`
+    :param init: The initial value for the scan
+
+    :returns: A sequence adaptor which performs an exclusive scan of the elements of :var:`seq` using :var:`func`.
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/prescan.cpp
+        :language: cpp
+        :dedent:
+        :lines: 13-20
+
+    :see also:
+        * `std::exclusive_scan() <https://en.cppreference.com/w/cpp/algorithm/exclusive_scan>`_
+        * :func:`flux::scan`
+        * :func:`flux::fold`
+
 ``reverse``
 ^^^^^^^^^^^
 
@@ -185,6 +225,47 @@ Adaptors
     template <bidirectional_sequence Seq> \
         requires bounded_sequence<Seq> \
     auto reverse(Seq seq) -> bidirectional_sequence auto;
+
+``scan``
+^^^^^^^^
+
+..  function::
+    template <sequence Seq, typename Func, std::movable Init = value_t<Seq>> \
+        requires foldable<Seq, Func, Init> \
+    auto scan(Seq seq, Func func, Init init = {}) -> sequence auto;
+
+    Returns a stateful sequence adaptor which yields "partial folds" using the binary function :var:`func`.
+
+    First, this adaptor initialises an internal variable :var:`state` to :var:`init`. Then, for each successive element :var:`elem` of the underlying sequence, it sets::
+
+        state = func(std::move(state), std::forward(elem));
+
+    and yields a read-only reference to the new state.
+
+    The final value yielded by this adaptor is the same as :expr:`fold(seq, func, init)`.
+
+    Because this adaptor needs to maintain internal state, it is only ever single-pass. However it is a :concept:`bounded_sequence` when the underlying sequence is bounded and a :concept:`sized_sequence` when the underlying sequence is sized.
+
+    Unlike :func:`prescan`, this function performs an *inclusive scan*, that is, the Nth element of the adapted sequence includes the Nth element of the underlying sequence. The adapted sequence always yields the same number of elements as the underlying sequence.
+
+    :param seq: A sequence to adapt
+    :param func: A binary callable of the form :expr:`R(R, element_t<Seq>)`, where :type:`R` is constructible from :var:`Init`
+    :param init: The initial value for the scan. If not supplied, a default constructed object of type :type:`value_t\<Seq>` is used.
+
+    :returns: A sequence adaptor which performs an inclusive scan of the elements of :var:`seq` using :var:`func`.
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/scan.cpp
+        :language: cpp
+        :dedent:
+        :lines: 13-20
+
+    :see also:
+        * `std::partial_sum() <https://en.cppreference.com/w/cpp/algorithm/partial_sum>`_
+        * `std::inclusive_scan() <https://en.cppreference.com/w/cpp/algorithm/inclusive_scan>`_
+        * :func:`flux::prescan`
+        * :func:`flux::fold`
 
 ``slide``
 ^^^^^^^^^
