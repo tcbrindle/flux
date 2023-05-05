@@ -15,7 +15,7 @@
 template<typename T>
 flux::generator<int> randu(T min, T max)
 {
-    std::mt19937 rng;
+    std::mt19937 rng(std::random_device{}());
     std::uniform_int_distribution dist(min, max);
 
     while (true) {
@@ -26,7 +26,7 @@ flux::generator<int> randu(T min, T max)
 template<typename T>
 flux::generator<int> randn(T mean, T stddev = 1.0)
 {
-    std::mt19937 rng;
+    std::mt19937 rng(std::random_device{}());
     std::normal_distribution dist(mean, stddev);
 
     while (true) {
