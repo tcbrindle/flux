@@ -91,8 +91,8 @@ auto to_week_lines = [](flux::sequence auto&& month) {
 };
 
 auto append_column = [](std::vector<std::string>&& months_per_line, flux::sequence auto&& month) {
-    return flux::zip(flux::from(std::move(months_per_line)), FLUX_FWD(month).template to<std::vector>())
-        .map([](const auto& v) { return std::get<0>(v) + std::get<1>(v) + col_sep; })
+    return flux::zip(std::move(months_per_line), FLUX_FWD(month).template to<std::vector>())
+        .map([](const auto& v) { return v.first + v.second + col_sep; })
         .template to<std::vector>();
 };
 
@@ -106,7 +106,6 @@ auto to_columns = [](flux::sequence auto&& month_chunk) {
 const auto current_year = ymd{floor<days>(system_clock::now())}.year();
 
 struct app_args_t {
-    bool help;
     unsigned per_line = 3;
     ymd from = current_year / January / 1d;
     ymd to = from + years{1};
@@ -124,7 +123,7 @@ app_args_t parse_args(int argc, char** argv) {
 
     using parse_func_t = std::function<void(std::string)>;
     std::map<std::string, parse_func_t> args_map {
-        {"--help"s, [&](std::string val) { print_help_and_exit(app_name); }},
+        {"--help"s, [&]([[maybe_unused]] std::string) { print_help_and_exit(app_name); }},
         {"--per-line"s, [&](std::string val) { result.per_line = std::max(1, std::stoi(val)); }},
         {"--from"s, [&](std::string val) { 
             result.from = year{std::max(1, std::stoi(val))} / January / 1d; 
