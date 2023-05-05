@@ -29,6 +29,18 @@ constexpr auto max_weeks_in_month = 6;
 constexpr auto col_sep = "  ";
 constexpr auto row_sep = ' ';
 
+#if defined _LIBCPP_VERSION and _LIBCPP_VERSION < 170000
+namespace std::chrono {
+    sys_days &operator++(sys_days &d) {
+        return d = d + days{1};
+    }
+
+    sys_days operator++(sys_days &d, int) {
+        return ++d - days{1};
+    }
+}
+#endif
+
 auto dates(ymd from, ymd to) {
     return flux::iota(sys_days{from}, sys_days{to});
 }
