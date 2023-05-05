@@ -43,6 +43,7 @@ add_executable(test-libflux
     test_output_to.cpp
     test_range_iface.cpp
     test_reverse.cpp
+    test_scan.cpp
     test_slide.cpp
     test_split.cpp
     test_sort.cpp
@@ -69,31 +70,31 @@ add_executable(test-libflux
 target_link_libraries(test-libflux flux catch-main)
 target_compile_definitions(test-libflux PUBLIC FLUX_UNWIND_ON_ERROR FLUX_ERROR_ON_OVERFLOW)
 
-if (${FLUX_ENABLE_ASAN})
+if(${FLUX_ENABLE_ASAN})
     target_compile_options(test-libflux PRIVATE -fsanitize=address)
     target_link_options(test-libflux PRIVATE -fsanitize=address)
 endif()
 
-if (${FLUX_ENABLE_UBSAN})
+if(${FLUX_ENABLE_UBSAN})
     target_compile_options(test-libflux PRIVATE -fsanitize=undefined)
     target_link_options(test-libflux PRIVATE -fsanitize=undefined)
 endif()
 
-if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")
+if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")
     target_precompile_headers(test-libflux PRIVATE "catch.hpp")
 endif()
 
-if (CMAKE_COMPILER_IS_GNUCXX)
+if(CMAKE_COMPILER_IS_GNUCXX)
     target_compile_options(test-libflux PRIVATE -Wall -Wextra -pedantic
         -fno-omit-frame-pointer
         -ftemplate-backtrace-limit=0
         -fconcepts-diagnostics-depth=2)
 endif()
 
-if (MSVC)
-    target_compile_options(test-libflux PRIVATE /W4 
-                           /wd4459 # local variable name hides global variable
-                           )
+if(MSVC)
+    target_compile_options(test-libflux PRIVATE /W4
+        /wd4459 # local variable name hides global variable
+    )
 endif()
 
 include(Catch)
