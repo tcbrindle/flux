@@ -45,7 +45,7 @@ int main() {
     // compute moving average by scan adaptor (more effective for large windows)
     auto ma = flux::from(intervals)
         .scan(sliding_window, sliding_window_t(3))
-        .map(flux::proj(&sliding_window_t::average))
+        .map(&sliding_window_t::average)
         .to<std::vector>();
 
     assert(ma.size() == intervals.size());
