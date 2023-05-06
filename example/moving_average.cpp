@@ -11,8 +11,7 @@
 
 struct sliding_window_t
 {
-    explicit sliding_window_t(std::size_t N): size(N) {
-    }
+    explicit sliding_window_t(std::size_t n): size(n) {}
 
     void push(int value) {
         if (window.size() < size) {
