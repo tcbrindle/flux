@@ -13,7 +13,12 @@
 #include <concepts>
 #include <cstdint>
 #include <initializer_list>
+#include <tuple>
 #include <type_traits>
+
+#if defined(__cpp_lib_ranges_zip) && (__cpp_lib_ranges_zip >= 202110L)
+#define FLUX_HAVE_CPP23_TUPLE_COMMON_REF
+#endif
 
 namespace flux {
 
@@ -131,10 +136,11 @@ concept sequence_concept =
     requires (Seq& seq, cursor_t<Seq>& cur) {
         { Traits::inc(seq, cur) };
     } &&
+#ifdef FLUX_HAVE_CPP23_TUPLE_COMMON_REF
+    std::common_reference_with<element_t<Seq>&&, value_t<Seq>&> &&
+    std::common_reference_with<rvalue_element_t<Seq>&&, value_t<Seq> const&> &&
+#endif
     std::common_reference_with<element_t<Seq>&&, rvalue_element_t<Seq>&&>;
-    // FIXME FIXME: Need C++23 tuple changes, otherwise zip breaks these
-/*    std::common_reference_with<element_t<Seq>&&, value_t<Seq>&> &&
-    std::common_reference_with<rvalue_element_t<Seq>&&, value_t<Seq> const&>;*/
 
 } // namespace detail
 

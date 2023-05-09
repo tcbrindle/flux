@@ -125,9 +125,12 @@ constexpr bool test_read_only() {
 
         static_assert(flux::random_access_sequence<S>);
         static_assert(flux::read_only_sequence<S>);
-        // Hmmm...
-        //static_assert(std::same_as<flux::element_t<S>, std::pair<int const&, double const&>>);
-        //static_assert(std::same_as<flux::rvalue_element_t<S>, std::pair<int const&&, double const&&>>);
+        // This needs the C++23 tuple/pair converting constructors and
+        // basic_common_reference specialisations to work properly
+#ifdef FLUX_HAVE_CPP23_TUPLE_COMMON_REF
+        static_assert(std::same_as<flux::element_t<S>, std::pair<int const&, double const&>>);
+        static_assert(std::same_as<flux::rvalue_element_t<S>, std::pair<int const&&, double const&&>>);
+#endif
         static_assert(std::same_as<flux::value_t<S>, std::pair<int, double>>);
     }
 
