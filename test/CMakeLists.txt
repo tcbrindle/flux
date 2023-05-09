@@ -42,6 +42,7 @@ add_executable(test-libflux
     test_minmax.cpp
     test_output_to.cpp
     test_range_iface.cpp
+    test_read_only.cpp
     test_reverse.cpp
     test_scan.cpp
     test_slide.cpp

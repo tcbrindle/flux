@@ -218,6 +218,38 @@ Adaptors
         * :func:`flux::scan`
         * :func:`flux::fold`
 
+``read_only``
+^^^^^^^^^^^^^
+
+..  function::
+    template <sequence Seq> \
+    auto read_only(Seq seq) -> read_only_sequence auto;
+
+    Returns an adapted sequence which prevents direct modification of the elements of :var:`seq`. The returned sequence retains the capabilities of the source sequence, all the way up to :concept:`contiguous_sequence`.
+
+    If :var:`Seq` is already a :concept:`read_only_sequence`, then it is returned unchanged. Otherwise, :func:`read_only` is equivalent to::
+
+        map(seq, [](auto&& elem) -> const_element_t<Seq> {
+            return static_cast<const_element_t<Seq>>(std::forward(elem));
+        });
+
+    except that the returned sequence will be a :concept:`contiguous_sequence` if the source sequence models that concept. In this case, the pointer returned from :func:`data` will have type :expr:`value_t<Seq> const*`.
+
+    :param seq: A sequence
+
+    :returns: An adapted sequence which provides read-only access to the elements of :var:`seq`
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/read_only.cpp
+        :language: cpp
+        :dedent:
+        :lines: 12-34
+
+    :see also:
+        * `std::views::as_const() <https://en.cppreference.com/w/cpp/ranges/as_const_view>`_ (C++23)
+        * :func:`flux::map`
+
 ``reverse``
 ^^^^^^^^^^^
 
