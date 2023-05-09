@@ -484,7 +484,12 @@ inline constexpr auto checked_cast = detail::checked_cast_fn<To>{};
 #include <concepts>
 #include <cstdint>
 #include <initializer_list>
+#include <tuple>
 #include <type_traits>
+
+#if defined(__cpp_lib_ranges_zip) && (__cpp_lib_ranges_zip >= 202110L)
+#define FLUX_HAVE_CPP23_TUPLE_COMMON_REF
+#endif
 
 namespace flux {
 
@@ -572,6 +577,9 @@ using rvalue_element_t = typename detail::rvalue_element_type<Seq>::type;
 template <typename Seq>
 using common_element_t = std::common_reference_t<element_t<Seq>, value_t<Seq>&>;
 
+template <typename Seq>
+using const_element_t = std::common_reference_t<value_t<Seq> const&&, element_t<Seq>>;
+
 namespace detail {
 
 template <typename B>
@@ -599,10 +607,11 @@ concept sequence_concept =
     requires (Seq& seq, cursor_t<Seq>& cur) {
         { Traits::inc(seq, cur) };
     } &&
+#ifdef FLUX_HAVE_CPP23_TUPLE_COMMON_REF
+    std::common_reference_with<element_t<Seq>&&, value_t<Seq>&> &&
+    std::common_reference_with<rvalue_element_t<Seq>&&, value_t<Seq> const&> &&
+#endif
     std::common_reference_with<element_t<Seq>&&, rvalue_element_t<Seq>&&>;
-    // FIXME FIXME: Need C++23 tuple changes, otherwise zip breaks these
-/*    std::common_reference_with<element_t<Seq>&&, value_t<Seq>&> &&
-    std::common_reference_with<rvalue_element_t<Seq>&&, value_t<Seq> const&>;*/
 
 } // namespace detail
 
@@ -726,6 +735,11 @@ template <typename Seq>
 concept infinite_sequence =
     sequence<Seq> &&
     detail::is_infinite_seq<detail::traits_t<Seq>>;
+
+template <typename Seq>
+concept read_only_sequence =
+    sequence<Seq> &&
+    std::same_as<element_t<Seq>, const_element_t<Seq>>;
 
 namespace detail {
 
@@ -2193,6 +2207,9 @@ public:
         requires foldable<Derived, Func, Init>
     [[nodiscard]]
     constexpr auto prescan(Func func, Init init) &&;
+
+    [[nodiscard]]
+    constexpr auto read_only() &&;
 
     [[nodiscard]]
     constexpr auto reverse() &&
@@ -7537,6 +7554,153 @@ constexpr auto inline_sequence_base<Derived>::minmax(Cmp cmp)
 } // namespace flux
 
 #endif // FLUX_OP_MINMAX_HPP_INCLUDED
+
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_OP_READ_ONLY_HPP_INCLUDED
+#define FLUX_OP_READ_ONLY_HPP_INCLUDED
+
+
+
+
+namespace flux {
+
+namespace detail {
+
+template <sequence Base>
+    requires (not read_only_sequence<Base>)
+struct read_only_adaptor : inline_sequence_base<read_only_adaptor<Base>> {
+private:
+    FLUX_NO_UNIQUE_ADDRESS Base base_;
+
+public:
+    constexpr read_only_adaptor(decays_to<Base> auto&& base)
+        : base_(FLUX_FWD(base))
+    {}
+
+    struct flux_sequence_traits {
+    private:
+        using const_rvalue_element_t = std::common_reference_t<
+            value_t<Base> const&&, rvalue_element_t<Base>>;
+
+    public:
+        using value_type = value_t<Base>;
+
+        static constexpr auto first(auto& self) -> cursor_t<Base> { return flux::first(self.base_); }
+
+        static constexpr auto is_last(auto& self, cursor_t<Base> const& cur) -> bool
+        {
+            return flux::is_last(self.base_,  cur);
+        }
+
+        static constexpr auto inc(auto& self, cursor_t<Base>& cur) -> void
+        {
+            flux::inc(self.base_, cur);
+        }
+
+        static constexpr auto read_at(auto& self, cursor_t<Base> const& cur)
+            -> const_element_t<Base>
+        {
+            return static_cast<const_element_t<Base>>(flux::read_at(self.base_, cur));
+        }
+
+        static constexpr auto read_at_unchecked(auto& self, cursor_t<Base> const& cur)
+            -> const_element_t<Base>
+        {
+            return static_cast<const_element_t<Base>>(flux::read_at_unchecked(self.base_, cur));
+        }
+
+        static constexpr auto move_at(auto& self, cursor_t<Base> const& cur)
+            -> const_rvalue_element_t
+        {
+            return static_cast<const_rvalue_element_t>(flux::move_at(self.base_, cur));
+        }
+
+        static constexpr auto move_at_unchecked(auto& self, cursor_t<Base> const& cur)
+            -> const_rvalue_element_t
+        {
+            return static_cast<const_rvalue_element_t>(flux::move_at_unchecked(self.base_, cur));
+        }
+
+        static constexpr auto last(auto& self) -> cursor_t<Base>
+            requires bounded_sequence<Base>
+        {
+            return flux::last(self.base_);
+        }
+
+        static constexpr auto dec(auto& self, cursor_t<Base>& cur)
+            requires bidirectional_sequence<Base>
+        {
+            return flux::dec(self.base_, cur);
+        }
+
+        static constexpr auto inc(auto& self, cursor_t<Base>& cur, distance_t o)
+            requires random_access_sequence<Base>
+        {
+            return flux::inc(self.base_, cur, o);
+        }
+
+        static constexpr auto distance(auto& self, cursor_t<Base> const& from,
+                                       cursor_t<Base> const& to) -> distance_t
+            requires random_access_sequence<Base>
+        {
+            return flux::distance(self.base_, from, to);
+        }
+
+        static constexpr auto size(auto& self) -> distance_t
+            requires sized_sequence<Base>
+        {
+            return flux::size(self.base_);
+        }
+
+        static constexpr auto data(auto& self)
+            requires contiguous_sequence<Base>
+        {
+            using P = std::add_pointer_t<std::remove_reference_t<const_element_t<Base>>>;
+            return static_cast<P>(flux::data(self.base_));
+        }
+
+        static constexpr auto for_each_while(auto& self, auto&& pred)
+        {
+            return flux::for_each_while(self.base_, [&pred](auto&& elem) {
+                return std::invoke(pred, static_cast<const_element_t<Base>>(FLUX_FWD(elem)));
+            });
+        }
+    };
+
+
+};
+
+struct read_only_fn {
+    template <adaptable_sequence Seq>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq) const -> read_only_sequence auto
+    {
+        if constexpr (read_only_sequence<Seq>) {
+            return FLUX_FWD(seq);
+        } else {
+            return read_only_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq));
+        }
+    }
+};
+
+
+} // namespace detail
+
+inline constexpr auto read_only = detail::read_only_fn{};
+
+template <typename D>
+constexpr auto inline_sequence_base<D>::read_only() &&
+{
+    return flux::read_only(std::move(derived()));
+}
+
+} // namespace flux
+
+#endif
 
 
 
