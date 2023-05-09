@@ -29,6 +29,7 @@ struct NotBidir : flux::inline_sequence_base<NotBidir<Base>> {
     };
 };
 
+template <bool = true>
 constexpr bool test_stride_non_bidir()
 {
     // Basic stride, n divides size
@@ -130,6 +131,7 @@ constexpr bool test_stride_non_bidir()
 }
 static_assert(test_stride_non_bidir());
 
+template <bool = true>
 constexpr bool test_stride_bidir()
 {
     // Basic stride, n divides size
@@ -331,10 +333,10 @@ static_assert(test_stride_bidir());
 
 TEST_CASE("stride")
 {
-    bool res = test_stride_non_bidir();
+    bool res = test_stride_non_bidir<false>();
     REQUIRE(res);
 
-    res = test_stride_bidir();
+    res = test_stride_bidir<false>();
     REQUIRE(res);
 
     // Test with bidir-but-not-RA sequence

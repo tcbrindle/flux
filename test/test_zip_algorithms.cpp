@@ -14,6 +14,7 @@
 
 namespace {
 
+template <bool = true>
 constexpr bool test_zip_for_each()
 {
     // two sequences with stateful function obj
@@ -52,6 +53,7 @@ constexpr bool test_zip_for_each()
 }
 static_assert(test_zip_for_each());
 
+template <bool = true>
 constexpr bool test_zip_find_if()
 {
     // successful, two sequences
@@ -139,6 +141,7 @@ constexpr bool test_zip_find_if()
 }
 static_assert(test_zip_find_if());
 
+template <bool = true>
 constexpr bool test_zip_fold()
 {
     // Summing two sequences at the same time
@@ -182,12 +185,12 @@ static_assert(test_zip_fold());
 
 TEST_CASE("zip algorithms")
 {
-    bool r = test_zip_for_each();
+    bool r = test_zip_for_each<false>();
     REQUIRE(r);
 
-    r = test_zip_find_if();
+    r = test_zip_find_if<false>();
     REQUIRE(r);
 
-    r = test_zip_fold();
+    r = test_zip_fold<false>();
     REQUIRE(r);
 }

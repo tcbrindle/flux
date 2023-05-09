@@ -13,6 +13,7 @@
 
 namespace {
 
+template <bool = true>
 constexpr bool test_slide()
 {
     // Basic sliding
@@ -133,6 +134,6 @@ static_assert(test_slide());
 
 TEST_CASE("slide")
 {
-    bool res = test_slide();
+    bool res = test_slide<false>();
     REQUIRE(res);
 }

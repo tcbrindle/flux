@@ -20,6 +20,7 @@ struct Test {
     constexpr bool operator<(Test other) const { return i < other.i; }
 };
 
+template <bool = true>
 constexpr bool test_compare()
 {
     // equal
@@ -125,5 +126,5 @@ static_assert(test_compare());
 
 TEST_CASE("compare")
 {
-    REQUIRE(test_compare());
+    REQUIRE(test_compare<false>());
 }

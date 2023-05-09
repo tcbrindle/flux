@@ -38,6 +38,7 @@ struct NotBidir : flux::inline_sequence_base<NotBidir<Base>> {
     };
 };
 
+template <bool = true>
 constexpr bool test_chunk_single_pass()
 {
     // Basic single-pass chunk
@@ -155,6 +156,7 @@ constexpr bool test_chunk_single_pass()
 }
 static_assert(test_chunk_single_pass());
 
+template <bool = true>
 constexpr bool test_chunk_multipass()
 {
     // Basic multipass chunk
@@ -282,6 +284,7 @@ constexpr bool test_chunk_multipass()
 }
 static_assert(test_chunk_multipass());
 
+template <bool = true>
 constexpr bool test_chunk_bidir()
 {
     // Basic bidir chunk
@@ -453,13 +456,13 @@ static_assert(test_chunk_bidir());
 
 TEST_CASE("chunk")
 {
-    bool res = test_chunk_single_pass();
+    bool res = test_chunk_single_pass<false>();
     REQUIRE(res);
 
-    res = test_chunk_multipass();
+    res = test_chunk_multipass<false>();
     REQUIRE(res);
 
-    res = test_chunk_bidir();
+    res = test_chunk_bidir<false>();
     REQUIRE(res);
 
     SECTION("...with istream sequence")

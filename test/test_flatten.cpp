@@ -32,6 +32,7 @@
 
 namespace {
 
+template <bool = true>
 constexpr bool test_flatten_single_pass()
 {
     // Single-pass source sequence, inner sequence is multipass
@@ -139,6 +140,7 @@ constexpr bool test_flatten_single_pass()
 }
 static_assert(test_flatten_single_pass());
 
+template <bool = true>
 constexpr bool test_flatten_multipass()
 {
     {
@@ -223,9 +225,9 @@ static_assert(test_flatten_multipass());
 
 TEST_CASE("flatten")
 {
-    bool sp = test_flatten_single_pass();
+    bool sp = test_flatten_single_pass<false>();
     REQUIRE(sp);
 
-    bool mp = test_flatten_multipass();
+    bool mp = test_flatten_multipass<false>();
     REQUIRE(mp);
 }

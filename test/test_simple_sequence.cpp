@@ -44,6 +44,7 @@ struct ints : flux::simple_sequence_base<ints> {
     }
 };
 
+template <bool = true>
 constexpr bool test_simple_sequence()
 {
     {
@@ -104,6 +105,6 @@ static_assert(test_simple_sequence());
 
 TEST_CASE("simple_sequence")
 {
-    bool result = test_simple_sequence();
+    bool result = test_simple_sequence<false>();
     REQUIRE(result);
 }

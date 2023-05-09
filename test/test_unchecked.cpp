@@ -13,6 +13,7 @@
 
 namespace {
 
+template <bool = true>
 constexpr bool test_unchecked()
 {
     using namespace flux;
@@ -62,6 +63,6 @@ static_assert(test_unchecked());
 
 TEST_CASE("unchecked adaptor")
 {
-    auto res = test_unchecked();
+    auto res = test_unchecked<false>();
     REQUIRE(res);
 }

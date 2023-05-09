@@ -20,6 +20,7 @@ struct S {
     int i_;
 };
 
+template <bool = true>
 constexpr bool test_for_each()
 {
     {
@@ -71,6 +72,6 @@ static_assert(test_for_each());
 
 TEST_CASE("for_each")
 {
-    bool result = test_for_each();
+    bool result = test_for_each<false>();
     REQUIRE(result);
 }

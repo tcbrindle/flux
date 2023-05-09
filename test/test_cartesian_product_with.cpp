@@ -15,6 +15,7 @@ namespace {
 
 constexpr auto sum = [](auto... args) { return (args + ...); };
 
+template <bool = true>
 constexpr bool test_cartesian_product_with()
 {
     {
@@ -123,7 +124,7 @@ static_assert(test_cartesian_product_with());
 
 TEST_CASE("cartesian_product_with")
 {
-    REQUIRE(test_cartesian_product_with());
+    REQUIRE(test_cartesian_product_with<false>());
 }
 
 }

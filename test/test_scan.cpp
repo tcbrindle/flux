@@ -15,6 +15,7 @@
 
 namespace {
 
+template <bool = true>
 constexpr bool test_inclusive_scan()
 {
     // scan returns the same as std::inclusive_scan
@@ -77,6 +78,7 @@ constexpr bool test_inclusive_scan()
 }
 static_assert(test_inclusive_scan());
 
+template <bool = true>
 constexpr bool test_prescan()
 {
     // prescan returns the same as std::exclusive_scan with one extra value
@@ -147,6 +149,7 @@ constexpr bool test_prescan()
 }
 static_assert(test_prescan());
 
+template <bool = true>
 constexpr bool test_scan_first()
 {
     // scan_first returns the same as std::inclusive_scan
@@ -212,10 +215,13 @@ static_assert(test_scan_first());
 
 TEST_CASE("scan")
 {
-    bool res = test_inclusive_scan();
+    bool res = test_inclusive_scan<false>();
     REQUIRE(res);
 
-    res = test_prescan();
+    res = test_prescan<false>();
+    REQUIRE(res);
+
+    res = test_scan_first<false>();
     REQUIRE(res);
 
     SECTION("inclusive scan with stringstream")

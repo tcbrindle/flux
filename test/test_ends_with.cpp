@@ -20,6 +20,7 @@ struct S {
     constexpr int get() const { return i; }
 };
 
+template <bool = true>
 constexpr bool test_ends_with()
 {
     // Basic ends_with for two reversible sequences
@@ -123,6 +124,6 @@ static_assert(test_ends_with());
 
 TEST_CASE("ends_with")
 {
-    bool result = test_ends_with();
+    bool result = test_ends_with<false>();
     REQUIRE(result);
 }

@@ -25,6 +25,7 @@ constexpr bool tuple_equal(Lhs const& lhs, Rhs const& rhs)
             impl(std::make_index_sequence<std::tuple_size_v<Lhs>>{});
 }
 
+template <bool = true>
 constexpr bool test_pairwise()
 {
     // Basic pairwise
@@ -126,6 +127,7 @@ constexpr bool test_pairwise()
 }
 static_assert(test_pairwise());
 
+template <bool = true>
 constexpr bool test_adjacent()
 {
     // Basic striding
@@ -250,9 +252,9 @@ static_assert(test_adjacent());
 
 TEST_CASE("adjacent")
 {
-    bool res = test_pairwise();
+    bool res = test_pairwise<false>();
     REQUIRE(res);
 
-    res = test_adjacent();
+    res = test_adjacent<false>();
     REQUIRE(res);
 }

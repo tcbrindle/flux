@@ -14,6 +14,7 @@
 
 namespace {
 
+template <bool = true>
 constexpr bool test_front()
 {
     // Non-member, non-empty
@@ -99,6 +100,7 @@ constexpr bool test_front()
 }
 static_assert(test_front());
 
+template <bool = true>
 constexpr bool test_back()
 {
     // Non-member, non-empty
@@ -202,12 +204,12 @@ static_assert(test_back());
 
 TEST_CASE("front")
 {
-    bool res = test_front();
+    bool res = test_front<false>();
     REQUIRE(res);
 }
 
 TEST_CASE("back")
 {
-    bool res = test_back();
+    bool res = test_back<false>();
     REQUIRE(res);
 }

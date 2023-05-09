@@ -14,6 +14,7 @@
 
 namespace {
 
+template <bool = true>
 constexpr bool test_reverse()
 {
     {
@@ -88,6 +89,7 @@ static_assert(test_reverse());
 
 // Regression test for #52
 // https://github.com/tcbrindle/flux/issues/52
+template <bool = true>
 constexpr bool issue_52()
 {
     std::string_view in = "   abc   ";
@@ -110,10 +112,10 @@ static_assert(issue_52());
 
 TEST_CASE("reverse")
 {
-    bool result = test_reverse();
+    bool result = test_reverse<false>();
     REQUIRE(result);
 
-    result = issue_52();
+    result = issue_52<false>();
     REQUIRE(result);
 
     {

@@ -24,6 +24,7 @@ struct Tester : flux::simple_sequence_base<Tester> {
     }
 };
 
+template <bool = true>
 constexpr bool test_take()
 {
     {
@@ -133,6 +134,7 @@ static_assert(test_take());
 
 // Regression test for #62
 // https://github.com/tcbrindle/flux/issues/62
+template <bool = true>
 constexpr bool issue_62()
 {
     auto seq = flux::ints(0).take(5).filter(flux::pred::true_);
@@ -147,10 +149,10 @@ static_assert(issue_62());
 
 TEST_CASE("take")
 {
-    bool result = test_take();
+    bool result = test_take<false>();
     REQUIRE(result);
 
-    result = issue_62();
+    result = issue_62<false>();
     REQUIRE(result);
 
     // test taking a negative number of elements

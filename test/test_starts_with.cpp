@@ -19,6 +19,7 @@ struct S {
     constexpr int get() const { return i; }
 };
 
+template <bool = true>
 constexpr bool test_starts_with()
 {
     // Basic starts_with
@@ -111,6 +112,6 @@ static_assert(test_starts_with());
 
 TEST_CASE("starts_with")
 {
-    bool result = test_starts_with();
+    bool result = test_starts_with<false>();
     REQUIRE(result);
 }

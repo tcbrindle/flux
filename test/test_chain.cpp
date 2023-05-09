@@ -16,6 +16,7 @@
 
 namespace {
 
+template <bool = true>
 constexpr bool test_chain()
 {
     // Basic chaining
@@ -164,6 +165,6 @@ static_assert(test_chain());
 
 TEST_CASE("chain")
 {
-    bool result = test_chain();
+    bool result = test_chain<false>();
     REQUIRE(result);
 }

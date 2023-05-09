@@ -37,7 +37,7 @@ static_assert(not std::invocable<filter_fn, int(&)[10], decltype([](int) {})>);
 // Incompatible predicate
 static_assert(not std::invocable<filter_fn, int(&)[10], decltype([](int*) { return true; })>);
 
-
+template <bool = true>
 constexpr bool test_filter()
 {
     // Basic filtering
@@ -153,6 +153,6 @@ static_assert(test_filter());
 
 TEST_CASE("filter")
 {
-    bool result = test_filter();
+    bool result = test_filter<false>();
     REQUIRE(result);
 }

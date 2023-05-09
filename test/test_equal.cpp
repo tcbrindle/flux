@@ -22,6 +22,7 @@ public:
     constexpr int get() const { return i; }
 };
 
+template <bool = true>
 constexpr bool test_equal()
 {
     // Basic equal
@@ -105,6 +106,6 @@ static_assert(test_equal());
 
 TEST_CASE("equal")
 {
-    bool result = test_equal();
+    bool result = test_equal<false>();
     REQUIRE(result);
 }

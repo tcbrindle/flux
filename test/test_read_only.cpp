@@ -13,6 +13,7 @@
 
 namespace {
 
+template <bool = true>
 constexpr bool test_read_only() {
 
     // Mutable lvalue ref -> const lvalue ref
@@ -142,6 +143,6 @@ static_assert(test_read_only());
 
 TEST_CASE("read_only")
 {
-    bool res = test_read_only();
+    bool res = test_read_only<false>();
     REQUIRE(res);
 }

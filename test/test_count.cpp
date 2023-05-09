@@ -22,6 +22,7 @@ struct S {
     int i;
 };
 
+template <bool = true>
 constexpr bool test_count()
 {
     {
@@ -62,6 +63,6 @@ static_assert(test_count());
 
 TEST_CASE("count")
 {
-    bool result = test_count();
+    bool result = test_count<false>();
     REQUIRE(result);
 }

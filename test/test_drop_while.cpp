@@ -13,6 +13,7 @@
 
 namespace {
 
+template <bool = true>
 constexpr bool test_drop_while()
 {
     {
@@ -79,6 +80,6 @@ static_assert(test_drop_while());
 
 TEST_CASE("drop_while")
 {
-    bool result = test_drop_while();
+    bool result = test_drop_while<false>();
     REQUIRE(result);
 }

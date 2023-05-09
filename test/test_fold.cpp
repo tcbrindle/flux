@@ -13,6 +13,7 @@
 
 namespace {
 
+template <bool = true>
 constexpr bool test_fold()
 {
     {
@@ -51,6 +52,7 @@ constexpr bool test_fold()
 }
 static_assert(test_fold());
 
+template <bool = true>
 constexpr bool test_fold_first()
 {
     {
@@ -85,6 +87,7 @@ constexpr bool test_fold_first()
 }
 static_assert(test_fold_first());
 
+template <bool = true>
 constexpr bool test_sum()
 {
     {
@@ -114,6 +117,7 @@ constexpr bool test_sum()
 }
 static_assert(test_sum());
 
+template <bool = true>
 constexpr bool test_product()
 {
     {
@@ -138,7 +142,7 @@ static_assert(test_product());
 
 TEST_CASE("fold")
 {
-    bool result = test_fold();
+    bool result = test_fold<false>();
     REQUIRE(result);
 
     // Populate a vector in a really inefficient way
@@ -154,12 +158,18 @@ TEST_CASE("fold")
 
 TEST_CASE("fold_first")
 {
-    bool result = test_fold_first();
+    bool result = test_fold_first<false>();
     REQUIRE(result);
 }
 
 TEST_CASE("sum")
 {
-    bool result = test_sum();
+    bool result = test_sum<false>();
+    REQUIRE(result);
+}
+
+TEST_CASE("product")
+{
+    bool result = test_product<false>();
     REQUIRE(result);
 }

@@ -23,6 +23,7 @@
 
 namespace {
 
+template <bool = true>
 constexpr bool test_from_range()
 {
     {
@@ -54,7 +55,7 @@ static_assert(test_from_range());
 
 TEST_CASE("from range")
 {
-    REQUIRE(test_from_range());
+    REQUIRE(test_from_range<false>());
 
     SECTION("bounds checking") {
         std::vector<int> vec{0, 1, 2, 3, 4};

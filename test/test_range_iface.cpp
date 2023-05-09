@@ -15,6 +15,7 @@
 
 namespace {
 
+template <bool = true>
 constexpr bool test_range_iface()
 {
     namespace rng = std::ranges;
@@ -143,6 +144,6 @@ static_assert(test_range_iface());
 
 TEST_CASE("range interface")
 {
-    bool res = test_range_iface();
+    bool res = test_range_iface<false>();
     REQUIRE(res);
 }

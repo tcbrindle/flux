@@ -11,6 +11,7 @@
 
 namespace {
 
+template <bool = true>
 constexpr bool test_single()
 {
     {
@@ -78,6 +79,6 @@ static_assert(test_single());
 
 TEST_CASE("single")
 {
-    bool result = test_single();
+    bool result = test_single<false>();
     REQUIRE(result);
 }

@@ -15,6 +15,7 @@
 
 namespace {
 
+template <bool = true>
 constexpr bool test_zip()
 {
     {
@@ -167,6 +168,7 @@ constexpr bool test_zip()
 static_assert(test_zip());
 
 // https://github.com/tcbrindle/flux/issues/47
+template <bool = true>
 constexpr bool issue_47()
 {
     std::array v = {1, 2, 3, 4, 5};
@@ -182,9 +184,9 @@ static_assert(issue_47());
 
 TEST_CASE("zip")
 {
-    bool result = test_zip();
+    bool result = test_zip<false>();
     REQUIRE(result);
 
-    result = issue_47();
+    result = issue_47<false>();
     REQUIRE(result);
 }

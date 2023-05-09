@@ -20,6 +20,7 @@ using namespace std::string_view_literals;
 constexpr auto& all_of = std::ranges::all_of;
 constexpr auto& none_of = std::ranges::none_of;
 
+template <bool = true>
 constexpr bool test_predicate_comparators()
 {
     std::array const ones{1, 1, 1, 1, 1, 1};
@@ -61,7 +62,7 @@ constexpr bool test_predicate_comparators()
 }
 static_assert(test_predicate_comparators());
 
-
+template <bool = true>
 constexpr bool test_predicate_combiners()
 {
     {
@@ -122,7 +123,7 @@ static_assert(test_predicate_combiners());
 
 TEST_CASE("predicates")
 {
-    REQUIRE(test_predicate_comparators());
-    REQUIRE(test_predicate_combiners());
+    REQUIRE(test_predicate_comparators<false>());
+    REQUIRE(test_predicate_combiners<false>());
 }
 

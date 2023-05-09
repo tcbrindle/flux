@@ -13,6 +13,7 @@
 
 namespace {
 
+template <bool = true>
 constexpr bool test_cartesian_product()
 {
     {
@@ -116,5 +117,5 @@ static_assert(test_cartesian_product());
 
 TEST_CASE("cartesian_product")
 {
-    REQUIRE(test_cartesian_product());
+    REQUIRE(test_cartesian_product<false>());
 }

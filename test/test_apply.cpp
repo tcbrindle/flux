@@ -26,7 +26,7 @@ auto rotate_by = []<flux::random_access_sequence Seq>(Seq&& seq, flux::distance_
     return FLUX_FWD(seq);
 };
 
-
+template <bool = true>
 constexpr bool test_apply()
 {
     // Checking lvalue sequence
@@ -63,5 +63,5 @@ static_assert(test_apply());
 
 TEST_CASE("apply")
 {
-    REQUIRE(test_apply());
+    REQUIRE(test_apply<false>());
 }

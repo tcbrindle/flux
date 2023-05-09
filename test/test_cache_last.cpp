@@ -9,6 +9,7 @@
 
 namespace {
 
+template <bool = true>
 constexpr bool test_cache_last()
 {
     // cache_last turns an unbounded sequence into a bounded one
@@ -63,6 +64,6 @@ static_assert(test_cache_last());
 
 TEST_CASE("cache_last")
 {
-    bool result = test_cache_last();
+    bool result = test_cache_last<false>();
     REQUIRE(result);
 }

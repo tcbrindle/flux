@@ -13,6 +13,7 @@
 
 namespace {
 
+template <bool = true>
 constexpr bool test_iota_basic()
 {
     auto f = flux::ints();
@@ -33,6 +34,7 @@ constexpr bool test_iota_basic()
 }
 static_assert(test_iota_basic());
 
+template <bool = true>
 constexpr bool test_iota_from()
 {
     auto f = flux::iota(1u);
@@ -53,6 +55,7 @@ constexpr bool test_iota_from()
 }
 static_assert(test_iota_from());
 
+template <bool = true>
 constexpr bool test_iota_bounded()
 {
     auto f = flux::iota(1u, 6u);
@@ -73,6 +76,7 @@ constexpr bool test_iota_bounded()
 }
 static_assert(test_iota_bounded());
 
+template <bool = true>
 constexpr bool test_iota_custom_type()
 {
     using namespace std::chrono_literals;
@@ -99,8 +103,8 @@ static_assert(test_iota_custom_type());
 
 TEST_CASE("iota")
 {
-    REQUIRE(test_iota_basic());
-    REQUIRE(test_iota_from());
-    REQUIRE(test_iota_bounded());
-    REQUIRE(test_iota_custom_type());
+    REQUIRE(test_iota_basic<false>());
+    REQUIRE(test_iota_from<false>());
+    REQUIRE(test_iota_bounded<false>());
+    REQUIRE(test_iota_custom_type<false>());
 }

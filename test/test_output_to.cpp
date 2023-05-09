@@ -19,6 +19,7 @@
 
 namespace {
 
+template <bool = true>
 constexpr bool test_output_to()
 {
     {
@@ -39,7 +40,7 @@ static_assert(test_output_to());
 
 TEST_CASE("output to")
 {
-    bool result = test_output_to();
+    bool result = test_output_to<false>();
     REQUIRE(result);
 
     SECTION("...with contiguous iterators")

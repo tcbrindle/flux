@@ -24,6 +24,7 @@ struct S {
 
 constexpr auto is_even = [](int i) { return i % 2 == 0; };
 
+template <bool = true>
 constexpr bool test_count_if()
 {
     {
@@ -50,6 +51,6 @@ static_assert(test_count_if());
 
 TEST_CASE("count_if")
 {
-    bool result = test_count_if();
+    bool result = test_count_if<false>();
     REQUIRE(result);
 }

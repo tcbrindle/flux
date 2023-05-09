@@ -25,6 +25,7 @@
 
 namespace {
 
+template <bool = true>
 constexpr bool test_chunk_by() {
 
     using P = std::pair<int, int>;
@@ -185,6 +186,6 @@ static_assert(test_chunk_by());
 
 TEST_CASE("chunk_by")
 {
-    bool res = test_chunk_by();
+    bool res = test_chunk_by<false>();
     REQUIRE(res);
 }

@@ -48,7 +48,7 @@ struct span_seq {
 template <typename T>
 span_seq(T*, size_t) -> span_seq<T>;
 
-constexpr bool test_sort_contexpr()
+constexpr bool test_sort_constexpr()
 {
     {
         int arr[] = {9, 7, 5, 3, 1, 4, 6, 8, 0, 2};
@@ -90,7 +90,7 @@ constexpr bool test_sort_contexpr()
 
     return true;
 }
-static_assert(test_sort_contexpr());
+static_assert(test_sort_constexpr());
 
 
 std::mt19937 gen{};
@@ -202,7 +202,7 @@ void test_adapted_deque_sort(int sz)
 
 TEST_CASE("sort")
 {
-    CHECK(test_sort_contexpr());
+    CHECK(test_sort_constexpr());
 
     test_sort(0);
     test_sort(1);

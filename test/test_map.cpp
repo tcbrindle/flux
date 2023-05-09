@@ -13,6 +13,7 @@
 
 namespace {
 
+template <bool = true>
 constexpr bool test_map()
 {
     {
@@ -122,6 +123,6 @@ static_assert(test_map());
 
 TEST_CASE("map")
 {
-    bool result = test_map();
+    bool result = test_map<false>();
     REQUIRE(result);
 }

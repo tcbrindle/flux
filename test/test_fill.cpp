@@ -16,6 +16,7 @@
 
 namespace {
 
+template <bool = true>
 constexpr bool test_fill()
 {
     // Basic fill()
@@ -68,6 +69,6 @@ static_assert(test_fill());
 
 TEST_CASE("fill")
 {
-    bool result = test_fill();
+    bool result = test_fill<false>();
     REQUIRE(result);
 }

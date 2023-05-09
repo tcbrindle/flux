@@ -39,6 +39,7 @@ static_assert(not can_array_ptr<Abstract>);
 static_assert(not can_array_ptr<void>);
 static_assert(not can_array_ptr<int&>);
 
+template <bool = true>
 constexpr bool test_array_ptr_ctor()
 {
     // Default constructor
@@ -159,6 +160,7 @@ constexpr bool test_array_ptr_ctor()
 }
 static_assert(test_array_ptr_ctor());
 
+template <bool = true>
 constexpr bool test_array_ptr_ctad()
 {
     {
@@ -186,6 +188,7 @@ constexpr bool test_array_ptr_ctad()
 static_assert(test_array_ptr_ctad());
 
 // Controversial, this one
+template <bool = true>
 constexpr bool test_array_ptr_equality()
 {
     // Pointers to different arrays are different
@@ -241,6 +244,7 @@ constexpr bool test_array_ptr_equality()
 }
 static_assert(test_array_ptr_equality());
 
+template <bool = true>
 constexpr bool test_array_ptr_sequence_impl()
 {
     {
@@ -346,6 +350,7 @@ constexpr bool test_array_ptr_sequence_impl()
 }
 static_assert(test_array_ptr_sequence_impl());
 
+template <bool = true>
 constexpr bool test_make_array_ptr()
 {
     {
@@ -375,11 +380,11 @@ static_assert(test_make_array_ptr());
 
 TEST_CASE("array_ptr")
 {
-    REQUIRE(test_array_ptr_ctor());
-    REQUIRE(test_array_ptr_ctad());
-    REQUIRE(test_array_ptr_equality());
-    REQUIRE(test_array_ptr_sequence_impl());
-    REQUIRE(test_make_array_ptr());
+    REQUIRE(test_array_ptr_ctor<false>());
+    REQUIRE(test_array_ptr_ctad<false>());
+    REQUIRE(test_array_ptr_equality<false>());
+    REQUIRE(test_array_ptr_sequence_impl<false>());
+    REQUIRE(test_make_array_ptr<false>());
 
     SECTION("bounds checking") {
         int arr[] = {0, 1, 2};

@@ -15,6 +15,7 @@
 
 namespace {
 
+template <bool = true>
 constexpr bool test_bitset()
 {
     {
@@ -51,7 +52,7 @@ static_assert(test_bitset());
 
 TEST_CASE("bitset")
 {
-    bool result = test_bitset();
+    bool result = test_bitset<false>();
     REQUIRE(result);
 
     // Swapping bits

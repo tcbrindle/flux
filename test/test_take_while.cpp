@@ -26,6 +26,7 @@ struct ints {
     };
 };
 
+template <bool = true>
 constexpr bool test_take_while()
 {
     {
@@ -82,6 +83,6 @@ static_assert(test_take_while());
 
 TEST_CASE("take_while")
 {
-    bool result = test_take_while();
+    bool result = test_take_while<false>();
     REQUIRE(result);
 }

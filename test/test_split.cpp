@@ -22,6 +22,7 @@ constexpr auto  to_string_view = []<typename Seq>(Seq&& seq) // danger Will Robi
     return std::basic_string_view<flux::value_t<Seq>>(flux::data(seq), flux::usize(seq));
 };
 
+template <bool = true>
 constexpr bool test_split()
 {
     using namespace std::string_view_literals;
@@ -96,6 +97,6 @@ static_assert(test_split());
 
 TEST_CASE("split")
 {
-    bool result = test_split();
+    bool result = test_split<false>();
     REQUIRE(result);
 }

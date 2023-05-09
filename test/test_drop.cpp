@@ -14,6 +14,7 @@
 
 namespace {
 
+template <bool = true>
 constexpr bool test_drop() {
 
     {
@@ -103,7 +104,7 @@ static_assert(test_drop());
 
 TEST_CASE("drop")
 {
-    bool result = test_drop();
+    bool result = test_drop<false>();
     REQUIRE(result);
 
     // Test dropping a negative number of elements

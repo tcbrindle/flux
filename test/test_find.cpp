@@ -30,6 +30,7 @@ static_assert(not std::invocable<find_fn, int[10], S>);
 // Not equality comparable
 static_assert(not std::invocable<find_fn, S[10], S>);
 
+template <bool = true>
 constexpr bool test_find()
 {
     {
@@ -66,6 +67,9 @@ static_assert(test_find());
 
 TEST_CASE("find")
 {
+    bool res = test_find<false>();
+    REQUIRE(res);
+
     {
         std::vector<int> vec{1, 2, 3, 4, 5};
         auto idx = flux::find(vec, 3);

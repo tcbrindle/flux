@@ -21,6 +21,7 @@ struct Test {
     int i;
 };
 
+template <bool = true>
 constexpr bool test_contains()
 {
     // Basic contains
@@ -46,6 +47,6 @@ static_assert(test_contains());
 
 TEST_CASE("contains")
 {
-    bool result = test_contains();
+    bool result = test_contains<false>();
     REQUIRE(result);
 }

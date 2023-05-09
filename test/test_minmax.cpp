@@ -18,7 +18,7 @@ struct IntPair {
     friend bool operator==(IntPair const&, IntPair const&) = default;
 };
 
-
+template <bool = true>
 constexpr bool test_min()
 {
     // Empty range -> no min value
@@ -50,6 +50,7 @@ constexpr bool test_min()
 }
 static_assert(test_min());
 
+template <bool = true>
 constexpr bool test_max()
 {
     // Empty range -> no max value
@@ -81,6 +82,7 @@ constexpr bool test_max()
 }
 static_assert(test_max());
 
+template <bool = true>
 constexpr bool test_minmax()
 {
     // Empty range -> no minmax
@@ -120,4 +122,22 @@ constexpr bool test_minmax()
 }
 static_assert(test_minmax());
 
+}
+
+TEST_CASE("max")
+{
+    bool r = test_max<false>();
+    REQUIRE(r);
+}
+
+TEST_CASE("min")
+{
+    bool r = test_min<false>();
+    REQUIRE(r);
+}
+
+TEST_CASE("minmax")
+{
+    bool r = test_minmax<false>();
+    REQUIRE(r);
 }

@@ -13,6 +13,7 @@
 
 namespace {
 
+template <bool = true>
 constexpr bool test_pairwise_map() {
     constexpr auto tuple_sum = [](auto... args) {
         return (args + ...);
@@ -95,6 +96,7 @@ constexpr bool test_pairwise_map() {
 }
 static_assert(test_pairwise_map());
 
+template <bool = true>
 constexpr bool test_adjacent_map()
 {
     constexpr auto tuple_sum = [](auto... args) {
@@ -182,9 +184,9 @@ static_assert(test_adjacent_map());
 
 TEST_CASE("pairwise_map")
 {
-    bool res = test_pairwise_map();
+    bool res = test_pairwise_map<false>();
     REQUIRE(res);
 
-    res = test_adjacent_map();
+    res = test_adjacent_map<false>();
     REQUIRE(res);
 }
