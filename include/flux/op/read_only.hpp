@@ -120,7 +120,7 @@ public:
 struct read_only_fn {
     template <adaptable_sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const
+    constexpr auto operator()(Seq&& seq) const -> read_only_sequence auto
     {
         if constexpr (read_only_sequence<Seq>) {
             return FLUX_FWD(seq);

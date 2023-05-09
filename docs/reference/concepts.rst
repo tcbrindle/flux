@@ -57,12 +57,24 @@ Type aliases
 
     Flux provides the ability to customise the value type, but this is normally only needed for specialised adaptors like :func:`zip`. Most sequence implementations do not need to provide this themselves.
 
+``const_element_t``
+-------------------
+
+..  type:: template <typename Seq> const_element_t = \
+           std::common_reference_t<value_t<Seq> const&&, element_t<Seq>>;
+
+    The *const element type* of a sequence is the element type which is yielded when requesting read-only access to the sequence. For example, if the element type of a sequence is :expr:`int&`, its corresponding :type:`const_element_t` will usually be :expr:`int const&`.
+
+    A sequence models :concept:`read_only_sequence` if its :type:`element_t` and :type:`const_element_t` are the same type.
+
+    ..  note:: :type:`const_element_t\<Seq>` may differ from :type:`element_t\<Seq const>` when :expr:`Seq` has reference-like semantics, for example :expr:`flux::array_ptr<T>` or :expr:`std::reference_wrapper<Seq>`.
+
 ``distance_t``
 --------------
 
 ..  type:: distance_t = config::int_type;
 
-    Flux uses a single signed integer type, aliased as :type:`distance_t`, to represent all distances, sizes, offsets and so on in the library. This will usually be machine word sized i.e. :type:`int64_t` on a 64-bit machine or :type`int32_t` on a 32-bit machine. It can optionally be configured to be a larger signed integer type.
+    Flux uses a single signed integer type, aliased as :type:`distance_t`, to represent all distances, sizes, offsets and so on in the library. This will usually be machine word sized i.e. :type:`int64_t` on a 64-bit machine or :type:`int32_t` on a 32-bit machine. It can optionally be configured to be a larger signed integer type.
 
 ``bounds_t``
 ------------
@@ -163,7 +175,7 @@ Concepts
             multipass_sequence<Seq> &&
             requires (Seq& seq, cursor_t<Seq>& cur) {
                 { Traits<Seq>::dec(seq, cur); }
-        }
+            };
 
     A :concept:`bidirectional_sequence` is a multipass sequence which additionally allows cursors to be *decremented* as well as *incremented* -- that is, one which allows backwards iteration.
 
@@ -196,6 +208,16 @@ Concepts
 
 ..  concept::
     template <typename Seq> infinite_sequence
+
+``read_only_sequence``
+----------------------
+
+..  concept::
+    template <typename Seq> read_only_sequence = \
+        sequence<Seq> && \
+        std::same_as<element_t<Seq>, const_element_t<Seq>>;
+
+    A *read-only sequence* is one which does not allow modification of its elements via the sequence interface -- that is, its :func:`read_at` method returns either a const reference or a prvalue.
 
 ``writable_sequence_of``
 ------------------------
