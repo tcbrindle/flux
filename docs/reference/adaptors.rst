@@ -96,7 +96,52 @@ Adaptors
 ..  function::
     template <multipass_sequence Seq, typename Pred> \
         requires std::predicate<Pred, element_t<Seq>, element_t<Seq>> \
-    auto chunk_by(Seq seq, Pred pred) -> multipass_sequence auto
+    auto chunk_by(Seq seq, Pred pred) -> multipass_sequence auto;
+
+``cycle``
+^^^^^^^^^
+
+..  function::
+    template <sequence Seq> \
+        requires multipass_sequence<Seq> || infinite_sequence<Seq> \
+    auto cycle(Seq seq) -> infinite_sequence auto;
+
+..  function::
+    template <multipass_sequence Seq>\
+    auto cycle(Seq seq, std::integral auto count) \
+        -> multipass_sequence auto;
+
+    Repeats the elements of :var:`seq` endlessly (for the first overload) or :var:`count` times (for the second overload).
+
+    For the first overload, if :var:`Seq` is already an :concept:`infinite_sequence`, it is passed through unchanged.
+
+    Otherwise, both overloads require a :concept:`multipass_sequence`, and the output is always a :concept:`multipass_sequence`. The adapted sequence is also a :concept:`bidirectional_sequence` when :var:`Seq` is both bidirectional and bounded, and a :concept:`random_access_sequence` when :var:`Seq` is random-access and bounded.
+
+    For the second overload, the returned sequence is additionally always a :concept:`bounded_sequence` (even if :var:`Seq` is not), and a :concept:`sized_sequence` when the source sequence is sized.
+
+    To avoid "spooky action at a distance" (where mutating :expr:`s[n]` would change the value of some other :expr:`s[m]`) :func:`cycle` provides only immutable access to the elements of :var:`seq`: that is, it behaves as if :var:`seq` were first passed through :func:`read_only`.
+
+    .. caution::
+
+        In order to provide random-access functionality, cursors for cycled sequences keep a :type:`size_t` count of how many times they have looped round. For very long-running programs using the infinite version of :func:`cycle` it may be possible to overflow this counter. (Assuming 1000 iterations per second, this would take approximately 49 days on a machine with a 32-bit :type:`size_t`, or around 500 million years on a 64-bit machine.)
+
+        While this won't cause undefined behaviour, it's possible to encounter incorrect results or runtime errors when using the random-access functions on cursors which have overflowed.
+
+    :param seq: A sequence to cycle through
+
+    :param count: The number of times to loop through the sequence before terminating. If not supplied, the sequence will be repeated endlessly.
+
+    :returns: An adapted sequence which repeatedly loops through the elements of :var:`seq`.
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/cycle.cpp
+        :language: cpp
+        :dedent:
+        :lines: 14-37
+
+    :see also:
+
 
 ``drop``
 ^^^^^^^^
