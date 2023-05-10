@@ -230,6 +230,10 @@ public:
     constexpr auto chunk_by(Pred pred) &&;
 
     [[nodiscard]]
+    constexpr auto cycle() &&
+            requires infinite_sequence<Derived> || multipass_sequence<Derived>;
+
+    [[nodiscard]]
     constexpr auto drop(std::integral auto count) &&;
 
     template <typename Pred>
