@@ -309,6 +309,7 @@ constexpr bool test_bounded_cycle()
         STATIC_CHECK(not seq.is_empty());
         STATIC_CHECK(check_equal(seq, {1, 2, 1, 2, 1, 2}));
         STATIC_CHECK(seq.sum() == 1 + 2 + 1 + 2 + 1 + 2);
+        STATIC_CHECK(seq.find(2).base_cur == 1);
     }
 
     return true;
