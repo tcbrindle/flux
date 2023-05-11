@@ -246,12 +246,15 @@ TEST_CASE("repeat")
     res = test_repeat_bounded();
     REQUIRE(res);
 
-    SECTION("Unrepresentable distance is caught")
+    SECTION("Unrepresentable distance is caught debug mode")
     {
-        auto seq = flux::repeat(3);
+        if constexpr (flux::config::enable_debug_asserts) {
+            auto seq = flux::repeat(3);
 
-        auto cur = std::numeric_limits<std::size_t>::max();
+            auto cur = std::numeric_limits<std::size_t>::max();
 
-        REQUIRE_THROWS_AS(flux::distance(seq, 0, cur), flux::unrecoverable_error);
+            REQUIRE_THROWS_AS(flux::distance(seq, 0, cur),
+                              flux::unrecoverable_error);
+        }
     }
 }
