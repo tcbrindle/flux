@@ -246,6 +246,12 @@ TEST_CASE("repeat")
     res = test_repeat_bounded();
     REQUIRE(res);
 
+    SECTION("negative argument to bounded repeat() is caught")
+    {
+        REQUIRE_THROWS_AS(flux::repeat(3, -100),
+                          flux::unrecoverable_error);
+    }
+
     SECTION("Unrepresentable distance is caught debug mode")
     {
         if constexpr (flux::config::enable_debug_asserts) {

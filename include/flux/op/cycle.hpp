@@ -228,8 +228,12 @@ struct cycle_fn {
     constexpr auto operator()(Seq&& seq, std::integral auto count) const
         -> multipass_sequence auto
     {
-        auto c = checked_cast<std::size_t>(count);
-        return cycle_adaptor<std::decay_t<Seq>, false>(FLUX_FWD(seq), c);
+        auto c = checked_cast<distance_t>(count);
+        if (c < 0) {
+            runtime_error("Negative count passed to cycle()");
+        }
+        return cycle_adaptor<std::decay_t<Seq>, false>(
+            FLUX_FWD(seq), checked_cast<std::size_t>(c));
     }
 };
 

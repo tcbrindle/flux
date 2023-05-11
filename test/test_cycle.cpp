@@ -327,6 +327,12 @@ TEST_CASE("cycle")
     result = test_bounded_cycle();
     REQUIRE(result);
 
+    SECTION("negative argument to bounded cycle() is caught")
+    {
+        REQUIRE_THROWS_AS(flux::cycle(std::array{1, 2, 3}, -100),
+                          flux::unrecoverable_error);
+    }
+
     SECTION("over-large sizes are caught")
     {
         constexpr auto max_dist = std::numeric_limits<flux::distance_t>::max();

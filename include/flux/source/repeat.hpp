@@ -131,7 +131,8 @@ struct repeat_fn {
         if (c < 0) {
             runtime_error("Negative count passed to repeat()");
         }
-        return repeat_sequence<std::decay_t<T>, false>(FLUX_FWD(obj), c);
+        return repeat_sequence<std::decay_t<T>, false>(
+            FLUX_FWD(obj), checked_cast<std::size_t>(c));
     }
 };
 
