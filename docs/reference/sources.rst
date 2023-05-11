@@ -105,6 +105,48 @@ Sources
         requires see_below \
     auto iota(T from, T to) -> multipass_sequence auto;
 
+``repeat``
+----------
+
+..  function::
+    template <typename T> \
+        requires std::movable<std::decay_t<T>> \
+    auto repeat(T&& obj) -> infinite_sequence auto;
+
+..  function::
+    template <typename T> \
+        requires std::movable<std::decay_t<T>> \
+    auto repeat(T&& obj, std::integral auto count) -> random_access_sequence auto;
+
+    Returns a sequence which yields a const reference to :var:`obj` endlessly (for the first overload) or exactly :var:`count` times (for the second overload).
+
+    For both overloads, the returned sequence is always a :concept:`random_access_sequence`. For the second overload it additionally models :concept:`sized_sequence` and :concept:`bounded_sequence`.
+
+    ..  caution::
+        In order to provide random-access functionality, cursors for repeat sequences keep a :type:`size_t` count of how many times they have been incremented. For very long-running programs using the infinite version of :func:`repeat` it may be possible to overflow this counter. (Assuming 1000 iterations per second, this would take approximately 49 days on a machine with a 32-bit :type:`size_t`, or around 500 million years on a 64-bit machine.)
+
+        While this won't cause undefined behaviour, calling :func:`distance` with cursors that have rolled over may give incorrect results, and may result in a runtime error in debug mode if the result cannot be represented as a :type:`distance_t`.
+
+    :param obj: A movable object which will be stored in the returned sequence object
+    :param count: If provided, a non-negative value to indicate the size of the returned sequence. If not provided, the returned sequence will be infinite.
+
+    :returns: A sequence which repeatedly yields a const reference to :var:`obj`
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/repeat.cpp
+        :language: cpp
+        :dedent:
+        :lines: 16-32
+
+    :see also:
+
+        * `std::views::repeat <https://en.cppreference.com/w/cpp/ranges/repeat_view>`_ (C++23)
+        * :func:`flux::cycle`
+        * :func:`flux::single`
+        * :func:`flux::iota`
+
+
 ``single``
 ----------
 
