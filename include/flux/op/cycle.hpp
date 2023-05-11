@@ -119,12 +119,16 @@ public:
             return static_cast<R>(flux::move_at_unchecked(self.base_, cur.base_cur));
         }
 
-        static constexpr auto for_each_while(auto& self, auto&& func) -> cursor_type
+        static constexpr auto for_each_while(auto& self, auto&& pred) -> cursor_type
         {
+            auto constify_pred = [&pred](auto&& elem) {
+                return std::invoke(pred, static_cast<const_element_t<Base>>(FLUX_FWD(elem)));
+            };
+
             if constexpr (IsInfinite) {
                 std::size_t n = 0;
                 while (true) {
-                    auto cur = flux::for_each_while(self.base_, std::ref(func));
+                    auto cur = flux::for_each_while(self.base_, constify_pred);
                     if (!flux::is_last(self.base_, cur)) {
                         return cursor_type{std::move(cur), n};
                     }
@@ -132,7 +136,7 @@ public:
                 }
             } else {
                 for (std::size_t n = 0; n < self.data_.count; ++n) {
-                    auto cur = flux::for_each_while(self.base_, std::ref(func));
+                    auto cur = flux::for_each_while(self.base_, constify_pred);
                     if (!flux::is_last(self.base_, cur)) {
                         return cursor_type{std::move(cur), n};
                     }

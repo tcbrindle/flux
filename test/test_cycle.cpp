@@ -202,7 +202,8 @@ constexpr bool test_cycle() {
         int sum = 0;
         int counter = 0;
 
-        auto cur = seq.for_each_while([&](int i) {
+        auto cur = seq.for_each_while([&](auto&& i) {
+            static_assert(std::same_as<decltype(i), int const&>);
             sum += i;
             ++counter;
             return sum < 10;

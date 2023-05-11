@@ -176,7 +176,7 @@ constexpr bool test_repeat_bounded()
         {
             auto counter = 0;
             auto cur =
-                flux::for_each_while(seq, [&](int) { return counter++ < 3; });
+                flux::for_each_while(seq, [&](auto&& i) { return counter++ < 3; });
             STATIC_CHECK(cur == 3);
         }
     }
