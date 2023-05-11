@@ -65,6 +65,7 @@
 #include <flux/source/istream.hpp>
 #include <flux/source/istreambuf.hpp>
 #include <flux/source/range.hpp>
+#include <flux/source/repeat.hpp>
 #include <flux/source/single.hpp>
 
 #endif

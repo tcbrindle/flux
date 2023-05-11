@@ -67,6 +67,7 @@ add_executable(test-libflux
     test_iota.cpp
     test_istream.cpp
     test_istreambuf.cpp
+    test_repeat.cpp
     test_single.cpp
 )
 target_link_libraries(test-libflux flux catch-main)
