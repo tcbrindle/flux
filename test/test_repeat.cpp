@@ -176,7 +176,7 @@ constexpr bool test_repeat_bounded()
         {
             auto counter = 0;
             auto cur =
-                flux::for_each_while(seq, [&](auto&& i) { return counter++ < 3; });
+                flux::for_each_while(seq, [&](int) { return counter++ < 3; });
             STATIC_CHECK(cur == 3);
         }
     }
@@ -230,6 +230,19 @@ constexpr bool test_repeat_bounded()
         auto seq = flux::repeat(S(3), 5);
 
         STATIC_CHECK(check_equal(seq, {S(3), S(3), S(3), S(3), S(3)}));
+    }
+
+    // repeat(obj, 0) is an empty sequence
+    {
+        auto seq = flux::repeat(std::string_view("test"), 0);
+
+        STATIC_CHECK(seq.is_empty());
+        STATIC_CHECK(seq.size() == 0);
+        STATIC_CHECK(seq.is_last(seq.first()));
+
+        bool called = false;
+        seq.for_each([&called] (auto) { called = true; });
+        STATIC_CHECK(!called);
     }
 
     return true;
