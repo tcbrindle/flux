@@ -121,6 +121,28 @@ public:
                 return flux::read_at(self.base2_, cur.base2_cursor);
             }
         }
+
+        template <typename Self>
+            requires maybe_const_iterable<Self>
+        static constexpr auto last(Self& self) -> cursor_type
+            requires bounded_sequence<Base1> && bounded_sequence<Base2>
+        {
+            return cursor_type{flux::last(self.base1_), flux::last(self.base2_)};
+        }
+
+        template <typename Self>
+            requires maybe_const_iterable<Self>
+        static constexpr auto move_at(Self& self, cursor_type const& cur)
+            -> std::common_reference_t<decltype(flux::move_at(self.base1_, cur.base1_cursor)), 
+                                       decltype(flux::move_at(self.base2_, cur.base2_cursor))>
+        {
+            if (cur.active_ == cursor_type::first) {
+                return flux::move_at(self.base1_, cur.base1_cursor);
+            } else {
+                return flux::move_at(self.base2_, cur.base2_cursor);
+            }
+        }
+        
     };
 };
 
