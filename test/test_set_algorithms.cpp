@@ -23,7 +23,7 @@ constexpr bool test_set_union()
 
         using T = decltype(union_seq);
         static_assert(flux::sequence<T>);
-        static_assert(not flux::multipass_sequence<T>);
+        static_assert(flux::multipass_sequence<T>);
         static_assert(not flux::sized_sequence<T>);
 
         STATIC_CHECK(check_equal(union_seq, {0, 1, 2, 3, 4, 5, 6}));
@@ -31,21 +31,30 @@ constexpr bool test_set_union()
 
     // Const iteration works as expected
     {
-        auto union_seq = flux::set_union(std::array{0, 2, 4}, std::array{1, 3, 5});
+        std::array arr1{0, 2, 4};
+        std::array arr2{1, 3, 5};
+        auto union_seq = flux::set_union(flux::ref(arr1), flux::ref(arr2));
 
-        using T = decltype(union_seq);
-        static_assert(flux::sequence<T>);
-        static_assert(not flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
-        static_assert(std::same_as<flux::element_t<T>, int&>);
-        static_assert(std::same_as<flux::value_t<T>, int>);
-        static_assert(std::same_as<flux::rvalue_element_t<T>, int&&>);
+        using Seq = decltype(union_seq);
 
-        static_assert(std::same_as<flux::element_t<T const>, int const&>);
-        static_assert(std::same_as<flux::value_t<T const>, int>);
-        static_assert(std::same_as<flux::rvalue_element_t<T const>, int const&&>);
+        static_assert(flux::sequence<Seq>);
+        static_assert(flux::multipass_sequence<Seq>);
+        static_assert(not flux::sized_sequence<Seq>);
 
-        STATIC_CHECK(check_equal(std::as_const(union_seq), {0, 1, 2, 3, 4, 5}));
+        static_assert(std::same_as<flux::element_t<Seq>, int&>);
+        static_assert(std::same_as<flux::value_t<Seq>, int>);
+        static_assert(std::same_as<flux::rvalue_element_t<Seq>, int&&>);
+
+        STATIC_CHECK(check_equal(union_seq, {0, 1, 2, 3, 4, 5}));
+
+        const auto const_union_seq = flux::set_union(flux::ref(std::as_const(arr1)), flux::ref(std::as_const(arr2)));
+        using ConstSeq = decltype(const_union_seq);
+
+        static_assert(std::same_as<flux::element_t<ConstSeq>, int const&>);
+        static_assert(std::same_as<flux::value_t<ConstSeq>, int>);
+        static_assert(std::same_as<flux::rvalue_element_t<ConstSeq>, int const&&>);
+
+        STATIC_CHECK(check_equal(std::as_const(const_union_seq), {0, 1, 2, 3, 4, 5}));
     }
 
     // Non-const-iterable sequences can be chained
@@ -58,31 +67,7 @@ constexpr bool test_set_union()
 
         using T = decltype(union_seq);
         static_assert(flux::sequence<T>);
-        static_assert(not flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
-
-        STATIC_CHECK(check_equal(union_seq, {0, 1, 2, 3, 4, 5}));
-    }
-
-    // Const iteration works as expected
-    {
-        auto union_seq = flux::set_union(std::array{0, 2, 4}, std::array{1, 3, 5});
-
-        using T = decltype(union_seq);
-        static_assert(flux::sequence<T>);
-        static_assert(not flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
-
-        STATIC_CHECK(check_equal(union_seq, {0, 1, 2, 3, 4, 5}));
-    }
-
-    {
-        //auto union_seq = flux::from(arr).set_union(std::array{1, 3, 5});
-        auto union_seq = flux::from(std::array{0, 2, 4}).set_union(flux::from(std::array{1, 3, 5}));
-
-        using T = decltype(union_seq);
-        static_assert(flux::sequence<T>);
-        static_assert(not flux::multipass_sequence<T>);
+        static_assert(flux::multipass_sequence<T>);
         static_assert(not flux::sized_sequence<T>);
 
         STATIC_CHECK(check_equal(union_seq, {0, 1, 2, 3, 4, 5}));
@@ -94,7 +79,7 @@ constexpr bool test_set_union()
 
         using T = decltype(union_seq);
         static_assert(flux::sequence<T>);
-        static_assert(not flux::multipass_sequence<T>);
+        static_assert(flux::multipass_sequence<T>);
         static_assert(not flux::sized_sequence<T>);
 
         STATIC_CHECK(check_equal(union_seq, {1, 3, 5}));
@@ -106,7 +91,7 @@ constexpr bool test_set_union()
 
         using T = decltype(union_seq);
         static_assert(flux::sequence<T>);
-        static_assert(not flux::multipass_sequence<T>);
+        static_assert(flux::multipass_sequence<T>);
         static_assert(not flux::sized_sequence<T>);
 
         STATIC_CHECK(check_equal(union_seq, {1, 3, 5}));
@@ -118,7 +103,7 @@ constexpr bool test_set_union()
 
         using T = decltype(union_seq);
         static_assert(flux::sequence<T>);
-        static_assert(not flux::multipass_sequence<T>);
+        static_assert(flux::multipass_sequence<T>);
         static_assert(not flux::sized_sequence<T>);
 
         STATIC_CHECK(check_equal(union_seq, {5, 4, 3, 2, 1, 0 }));
@@ -134,7 +119,7 @@ constexpr bool test_set_union()
 
         using T = decltype(union_seq);
         static_assert(flux::sequence<T>);
-        static_assert(not flux::multipass_sequence<T>);
+        static_assert(flux::multipass_sequence<T>);
         static_assert(not flux::sized_sequence<T>);
 
         STATIC_CHECK(check_equal(union_seq, std::array<std::pair<int, char>, 6>{
