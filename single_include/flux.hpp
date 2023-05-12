@@ -6408,12 +6408,16 @@ public:
             return static_cast<R>(flux::move_at_unchecked(self.base_, cur.base_cur));
         }
 
-        static constexpr auto for_each_while(auto& self, auto&& func) -> cursor_type
+        static constexpr auto for_each_while(auto& self, auto&& pred) -> cursor_type
         {
+            auto constify_pred = [&pred](auto&& elem) {
+                return std::invoke(pred, static_cast<const_element_t<Base>>(FLUX_FWD(elem)));
+            };
+
             if constexpr (IsInfinite) {
                 std::size_t n = 0;
                 while (true) {
-                    auto cur = flux::for_each_while(self.base_, std::ref(func));
+                    auto cur = flux::for_each_while(self.base_, constify_pred);
                     if (!flux::is_last(self.base_, cur)) {
                         return cursor_type{std::move(cur), n};
                     }
@@ -6421,7 +6425,7 @@ public:
                 }
             } else {
                 for (std::size_t n = 0; n < self.data_.count; ++n) {
-                    auto cur = flux::for_each_while(self.base_, std::ref(func));
+                    auto cur = flux::for_each_while(self.base_, constify_pred);
                     if (!flux::is_last(self.base_, cur)) {
                         return cursor_type{std::move(cur), n};
                     }
@@ -6513,8 +6517,12 @@ struct cycle_fn {
     constexpr auto operator()(Seq&& seq, std::integral auto count) const
         -> multipass_sequence auto
     {
-        auto c = checked_cast<std::size_t>(count);
-        return cycle_adaptor<std::decay_t<Seq>, false>(FLUX_FWD(seq), c);
+        auto c = checked_cast<distance_t>(count);
+        if (c < 0) {
+            runtime_error("Negative count passed to cycle()");
+        }
+        return cycle_adaptor<std::decay_t<Seq>, false>(
+            FLUX_FWD(seq), checked_cast<std::size_t>(c));
     }
 };
 
@@ -11170,6 +11178,152 @@ struct from_crange_fn {
 
 inline constexpr auto from_range = detail::from_range_fn{};
 inline constexpr auto from_crange = detail::from_crange_fn{};
+
+} // namespace flux
+
+#endif
+
+
+// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_SOURCE_REPEAT_HPP_INCLUDED
+#define FLUX_SOURCE_REPEAT_HPP_INCLUDED
+
+
+
+namespace flux {
+
+namespace detail {
+
+template <bool>
+struct repeat_data {};
+
+template <>
+struct repeat_data<false> { std::size_t count; };
+
+template <std::movable T, bool IsInfinite>
+struct repeat_sequence : inline_sequence_base<repeat_sequence<T, IsInfinite>>
+{
+private:
+    T obj_;
+    FLUX_NO_UNIQUE_ADDRESS repeat_data<IsInfinite> data_;
+
+public:
+    constexpr explicit repeat_sequence(decays_to<T> auto&& obj)
+        requires IsInfinite
+        : obj_(FLUX_FWD(obj))
+    {}
+
+    constexpr repeat_sequence(decays_to<T> auto&& obj, std::size_t count)
+        requires (!IsInfinite)
+        : obj_(FLUX_FWD(obj)),
+          data_{count}
+    {}
+
+    struct flux_sequence_traits {
+    private:
+        using self_t = repeat_sequence;
+
+    public:
+        static inline constexpr bool is_infinite = IsInfinite;
+
+        static constexpr auto first(self_t const&) -> std::size_t { return 0; }
+
+        static constexpr auto is_last(self_t const& self, std::size_t cur) -> bool
+        {
+            if constexpr (IsInfinite) {
+                return false;
+            } else {
+                return cur >= self.data_.count;
+            }
+        }
+
+        static constexpr auto inc(self_t const&, std::size_t& cur) -> void
+        {
+            ++cur;
+        }
+
+        static constexpr auto read_at(self_t const& self, std::size_t) -> T const&
+        {
+            return self.obj_;
+        }
+
+        static constexpr auto dec(self_t const&, std::size_t& cur) -> void
+        {
+            --cur;
+        }
+
+        static constexpr auto inc(self_t const&, std::size_t& cur, distance_t offset) -> void
+        {
+            cur += offset;
+        }
+
+        static constexpr auto distance(self_t const&, std::size_t from, std::size_t to) -> distance_t
+        {
+            return checked_cast<distance_t>(to) - checked_cast<distance_t>(from);
+        }
+
+        static constexpr auto for_each_while(self_t const& self, auto&& pred) -> std::size_t
+        {
+            if constexpr (IsInfinite) {
+                std::size_t idx = 0;
+                while (true) {
+                    if (!std::invoke(pred, std::as_const(self.obj_))) {
+                        return idx;
+                    }
+                    ++idx;
+                }
+            } else {
+                std::size_t idx = 0;
+                for ( ; idx < self.data_.count; ++idx) {
+                    if (!std::invoke(pred, std::as_const(self.obj_))) {
+                        break;
+                    }
+                }
+                return idx;
+            }
+        }
+
+        static constexpr auto last(self_t const& self) -> std::size_t
+            requires (!IsInfinite)
+        {
+            return self.data_.count;
+        }
+
+        static constexpr auto size(self_t const& self) -> distance_t
+            requires (!IsInfinite)
+        {
+            return self.data_.count;
+        }
+    };
+};
+
+struct repeat_fn {
+    template <typename T>
+        requires std::movable<std::decay_t<T>>
+    constexpr auto operator()(T&& obj) const
+    {
+        return repeat_sequence<std::decay_t<T>, true>(FLUX_FWD(obj));
+    }
+
+    template <typename T>
+        requires std::movable<std::decay_t<T>>
+    constexpr auto operator()(T&& obj, std::integral auto count) const
+    {
+        auto c = checked_cast<distance_t>(count);
+        if (c < 0) {
+            runtime_error("Negative count passed to repeat()");
+        }
+        return repeat_sequence<std::decay_t<T>, false>(
+            FLUX_FWD(obj), checked_cast<std::size_t>(c));
+    }
+};
+
+} // namespace detail
+
+inline constexpr auto repeat = detail::repeat_fn{};
 
 } // namespace flux
 
