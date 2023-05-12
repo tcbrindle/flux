@@ -418,9 +418,6 @@ public:
                  std::indirectly_writable<Iter, element_t<Derived>>
     constexpr auto output_to(Iter iter) -> Iter;
 
-    template <sequence Seq, typename Cmp = std::ranges::less>
-    constexpr auto set_union(Seq&& seq, Cmp cmp = {});
-
     constexpr auto sum()
         requires foldable<Derived, std::plus<>, value_t<Derived>> &&
                  std::default_initializable<value_t<Derived>>;
