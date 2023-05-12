@@ -96,7 +96,52 @@ Adaptors
 ..  function::
     template <multipass_sequence Seq, typename Pred> \
         requires std::predicate<Pred, element_t<Seq>, element_t<Seq>> \
-    auto chunk_by(Seq seq, Pred pred) -> multipass_sequence auto
+    auto chunk_by(Seq seq, Pred pred) -> multipass_sequence auto;
+
+``cycle``
+^^^^^^^^^
+
+..  function::
+    template <sequence Seq> \
+        requires multipass_sequence<Seq> || infinite_sequence<Seq> \
+    auto cycle(Seq seq) -> infinite_sequence auto;
+
+..  function::
+    template <multipass_sequence Seq>\
+    auto cycle(Seq seq, std::integral auto count) \
+        -> multipass_sequence auto;
+
+    Repeats the elements of :var:`seq` endlessly (for the first overload) or :var:`count` times (for the second overload).
+
+    For the first overload, if :var:`Seq` is already an :concept:`infinite_sequence`, it is passed through unchanged.
+
+    Otherwise, both overloads require a :concept:`multipass_sequence`, and the output is always a :concept:`multipass_sequence`. The adapted sequence is also a :concept:`bidirectional_sequence` when :var:`Seq` is both bidirectional and bounded, and a :concept:`random_access_sequence` when :var:`Seq` is random-access and bounded.
+
+    For the second overload, the returned sequence is additionally always a :concept:`bounded_sequence` (even if :var:`Seq` is not), and a :concept:`sized_sequence` when the source sequence is sized.
+
+    To avoid "spooky action at a distance" (where mutating :expr:`s[n]` would change the value of some other :expr:`s[m]`) :func:`cycle` provides only immutable access to the elements of :var:`seq`: that is, it behaves as if :var:`seq` were first passed through :func:`read_only`.
+
+    .. caution::
+
+        In order to provide random-access functionality, cursors for cycled sequences keep a :type:`size_t` count of how many times they have looped round. For very long-running programs using the infinite version of :func:`cycle` it may be possible to overflow this counter. (Assuming 1000 iterations per second, this would take approximately 49 days on a machine with a 32-bit :type:`size_t`, or around 500 million years on a 64-bit machine.)
+
+        While this won't cause undefined behaviour, it's possible to encounter incorrect results or runtime errors when using the random-access functions on cursors which have overflowed.
+
+    :param seq: A sequence to cycle through
+
+    :param count: The number of times to loop through the sequence before terminating. If not supplied, the sequence will be repeated endlessly.
+
+    :returns: An adapted sequence which repeatedly loops through the elements of :var:`seq`.
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/cycle.cpp
+        :language: cpp
+        :dedent:
+        :lines: 14-37
+
+    :see also:
+
 
 ``drop``
 ^^^^^^^^
@@ -217,6 +262,38 @@ Adaptors
         * `std::exclusive_scan() <https://en.cppreference.com/w/cpp/algorithm/exclusive_scan>`_
         * :func:`flux::scan`
         * :func:`flux::fold`
+
+``read_only``
+^^^^^^^^^^^^^
+
+..  function::
+    template <sequence Seq> \
+    auto read_only(Seq seq) -> read_only_sequence auto;
+
+    Returns an adapted sequence which prevents direct modification of the elements of :var:`seq`. The returned sequence retains the capabilities of the source sequence, all the way up to :concept:`contiguous_sequence`.
+
+    If :var:`Seq` is already a :concept:`read_only_sequence`, then it is returned unchanged. Otherwise, :func:`read_only` is equivalent to::
+
+        map(seq, [](auto&& elem) -> const_element_t<Seq> {
+            return static_cast<const_element_t<Seq>>(std::forward(elem));
+        });
+
+    except that the returned sequence will be a :concept:`contiguous_sequence` if the source sequence models that concept. In this case, the pointer returned from :func:`data` will have type :expr:`value_t<Seq> const*`.
+
+    :param seq: A sequence
+
+    :returns: An adapted sequence which provides read-only access to the elements of :var:`seq`
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/read_only.cpp
+        :language: cpp
+        :dedent:
+        :lines: 12-34
+
+    :see also:
+        * `std::views::as_const() <https://en.cppreference.com/w/cpp/ranges/as_const_view>`_ (C++23)
+        * :func:`flux::map`
 
 ``reverse``
 ^^^^^^^^^^^

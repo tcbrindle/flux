@@ -26,6 +26,7 @@ add_executable(test-libflux
     test_compare.cpp
     test_count.cpp
     test_count_if.cpp
+    test_cycle.cpp
     test_drop.cpp
     test_drop_while.cpp
     test_ends_with.cpp
@@ -42,6 +43,7 @@ add_executable(test-libflux
     test_minmax.cpp
     test_output_to.cpp
     test_range_iface.cpp
+    test_read_only.cpp
     test_reverse.cpp
     test_scan.cpp
     test_set_algorithms.cpp

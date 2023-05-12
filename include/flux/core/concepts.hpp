@@ -13,7 +13,12 @@
 #include <concepts>
 #include <cstdint>
 #include <initializer_list>
+#include <tuple>
 #include <type_traits>
+
+#if defined(__cpp_lib_ranges_zip) && (__cpp_lib_ranges_zip >= 202110L)
+#define FLUX_HAVE_CPP23_TUPLE_COMMON_REF
+#endif
 
 namespace flux {
 
@@ -101,6 +106,9 @@ using rvalue_element_t = typename detail::rvalue_element_type<Seq>::type;
 template <typename Seq>
 using common_element_t = std::common_reference_t<element_t<Seq>, value_t<Seq>&>;
 
+template <typename Seq>
+using const_element_t = std::common_reference_t<value_t<Seq> const&&, element_t<Seq>>;
+
 namespace detail {
 
 template <typename B>
@@ -128,10 +136,11 @@ concept sequence_concept =
     requires (Seq& seq, cursor_t<Seq>& cur) {
         { Traits::inc(seq, cur) };
     } &&
+#ifdef FLUX_HAVE_CPP23_TUPLE_COMMON_REF
+    std::common_reference_with<element_t<Seq>&&, value_t<Seq>&> &&
+    std::common_reference_with<rvalue_element_t<Seq>&&, value_t<Seq> const&> &&
+#endif
     std::common_reference_with<element_t<Seq>&&, rvalue_element_t<Seq>&&>;
-    // FIXME FIXME: Need C++23 tuple changes, otherwise zip breaks these
-/*    std::common_reference_with<element_t<Seq>&&, value_t<Seq>&> &&
-    std::common_reference_with<rvalue_element_t<Seq>&&, value_t<Seq> const&>;*/
 
 } // namespace detail
 
@@ -255,6 +264,11 @@ template <typename Seq>
 concept infinite_sequence =
     sequence<Seq> &&
     detail::is_infinite_seq<detail::traits_t<Seq>>;
+
+template <typename Seq>
+concept read_only_sequence =
+    sequence<Seq> &&
+    std::same_as<element_t<Seq>, const_element_t<Seq>>;
 
 namespace detail {
 
