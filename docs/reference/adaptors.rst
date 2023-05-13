@@ -388,20 +388,19 @@ Adaptors
 
 ..  function::
     template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::less> \
-        requires compatible<Seq1, Seq2> and \
-                 strict_weak_order_for<Cmp, Seq1> and \
-                 strict_weak_order_for<Cmp, Seq2> \
+        requires see_below
     auto set_union(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) -> sequence auto;
 
     Returns a sequence adaptor which yields the set union of the two input sequences :var:`seq1` and :var:`seq2`, ordered by the given comparison function :var:`cmp`.
 
-    This function assumes that both :var:`seq1` and :var:`seq2` are sorted in ascending order with respect to the comparison function :var:`cmp`. If the input sequences are not sorted, the behavior is undefined.
+    This function assumes that both :var:`seq1` and :var:`seq2` are sorted in ascending order with respect to the comparison function :var:`cmp`. If the input sequences are not sorted, the contents of the resulting sequence is unspecified.
 
-    The resulting sequence is stateful, and its iteration is based on the two input sequences, so it requires at most one pass through each input sequence. When the resulting sequence is iterated, it will output the elements from the two input sequences in order according to :var:`cmp`, but without duplicates.
+    When the resulting sequence is iterated, it will output the elements from the two input sequences in order according to :var:`cmp`. If some element is found `m` times in :var:`seq1` and `n` times in :var:`seq2`, then the resulting sequence yields exactly `max(n, m)` elements.
 
     :param seq1: The first sequence to merge.
     :param seq2: The second sequence to merge.
     :param cmp: A binary predicate that takes two elements as arguments and returns true if the first element is less than the second.
+    :requires: Both :var:`Seq1` and :var:`Seq2` must have common l-value and r-value reference, common value type and must be equality comparable with respect to `Cmp`.
 
     :returns: A sequence adaptor that represents the set union of the two input sequences.
 

@@ -113,7 +113,8 @@ public:
         template <typename Self>
             requires maybe_const_iterable<Self>
         static constexpr auto read_at(Self& self, cursor_type const& cur)
-            -> std::common_reference_t<element_t<Base1>, element_t<Base2>>
+            -> std::common_reference_t<decltype(flux::read_at(self.base1_, cur.base1_cursor)), 
+                                       decltype(flux::read_at(self.base2_, cur.base2_cursor))>
         {
             if (cur.active_ == cursor_type::first) {
                 return flux::read_at(self.base1_, cur.base1_cursor);
@@ -123,9 +124,9 @@ public:
         }
 
         template <typename Self>
-            requires maybe_const_iterable<Self>
+            requires maybe_const_iterable<Self> && 
+                     bounded_sequence<Base1> && bounded_sequence<Base2>
         static constexpr auto last(Self& self) -> cursor_type
-            requires bounded_sequence<Base1> && bounded_sequence<Base2>
         {
             return cursor_type{flux::last(self.base1_), flux::last(self.base2_)};
         }

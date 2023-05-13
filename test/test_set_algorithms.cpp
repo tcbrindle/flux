@@ -47,7 +47,7 @@ constexpr bool test_set_union()
 
         STATIC_CHECK(check_equal(union_seq, {0, 1, 2, 3, 4, 5}));
 
-        const auto const_union_seq = flux::set_union(flux::ref(std::as_const(arr1)), flux::ref(std::as_const(arr2)));
+        const auto const_union_seq = flux::set_union(arr1, arr2);
         using ConstSeq = decltype(const_union_seq);
 
         static_assert(std::same_as<flux::element_t<ConstSeq>, int const&>);
@@ -57,7 +57,7 @@ constexpr bool test_set_union()
         STATIC_CHECK(check_equal(std::as_const(const_union_seq), {0, 1, 2, 3, 4, 5}));
     }
 
-    // Non-const-iterable sequences can be chained
+    // Non-const-iterable sequences
     {
         int arr1[] = {0, 2, 4};
         int arr2[] = {1, 3, 5};
@@ -124,6 +124,33 @@ constexpr bool test_set_union()
 
         STATIC_CHECK(check_equal(union_seq, std::array<std::pair<int, char>, 6>{
                         {{0, 'a'}, {1, 'x'}, {2, 'b'}, {3, 'y'}, {4, 'c'}, {5, 'z'}}}));
+    }
+
+    // test with repeating values
+    {
+        std::array arr1{1, 2, 3, 3, 3};
+        std::array arr2{2, 3, 3, 4};
+
+        auto union_seq = flux::set_union(arr1, arr2);
+
+        STATIC_CHECK(check_equal(union_seq, {1, 2, 3, 3, 3, 4}));
+    }
+
+    // test with different (but compatible) types
+    {
+        std::array arr1{1, 2, 3, 4, 5};
+        std::array arr2{4.0, 5.0, 6.0};
+
+        auto union_seq = flux::set_union(arr1, arr2);
+
+        using T = decltype(union_seq);
+
+        static_assert(std::same_as<flux::element_t<T>, double>);
+        static_assert(std::same_as<flux::value_t<T>, double>);
+        static_assert(std::same_as<flux::rvalue_element_t<T>, double>);
+        static_assert(std::same_as<flux::const_element_t<T>, double>);
+
+        STATIC_CHECK(check_equal(union_seq, {1.0, 2.0, 3.0, 4.0, 5.0, 6.0}));
     }
 
     return true;
