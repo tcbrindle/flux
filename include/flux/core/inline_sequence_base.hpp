@@ -230,6 +230,9 @@ public:
     constexpr auto chunk_by(Pred pred) &&;
 
     [[nodiscard]]
+    constexpr auto cursors() & requires std::copy_constructible<cursor_t<Derived>>;
+
+    [[nodiscard]]
     constexpr auto cycle() &&
             requires infinite_sequence<Derived> || multipass_sequence<Derived>;
 
