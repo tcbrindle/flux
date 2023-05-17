@@ -10,6 +10,7 @@ add_example(example-merge-intervals merge_intervals.cpp)
 add_example(example-histogram histogram.cpp)
 add_example(example-word-count word_count.cpp)
 add_example(example-prime-numbers prime_numbers.cpp)
+add_example(example-shortest-path shortest_path.cpp)
 
 add_example(example-docs-adjacent docs/adjacent.cpp)
 add_example(example-docs-all docs/all.cpp)
