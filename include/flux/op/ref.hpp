@@ -210,6 +210,19 @@ struct ref_fn {
 inline constexpr auto mut_ref = detail::mut_ref_fn{};
 inline constexpr auto ref = detail::ref_fn{};
 
+template <typename D>
+constexpr auto inline_sequence_base<D>::ref() const&
+    requires sequence<D const>
+{
+    return flux::ref(derived());
+}
+
+template <typename D>
+constexpr auto inline_sequence_base<D>::mut_ref() &
+{
+    return flux::mut_ref(derived());
+}
+
 } // namespace flux
 
 #endif // FLUX_OP_REF_HPP_INCLUDED
