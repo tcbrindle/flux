@@ -73,7 +73,7 @@ constexpr bool test_drop() {
     {
         auto const arr = std::array{1, 2, 3, 4, 5};
 
-        auto dropped = flux::ref(arr).drop(5);
+        auto dropped = flux::cref(arr).drop(5);
 
         STATIC_CHECK(dropped.is_empty());
         STATIC_CHECK(dropped.size() == 0);
@@ -86,7 +86,7 @@ constexpr bool test_drop() {
     {
         auto const arr = std::array{1, 2, 3, 4, 5};
 
-        auto dropped = flux::ref(arr).drop(1000UL);
+        auto dropped = flux::cref(arr).drop(1000UL);
 
         STATIC_CHECK(dropped.is_empty());
         STATIC_CHECK(dropped.size() == 0);

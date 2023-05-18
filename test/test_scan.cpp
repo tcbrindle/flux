@@ -21,7 +21,7 @@ constexpr bool test_inclusive_scan()
     {
         std::array arr{1, 2, 3, 4, 5};
 
-        auto seq = flux::ref(arr).scan(std::plus<>{});
+        auto seq = flux::cref(arr).scan(std::plus<>{});
 
         using S = decltype(seq);
         static_assert(flux::sequence<S>);
@@ -83,7 +83,7 @@ constexpr bool test_prescan()
     {
         std::array arr{1, 2, 3, 4, 5};
 
-        auto seq = flux::ref(arr).prescan(std::plus<>{}, 0);
+        auto seq = flux::cref(arr).prescan(std::plus<>{}, 0);
 
         using S = decltype(seq);
         static_assert(flux::sequence<S>);
@@ -153,7 +153,7 @@ constexpr bool test_scan_first()
     {
         std::array arr{1, 2, 3, 4, 5};
 
-        auto seq = flux::ref(arr).scan_first(std::plus<>{});
+        auto seq = flux::cref(arr).scan_first(std::plus<>{});
 
         using S = decltype(seq);
         static_assert(flux::sequence<S>);

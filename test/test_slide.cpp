@@ -19,7 +19,7 @@ constexpr bool test_slide()
     {
         std::array arr{1, 2, 3, 4, 5};
 
-        auto seq = flux::ref(arr).slide(2);
+        auto seq = flux::cref(arr).slide(2);
 
         using S = decltype(seq);
         static_assert(flux::multipass_sequence<S>);

@@ -22,7 +22,7 @@ constexpr bool test_pairwise_map() {
     {
         std::array arr{1, 2, 3, 4, 5};
 
-        auto seq = flux::ref(arr).pairwise_map(tuple_sum);
+        auto seq = flux::cref(arr).pairwise_map(tuple_sum);
 
         using S = decltype(seq);
 
@@ -105,7 +105,7 @@ constexpr bool test_adjacent_map()
     {
         std::array arr{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
-        auto seq = flux::ref(arr).adjacent_map<4>(tuple_sum);
+        auto seq = flux::cref(arr).adjacent_map<4>(tuple_sum);
 
         using S = decltype(seq);
 

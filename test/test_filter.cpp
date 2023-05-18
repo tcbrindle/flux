@@ -43,7 +43,7 @@ constexpr bool test_filter()
     // Basic filtering
     {
         int arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-        auto filtered = flux::filter(flux::ref(arr), is_even);
+        auto filtered = flux::filter(flux::cref(arr), is_even);
         using F = decltype(filtered);
         static_assert(flux::sequence<F>);
         static_assert(flux::bidirectional_sequence<F>);
@@ -128,7 +128,7 @@ constexpr bool test_filter()
     // Reversed sequences can be filtered
     {
         int arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-        auto filtered = flux::ref(arr).reverse().filter(is_even);
+        auto filtered = flux::cref(arr).reverse().filter(is_even);
 
         if (!check_equal(filtered, {8, 6, 4, 2, 0})) {
             return false;
@@ -138,7 +138,7 @@ constexpr bool test_filter()
     // ... and filtered sequences can be reversed
     {
         int arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-        auto filtered = flux::filter(flux::ref(arr), is_even).reverse();
+        auto filtered = flux::filter(flux::cref(arr), is_even).reverse();
 
         if (!check_equal(filtered, {8, 6, 4, 2, 0})) {
             return false;
