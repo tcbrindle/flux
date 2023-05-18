@@ -18,7 +18,7 @@ constexpr bool test_map()
     {
         int arr[] = {0, 1, 2, 3, 4};
 
-        auto mapped = flux::map(flux::ref(arr), [](int& i) { return i * 2; });
+        auto mapped = flux::map(flux::mut_ref(arr), [](int& i) { return i * 2; });
 
         using M = decltype(mapped);
 
@@ -65,7 +65,7 @@ constexpr bool test_map()
     {
         int arr[] = {0, 1, 2, 3, 4};
 
-        auto cur = flux::cref(arr).map([](int i) { return i * 2; }).find(4);
+        auto cur = flux::ref(arr).map([](int i) { return i * 2; }).find(4);
 
         STATIC_CHECK(cur == 2);
     }

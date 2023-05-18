@@ -87,8 +87,8 @@ constexpr bool test_chunk_by() {
 
     // chunk_by is reversible when the underlying sequence is
     {
-        auto seq = flux::cref(arr).chunk_by([](P p0, P p1) { return p0.first == p1.first; })
-                                  .reverse();
+        auto seq = flux::ref(arr).chunk_by([](P p0, P p1) { return p0.first == p1.first; })
+                                 .reverse();
 
         STATIC_CHECK(flux::count(seq) == 2);
 
@@ -124,7 +124,7 @@ constexpr bool test_chunk_by() {
 
     {
         int a[] = {0, 1, 2, 3, 4, 5};
-        auto seq = flux::cref(a).filter(flux::pred::odd).chunk_by(flux::pred::true_);
+        auto seq = flux::ref(a).filter(flux::pred::odd).chunk_by(flux::pred::true_);
         STATIC_CHECK(check_equal(seq.front().value(), {1, 3, 5}));
         STATIC_CHECK(seq.count() == 1);
     }

@@ -173,8 +173,9 @@ public:
     };
 };
 
-struct ref_fn {
+struct mut_ref_fn {
     template <sequence Seq>
+        requires (!std::is_const_v<Seq>)
     [[nodiscard]]
     constexpr auto operator()(Seq& seq) const
     {
@@ -186,7 +187,7 @@ struct ref_fn {
     }
 };
 
-struct cref_fn {
+struct ref_fn {
     template <typename Seq>
         requires (!is_ref_adaptor<Seq> && sequence<Seq const>)
     [[nodiscard]]
@@ -209,8 +210,8 @@ struct cref_fn {
 
 } // namespace detail
 
+inline constexpr auto mut_ref = detail::mut_ref_fn{};
 inline constexpr auto ref = detail::ref_fn{};
-inline constexpr auto cref = detail::cref_fn{};
 
 } // namespace flux
 

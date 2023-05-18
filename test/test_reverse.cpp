@@ -72,7 +72,7 @@ constexpr bool test_reverse()
     {
         std::array arr{0, 1, 2, 3, 4};
 
-        auto seq = flux::from(arr).reverse().reverse().reverse();
+        auto seq = flux::ref(arr).reverse().reverse().reverse();
 
         using S = decltype(seq);
 

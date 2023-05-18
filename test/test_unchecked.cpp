@@ -35,7 +35,7 @@ constexpr bool test_unchecked()
         auto ints = std::array{5, 4, 3, 2, 1};
         auto doubles = std::array{3.0, 2.0, 1.0};
 
-        auto seq = unchecked(zip(ref(ints), ref(doubles)));
+        auto seq = unchecked(zip(mut_ref(ints), mut_ref(doubles)));
 
         using S = decltype(seq);
 
