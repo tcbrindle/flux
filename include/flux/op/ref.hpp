@@ -73,15 +73,12 @@ struct passthrough_traits_base {
     }
 
     template <typename Self>
-    static constexpr auto size(Self& self)
-        -> decltype(flux::size(self.base()))
-        requires sized_sequence<decltype(self.base())>
+    static constexpr auto size(Self& self) -> decltype(flux::size(self.base()))
     {
         return flux::size(self.base());
     }
 
-    static constexpr auto last(auto& self)
-        -> decltype(flux::last(self.base()))
+    static constexpr auto last(auto& self) -> decltype(flux::last(self.base()))
     {
         return flux::last(self.base());
     }
