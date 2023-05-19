@@ -20,7 +20,11 @@ struct from_fn {
     constexpr auto operator()(Seq&& seq) const
     {
         if constexpr (std::is_lvalue_reference_v<Seq>) {
-            return flux::ref(seq);
+            if constexpr (std::is_const_v<std::remove_reference_t<Seq>>) {
+                return flux::ref(seq);
+            } else {
+                return flux::mut_ref(seq);
+            }
         } else {
             return detail::owning_adaptor<Seq>(FLUX_FWD(seq));
         }

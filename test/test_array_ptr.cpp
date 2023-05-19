@@ -95,7 +95,7 @@ constexpr bool test_array_ptr_ctor()
 
     // We are trivially copyable, movable, *-assignable and destructible
     {
-        using AP = flux::array_ptr<int>;
+        using AP = flux::array_ptr<int const>;
         std::array arr{1, 2, 3};
         AP p1(arr);
 

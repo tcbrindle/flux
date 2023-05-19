@@ -87,9 +87,8 @@ constexpr bool test_chunk_by() {
 
     // chunk_by is reversible when the underlying sequence is
     {
-        auto seq = flux::ref(arr)
-                                        .chunk_by([](P p0, P p1) { return p0.first == p1.first; })
-                                        .reverse();
+        auto seq = flux::ref(arr).chunk_by([](P p0, P p1) { return p0.first == p1.first; })
+                                 .reverse();
 
         STATIC_CHECK(flux::count(seq) == 2);
 
