@@ -37,7 +37,7 @@ constexpr bool test_cache_last()
         std::array arr{1, 2, 3, 4, 5};
 
         auto seq = flux::from(arr);
-        auto cached = flux::cache_last(flux::ref(seq));
+        auto cached = flux::cache_last(flux::ref(arr));
 
         STATIC_CHECK(&seq.base() == &cached.base());
         STATIC_CHECK(&cached.base() == &arr);

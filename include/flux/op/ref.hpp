@@ -133,6 +133,15 @@ public:
         : base_(std::addressof(static_cast<Base&>(FLUX_FWD(seq))))
     {}
 
+    // We are always movable
+    ref_adaptor(ref_adaptor&&) = default;
+    ref_adaptor& operator=(ref_adaptor&&) = default;
+    ~ref_adaptor() = default;
+
+    // ...but only copyable when `Base` is const
+    ref_adaptor(ref_adaptor const&) requires std::is_const_v<Base> = default;
+    ref_adaptor& operator=(ref_adaptor const&) requires std::is_const_v<Base> = default;
+
     constexpr Base& base() const noexcept { return *base_; }
 
     struct flux_sequence_traits : passthrough_traits_base<Base> {
