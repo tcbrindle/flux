@@ -2136,6 +2136,12 @@ public:
         return std::invoke(FLUX_FWD(func), std::move(derived()), FLUX_FWD(args)...);
     }
 
+    constexpr auto ref() const& requires sequence<Derived const>;
+
+    auto ref() const&& -> void = delete;
+
+    constexpr auto mut_ref() &;
+
     /*
      * Iterator support
      */
@@ -3039,78 +3045,8 @@ namespace flux {
 
 namespace detail {
 
-template <sequence Base>
-struct ref_adaptor : inline_sequence_base<ref_adaptor<Base>> {
-private:
-    Base* base_;
-
-    static void test_func(Base&) noexcept;
-    static void test_func(Base&&) = delete;
-
-public:
-    // This seems thoroughly overcomplicated, but it's the formulation
-    // std::reference_wrapper and ranges::ref_view use to avoid binding rvalues
-    // when Base is a const type, while also avoiding implicit conversions
-    template <typename Seq>
-        requires (!std::same_as<std::decay_t<Seq>, ref_adaptor> &&
-                  std::convertible_to<Seq, Base&> &&
-                  requires { test_func(std::declval<Seq>()); })
-    constexpr ref_adaptor(Seq&& seq)
-        noexcept(noexcept(test_func(std::declval<Seq>())))
-        : base_(std::addressof(static_cast<Base&>(FLUX_FWD(seq))))
-    {}
-
-    constexpr Base& base() const noexcept { return *base_; }
-
-    friend struct sequence_traits<ref_adaptor>;
-};
-
-template <typename>
-inline constexpr bool is_ref_adaptor = false;
-
-template <typename T>
-inline constexpr bool is_ref_adaptor<ref_adaptor<T>> = true;
-
-struct ref_fn {
-    template <sequence Seq>
-    [[nodiscard]]
-    constexpr auto operator()(Seq& seq) const
-    {
-        if constexpr (is_ref_adaptor<Seq>) {
-            return seq;
-        } else {
-            return ref_adaptor<Seq>(seq);
-        }
-    }
-};
-
-template <sequence Base>
-    requires std::movable<Base>
-struct owning_adaptor : inline_sequence_base<owning_adaptor<Base>> {
-private:
-    Base base_;
-
-public:
-    constexpr explicit owning_adaptor(Base&& base)
-        : base_(std::move(base))
-    {}
-
-    owning_adaptor(owning_adaptor&&) = default;
-    owning_adaptor& operator=(owning_adaptor&&) = default;
-
-    constexpr Base& base() & noexcept { return base_; }
-    constexpr Base const& base() const& noexcept { return base_; }
-    constexpr Base&& base() && noexcept { return std::move(base_); }
-    constexpr Base const&& base() const&& noexcept { return std::move(base_); }
-
-    friend struct sequence_traits<owning_adaptor>;
-};
-
 template <typename Base>
 struct passthrough_traits_base {
-
-    template <typename Self>
-    using cursor_t = decltype(flux::first(FLUX_DECLVAL(Self&).base()));
 
     static constexpr auto first(auto& self)
         -> decltype(flux::first(self.base()))
@@ -3119,42 +3055,42 @@ struct passthrough_traits_base {
     }
 
     template <typename Self>
-    static constexpr auto is_last(Self& self, cursor_t<Self> const& cur)
+    static constexpr auto is_last(Self& self, auto const& cur)
         -> decltype(flux::is_last(self.base(), cur))
     {
         return flux::is_last(self.base(), cur);
     }
 
     template <typename Self>
-    static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
+    static constexpr auto read_at(Self& self, auto const& cur)
         -> decltype(flux::read_at(self.base(), cur))
     {
         return flux::read_at(self.base(), cur);
     }
 
     template <typename Self>
-    static constexpr auto inc(Self& self, cursor_t<Self>& cur)
+    static constexpr auto inc(Self& self, auto& cur)
         -> decltype(flux::inc(self.base(), cur))
     {
         return flux::inc(self.base(), cur);
     }
 
     template <typename Self>
-    static constexpr auto dec(Self& self, cursor_t<Self>& cur)
+    static constexpr auto dec(Self& self, auto& cur)
         -> decltype(flux::dec(self.base(), cur))
     {
         return flux::dec(self.base(), cur);
     }
 
     template <typename Self>
-    static constexpr auto inc(Self& self, cursor_t<Self>& cur, distance_t dist)
+    static constexpr auto inc(Self& self, auto& cur, distance_t dist)
         -> decltype(flux::inc(self.base(), cur, dist))
     {
         return flux::inc(self.base(), cur, dist);
     }
 
     template <typename Self>
-    static constexpr auto distance(Self& self, cursor_t<Self> const& from, cursor_t<Self> const& to)
+    static constexpr auto distance(Self& self, auto const& from, auto const& to)
         -> decltype(flux::distance(self.base(), from, to))
         requires random_access_sequence<decltype(self.base())>
     {
@@ -3168,15 +3104,12 @@ struct passthrough_traits_base {
     }
 
     template <typename Self>
-    static constexpr auto size(Self& self)
-        -> decltype(flux::size(self.base()))
-        requires sized_sequence<decltype(self.base())>
+    static constexpr auto size(Self& self) -> decltype(flux::size(self.base()))
     {
         return flux::size(self.base());
     }
 
-    static constexpr auto last(auto& self)
-        -> decltype(flux::last(self.base()))
+    static constexpr auto last(auto& self) -> decltype(flux::last(self.base()))
     {
         return flux::last(self.base());
     }
@@ -3208,37 +3141,127 @@ struct passthrough_traits_base {
     {
         return flux::for_each_while(self.base(), FLUX_FWD(pred));
     }
+};
 
-    template <typename Self>
-    static constexpr auto slice(Self& self, cursor_t<Self> from, cursor_t<Self> to)
-        -> decltype(traits_t<decltype(self.base())>::slice(self.base(), std::move(from), std::move(to)))
+template <sequence Base>
+struct ref_adaptor : inline_sequence_base<ref_adaptor<Base>> {
+private:
+    Base* base_;
+
+    static void test_func(Base&) noexcept;
+    static void test_func(Base&&) = delete;
+
+public:
+    // This seems thoroughly overcomplicated, but it's the formulation
+    // std::reference_wrapper and ranges::ref_view use to avoid binding rvalues
+    // when Base is a const type, while also avoiding implicit conversions
+    template <typename Seq>
+        requires (!std::same_as<std::decay_t<Seq>, ref_adaptor> &&
+                  std::convertible_to<Seq, Base&> &&
+                  requires { test_func(std::declval<Seq>()); })
+    constexpr ref_adaptor(Seq&& seq)
+        noexcept(noexcept(test_func(std::declval<Seq>())))
+        : base_(std::addressof(static_cast<Base&>(FLUX_FWD(seq))))
+    {}
+
+    // We are always movable
+    ref_adaptor(ref_adaptor&&) = default;
+    ref_adaptor& operator=(ref_adaptor&&) = default;
+    ~ref_adaptor() = default;
+
+    // ...but only copyable when `Base` is const
+    ref_adaptor(ref_adaptor const&) requires std::is_const_v<Base> = default;
+    ref_adaptor& operator=(ref_adaptor const&) requires std::is_const_v<Base> = default;
+
+    constexpr Base& base() const noexcept { return *base_; }
+
+    struct flux_sequence_traits : passthrough_traits_base<Base> {
+        using value_type = value_t<Base>;
+    };
+};
+
+template <typename>
+inline constexpr bool is_ref_adaptor = false;
+
+template <typename T>
+inline constexpr bool is_ref_adaptor<ref_adaptor<T>> = true;
+
+template <sequence Base>
+    requires std::movable<Base>
+struct owning_adaptor : inline_sequence_base<owning_adaptor<Base>> {
+private:
+    Base base_;
+
+public:
+    constexpr explicit owning_adaptor(Base&& base)
+        : base_(std::move(base))
+    {}
+
+    owning_adaptor(owning_adaptor&&) = default;
+    owning_adaptor& operator=(owning_adaptor&&) = default;
+
+    constexpr Base& base() & noexcept { return base_; }
+    constexpr Base const& base() const& noexcept { return base_; }
+    constexpr Base&& base() && noexcept { return std::move(base_); }
+    constexpr Base const&& base() const&& noexcept { return std::move(base_); }
+
+    struct flux_sequence_traits : passthrough_traits_base<Base> {
+        using value_type = value_t<Base>;
+    };
+};
+
+struct mut_ref_fn {
+    template <sequence Seq>
+        requires (!std::is_const_v<Seq>)
+    [[nodiscard]]
+    constexpr auto operator()(Seq& seq) const
     {
-        return traits_t<decltype(self.base())>::slice(self.base(), std::move(from), std::move(to));
+        if constexpr (is_ref_adaptor<Seq>) {
+            return seq;
+        } else {
+            return ref_adaptor<Seq>(seq);
+        }
+    }
+};
+
+struct ref_fn {
+    template <typename Seq>
+        requires (!is_ref_adaptor<Seq> && sequence<Seq const>)
+    [[nodiscard]]
+    constexpr auto operator()(Seq const& seq) const
+    {
+        return ref_adaptor<Seq const>(seq);
     }
 
-    template <typename Self>
-    static constexpr auto slice(Self& self, cursor_t<Self> from)
-        -> decltype(traits_t<decltype(self.base())>::slice(self.base(), std::move(from)))
+    template <typename Seq>
+        requires sequence<Seq const>
+    [[nodiscard]]
+    constexpr auto operator()(ref_adaptor<Seq> ref) const
     {
-        return traits_t<decltype(self.base())>::slice(self.base(), std::move(from));
+        return ref_adaptor<Seq const>(ref.base());
     }
+
+    template <typename T>
+    auto operator()(T const&&) const -> void = delete;
 };
 
 } // namespace detail
 
-template <typename Base>
-struct sequence_traits<detail::ref_adaptor<Base>>
-    : detail::passthrough_traits_base<Base> {
-    using value_type = value_t<Base>;
-};
-
-template <typename Base>
-struct sequence_traits<detail::owning_adaptor<Base>>
-    : detail::passthrough_traits_base<Base> {
-    using value_type = value_t<Base>;
-};
-
+inline constexpr auto mut_ref = detail::mut_ref_fn{};
 inline constexpr auto ref = detail::ref_fn{};
+
+template <typename D>
+constexpr auto inline_sequence_base<D>::ref() const&
+    requires sequence<D const>
+{
+    return flux::ref(derived());
+}
+
+template <typename D>
+constexpr auto inline_sequence_base<D>::mut_ref() &
+{
+    return flux::mut_ref(derived());
+}
 
 } // namespace flux
 
@@ -3256,7 +3279,11 @@ struct from_fn {
     constexpr auto operator()(Seq&& seq) const
     {
         if constexpr (std::is_lvalue_reference_v<Seq>) {
-            return flux::ref(seq);
+            if constexpr (std::is_const_v<std::remove_reference_t<Seq>>) {
+                return flux::ref(seq);
+            } else {
+                return flux::mut_ref(seq);
+            }
         } else {
             return detail::owning_adaptor<Seq>(FLUX_FWD(seq));
         }
@@ -9339,7 +9366,7 @@ struct sort_fn {
                  strict_weak_order_for<Cmp, Seq>
     constexpr auto operator()(Seq&& seq, Cmp cmp = {}) const
     {
-        auto wrapper = flux::unchecked(flux::ref(seq));
+        auto wrapper = flux::unchecked(flux::from(seq));
         detail::pdqsort(wrapper, cmp);
     }
 };
@@ -10432,7 +10459,8 @@ public:
     array_ptr() = default;
 
     template <typename U>
-        requires detail::non_slicing_ptr_convertible<U, T>
+        requires (!std::same_as<U, T> &&
+                  detail::non_slicing_ptr_convertible<U, T>)
     constexpr explicit(false) array_ptr(array_ptr<U> const& other) noexcept
         : data_(flux::data(other)),
           sz_(flux::size(other))
@@ -10448,47 +10476,54 @@ public:
           sz_(flux::size(seq))
     {}
 
-    friend constexpr auto operator==(array_ptr lhs, array_ptr rhs) -> bool
+    array_ptr(array_ptr&&) = default;
+    array_ptr& operator=(array_ptr&&) = default;
+    ~array_ptr() = default;
+
+    array_ptr(array_ptr const&) requires std::is_const_v<T> = default;
+    array_ptr& operator=(array_ptr const&) requires std::is_const_v<T> = default;
+
+    friend constexpr auto operator==(array_ptr const& lhs, array_ptr const&  rhs) -> bool
     {
         return std::ranges::equal_to{}(lhs.data_, rhs.data_) && lhs.sz_ == rhs.sz_;
     }
 
     struct flux_sequence_traits {
 
-        static constexpr auto first(array_ptr) -> index_t { return 0; }
+        static constexpr auto first(array_ptr const&) -> index_t { return 0; }
 
-        static constexpr auto is_last(array_ptr self, index_t idx) -> bool
+        static constexpr auto is_last(array_ptr const& self, index_t idx) -> bool
         {
             return idx >= self.sz_;
         }
 
-        static constexpr auto inc(array_ptr self, index_t& idx) -> void
+        static constexpr auto inc(array_ptr const& self, index_t& idx) -> void
         {
             FLUX_DEBUG_ASSERT(idx < self.sz_);
             idx = num::checked_add(idx, distance_t{1});
         }
 
-        static constexpr auto read_at(array_ptr self, index_t idx) -> T&
+        static constexpr auto read_at(array_ptr const& self, index_t idx) -> T&
         {
             bounds_check(idx >= 0);
             bounds_check(idx < self.sz_);
             return self.data_[idx];
         }
 
-        static constexpr auto read_at_unchecked(array_ptr self, index_t idx) -> T&
+        static constexpr auto read_at_unchecked(array_ptr const& self, index_t idx) -> T&
         {
             return self.data_[idx];
         }
 
-        static constexpr auto dec(array_ptr, index_t& idx) -> void
+        static constexpr auto dec(array_ptr const& , index_t& idx) -> void
         {
             FLUX_DEBUG_ASSERT(idx > 0);
             --idx;
         }
 
-        static constexpr auto last(array_ptr self) -> index_t { return self.sz_; }
+        static constexpr auto last(array_ptr const& self) -> index_t { return self.sz_; }
 
-        static constexpr auto inc(array_ptr self, index_t& idx, distance_t offset)
+        static constexpr auto inc(array_ptr const& self, index_t& idx, distance_t offset)
             -> void
         {
             index_t nxt = num::checked_add(idx, offset);
@@ -10497,20 +10532,20 @@ public:
             idx = nxt;
         }
 
-        static constexpr auto distance(array_ptr, index_t from, index_t to)
+        static constexpr auto distance(array_ptr const&, index_t from, index_t to)
             -> distance_t
         {
             return num::checked_sub(to, from);
         }
 
-        static constexpr auto size(array_ptr self) -> distance_t
+        static constexpr auto size(array_ptr const& self) -> distance_t
         {
             return self.sz_;
         }
 
-        static constexpr auto data(array_ptr self) -> T* { return self.data_; }
+        static constexpr auto data(array_ptr const& self) -> T* { return self.data_; }
 
-        static constexpr auto for_each_while(array_ptr self, auto&& pred)
+        static constexpr auto for_each_while(array_ptr const& self, auto&& pred)
         {
             index_t idx = 0;
             for (; idx < self.sz_; idx++) {
