@@ -236,7 +236,7 @@ public:
     constexpr auto chunk_by(Pred pred) &&;
 
     [[nodiscard]]
-    constexpr auto cursors() && requires std::copy_constructible<cursor_t<Derived>>;
+    constexpr auto cursors() && requires multipass_sequence<Derived>;
 
     [[nodiscard]]
     constexpr auto cycle() &&

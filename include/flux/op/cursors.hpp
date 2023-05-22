@@ -82,7 +82,7 @@ public:
 
 struct cursors_fn {
     template <adaptable_sequence Seq>
-        requires std::copy_constructible<cursor_t<Seq>>
+        requires multipass_sequence<Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const -> sequence auto
     {
@@ -96,7 +96,7 @@ inline constexpr auto cursors = detail::cursors_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::cursors() &&
-    requires std::copy_constructible<cursor_t<D>>
+    requires multipass_sequence<D>
 {
     return flux::cursors(std::move(derived()));
 }
