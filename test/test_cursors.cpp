@@ -49,7 +49,7 @@ constexpr bool test_cursors()
     {
         auto seq = flux::repeat(10);
 
-        auto curs = seq.cursors();
+        auto curs = std::move(seq).cursors();
 
         using S = decltype(curs);
 
@@ -70,7 +70,7 @@ constexpr bool test_cursors()
         auto const arr = std::array{101, 102, 103, 104, 105, 106, 107, 108, 109, 110};
 
         auto evens = flux::filter(arr, flux::pred::even);
-        auto indices_of_evens = evens.cursors();
+        auto indices_of_evens = std::move(evens).cursors();
 
         STATIC_CHECK(flux::count(indices_of_evens) == 5);
         STATIC_CHECK(check_equal(indices_of_evens, {1, 3, 5, 7, 9}));
@@ -109,7 +109,7 @@ TEST_CASE("cursors")
         auto seq = flux::zip(std::array{1, 2, 3, 4, 5},
                              std::array{5, 4, 3, 2, 1});
 
-        for (auto idx : seq.cursors()) {
+        for (auto idx : flux::ref(seq).cursors()) {
             auto [a, b] = seq[idx];
             oss << a << b << ' ';
         }
