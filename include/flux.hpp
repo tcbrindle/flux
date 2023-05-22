@@ -20,6 +20,7 @@
 #include <flux/op/compare.hpp>
 #include <flux/op/contains.hpp>
 #include <flux/op/count.hpp>
+#include <flux/op/cursors.hpp>
 #include <flux/op/cycle.hpp>
 #include <flux/op/drop.hpp>
 #include <flux/op/drop_while.hpp>

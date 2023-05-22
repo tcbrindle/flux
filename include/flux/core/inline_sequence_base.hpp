@@ -236,6 +236,9 @@ public:
     constexpr auto chunk_by(Pred pred) &&;
 
     [[nodiscard]]
+    constexpr auto cursors() && requires multipass_sequence<Derived>;
+
+    [[nodiscard]]
     constexpr auto cycle() &&
             requires infinite_sequence<Derived> || multipass_sequence<Derived>;
 
