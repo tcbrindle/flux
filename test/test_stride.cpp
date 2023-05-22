@@ -318,7 +318,7 @@ constexpr bool test_stride_bidir()
     {
         std::array arr{9, 8, 7, 6, 5, 4, 3, 2, 1};
 
-        flux::ref(arr).stride(3).sort();
+        flux::mut_ref(arr).stride(3).sort();
 
         STATIC_CHECK(check_equal(arr, {3, 8, 7, 6, 5, 4, 9, 2, 1}));
     }
