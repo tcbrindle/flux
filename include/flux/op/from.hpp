@@ -26,9 +26,28 @@ struct from_fn {
     }
 };
 
+struct from_fwd_ref_fn {
+    template <sequence Seq>
+        requires adaptable_sequence<Seq> || std::is_lvalue_reference_v<Seq>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq) const
+    {
+        if constexpr (std::is_lvalue_reference_v<Seq>) {
+            if constexpr (std::is_const_v<std::remove_reference_t<Seq>>) {
+                return flux::ref(seq);
+            } else {
+                return flux::mut_ref(seq);
+            }
+        } else {
+            return from_fn{}(seq);
+        }
+    }
+};
+
 } // namespace detail
 
 inline constexpr auto from = detail::from_fn{};
+inline constexpr auto from_fwd_ref = detail::from_fwd_ref_fn{};
 
 } // namespace flux
 

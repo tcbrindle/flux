@@ -141,7 +141,7 @@ constexpr auto to(Seq&& seq, Args&&... args) -> Container
         }
     } else {
         static_assert(sequence<element_t<Seq>>);
-        return flux::to<Container>(flux::map(flux::from(FLUX_FWD(seq)), [](auto&& elem) {
+        return flux::to<Container>(flux::map(flux::from_fwd_ref(FLUX_FWD(seq)), [](auto&& elem) {
             return flux::to<detail::container_value_t<Container>>(FLUX_FWD(elem));
         }), FLUX_FWD(args)...);
     }
