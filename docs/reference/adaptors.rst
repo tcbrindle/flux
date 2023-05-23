@@ -383,6 +383,101 @@ Adaptors
         * :func:`flux::scan`
         * :func:`flux::fold_first`
 
+``set_difference``
+^^^^^^^^^^^^^^^^^^
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::less> \
+        requires strict_weak_order_for<Cmp, Seq1> && strict_weak_order_for<Cmp, Seq2> \
+    auto set_difference(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) -> sequence auto;
+
+    Returns a sequence adaptor which yields the set difference of the two input sequences :var:`seq1` and :var:`seq2`, ordered by the given comparison function :var:`cmp`.
+
+    This function assumes that both :var:`seq1` and :var:`seq2` are sorted in ascending order with respect to the comparison function :var:`cmp`. If the input sequences are not sorted, the contents of the resulting sequence is unspecified.
+
+    When the resulting sequence is iterated, it will output the elements from :var:`seq1` which are not found in the :var:`seq2` according to :var:`cmp`. If some element is found `m` times in :var:`seq1` and `n` times in :var:`seq2`, then the resulting sequence yields exactly `max(n, m)` elements.
+
+    :param seq1: The first sorted sequence.
+    :param seq2: The second sorted sequence.
+    :param cmp: A binary predicate that takes two elements as arguments and returns true if the first element is less than the second.
+
+    :returns: A sequence adaptor that represents the set difference of the two input sequences.
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/set_difference.cpp
+        :language: cpp
+        :dedent:
+        :lines: 14-19
+
+    :see also:
+        * `std::set_union() <https://en.cppreference.com/w/cpp/algorithm/set_difference>`_
+        * :func:`flux::set_symmetric_difference`
+        * :func:`flux::set_intersection`
+        * :func:`flux::set_union`
+
+``set_symmetric_difference``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+..  function::
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::less> \
+        requires see_below \
+    auto set_symmetric_difference(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) -> sequence auto;
+
+    Returns a sequence adaptor which yields the set symmetric difference of the two input sequences :var:`seq1` and :var:`seq2`, ordered by the given comparison function :var:`cmp`.
+
+    This function assumes that both :var:`seq1` and :var:`seq2` are sorted in ascending order with respect to the comparison function :var:`cmp`. If the input sequences are not sorted, the contents of the resulting sequence is unspecified.
+
+    When the resulting sequence is iterated, it will output the elements that are found in either of the sequence, but not in both of them according to :var:`cmp`. If some element is found `m` times in :var:`seq1` and `n` times in :var:`seq2`, then the resulting sequence yields exactly `max(n, m)` elements.
+
+    :requires: Both :var:`Seq1` and :var:`Seq2` must have common l-value and r-value reference, common value type and must be equality comparable with respect to `Cmp`.
+    :param seq1: The first sequence to merge.
+    :param seq2: The second sequence to merge.
+    :param cmp: A binary predicate that takes two elements as arguments and returns true if the first element is less than the second.
+
+    :returns: A sequence adaptor that represents the set symmetric difference of the two input sequences.
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/set_symmetric_difference.cpp
+        :language: cpp
+        :dedent:
+        :lines: 14-19
+
+    :see also:
+        * `std::set_union() <https://en.cppreference.com/w/cpp/algorithm/set_symmetric_difference>`_
+        * :func:`flux::set_difference`
+        * :func:`flux::set_intersection`
+        * :func:`flux::set_union`
+
+``set_intersection``
+^^^^^^^^^^^^^^^^^^^^
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::less> \
+        requires strict_weak_order_for<Cmp, Seq1> && strict_weak_order_for<Cmp, Seq2> \
+    auto set_intersection(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) -> sequence auto;
+
+    Returns a sequence adaptor which yields the set intersection of the two input sequences :var:`seq1` and :var:`seq2`, ordered by the given comparison function :var:`cmp`.
+
+    This function assumes that both :var:`seq1` and :var:`seq2` are sorted in ascending order with respect to the comparison function :var:`cmp`. If the input sequences are not sorted, the contents of the resulting sequence is unspecified.
+
+    When the resulting sequence is iterated, it will output the elements from :var:`seq1` that are found in both sorted sequences according to :var:`cmp`. If some element is found `m` times in :var:`seq1` and `n` times in :var:`seq2`, then the resulting sequence yields exactly `max(n, m)` elements.
+
+    :param seq1: The first sorted sequence.
+    :param seq2: The second sorted sequence.
+    :param cmp: A binary predicate that takes two elements as arguments and returns true if the first element is less than the second.
+
+    :returns: A sequence adaptor that represents the set intersection of the two input sequences.
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/set_intersection.cpp
+        :language: cpp
+        :dedent:
+        :lines: 14-19
+
+    :see also:
+        * `std::set_union() <https://en.cppreference.com/w/cpp/algorithm/set_intersection>`_
+        * :func:`flux::set_difference`
+        * :func:`flux::set_union`
+
 ``set_union``
 ^^^^^^^^^^^^^
 
@@ -398,8 +493,8 @@ Adaptors
     When the resulting sequence is iterated, it will output the elements from the two input sequences in order according to :var:`cmp`. If some element is found `m` times in :var:`seq1` and `n` times in :var:`seq2`, then the resulting sequence yields exactly `max(n, m)` elements.
 
     :requires: Both :var:`Seq1` and :var:`Seq2` must have common l-value and r-value reference, common value type and must be equality comparable with respect to `Cmp`.
-    :param seq1: The first sequence to merge.
-    :param seq2: The second sequence to merge.
+    :param seq1: The first sorted sequence to merge.
+    :param seq2: The second sorted sequence to merge.
     :param cmp: A binary predicate that takes two elements as arguments and returns true if the first element is less than the second.
 
     :returns: A sequence adaptor that represents the set union of the two input sequences.
@@ -409,7 +504,7 @@ Adaptors
     ..  literalinclude:: ../../example/docs/set_union.cpp
         :language: cpp
         :dedent:
-        :lines: 14-20
+        :lines: 14-19
 
     :see also:
         * `std::set_union() <https://en.cppreference.com/w/cpp/algorithm/set_union>`_

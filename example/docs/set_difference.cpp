@@ -11,10 +11,10 @@
 
 int main()
 {
-    std::array arr1{1, 3, 5};
-    std::array arr2{1, 2, 4, 6};
+    std::array arr1{0, 1, 2, 3, 4, 5};
+    std::array arr2{   1,    3,    5};
 
-    auto merged = flux::set_union(flux::ref(arr1), flux::ref(arr2));
+    auto merged = flux::set_difference(flux::ref(arr1), flux::ref(arr2));
 
-    assert(flux::equal(merged, std::array{1, 2, 3, 4, 5, 6}));
+    assert(flux::equal(merged, std::array{0, 2, 4}));
 }
