@@ -17,7 +17,17 @@ struct sort_fn {
                  strict_weak_order_for<Cmp, Seq>
     constexpr auto operator()(Seq&& seq, Cmp cmp = {}) const
     {
-        auto wrapper = flux::unchecked(flux::from(seq));
+        auto wrapper = [&] {
+            if constexpr (std::is_lvalue_reference_v<Seq>) {
+                if constexpr (std::is_const_v<std::remove_reference_t<Seq>>) {
+                    return flux::unchecked(flux::ref(seq));
+                } else {
+                    return flux::unchecked(flux::mut_ref(seq));
+                }
+            } else {
+                return flux::unchecked(FLUX_FWD(seq));
+            }
+        }();
         detail::pdqsort(wrapper, cmp);
     }
 };

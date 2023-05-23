@@ -61,7 +61,7 @@ constexpr bool test_filter()
     // Filtering single-pass sequences works okay
     {
         int arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-        auto filtered = single_pass_only(flux::from(arr)).filter(is_even);
+        auto filtered = single_pass_only(flux::ref(arr)).filter(is_even);
         using F = decltype(filtered);
         static_assert(flux::sequence<F>);
         static_assert(not flux::multipass_sequence<F>);

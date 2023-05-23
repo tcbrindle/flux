@@ -73,7 +73,7 @@ constexpr bool test_map()
     {
         std::pair<int, int> pairs[] = { {0, 0}, {1, 1}, {2, 2}, {3, 3}, {4, 4}};
 
-        auto mapped = flux::from(pairs).map(&std::pair<int, int>::first);
+        auto mapped = flux::mut_ref(pairs).map(&std::pair<int, int>::first);
 
         using M = decltype(mapped);
         static_assert(flux::random_access_sequence<M>);

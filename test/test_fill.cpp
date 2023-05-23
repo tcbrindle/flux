@@ -40,7 +40,7 @@ constexpr bool test_fill()
     {
         std::array<int, 5> arr{};
 
-        single_pass_only(flux::from(arr)).fill(1);
+        single_pass_only(flux::mut_ref(arr)).fill(1);
 
         STATIC_CHECK(check_equal(arr, {1, 1, 1, 1, 1}));
     }

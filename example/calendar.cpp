@@ -149,7 +149,7 @@ app_args_t parse_args(int argc, char** argv) {
         return std::pair{s.substr(0, pos), s.substr(std::min(flux::count(s), pos + 1))};
     };
 
-    for (const auto& [key, val] : flux::from(args).map(to_pair)) {
+    for (const auto& [key, val] : flux::ref(args).map(to_pair)) {
         if (auto it = args_map.find(key); it != args_map.end()) {
             std::invoke(it->second, val);
         } else {

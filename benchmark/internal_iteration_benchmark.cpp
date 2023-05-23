@@ -50,7 +50,7 @@ int main(int argc, char** argv)
         });
 
         bench.run("transform_filter_flux", [&] {
-            auto r = flux::from(bunch_of_ints).map(triple).filter(is_even);
+            auto r = flux::ref(bunch_of_ints).map(triple).filter(is_even);
             int res = r.sum();
             an::doNotOptimizeAway(res);
         });
@@ -118,7 +118,7 @@ int main(int argc, char** argv)
 
         bench.run("concat_take_transform_filter_flux", [&] {
             int res =
-                flux::chain(std::cref(bunch_of_ints), std::cref(moar_ints))
+                flux::chain(flux::ref(bunch_of_ints), flux::ref(moar_ints))
                     .take(1'500'000)
                     .map(triple)
                     .filter(is_even)

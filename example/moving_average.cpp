@@ -42,7 +42,7 @@ int main() {
     std::vector intervals = {1, 5, 6, 1, 2, 9, 7, -1, 0};
 
     // compute moving average by scan adaptor (more effective for large windows)
-    auto ma = flux::from(intervals)
+    auto ma = flux::ref(intervals)
         .scan(sliding_window, sliding_window_t(3))
         .map(&sliding_window_t::average)
         .to<std::vector>();
@@ -55,7 +55,7 @@ int main() {
     assert(ma.back() == 2); // (7 + -1 + 0) / 3
 
     // compute moving average by slide adaptor (less effective for large windows)
-    auto ma2 = flux::from(intervals)
+    auto ma2 = flux::ref(intervals)
         .slide(3)
         .map([](auto&& win) { return win.sum() / win.size(); })
         .to<std::vector>();
