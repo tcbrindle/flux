@@ -3196,12 +3196,9 @@ private:
     Base base_;
 
 public:
-    constexpr explicit owning_adaptor(Base&& base)
-        : base_(std::move(base))
+    constexpr explicit owning_adaptor(decays_to<Base> auto&& base)
+        : base_(FLUX_FWD(base))
     {}
-
-    owning_adaptor(owning_adaptor&&) = default;
-    owning_adaptor& operator=(owning_adaptor&&) = default;
 
     constexpr Base& base() & noexcept { return base_; }
     constexpr Base const& base() const& noexcept { return base_; }
@@ -3276,8 +3273,21 @@ namespace flux {
 namespace detail {
 
 struct from_fn {
+    template <adaptable_sequence Seq>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq) const
+    {
+        if constexpr (derived_from_inline_sequence_base<Seq>) {
+            return FLUX_FWD(seq);
+        } else {
+            return owning_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq));
+        }
+    }
+};
+
+struct from_fwd_ref_fn {
     template <sequence Seq>
-        requires (std::is_lvalue_reference_v<Seq> || adaptable_sequence<Seq>)
+        requires adaptable_sequence<Seq> || std::is_lvalue_reference_v<Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const
     {
@@ -3288,7 +3298,7 @@ struct from_fn {
                 return flux::mut_ref(seq);
             }
         } else {
-            return detail::owning_adaptor<Seq>(FLUX_FWD(seq));
+            return from_fn{}(seq);
         }
     }
 };
@@ -3296,6 +3306,7 @@ struct from_fn {
 } // namespace detail
 
 inline constexpr auto from = detail::from_fn{};
+inline constexpr auto from_fwd_ref = detail::from_fwd_ref_fn{};
 
 } // namespace flux
 
@@ -9476,7 +9487,7 @@ struct sort_fn {
                  strict_weak_order_for<Cmp, Seq>
     constexpr auto operator()(Seq&& seq, Cmp cmp = {}) const
     {
-        auto wrapper = flux::unchecked(flux::from(seq));
+        auto wrapper = flux::unchecked(flux::from_fwd_ref(FLUX_FWD(seq)));
         detail::pdqsort(wrapper, cmp);
     }
 };
@@ -10330,7 +10341,7 @@ constexpr auto to(Seq&& seq, Args&&... args) -> Container
         }
     } else {
         static_assert(sequence<element_t<Seq>>);
-        return flux::to<Container>(flux::map(flux::from(FLUX_FWD(seq)), [](auto&& elem) {
+        return flux::to<Container>(flux::map(flux::from_fwd_ref(FLUX_FWD(seq)), [](auto&& elem) {
             return flux::to<detail::container_value_t<Container>>(FLUX_FWD(elem));
         }), FLUX_FWD(args)...);
     }
@@ -11030,14 +11041,14 @@ struct from_istreambuf_fn {
     auto operator()(std::basic_streambuf<CharT, Traits>* streambuf) const -> sequence auto
     {
         FLUX_ASSERT(streambuf != nullptr);
-        return flux::from(*streambuf);
+        return flux::mut_ref(*streambuf);
     }
 
     template <typename CharT, typename Traits>
     [[nodiscard]]
     auto operator()(std::basic_istream<CharT, Traits>& istream) const -> sequence auto
     {
-        return flux::from(*istream.rdbuf());
+        return flux::mut_ref(*istream.rdbuf());
     }
 };
 
