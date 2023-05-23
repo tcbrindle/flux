@@ -59,7 +59,7 @@ token_t parse_line(const std::string& line)
     else if (line.starts_with("[") and line.ends_with("]"))
         return section_t{line.substr(1, line.size() - 2)};
 
-    auto items = flux::from(line).split_string("=").to<std::vector>();
+    auto items = flux::ref(line).split_string("=").to<std::vector>();
     if (items.size() != 2)
         throw std::runtime_error("parse error");
     return option_t{std::string{items[0]}, std::string{items[1]}};

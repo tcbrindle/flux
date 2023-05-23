@@ -36,7 +36,7 @@ constexpr bool test_cache_last()
     {
         std::array arr{1, 2, 3, 4, 5};
 
-        auto seq = flux::from(arr);
+        auto seq = flux::ref(arr);
         auto cached = flux::cache_last(flux::ref(arr));
 
         STATIC_CHECK(&seq.base() == &cached.base());
@@ -47,7 +47,7 @@ constexpr bool test_cache_last()
     {
         std::array arr{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
-        flux::from(arr)
+        flux::mut_ref(arr)
             .take_while([](int i) { return i <= 5; })
             .cache_last()
             .inplace_reverse();

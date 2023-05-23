@@ -162,12 +162,9 @@ private:
     Base base_;
 
 public:
-    constexpr explicit owning_adaptor(Base&& base)
-        : base_(std::move(base))
+    constexpr explicit owning_adaptor(decays_to<Base> auto&& base)
+        : base_(FLUX_FWD(base))
     {}
-
-    owning_adaptor(owning_adaptor&&) = default;
-    owning_adaptor& operator=(owning_adaptor&&) = default;
 
     constexpr Base& base() & noexcept { return base_; }
     constexpr Base const& base() const& noexcept { return base_; }
