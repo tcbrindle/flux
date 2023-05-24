@@ -83,7 +83,7 @@ public:
         return m;
     }
 
-    void print(std::ostream& s, bool print_costs = true) {
+    void print(std::ostream& s, bool print_costs = true) const {
         auto to_char = [print_costs] (int num) {
             if (num == wall) { return "#"s; }
             if (num == path) { return color::yellow("*"); }
@@ -96,7 +96,7 @@ public:
         
         s << h_edge;
         for (auto&& row: flux::ref(fields_).map(to_char).chunk(width_)) {
-            intersperse(flux::chain(flux::from(edge), FLUX_FWD(row), flux::from(edge)), " "s).output_to(out);
+            intersperse(flux::chain(flux::ref(edge), FLUX_FWD(row), flux::ref(edge)), " "s).output_to(out);
             s << '\n';
         }
         s << h_edge;
