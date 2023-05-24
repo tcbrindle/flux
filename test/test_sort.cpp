@@ -81,7 +81,7 @@ constexpr bool test_sort_contexpr()
             "delta"sv
         };
 
-        flux::zip(std::array{3, 2, 4, 1}, flux::ref(arr))
+        flux::zip(std::array{3, 2, 4, 1}, flux::mut_ref(arr))
             .sort(flux::proj(std::ranges::greater{},
                            [](auto const& elem) { return std::get<0>(elem); }));
 

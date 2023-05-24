@@ -20,6 +20,7 @@
 #include <flux/op/compare.hpp>
 #include <flux/op/contains.hpp>
 #include <flux/op/count.hpp>
+#include <flux/op/cursors.hpp>
 #include <flux/op/cycle.hpp>
 #include <flux/op/drop.hpp>
 #include <flux/op/drop_while.hpp>
@@ -66,6 +67,7 @@
 #include <flux/source/istream.hpp>
 #include <flux/source/istreambuf.hpp>
 #include <flux/source/range.hpp>
+#include <flux/source/repeat.hpp>
 #include <flux/source/single.hpp>
 
 #endif

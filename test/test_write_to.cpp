@@ -33,7 +33,7 @@ TEST_CASE("write to")
 
         std::ostringstream oss;
 
-        flux::from(vec).write_to(oss);
+        flux::ref(vec).write_to(oss);
 
         REQUIRE(oss.str() == "[[[1, 2], [3, 4]], [[5, 6], [7, 8]], [[9, 10], [11, 12]]]");
     }

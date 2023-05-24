@@ -59,12 +59,12 @@ constexpr bool test_reverse()
     {
         std::array arr{0, 1, 2, 3, 4};
 
-        auto seq = flux::from(arr).reverse().reverse();
+        auto seq = flux::ref(arr).reverse().reverse();
 
         using S = decltype(seq);
 
         static_assert(flux::contiguous_sequence<S>);
-        static_assert(std::same_as<S, decltype(flux::from(arr))>);
+        static_assert(std::same_as<S, decltype(flux::ref(arr))>);
 
         STATIC_CHECK(seq.data() == arr.data());
     }
@@ -72,7 +72,7 @@ constexpr bool test_reverse()
     {
         std::array arr{0, 1, 2, 3, 4};
 
-        auto seq = flux::from(arr).reverse().reverse().reverse();
+        auto seq = flux::ref(arr).reverse().reverse().reverse();
 
         using S = decltype(seq);
 

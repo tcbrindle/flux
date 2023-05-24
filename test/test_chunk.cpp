@@ -311,7 +311,7 @@ constexpr bool test_chunk_bidir()
     {
         std::array arr{1, 2, 3, 4, 5};
 
-        auto const seq = flux::chunk(std::cref(arr), 2);
+        auto const seq = flux::chunk(flux::ref(arr), 2);
 
         using S = decltype(seq);
         static_assert(flux::multipass_sequence<S>);

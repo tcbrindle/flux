@@ -202,7 +202,8 @@ constexpr bool test_cycle() {
         int sum = 0;
         int counter = 0;
 
-        auto cur = seq.for_each_while([&](int i) {
+        auto cur = seq.for_each_while([&](auto&& i) {
+            static_assert(std::same_as<decltype(i), int const&>);
             sum += i;
             ++counter;
             return sum < 10;
@@ -325,6 +326,12 @@ TEST_CASE("cycle")
 
     result = test_bounded_cycle();
     REQUIRE(result);
+
+    SECTION("negative argument to bounded cycle() is caught")
+    {
+        REQUIRE_THROWS_AS(flux::cycle(std::array{1, 2, 3}, -100),
+                          flux::unrecoverable_error);
+    }
 
     SECTION("over-large sizes are caught")
     {

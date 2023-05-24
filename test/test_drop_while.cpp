@@ -35,7 +35,7 @@ constexpr bool test_drop_while()
     {
         int arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-        auto seq = single_pass_only(flux::from(arr)).drop_while([](int i) { return i < 5; });
+        auto seq = single_pass_only(flux::ref(arr)).drop_while([](int i) { return i < 5; });
 
         using S = decltype(seq);
 

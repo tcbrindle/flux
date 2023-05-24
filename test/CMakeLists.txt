@@ -26,6 +26,7 @@ add_executable(test-libflux
     test_compare.cpp
     test_count.cpp
     test_count_if.cpp
+    test_cursors.cpp
     test_cycle.cpp
     test_drop.cpp
     test_drop_while.cpp
@@ -68,6 +69,7 @@ add_executable(test-libflux
     test_iota.cpp
     test_istream.cpp
     test_istreambuf.cpp
+    test_repeat.cpp
     test_single.cpp
 )
 target_link_libraries(test-libflux flux catch-main)

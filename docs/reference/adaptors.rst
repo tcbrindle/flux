@@ -98,6 +98,28 @@ Adaptors
         requires std::predicate<Pred, element_t<Seq>, element_t<Seq>> \
     auto chunk_by(Seq seq, Pred pred) -> multipass_sequence auto;
 
+``cursors``
+^^^^^^^^^^^
+
+..  function::
+    auto cursors(multipass_sequence auto seq) -> multipass_sequence auto;
+
+    Given a sequence :var:`seq`, :expr:`cursors(seq)` returns a new sequence whose elements are the cursors of the original sequence. The :func:`cursors` sequence retains all the capabilities of the source sequence (bidirectional, random access, sized etc), up to :concept:`contiguous_sequence`.
+
+    This is basically a passthrough adaptor, except that :expr:`read_at(seq, cur)` returns a copy of :var:`cur`.
+
+    :param seq: A multipass sequence
+
+    :returns: A sequence whose elements are the cursors of :var:`seq`
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/cursors.cpp
+        :language: cpp
+        :dedent:
+        :lines: 16-29
+
+
 ``cycle``
 ^^^^^^^^^
 

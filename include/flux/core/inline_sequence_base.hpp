@@ -191,6 +191,12 @@ public:
         return std::invoke(FLUX_FWD(func), std::move(derived()), FLUX_FWD(args)...);
     }
 
+    constexpr auto ref() const& requires sequence<Derived const>;
+
+    auto ref() const&& -> void = delete;
+
+    constexpr auto mut_ref() &;
+
     /*
      * Iterator support
      */
@@ -228,6 +234,9 @@ public:
                  std::predicate<Pred&, element_t<Derived>, element_t<Derived>>
     [[nodiscard]]
     constexpr auto chunk_by(Pred pred) &&;
+
+    [[nodiscard]]
+    constexpr auto cursors() && requires multipass_sequence<Derived>;
 
     [[nodiscard]]
     constexpr auto cycle() &&

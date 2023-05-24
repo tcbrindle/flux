@@ -45,7 +45,7 @@ constexpr bool test_find()
             return false;
         }
 
-        auto lens = flux::from(ints);
+        auto lens = flux::ref(ints);
 
         cur = lens.find(3);
         if (cur != 3) {
@@ -74,7 +74,7 @@ TEST_CASE("find")
 
     {
         std::vector<int> vec{1, 2, 3, 4, 5};
-        auto idx = flux::from(vec).find(99);
+        auto idx = flux::ref(vec).find(99);
         REQUIRE(idx == std::ssize(vec));
     }
 

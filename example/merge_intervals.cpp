@@ -38,7 +38,7 @@ int main()
     // sort intervals according to begin
     flux::sort(intervals, flux::proj(std::less{}, &interval_t::begin));
 
-    flux::from(intervals)
+    flux::ref(intervals)
          .chunk_by(is_overlapped)
          .map(merge)
          .write_to(std::cout);

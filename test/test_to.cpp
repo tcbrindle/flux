@@ -145,7 +145,7 @@ TEST_CASE("to")
             SECTION("...to vector")
             {
                 std::vector<int> vec1{1, 2, 3, 4, 5};
-                auto vec2 = single_pass_only(flux::from(vec1)).to<std::vector<int>>();
+                auto vec2 = single_pass_only(flux::ref(vec1)).to<std::vector<int>>();
                 CHECK(vec1 == vec2);
             }
 
@@ -171,7 +171,7 @@ TEST_CASE("to")
             SECTION("...to vector")
             {
                 std::vector<int> vec1{1, 2, 3, 4, 5};
-                auto vec2 = single_pass_only(flux::from(vec1)).to<std::vector<int, A>>(A{});
+                auto vec2 = single_pass_only(flux::ref(vec1)).to<std::vector<int, A>>(A{});
                 CHECK(std::ranges::equal(vec1, vec2));
             }
 
@@ -315,7 +315,7 @@ TEST_CASE("to")
             SECTION("...to vector")
             {
                 std::vector<int> vec1{1, 2, 3, 4, 5};
-                auto vec2 = single_pass_only(flux::from(vec1)).to<std::vector>();
+                auto vec2 = single_pass_only(flux::ref(vec1)).to<std::vector>();
                 using V = decltype(vec2);
                 static_assert(std::same_as<typename V::value_type, int>);
                 CHECK(vec1 == vec2);

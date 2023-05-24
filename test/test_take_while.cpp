@@ -57,7 +57,7 @@ constexpr bool test_take_while()
     {
         int arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-        auto cur = flux::from(arr)
+        auto cur = flux::ref(arr)
                      .take_while([](int i) { return i < 5; })
                      .find(99);
 

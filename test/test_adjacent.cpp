@@ -31,7 +31,7 @@ constexpr bool test_pairwise()
     {
         std::array arr{1, 2, 3, 4, 5};
 
-        auto seq = flux::ref(arr).pairwise();
+        auto seq = flux::mut_ref(arr).pairwise();
 
         using S = decltype(seq);
         static_assert(flux::multipass_sequence<S>);

@@ -56,7 +56,7 @@ constexpr bool test_read_only() {
     // Mutable rvalue ref -> const rvalue ref
     {
         std::array arr{1, 2, 3, 4, 5};
-        auto seq = flux::ref(arr)
+        auto seq = flux::mut_ref(arr)
             .map([](int& elem) -> int&&  { return std::move(elem); })
             .read_only();
 
