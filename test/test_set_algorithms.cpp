@@ -33,7 +33,7 @@ constexpr bool test_set_union()
     {
         std::array arr1{0,  2,  4};
         std::array arr2{  1,  3,  5};
-        auto union_seq = flux::set_union(flux::ref(arr1), flux::ref(arr2));
+        auto union_seq = flux::set_union(flux::mut_ref(arr1), flux::mut_ref(arr2));
 
         using Seq = decltype(union_seq);
 
@@ -63,7 +63,7 @@ constexpr bool test_set_union()
         int arr2[] = {  1,  3,  5};
         auto yes = [](int) { return true; };
 
-        auto union_seq = flux::set_union(flux::filter(flux::ref(arr1), yes), flux::filter(flux::from(arr2), yes));
+        auto union_seq = flux::set_union(flux::filter(flux::ref(arr1), yes), flux::filter(flux::ref(arr2), yes));
 
         using T = decltype(union_seq);
         static_assert(flux::sequence<T>);
@@ -175,7 +175,7 @@ constexpr bool test_set_difference()
     {
         std::array arr1{0, 1, 2, 3, 4, 5, 6};
         std::array arr2{   1,    3,    5};
-        auto diff_seq = flux::set_difference(flux::ref(arr1), flux::ref(arr2));
+        auto diff_seq = flux::set_difference(flux::mut_ref(arr1), flux::mut_ref(arr2));
 
         using Seq = decltype(diff_seq);
 
@@ -205,7 +205,7 @@ constexpr bool test_set_difference()
         int arr2[] = {   1,    3,    5};
         auto yes = [](int) { return true; };
 
-        auto diff_seq = flux::set_difference(flux::filter(flux::ref(arr1), yes), flux::filter(flux::from(arr2), yes));
+        auto diff_seq = flux::set_difference(flux::filter(flux::ref(arr1), yes), flux::filter(flux::ref(arr2), yes));
 
         using T = decltype(diff_seq);
         static_assert(flux::sequence<T>);
@@ -319,7 +319,7 @@ constexpr bool test_set_symmetric_difference()
     {
         std::array arr1{1, 2, 3, 4, 5, 6, 7, 8};
         std::array arr2{            5,    7,    9, 10};
-        auto diff_seq = flux::set_symmetric_difference(flux::ref(arr1), flux::ref(arr2));
+        auto diff_seq = flux::set_symmetric_difference(flux::mut_ref(arr1), flux::mut_ref(arr2));
 
         using Seq = decltype(diff_seq);
 
@@ -349,7 +349,7 @@ constexpr bool test_set_symmetric_difference()
         int arr2[] = {   1, 2,      5};
         auto yes = [](int) { return true; };
 
-        auto diff_seq = flux::set_symmetric_difference(flux::filter(flux::ref(arr1), yes), flux::filter(flux::from(arr2), yes));
+        auto diff_seq = flux::set_symmetric_difference(flux::filter(flux::ref(arr1), yes), flux::filter(flux::ref(arr2), yes));
 
         using T = decltype(diff_seq);
         static_assert(flux::sequence<T>);
@@ -464,7 +464,7 @@ constexpr bool test_set_intersection()
     {
         std::array arr1{0, 1, 2, 3};
         std::array arr2{1, 3, 5};
-        auto inter_seq = flux::set_intersection(flux::ref(arr1), flux::ref(arr2));
+        auto inter_seq = flux::set_intersection(flux::mut_ref(arr1), flux::mut_ref(arr2));
 
         using Seq = decltype(inter_seq);
 
@@ -494,7 +494,7 @@ constexpr bool test_set_intersection()
         int arr2[] = {1, 3, 5};
         auto yes = [](int) { return true; };
 
-        auto inter_seq = flux::set_intersection(flux::filter(flux::ref(arr1), yes), flux::filter(flux::from(arr2), yes));
+        auto inter_seq = flux::set_intersection(flux::filter(flux::ref(arr1), yes), flux::filter(flux::ref(arr2), yes));
 
         using T = decltype(inter_seq);
         static_assert(flux::sequence<T>);
