@@ -103,7 +103,7 @@ constexpr bool test_range_iface()
 
     {
         int arr[] = {1, 2, 3, 4, 5};
-        auto seq = single_pass_only(flux::from(arr));
+        auto seq = single_pass_only(flux::mut_ref(arr));
 
         using V = decltype(seq);
 

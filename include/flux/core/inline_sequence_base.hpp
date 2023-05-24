@@ -191,6 +191,12 @@ public:
         return std::invoke(FLUX_FWD(func), std::move(derived()), FLUX_FWD(args)...);
     }
 
+    constexpr auto ref() const& requires sequence<Derived const>;
+
+    auto ref() const&& -> void = delete;
+
+    constexpr auto mut_ref() &;
+
     /*
      * Iterator support
      */
@@ -230,6 +236,16 @@ public:
     constexpr auto chunk_by(Pred pred) &&;
 
     [[nodiscard]]
+    constexpr auto cursors() && requires multipass_sequence<Derived>;
+
+    [[nodiscard]]
+    constexpr auto cycle() &&
+            requires infinite_sequence<Derived> || multipass_sequence<Derived>;
+
+    [[nodiscard]]
+    constexpr auto cycle(std::integral auto count) && requires multipass_sequence<Derived>;
+
+    [[nodiscard]]
     constexpr auto drop(std::integral auto count) &&;
 
     template <typename Pred>
@@ -262,6 +278,9 @@ public:
         requires foldable<Derived, Func, Init>
     [[nodiscard]]
     constexpr auto prescan(Func func, Init init) &&;
+
+    [[nodiscard]]
+    constexpr auto read_only() &&;
 
     [[nodiscard]]
     constexpr auto reverse() &&

@@ -41,6 +41,7 @@ public:
         };
 
     public:
+        using value_type = value_t<Base>;
 
         static constexpr auto first(auto& self) -> cursor_type
         {
@@ -113,13 +114,18 @@ public:
         }
 
         static constexpr auto size(auto& self)
-            requires sized_sequence<Base>
+            requires sized_sequence<Base> || infinite_sequence<Base>
         {
-            return (std::min)(flux::size(self.base_), self.count_);
+            if constexpr (infinite_sequence<Base>) {
+                return self.count_;
+            } else {
+                return (std::min)(flux::size(self.base_), self.count_);
+            }
         }
 
         static constexpr auto last(auto& self) -> cursor_type
-            requires random_access_sequence<Base> && sized_sequence<Base>
+            requires (random_access_sequence<Base> && sized_sequence<Base>) ||
+                      infinite_sequence<Base>
         {
             return cursor_type{
                 .base_cur = flux::next(self.base_, flux::first(self.base_), size(self)),

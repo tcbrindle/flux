@@ -26,6 +26,8 @@ add_executable(test-libflux
     test_compare.cpp
     test_count.cpp
     test_count_if.cpp
+    test_cursors.cpp
+    test_cycle.cpp
     test_drop.cpp
     test_drop_while.cpp
     test_ends_with.cpp
@@ -42,6 +44,7 @@ add_executable(test-libflux
     test_minmax.cpp
     test_output_to.cpp
     test_range_iface.cpp
+    test_read_only.cpp
     test_reverse.cpp
     test_scan.cpp
     test_slide.cpp
@@ -65,6 +68,7 @@ add_executable(test-libflux
     test_iota.cpp
     test_istream.cpp
     test_istreambuf.cpp
+    test_repeat.cpp
     test_single.cpp
 )
 target_link_libraries(test-libflux flux catch-main)

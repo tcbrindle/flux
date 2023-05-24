@@ -37,7 +37,8 @@ public:
     array_ptr() = default;
 
     template <typename U>
-        requires detail::non_slicing_ptr_convertible<U, T>
+        requires (!std::same_as<U, T> &&
+                  detail::non_slicing_ptr_convertible<U, T>)
     constexpr explicit(false) array_ptr(array_ptr<U> const& other) noexcept
         : data_(flux::data(other)),
           sz_(flux::size(other))
@@ -53,47 +54,54 @@ public:
           sz_(flux::size(seq))
     {}
 
-    friend constexpr auto operator==(array_ptr lhs, array_ptr rhs) -> bool
+    array_ptr(array_ptr&&) = default;
+    array_ptr& operator=(array_ptr&&) = default;
+    ~array_ptr() = default;
+
+    array_ptr(array_ptr const&) requires std::is_const_v<T> = default;
+    array_ptr& operator=(array_ptr const&) requires std::is_const_v<T> = default;
+
+    friend constexpr auto operator==(array_ptr const& lhs, array_ptr const&  rhs) -> bool
     {
         return std::ranges::equal_to{}(lhs.data_, rhs.data_) && lhs.sz_ == rhs.sz_;
     }
 
     struct flux_sequence_traits {
 
-        static constexpr auto first(array_ptr) -> index_t { return 0; }
+        static constexpr auto first(array_ptr const&) -> index_t { return 0; }
 
-        static constexpr auto is_last(array_ptr self, index_t idx) -> bool
+        static constexpr auto is_last(array_ptr const& self, index_t idx) -> bool
         {
             return idx >= self.sz_;
         }
 
-        static constexpr auto inc(array_ptr self, index_t& idx) -> void
+        static constexpr auto inc(array_ptr const& self, index_t& idx) -> void
         {
             FLUX_DEBUG_ASSERT(idx < self.sz_);
             idx = num::checked_add(idx, distance_t{1});
         }
 
-        static constexpr auto read_at(array_ptr self, index_t idx) -> T&
+        static constexpr auto read_at(array_ptr const& self, index_t idx) -> T&
         {
             bounds_check(idx >= 0);
             bounds_check(idx < self.sz_);
             return self.data_[idx];
         }
 
-        static constexpr auto read_at_unchecked(array_ptr self, index_t idx) -> T&
+        static constexpr auto read_at_unchecked(array_ptr const& self, index_t idx) -> T&
         {
             return self.data_[idx];
         }
 
-        static constexpr auto dec(array_ptr, index_t& idx) -> void
+        static constexpr auto dec(array_ptr const& , index_t& idx) -> void
         {
             FLUX_DEBUG_ASSERT(idx > 0);
             --idx;
         }
 
-        static constexpr auto last(array_ptr self) -> index_t { return self.sz_; }
+        static constexpr auto last(array_ptr const& self) -> index_t { return self.sz_; }
 
-        static constexpr auto inc(array_ptr self, index_t& idx, distance_t offset)
+        static constexpr auto inc(array_ptr const& self, index_t& idx, distance_t offset)
             -> void
         {
             index_t nxt = num::checked_add(idx, offset);
@@ -102,20 +110,20 @@ public:
             idx = nxt;
         }
 
-        static constexpr auto distance(array_ptr, index_t from, index_t to)
+        static constexpr auto distance(array_ptr const&, index_t from, index_t to)
             -> distance_t
         {
             return num::checked_sub(to, from);
         }
 
-        static constexpr auto size(array_ptr self) -> distance_t
+        static constexpr auto size(array_ptr const& self) -> distance_t
         {
             return self.sz_;
         }
 
-        static constexpr auto data(array_ptr self) -> T* { return self.data_; }
+        static constexpr auto data(array_ptr const& self) -> T* { return self.data_; }
 
-        static constexpr auto for_each_while(array_ptr self, auto&& pred)
+        static constexpr auto for_each_while(array_ptr const& self, auto&& pred)
         {
             index_t idx = 0;
             for (; idx < self.sz_; idx++) {

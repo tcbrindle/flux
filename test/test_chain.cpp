@@ -24,7 +24,7 @@ constexpr bool test_chain()
         int arr2[] = {3, 4, 5};
         int arr3[] = {6, 7, 8};
 
-        auto seq = flux::chain(flux::ref(arr1), flux::ref(arr2), flux::ref(arr3));
+        auto seq = flux::chain(flux::mut_ref(arr1), flux::mut_ref(arr2), flux::mut_ref(arr3));
 
         using S = decltype(seq);
 
@@ -84,8 +84,8 @@ constexpr bool test_chain()
         int arr1[] = {0, 1, 2};
         int arr2[] = {3, 4, 5};
 
-        auto seq = flux::chain(single_pass_only(flux::from(arr1)),
-                               single_pass_only(flux::from(arr2)));
+        auto seq = flux::chain(single_pass_only(flux::ref(arr1)),
+                               single_pass_only(flux::ref(arr2)));
 
         using S = decltype(seq);
 
@@ -101,7 +101,7 @@ constexpr bool test_chain()
         int arr2[] = {3, 4, 5};
         auto yes = [](int) { return true; };
 
-        auto seq = flux::chain(flux::filter(flux::ref(arr1), yes), flux::filter(flux::from(arr2), yes));
+        auto seq = flux::chain(flux::filter(flux::ref(arr1), yes), flux::filter(flux::ref(arr2), yes));
 
         using S = decltype(seq);
 
@@ -145,9 +145,9 @@ constexpr bool test_chain()
         int arr1[] = {9, 8, 7};
         std::array arr2 = {6, 5, 4};
 
-        auto seq = flux::chain(flux::ref(arr1),
+        auto seq = flux::chain(flux::mut_ref(arr1),
                                flux::empty<int>,
-                               flux::ref(arr2),
+                               flux::mut_ref(arr2),
                                flux::empty<int>,
                                std::array{3, 2, 1});
 

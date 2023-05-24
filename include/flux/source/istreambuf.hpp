@@ -28,14 +28,14 @@ struct from_istreambuf_fn {
     auto operator()(std::basic_streambuf<CharT, Traits>* streambuf) const -> sequence auto
     {
         FLUX_ASSERT(streambuf != nullptr);
-        return flux::from(*streambuf);
+        return flux::mut_ref(*streambuf);
     }
 
     template <typename CharT, typename Traits>
     [[nodiscard]]
     auto operator()(std::basic_istream<CharT, Traits>& istream) const -> sequence auto
     {
-        return flux::from(*istream.rdbuf());
+        return flux::mut_ref(*istream.rdbuf());
     }
 };
 

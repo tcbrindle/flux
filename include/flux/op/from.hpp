@@ -14,15 +14,32 @@ namespace flux {
 namespace detail {
 
 struct from_fn {
+    template <adaptable_sequence Seq>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq) const
+    {
+        if constexpr (derived_from_inline_sequence_base<Seq>) {
+            return FLUX_FWD(seq);
+        } else {
+            return owning_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq));
+        }
+    }
+};
+
+struct from_fwd_ref_fn {
     template <sequence Seq>
-        requires (std::is_lvalue_reference_v<Seq> || adaptable_sequence<Seq>)
+        requires adaptable_sequence<Seq> || std::is_lvalue_reference_v<Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const
     {
         if constexpr (std::is_lvalue_reference_v<Seq>) {
-            return flux::ref(seq);
+            if constexpr (std::is_const_v<std::remove_reference_t<Seq>>) {
+                return flux::ref(seq);
+            } else {
+                return flux::mut_ref(seq);
+            }
         } else {
-            return detail::owning_adaptor<Seq>(FLUX_FWD(seq));
+            return from_fn{}(seq);
         }
     }
 };
@@ -30,6 +47,7 @@ struct from_fn {
 } // namespace detail
 
 inline constexpr auto from = detail::from_fn{};
+inline constexpr auto from_fwd_ref = detail::from_fwd_ref_fn{};
 
 } // namespace flux
 

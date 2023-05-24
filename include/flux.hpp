@@ -20,6 +20,8 @@
 #include <flux/op/compare.hpp>
 #include <flux/op/contains.hpp>
 #include <flux/op/count.hpp>
+#include <flux/op/cursors.hpp>
+#include <flux/op/cycle.hpp>
 #include <flux/op/drop.hpp>
 #include <flux/op/drop_while.hpp>
 #include <flux/op/ends_with.hpp>
@@ -35,6 +37,7 @@
 #include <flux/op/inplace_reverse.hpp>
 #include <flux/op/map.hpp>
 #include <flux/op/minmax.hpp>
+#include <flux/op/read_only.hpp>
 #include <flux/op/ref.hpp>
 #include <flux/op/reverse.hpp>
 #include <flux/op/scan.hpp>
@@ -63,6 +66,7 @@
 #include <flux/source/istream.hpp>
 #include <flux/source/istreambuf.hpp>
 #include <flux/source/range.hpp>
+#include <flux/source/repeat.hpp>
 #include <flux/source/single.hpp>
 
 #endif
