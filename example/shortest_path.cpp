@@ -48,7 +48,7 @@ private:
     std::size_t height_;
     std::vector<int> fields_;
 
-    auto adjacent(std::size_t pos) {
+    auto adjacent(std::size_t pos) const {
         auto pos_x = pos % width_;
         auto pos_y = pos / width_;
         std::vector<std::size_t> adj;
@@ -105,8 +105,8 @@ public:
     void mark_shortest_path() {
         struct edge_t { std::size_t src, dst; };
 
-        std::vector<std::optional<int>> costs(fields_.size());
-        std::vector<std::optional<size_t>> prevs(fields_.size());
+        std::vector<flux::optional<int>> costs(fields_.size());
+        std::vector<flux::optional<size_t>> prevs(fields_.size());
 
         auto valid = [this](std::size_t u) { 
             return fields_[u] != wall; 
@@ -121,16 +121,16 @@ public:
         auto update_costs_and_prevs = [this, &costs, &prevs, &updated](edge_t e) {
             constexpr auto max = std::numeric_limits<int>::max();
             if (costs[e.src] && (*costs[e.src] + fields_[e.dst]) < costs[e.dst].value_or(max)) {
-                costs[e.dst] = (*costs[e.src] + fields_[e.dst]);
-                prevs[e.dst] = e.src;
+                costs[e.dst].emplace((*costs[e.src] + fields_[e.dst]));
+                prevs[e.dst].emplace(e.src);
                 updated = true;
             }
         };
 
-        costs[0] = 0;
+        costs[0].emplace(0);
         do {
             updated = false;
-            flux::ints(0UL, fields_.size())
+            flux::iota(size_t{0}, fields_.size())
                 .filter(valid) 
                 .map(to_adjacent_edges)
                 .flatten()
