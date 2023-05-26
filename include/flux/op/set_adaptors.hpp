@@ -3,10 +3,9 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_SET_ALGORITHMS_HPP_INCLUDED
-#define FLUX_OP_SET_ALGORITHMS_HPP_INCLUDED
+#ifndef FLUX_OP_SET_ADAPTORS_HPP_INCLUDED
+#define FLUX_OP_SET_ADAPTORS_HPP_INCLUDED
 
-#include "flux/core/sequence_access.hpp"
 #include <flux/core.hpp>
 #include <flux/op/requirements.hpp>
 
@@ -179,7 +178,7 @@ public:
 
         template <typename Self>
         static inline constexpr bool maybe_const_iterable
-            = std::is_const_v<Self> ? flux::sequence<Base1 const> : true;
+            = std::is_const_v<Self> ? (flux::sequence<Base1 const> && flux::sequence<Base2 const>) : true;
 
         template <typename Self>
         static constexpr void update(Self& self, cursor_type& cur) {
@@ -239,13 +238,6 @@ public:
             -> decltype(flux::read_at(self.base1_, cur.base1_cursor))
         {
             return flux::read_at(self.base1_, cur.base1_cursor);
-        }
-
-        template <typename Self>
-            requires maybe_const_iterable<Self> && bounded_sequence<Base1>
-        static constexpr auto last(Self& self) -> cursor_type
-        {
-            return cursor_type{flux::last(self.base1_), flux::last(self.base2_)};
         }
 
         template <typename Self>
@@ -431,7 +423,7 @@ public:
 
         template <typename Self>
         static inline constexpr bool maybe_const_iterable
-            = std::is_const_v<Self> ? flux::sequence<Base1 const> : true;
+            = std::is_const_v<Self> ? (flux::sequence<Base1 const> && flux::sequence<Base2 const>) : true;
 
         template <typename Self>
         static constexpr void update(Self& self, cursor_type& cur) {
@@ -490,13 +482,6 @@ public:
             -> decltype(flux::read_at(self.base1_, cur.base1_cursor))
         {
             return flux::read_at(self.base1_, cur.base1_cursor);
-        }
-
-        template <typename Self>
-            requires maybe_const_iterable<Self> && bounded_sequence<Base1>
-        static constexpr auto last(Self& self) -> cursor_type
-        {
-            return cursor_type{flux::last(self.base1_), flux::last(self.base2_)};
         }
 
         template <typename Self>
@@ -573,4 +558,4 @@ inline constexpr auto set_intersection = detail::set_intersection_fn{};
 
 } // namespace flux
 
-#endif // namespace FLUX_OP_SET_ALGORITHMS_HPP_INCLUDED
+#endif // namespace FLUX_OP_SET_ADAPTORS_HPP_INCLUDED

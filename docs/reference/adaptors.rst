@@ -407,21 +407,21 @@ Adaptors
 
 ``set_difference``
 ^^^^^^^^^^^^^^^^^^
+
+..  function::
     template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::less> \
         requires strict_weak_order_for<Cmp, Seq1> && strict_weak_order_for<Cmp, Seq2> \
-    auto set_difference(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) -> sequence auto;
+    auto set_difference(Seq1 seq1, Seq2 seq2, Cmp cmp = {}) -> sequence auto;
 
-    Returns a sequence adaptor which yields the set difference of the two input sequences :var:`seq1` and :var:`seq2`, ordered by the given comparison function :var:`cmp`.
+    This function assumes that both :var:`seq1` and :var:`seq2` are sorted with respect to the comparison function :var:`cmp`. If the input sequences are not sorted, the contents of the resulting sequence is unspecified.
 
-    This function assumes that both :var:`seq1` and :var:`seq2` are sorted in ascending order with respect to the comparison function :var:`cmp`. If the input sequences are not sorted, the contents of the resulting sequence is unspecified.
-
-    When the resulting sequence is iterated, it will output the elements from :var:`seq1` which are not found in the :var:`seq2` according to :var:`cmp`. If some element is found `m` times in :var:`seq1` and `n` times in :var:`seq2`, then the resulting sequence yields exactly `max(n, m)` elements.
+    When the resulting sequence is iterated, it will output the elements from :var:`seq1` which are not found in the :var:`seq2` according to :var:`cmp`. If some element is found `m` times in :var:`seq1` and `n` times in :var:`seq2`, then the resulting sequence yields exactly `std::max(m - n, 0)` elements.
 
     :param seq1: The first sorted sequence.
     :param seq2: The second sorted sequence.
     :param cmp: A binary predicate that takes two elements as arguments and returns true if the first element is less than the second.
 
-    :returns: A sequence adaptor that represents the set difference of the two input sequences.
+    :returns: A sequence adaptor that yields those elements of `seq1` which do not also appear in `seq2`.
 
     :example:
 
@@ -431,56 +431,24 @@ Adaptors
         :lines: 14-19
 
     :see also:
-        * `std::set_union() <https://en.cppreference.com/w/cpp/algorithm/set_difference>`_
+        * `std::set_difference() <https://en.cppreference.com/w/cpp/algorithm/set_difference>`_
         * :func:`flux::set_symmetric_difference`
-        * :func:`flux::set_intersection`
-        * :func:`flux::set_union`
-
-``set_symmetric_difference``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-..  function::
-    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::less> \
-        requires see_below \
-    auto set_symmetric_difference(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) -> sequence auto;
-
-    Returns a sequence adaptor which yields the set symmetric difference of the two input sequences :var:`seq1` and :var:`seq2`, ordered by the given comparison function :var:`cmp`.
-
-    This function assumes that both :var:`seq1` and :var:`seq2` are sorted in ascending order with respect to the comparison function :var:`cmp`. If the input sequences are not sorted, the contents of the resulting sequence is unspecified.
-
-    When the resulting sequence is iterated, it will output the elements that are found in either of the sequence, but not in both of them according to :var:`cmp`. If some element is found `m` times in :var:`seq1` and `n` times in :var:`seq2`, then the resulting sequence yields exactly `max(n, m)` elements.
-
-    :requires: Both :var:`Seq1` and :var:`Seq2` must have common l-value and r-value reference, common value type and must be equality comparable with respect to `Cmp`.
-    :param seq1: The first sequence to merge.
-    :param seq2: The second sequence to merge.
-    :param cmp: A binary predicate that takes two elements as arguments and returns true if the first element is less than the second.
-
-    :returns: A sequence adaptor that represents the set symmetric difference of the two input sequences.
-
-    :example:
-
-    ..  literalinclude:: ../../example/docs/set_symmetric_difference.cpp
-        :language: cpp
-        :dedent:
-        :lines: 14-19
-
-    :see also:
-        * `std::set_union() <https://en.cppreference.com/w/cpp/algorithm/set_symmetric_difference>`_
-        * :func:`flux::set_difference`
         * :func:`flux::set_intersection`
         * :func:`flux::set_union`
 
 ``set_intersection``
 ^^^^^^^^^^^^^^^^^^^^
+
+..  function::
     template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::less> \
         requires strict_weak_order_for<Cmp, Seq1> && strict_weak_order_for<Cmp, Seq2> \
-    auto set_intersection(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) -> sequence auto;
+    auto set_intersection(Seq1 seq1, Seq2 seq2, Cmp cmp = {}) -> sequence auto;
 
     Returns a sequence adaptor which yields the set intersection of the two input sequences :var:`seq1` and :var:`seq2`, ordered by the given comparison function :var:`cmp`.
 
-    This function assumes that both :var:`seq1` and :var:`seq2` are sorted in ascending order with respect to the comparison function :var:`cmp`. If the input sequences are not sorted, the contents of the resulting sequence is unspecified.
+    This function assumes that both :var:`seq1` and :var:`seq2` are sorted with respect to the comparison function :var:`cmp`. If the input sequences are not sorted, the contents of the resulting sequence is unspecified.
 
-    When the resulting sequence is iterated, it will output the elements from :var:`seq1` that are found in both sorted sequences according to :var:`cmp`. If some element is found `m` times in :var:`seq1` and `n` times in :var:`seq2`, then the resulting sequence yields exactly `max(n, m)` elements.
+    When the resulting sequence is iterated, it will output the elements from :var:`seq1` that are found in both sorted sequences according to :var:`cmp`. If some element is found `m` times in :var:`seq1` and `n` times in :var:`seq2`, then the resulting sequence yields exactly `min(n, m)` elements.
 
     :param seq1: The first sorted sequence.
     :param seq2: The second sorted sequence.
@@ -496,8 +464,52 @@ Adaptors
         :lines: 14-19
 
     :see also:
-        * `std::set_union() <https://en.cppreference.com/w/cpp/algorithm/set_intersection>`_
+        * `std::set_intersection() <https://en.cppreference.com/w/cpp/algorithm/set_intersection>`_
         * :func:`flux::set_difference`
+        * :func:`flux::set_union`
+
+
+``set_symmetric_difference``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+..  function::
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::less> \
+        requires see_below \
+    auto set_symmetric_difference(Seq1 seq1, Seq2 seq2, Cmp cmp = {}) -> sequence auto;
+
+    Returns a sequence adaptor which yields the set symmetric difference of the two input sequences :var:`seq1` and :var:`seq2`, ordered by the given comparison function :var:`cmp`.
+
+    This function assumes that both :var:`seq1` and :var:`seq2` are sorted with respect to the comparison function :var:`cmp`. If the input sequences are not sorted, the contents of the resulting sequence is unspecified.
+
+    When the resulting sequence is iterated, it will output the elements that are found in either of the sequence, but not in both of them according to :var:`cmp`. If some element is found `m` times in :var:`seq1` and `n` times in :var:`seq2`, then the resulting sequence yields exactly `std::abs(m - n)` elements, preserving order
+    - if `m > n`, the final `m - n` of these elements from :var:`seq1`
+    - if `m < n`, the final `n - m` of these elements from :var:`seq2`
+
+    
+    :requires:
+        The expression in the ``requires`` clause is equivalent to::
+
+            std::common_reference_with<element_t<Seq1>, element_t<Seq2>> &&
+            std::common_reference_with<rvalue_element_t<Seq1>, rvalue_element_t<Seq2>> &&
+            requires { typename std::common_type_t<value_t<Seq1>, value_t<Seq2>>; } &&
+            strict_weak_order_for<Cmp, Seq1> &&
+            strict_weak_order_for<Cmp, Seq2>
+
+    :param seq1: The first sequence to merge.
+    :param seq2: The second sequence to merge.
+    :returns: A sequence adaptor that yields elements of `seq1` and `seq2` which do not appear in both sequences.
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/set_symmetric_difference.cpp
+        :language: cpp
+        :dedent:
+        :lines: 14-19
+
+    :see also:
+        * `std::set_symmetric_difference() <https://en.cppreference.com/w/cpp/algorithm/set_symmetric_difference>`_
+        * :func:`flux::set_difference`
+        * :func:`flux::set_intersection`
         * :func:`flux::set_union`
 
 ``set_union``
@@ -506,15 +518,23 @@ Adaptors
 ..  function::
     template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::less> \
         requires see_below \
-    auto set_union(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) -> sequence auto;
+    auto set_union(Seq1 seq1, Seq2 seq2, Cmp cmp = {}) -> sequence auto;
 
     Returns a sequence adaptor which yields the set union of the two input sequences :var:`seq1` and :var:`seq2`, ordered by the given comparison function :var:`cmp`.
 
-    This function assumes that both :var:`seq1` and :var:`seq2` are sorted in ascending order with respect to the comparison function :var:`cmp`. If the input sequences are not sorted, the contents of the resulting sequence is unspecified.
+    This function assumes that both :var:`seq1` and :var:`seq2` are sorted with respect to the comparison function :var:`cmp`. If the input sequences are not sorted, the contents of the resulting sequence is unspecified.
 
     When the resulting sequence is iterated, it will output the elements from the two input sequences in order according to :var:`cmp`. If some element is found `m` times in :var:`seq1` and `n` times in :var:`seq2`, then the resulting sequence yields exactly `max(n, m)` elements.
 
-    :requires: Both :var:`Seq1` and :var:`Seq2` must have common l-value and r-value reference, common value type and must be equality comparable with respect to `Cmp`.
+    :requires:
+        The expression in the ``requires`` clause is equivalent to::
+
+            std::common_reference_with<element_t<Seq1>, element_t<Seq2>> &&
+            std::common_reference_with<rvalue_element_t<Seq1>, rvalue_element_t<Seq2>> &&
+            requires { typename std::common_type_t<value_t<Seq1>, value_t<Seq2>>; } &&
+            strict_weak_order_for<Cmp, Seq1> &&
+            strict_weak_order_for<Cmp, Seq2>
+    
     :param seq1: The first sorted sequence to merge.
     :param seq2: The second sorted sequence to merge.
     :param cmp: A binary predicate that takes two elements as arguments and returns true if the first element is less than the second.

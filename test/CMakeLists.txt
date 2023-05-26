@@ -47,7 +47,7 @@ add_executable(test-libflux
     test_read_only.cpp
     test_reverse.cpp
     test_scan.cpp
-    test_set_algorithms.cpp
+    test_set_adaptors.cpp
     test_slide.cpp
     test_split.cpp
     test_sort.cpp
