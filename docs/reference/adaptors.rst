@@ -413,9 +413,11 @@ Adaptors
         requires strict_weak_order_for<Cmp, Seq1> && strict_weak_order_for<Cmp, Seq2> \
     auto set_difference(Seq1 seq1, Seq2 seq2, Cmp cmp = {}) -> sequence auto;
 
+    Returns a sequence adaptor which yields the set difference of the two input sequences :var:`seq1` and :var:`seq2`, ordered by the given comparison function :var:`cmp`.
+
     This function assumes that both :var:`seq1` and :var:`seq2` are sorted with respect to the comparison function :var:`cmp`. If the input sequences are not sorted, the contents of the resulting sequence is unspecified.
 
-    When the resulting sequence is iterated, it will output the elements from :var:`seq1` which are not found in the :var:`seq2` according to :var:`cmp`. If some element is found `m` times in :var:`seq1` and `n` times in :var:`seq2`, then the resulting sequence yields exactly `std::max(m - n, 0)` elements.
+    When the resulting sequence is iterated, it will output the elements from :var:`seq1` which are not found in the :var:`seq2` according to :var:`cmp`. If some element is found ``m`` times in :var:`seq1` and ``n`` times in :var:`seq2`, then the resulting sequence yields exactly ``std::max(m - n, 0)`` elements.
 
     :param seq1: The first sorted sequence.
     :param seq2: The second sorted sequence.
@@ -448,7 +450,7 @@ Adaptors
 
     This function assumes that both :var:`seq1` and :var:`seq2` are sorted with respect to the comparison function :var:`cmp`. If the input sequences are not sorted, the contents of the resulting sequence is unspecified.
 
-    When the resulting sequence is iterated, it will output the elements from :var:`seq1` that are found in both sorted sequences according to :var:`cmp`. If some element is found `m` times in :var:`seq1` and `n` times in :var:`seq2`, then the resulting sequence yields exactly `min(n, m)` elements.
+    When the resulting sequence is iterated, it will output the elements from :var:`seq1` that are found in both sorted sequences according to :var:`cmp`. If some element is found ``m`` times in :var:`seq1` and ``n`` times in :var:`seq2`, then the resulting sequence yields exactly ``std::min(n, m)`` elements.
 
     :param seq1: The first sorted sequence.
     :param seq2: The second sorted sequence.
@@ -481,9 +483,10 @@ Adaptors
 
     This function assumes that both :var:`seq1` and :var:`seq2` are sorted with respect to the comparison function :var:`cmp`. If the input sequences are not sorted, the contents of the resulting sequence is unspecified.
 
-    When the resulting sequence is iterated, it will output the elements that are found in either of the sequence, but not in both of them according to :var:`cmp`. If some element is found `m` times in :var:`seq1` and `n` times in :var:`seq2`, then the resulting sequence yields exactly `std::abs(m - n)` elements, preserving order
-    - if `m > n`, the final `m - n` of these elements from :var:`seq1`
-    - if `m < n`, the final `n - m` of these elements from :var:`seq2`
+    When the resulting sequence is iterated, it will output the elements that are found in either of the sequence, but not in both of them according to :var:`cmp`. If some element is found ``m`` times in :var:`seq1` and ``n`` times in :var:`seq2`, then the resulting sequence yields exactly ``std::abs(m - n)`` elements, preserving order:
+
+    * if :expr:`m > n`, the final :expr:`m - n` of these elements from :var:`seq1`
+    * if :expr:`m < n`, the final :expr:`n - m` of these elements from :var:`seq2`
 
     
     :requires:
@@ -524,7 +527,7 @@ Adaptors
 
     This function assumes that both :var:`seq1` and :var:`seq2` are sorted with respect to the comparison function :var:`cmp`. If the input sequences are not sorted, the contents of the resulting sequence is unspecified.
 
-    When the resulting sequence is iterated, it will output the elements from the two input sequences in order according to :var:`cmp`. If some element is found `m` times in :var:`seq1` and `n` times in :var:`seq2`, then the resulting sequence yields exactly `max(n, m)` elements.
+    When the resulting sequence is iterated, it will output the elements from the two input sequences in order according to :var:`cmp`. If some element is found ``m`` times in :var:`seq1` and ``n`` times in :var:`seq2`, then the resulting sequence yields exactly ``std::max(n, m)`` elements.
 
     :requires:
         The expression in the ``requires`` clause is equivalent to::
