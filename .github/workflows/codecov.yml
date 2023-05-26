@@ -36,7 +36,7 @@ jobs:
       working-directory: ${{runner.workspace}}/build/test/CMakeFiles/test-libflux.dir
       run: |
         lcov --directory . --capture --gcov gcov-13 --output-file coverage.info
-        lcov --remove coverage.info '/usr/local/*' '*/test/*' --output-file coverage.info
+        lcov --remove coverage.info '*/test/*' --output-file coverage.info
 
     - name: Upload coverage report
       uses: codecov/codecov-action@v3
