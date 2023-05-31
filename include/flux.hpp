@@ -68,5 +68,6 @@
 #include <flux/source/range.hpp>
 #include <flux/source/repeat.hpp>
 #include <flux/source/single.hpp>
+#include <flux/source/unfold.hpp>
 
 #endif

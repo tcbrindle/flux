@@ -70,6 +70,7 @@ add_executable(test-libflux
     test_istreambuf.cpp
     test_repeat.cpp
     test_single.cpp
+    test_unfold.cpp
 )
 target_link_libraries(test-libflux flux catch-main)
 target_compile_definitions(test-libflux PUBLIC FLUX_UNWIND_ON_ERROR FLUX_ERROR_ON_OVERFLOW)
