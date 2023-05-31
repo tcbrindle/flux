@@ -72,7 +72,8 @@ public:
 struct unfold_fn {
     template <typename Func, typename Seed,
               typename R = std::decay_t<std::invoke_result_t<Func&, Seed>>>
-        requires std::invocable<Func&, R> &&
+        requires std::constructible_from<R, Seed> &&
+                 std::invocable<Func&, R> &&
                  std::assignable_from<R&, std::invoke_result_t<Func&, R>>
     [[nodiscard]]
     constexpr auto operator()(Func func, Seed&& seed) const -> sequence auto
