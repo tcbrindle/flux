@@ -42,6 +42,7 @@
 #include <flux/op/reverse.hpp>
 #include <flux/op/scan.hpp>
 #include <flux/op/scan_first.hpp>
+#include <flux/op/set_adaptors.hpp>
 #include <flux/op/slice.hpp>
 #include <flux/op/slide.hpp>
 #include <flux/op/sort.hpp>
