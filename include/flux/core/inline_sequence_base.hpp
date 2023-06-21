@@ -296,6 +296,11 @@ public:
     [[nodiscard]]
     constexpr auto scan_first(Func func) &&;
 
+    template <adaptable_sequence Selectors>
+        requires detail::boolean_testable<element_t<Selectors>>
+    [[nodiscard]]
+    constexpr auto select_by(Selectors&& selectors) &&;
+
     [[nodiscard]]
     constexpr auto slide(std::integral auto win_sz) && requires multipass_sequence<Derived>;
 
