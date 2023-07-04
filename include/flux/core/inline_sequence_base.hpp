@@ -266,6 +266,11 @@ public:
     [[nodiscard]]
     constexpr auto map(Func func) &&;
 
+    template <adaptable_sequence Mask>
+        requires detail::boolean_testable<element_t<Mask>>
+    [[nodiscard]]
+    constexpr auto mask(Mask&& mask_) &&;
+
     [[nodiscard]]
     constexpr auto pairwise() && requires multipass_sequence<Derived>;
 
@@ -295,11 +300,6 @@ public:
         requires foldable<Derived, Func, element_t<Derived>>
     [[nodiscard]]
     constexpr auto scan_first(Func func) &&;
-
-    template <adaptable_sequence Selectors>
-        requires detail::boolean_testable<element_t<Selectors>>
-    [[nodiscard]]
-    constexpr auto select_by(Selectors&& selectors) &&;
 
     [[nodiscard]]
     constexpr auto slide(std::integral auto win_sz) && requires multipass_sequence<Derived>;

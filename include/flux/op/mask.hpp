@@ -3,8 +3,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_SELECT_BY_HPP_INCLUDED
-#define FLUX_OP_SELECT_BY_HPP_INCLUDED
+#ifndef FLUX_OP_MASK_HPP_INCLUDED
+#define FLUX_OP_MASK_HPP_INCLUDED
 
 #include <flux/core.hpp>
 
@@ -12,56 +12,56 @@ namespace flux {
 
 namespace detail {
 
-template <sequence Base, sequence Selectors>
-struct select_by_adaptor : inline_sequence_base<select_by_adaptor<Base, Selectors>>
+template <sequence Base, sequence Mask>
+struct mask_adaptor : inline_sequence_base<mask_adaptor<Base, Mask>>
 {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
-    FLUX_NO_UNIQUE_ADDRESS Selectors selectors_;
+    FLUX_NO_UNIQUE_ADDRESS Mask mask_;
 
 public:
-    constexpr select_by_adaptor(decays_to<Base> auto&& base, decays_to<Selectors> auto&& selectors)
+    constexpr mask_adaptor(decays_to<Base> auto&& base, decays_to<Mask> auto&& mask)
         : base_(FLUX_FWD(base)),
-          selectors_(FLUX_FWD(selectors))
+          mask_(FLUX_FWD(mask))
     {}
 
     struct flux_sequence_traits {
     private:
         struct cursor_type {
             cursor_t<Base> base_cur;
-            cursor_t<Selectors> selector_cur;
+            cursor_t<Mask> mask_cur;
 
             friend auto operator==(cursor_type const&, cursor_type const&) -> bool
                 requires std::equality_comparable<cursor_t<Base>> &&
-                         std::equality_comparable<cursor_t<Selectors>>
+                         std::equality_comparable<cursor_t<Mask>>
                 = default;
         };
 
         template <typename Self>
         static inline constexpr bool maybe_const_iterable =
             std::is_const_v<Self>
-                ? sequence<Base const> && sequence<Selectors const>
+                ? sequence<Base const> && sequence<Mask const>
                 : true;
 
     public:
         static inline constexpr bool is_infinite =
-            infinite_sequence<Base> && infinite_sequence<Selectors>;
+            infinite_sequence<Base> && infinite_sequence<Mask>;
 
         template <typename Self>
             requires maybe_const_iterable<Self>
         static constexpr auto first(Self& self) -> cursor_type
         {
             auto base_cur = flux::first(self.base_);
-            auto selector_cur = flux::first(self.selectors_);
+            auto mask_cur = flux::first(self.mask_);
 
-            while (!flux::is_last(self.base_, base_cur) && !flux::is_last(self.selectors_, selector_cur)) {
-                if (static_cast<bool>(flux::read_at(self.selectors_, selector_cur))) {
+            while (!flux::is_last(self.base_, base_cur) && !flux::is_last(self.mask_, mask_cur)) {
+                if (static_cast<bool>(flux::read_at(self.mask_, mask_cur))) {
                     break;
                 }
                 flux::inc(self.base_, base_cur);
-                flux::inc(self.selectors_, selector_cur);
+                flux::inc(self.mask_, mask_cur);
             }
-            return cursor_type{std::move(base_cur), std::move(selector_cur)};
+            return cursor_type{std::move(base_cur), std::move(mask_cur)};
         }
 
         template <typename Self>
@@ -69,7 +69,7 @@ public:
         static constexpr auto is_last(Self& self, cursor_type const& cur) -> bool
         {
             return flux::is_last(self.base_, cur.base_cur) ||
-                    flux::is_last(self.selectors_, cur.selector_cur);
+                    flux::is_last(self.mask_, cur.mask_cur);
         }
 
         template <typename Self>
@@ -77,8 +77,8 @@ public:
         static constexpr auto inc(Self& self, cursor_type& cur) -> void
         {
             while (!flux::is_last(self.base_, flux::inc(self.base_, cur.base_cur)) &&
-                   !flux::is_last(self.selectors_, flux::inc(self.selectors_, cur.selector_cur))) {
-                if (static_cast<bool>(flux::read_at(self.selectors_, cur.selector_cur))) {
+                   !flux::is_last(self.mask_, flux::inc(self.mask_, cur.mask_cur))) {
+                if (static_cast<bool>(flux::read_at(self.mask_, cur.mask_cur))) {
                     break;
                 }
             }
@@ -117,50 +117,50 @@ public:
         template <typename Self>
             requires maybe_const_iterable<Self> &&
                      bounded_sequence<Base> &&
-                     bounded_sequence<Selectors>
+                     bounded_sequence<Mask>
         static constexpr auto last(Self& self) -> cursor_type
         {
             return cursor_type{.base_cur = flux::last(self.base_),
-                               .selector_cur = flux::last(self.selectors_)};
+                               .mask_cur = flux::last(self.mask_)};
         }
 
         template <typename Self>
             requires maybe_const_iterable<Self> &&
                      bidirectional_sequence<Base> &&
-                     bidirectional_sequence<Selectors>
+                     bidirectional_sequence<Mask>
         static constexpr auto dec(Self& self, cursor_type& cur) -> void
         {
             do {
                 flux::dec(self.base_, cur.base_cur);
-                flux::dec(self.selectors_, cur.selector_cur);
-            } while (!static_cast<bool>(flux::read_at(self.selectors_, cur.selector_cur)));
+                flux::dec(self.mask_, cur.mask_cur);
+            } while (!static_cast<bool>(flux::read_at(self.mask_, cur.mask_cur)));
         }
     };
 };
 
-struct select_by_fn {
-    template <adaptable_sequence Base, adaptable_sequence Selectors>
-        requires boolean_testable<element_t<Selectors>>
+struct mask_fn {
+    template <adaptable_sequence Base, adaptable_sequence Mask>
+        requires boolean_testable<element_t<Mask>>
     [[nodiscard]]
-    constexpr auto operator()(Base&& base, Selectors&& selectors) const
+    constexpr auto operator()(Base&& base, Mask&& mask) const
     {
-        return select_by_adaptor<std::decay_t<Base>, std::decay_t<Selectors>>(
-            FLUX_FWD(base), FLUX_FWD(selectors));
+        return mask_adaptor<std::decay_t<Base>, std::decay_t<Mask>>(
+            FLUX_FWD(base), FLUX_FWD(mask));
     }
 };
 
 } // namespace detail
 
-inline constexpr auto select_by = detail::select_by_fn{};
+inline constexpr auto mask = detail::mask_fn{};
 
 template <typename D>
-template <adaptable_sequence Selectors>
-    requires detail::boolean_testable<element_t<Selectors>>
-constexpr auto inline_sequence_base<D>::select_by(Selectors&& selectors) &&
+template <adaptable_sequence Mask>
+    requires detail::boolean_testable<element_t<Mask>>
+constexpr auto inline_sequence_base<D>::mask(Mask&& mask_) &&
 {
-    return flux::select_by(std::move(derived()), FLUX_FWD(selectors));
+    return flux::mask(std::move(derived()), FLUX_FWD(mask_));
 }
 
 } // namespace flux
 
-#endif // FLUX_OP_FILTER_BY_HPP_INCLUDED
+#endif // FLUX_OP_MASK_HPP_INCLUDED
