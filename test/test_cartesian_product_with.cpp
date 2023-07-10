@@ -1,10 +1,7 @@
 
 #include "catch.hpp"
 
-#include <flux/op/cartesian_product_with.hpp>
-#include <flux/op/reverse.hpp>
-#include <flux/source/empty.hpp>
-#include <flux/op/for_each.hpp>
+#include <flux.hpp>
 
 #include <array>
 #include <iostream>
@@ -115,6 +112,24 @@ constexpr bool test_cartesian_product_with()
         int s = 0;
         cart.for_each([&s](int i) { s += i; });
         STATIC_CHECK(s == 0);
+    }
+
+    // Product returns a correct reference type
+    {
+        double vals[3][3] = {};
+        auto get = [&vals](auto i, auto j) -> double& { return vals[i][j]; };
+
+        auto seq = flux::cartesian_product_with(get, flux::iota(0, 3), flux::iota(0, 3));
+
+        static_assert(std::same_as<flux::element_t<decltype(seq)>, double&>);
+
+        seq.fill(100.0);
+
+        for (auto const& r : vals) {
+            for (double const& d : r) {
+                STATIC_CHECK(d == 100.0);
+            }
+        }
     }
 
     return true;
