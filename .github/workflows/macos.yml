@@ -25,7 +25,6 @@ jobs:
               brew install gcc@13 ninja
           - cxx: /usr/local/opt/llvm/bin/clang++
             install: |
-              brew update
               brew install llvm@16 ninja
 
     steps:
