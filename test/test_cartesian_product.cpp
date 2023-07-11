@@ -4,10 +4,12 @@
 #include <flux/op/cartesian_product.hpp>
 #include <flux/op/reverse.hpp>
 #include <flux/source/empty.hpp>
+#include <flux/source/iota.hpp>
 #include <flux/op/for_each.hpp>
 
 #include <array>
 #include <iostream>
+#include <string_view>
 
 #include "test_utils.hpp"
 
@@ -106,6 +108,23 @@ constexpr bool test_cartesian_product()
             flux::inc(cart, cur, -2);
             STATIC_CHECK(cart[cur] == std::tuple{100, 1.0f});
         }
+    }
+
+    // Test unpack()
+    {
+        int vals[3][3] = {};
+
+        flux::cartesian_product(flux::ints(0, 3), flux::ints(0, 3))
+            .for_each(flux::unpack([&vals](auto i, auto j) {
+                vals[i][j] = 100;
+            }));
+
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                STATIC_CHECK(vals[i][j] == 100);
+            }
+        }
+
     }
 
     return true;

@@ -70,6 +70,58 @@ struct proj2 {
 template <typename F, typename L = std::identity, typename R = std::identity>
 proj2(F, L = {}, R = {}) -> proj2<F, L, R>;
 
+namespace detail {
+
+template <typename Func>
+struct lazy_apply {
+    Func func_;
+
+    template <typename Tuple>
+    constexpr auto operator()(Tuple&& tuple) &
+        noexcept(noexcept(std::apply(func_, FLUX_FWD(tuple))))
+        -> decltype(std::apply(func_, FLUX_FWD(tuple)))
+    {
+        return std::apply(func_, FLUX_FWD(tuple));
+    }
+
+    template <typename Tuple>
+    constexpr auto operator()(Tuple&& tuple) const&
+        noexcept(noexcept(std::apply(func_, FLUX_FWD(tuple))))
+        -> decltype(std::apply(func_, FLUX_FWD(tuple)))
+    {
+        return std::apply(func_, FLUX_FWD(tuple));
+    }
+
+    template <typename Tuple>
+    constexpr auto operator()(Tuple&& tuple) &&
+        noexcept(noexcept(std::apply(std::move(func_), FLUX_FWD(tuple))))
+        -> decltype(std::apply(std::move(func_), FLUX_FWD(tuple)))
+    {
+        return std::apply(std::move(func_), FLUX_FWD(tuple));
+    }
+
+    template <typename Tuple>
+    constexpr auto operator()(Tuple&& tuple) const&&
+        noexcept(noexcept(std::apply(std::move(func_), FLUX_FWD(tuple))))
+        -> decltype(std::apply(std::move(func_), FLUX_FWD(tuple)))
+    {
+        return std::apply(std::move(func_), FLUX_FWD(tuple));
+    }
+};
+
+struct unpack_fn {
+    template <typename Func>
+    constexpr auto operator()(Func&& func) const
+        -> lazy_apply<std::decay_t<Func>>
+    {
+        return lazy_apply<std::decay_t<Func>>{.func_ = FLUX_FWD(func)};
+    }
+};
+
+} // namespace detail
+
+inline constexpr auto unpack = detail::unpack_fn{};
+
 namespace pred {
 
 namespace detail {
