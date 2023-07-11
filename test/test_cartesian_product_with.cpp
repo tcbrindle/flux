@@ -4,7 +4,6 @@
 #include <flux.hpp>
 
 #include <array>
-#include <iostream>
 
 #include "test_utils.hpp"
 
@@ -125,9 +124,9 @@ constexpr bool test_cartesian_product_with()
 
         seq.fill(100.0);
 
-        for (auto const& r : vals) {
-            for (double const& d : r) {
-                STATIC_CHECK(d == 100.0);
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                STATIC_CHECK(vals[i][j] == 100.0);
             }
         }
     }
