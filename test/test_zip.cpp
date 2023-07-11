@@ -162,6 +162,23 @@ constexpr bool test_zip()
         STATIC_CHECK(view.size() == 5);
     }
 
+    // test unpack()
+    {
+        auto vals = std::array{0, 1, 2, 3, 4};
+        auto words = std::array<std::string_view, 3>{"0", "1", "2"};
+
+        flux::zip(flux::mut_ref(vals), words)
+            .map(flux::unpack([](int& val, std::string_view str) -> int& {
+                if (str[0] - '0' != val) {
+                    throw std::runtime_error("Something has gone wrong");
+                }
+                return val;
+            }))
+            .fill(100);
+
+        STATIC_CHECK(check_equal(vals, {100, 100, 100, 3, 4}));
+    }
+
     return true;
 }
 static_assert(test_zip());

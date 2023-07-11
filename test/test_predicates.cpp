@@ -5,7 +5,7 @@
 
 #include "catch.hpp"
 
-#include <flux/core/predicates.hpp>
+#include <flux/core/functional.hpp>
 
 #include "test_utils.hpp"
 
