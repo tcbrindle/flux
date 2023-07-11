@@ -7,6 +7,7 @@
 #define FLUX_OP_CARTESIAN_PRODUCT_HPP_INCLUDED
 
 #include <flux/core.hpp>
+#include <flux/core/numeric.hpp>
 #include <flux/op/from.hpp>
 
 #include <tuple>
@@ -88,21 +89,36 @@ private:
 
     template <std::size_t I, typename Self>
     static constexpr auto ra_inc_impl(Self& self, cursor_type<Self>& cur, distance_t offset)
-    -> cursor_type<Self>&
+        -> cursor_type<Self>&
     {
+        if (offset == 0)
+            return cur;
+
         auto& base = std::get<I>(self.bases_);
+        auto& this_index = std::get<I>(cur);
+        auto this_size = flux::size(base);
 
-        auto this_sz = flux::size(base);
-        auto this_offset = offset  % this_sz;
-        auto next_offset = offset/this_sz;
+        this_index += offset;
 
-        // Adjust this cursor by the corrected offset
-        flux::inc(base, std::get<I>(cur), this_offset);
+        if (this_index >= 0 && this_index < this_size)
+            return cur;
 
-        // Call the next level down if necessary
-        if constexpr (I > 0) {
-            if (next_offset != 0) {
-                ra_inc_impl<I-1>(self, cur, next_offset);
+        // If the new index overflows the maximum or underflows zero, calculate the carryover and fix it.
+        else {
+            offset = this_index / this_size;
+            this_index %= this_size;
+
+            // Correct for negative index which may happen when underflowing.
+            if (this_index < 0) {
+                this_index += this_size;
+                --offset;
+            }
+
+            // Call the next level down if necessary.
+            if constexpr (I > 0) {
+                if (offset != 0) {
+                    ra_inc_impl<I-1>(self, cur, offset);
+                }
             }
         }
 
@@ -157,25 +173,25 @@ public:
     }
 
     template <typename Self>
-    requires (bidirectional_sequence<const_like_t<Self, Bases>> && ...) &&
-             (bounded_sequence<const_like_t<Self, Bases>> && ...)
+        requires (bidirectional_sequence<const_like_t<Self, Bases>> && ...) &&
+                 (bounded_sequence<const_like_t<Self, Bases>> && ...)
     static constexpr auto dec(Self& self, cursor_type<Self>& cur) -> cursor_type<Self>&
     {
         return dec_impl<sizeof...(Bases) - 1>(self, cur);
     }
 
     template <typename Self>
-    requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
-             (sized_sequence<const_like_t<Self, Bases>> && ...)
+        requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
+                 (sized_sequence<const_like_t<Self, Bases>> && ...)
     static constexpr auto inc(Self& self, cursor_type<Self>& cur, distance_t offset)
-    -> cursor_type<Self>&
+        -> cursor_type<Self>&
     {
         return ra_inc_impl<sizeof...(Bases) - 1>(self, cur, offset);
     }
 
     template <typename Self>
-    requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
-             (sized_sequence<const_like_t<Self, Bases>> && ...)
+        requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
+                 (sized_sequence<const_like_t<Self, Bases>> && ...)
     static constexpr auto distance(Self& self,
                                    cursor_type<Self> const& from,
                                    cursor_type<Self> const& to) -> distance_t
@@ -192,6 +208,29 @@ public:
         }, self.bases_);
     }
 };
+
+template <typename Self, typename I>
+struct cartesian_product_partial_cursor;
+
+template <typename Self>
+struct cartesian_product_partial_cursor<Self,
+    std::integral_constant<std::size_t, std::tuple_size_v<cursor_t<Self>> - 1>>
+{
+    using type = std::tuple<std::tuple_element_t<std::tuple_size_v<cursor_t<Self>> - 1, cursor_t<Self>>>;
+};
+
+template <typename Self, typename I>
+struct cartesian_product_partial_cursor
+{
+    using type = decltype(std::tuple_cat(
+        std::declval<std::tuple<std::tuple_element_t<I::value, cursor_t<Self>>>>(),
+        std::declval<typename cartesian_product_partial_cursor<Self,
+            std::integral_constant<std::size_t, I::value + 1>>::type>()));
+};
+
+template <typename Self, std::size_t I>
+using cartesian_product_partial_cursor_t =
+    typename cartesian_product_partial_cursor<Self, std::integral_constant<std::size_t, I>>::type;
 
 
 } // end namespace detail
@@ -214,6 +253,37 @@ private:
         return [&]<std::size_t... N>(std::index_sequence<N...>) {
             return std::tuple<decltype(read1_<N>(fn, self, cur))...>(read1_<N>(fn, self, cur)...);
         }(std::index_sequence_for<Bases...>{});
+    }
+
+    template <std::size_t I, typename Self, typename Function,
+              typename... PartialCursor>
+    static constexpr auto for_each_while_impl(Self& self,
+                                              Function&& func,
+                                              PartialCursor&&... partial_cursor)
+        -> std::tuple<bool, detail::cartesian_product_partial_cursor_t<Self, I>>
+    {
+        // We need to iterate right to left.
+        if constexpr (I == sizeof...(Bases) - 1) {
+            bool keep_going = true;
+            auto this_current = flux::for_each_while(std::get<I>(self.bases_),
+                [&](auto&& elem) {
+                    keep_going = std::invoke(func,
+                        cursor_t<Self>(FLUX_FWD(partial_cursor)..., FLUX_FWD(elem)));
+                    return keep_going;
+                });
+            return std::tuple(keep_going, std::tuple(std::move(this_current)));
+        } else {
+            bool keep_going = true;
+            detail::cartesian_product_partial_cursor_t<Self, I+1> nested_current;
+            auto this_current = flux::for_each_while(std::get<I>(self.bases_),
+                [&](auto&& elem) {
+                    std::tie(keep_going, nested_current) = for_each_while_impl<I+1>(
+                        self, func, FLUX_FWD(partial_cursor)..., FLUX_FWD(elem));
+                    return keep_going;
+                });
+            return std::tuple(keep_going,
+                std::tuple_cat(std::tuple(std::move(this_current)), std::move(nested_current)));
+        }
     }
 
 public:
@@ -241,6 +311,13 @@ public:
     static constexpr auto move_at_unchecked(Self& self, cursor_t<Self> const& cur)
     {
         return read_(flux::move_at_unchecked, self, cur);
+    }
+
+    template <typename Self, typename Function>
+    static constexpr auto for_each_while(Self& self, Function&& func)
+        -> cursor_t<Self>
+    {
+        return std::get<1>(for_each_while_impl<0>(self, FLUX_FWD(func)));
     }
 };
 
