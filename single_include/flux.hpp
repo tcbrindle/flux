@@ -4684,7 +4684,7 @@ public:
         static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
             -> decltype(auto)
         {
-            return [&]<std::size_t... N>(std::index_sequence<N...>) {
+            return [&]<std::size_t... N>(std::index_sequence<N...>) -> decltype(auto) {
                 return std::invoke(self.func_, flux::read_at(std::get<N>(self.bases_), std::get<N>(cur))...);
             }(std::index_sequence_for<Bases...>{});
         }
