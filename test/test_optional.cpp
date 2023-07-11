@@ -1125,7 +1125,6 @@ constexpr bool test_optional_map()
         auto return_ref = [](int& i) -> int& { return i; };
 
         flux::optional<int> o{3};
-        flux::optional<int> empty;
 
         STATIC_CHECK(o.map(return_ref).value() == 3);
     }

@@ -11,19 +11,44 @@ target_sources(flux INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/include/flux.hpp
 )
 
+add_library(flux_docs INTERFACE)
+
 if (MSVC)
     target_compile_features(flux INTERFACE cxx_std_23)
-    target_compile_options(flux INTERFACE /permissive-)
 else()
     target_compile_features(flux INTERFACE cxx_std_20)
 endif()
 
+target_compile_options(flux INTERFACE
+  $<$<AND:$<CONFIG:Release,RelWithDebInfo>,$<CXX_COMPILER_ID:Clang,AppleClang,GNU,Intel,NVHPC>>:
+    -O3 -fstrict-aliasing
+  >
+  $<$<AND:$<CONFIG:Release>,$<CXX_COMPILER_ID:Clang,AppleClang,GNU,Intel>>:
+    -g0 -DNDEBUG
+    -fomit-frame-pointer -fno-unwind-tables -fno-asynchronous-unwind-tables
+  >
+  $<$<CXX_COMPILER_ID:Clang,AppleClang,GNU,Intel,NVHPC>:
+    -Wall
+    -fno-builtin
+  >
+  $<$<CXX_COMPILER_ID:Clang,AppleClang,Intel>:
+    -ferror-limit=0
+  >
+  $<$<CXX_COMPILER_ID:Clang,AppleClang,GNU,Intel>:
+    -ftemplate-backtrace-limit=0
+  >
+  $<$<CXX_COMPILER_ID:MSVC>:
+    /permissive-
+  >
+)
+
+target_compile_options(flux_docs INTERFACE
+  $<$<CXX_COMPILER_ID:Clang,AppleClang,GNU,Intel>:
+    -Wno-unused
+  >
+)
+
 target_include_directories(flux INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-
-
-if (MSVC)
-    target_compile_options(flux INTERFACE /permissive-)
-endif()
 
 set(CMAKE_CXX_EXTENSIONS Off)
 
