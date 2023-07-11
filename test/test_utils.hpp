@@ -9,7 +9,7 @@
 #include <flux/op/from.hpp>
 #include <flux/op/ref.hpp>
 
-#define STATIC_CHECK(...) if (!(__VA_ARGS__)) return false
+#define STATIC_CHECK(...) if (!(__VA_ARGS__)) throw false
 
 inline namespace test_utils {
 
