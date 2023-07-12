@@ -7,3 +7,6 @@ target_link_libraries(internal-iteration-benchmark PUBLIC nanobench flux)
 
 add_executable(sort-benchmark sort_benchmark.cpp)
 target_link_libraries(sort-benchmark PUBLIC nanobench flux)
+
+add_executable(multidimensional-memset-benchmark multidimensional_memset_benchmark.cpp multidimensional_memset_benchmark_kernels.cpp)
+target_link_libraries(multidimensional-memset-benchmark PUBLIC nanobench flux)
