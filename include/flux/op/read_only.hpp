@@ -30,6 +30,8 @@ public:
     {}
 
     struct flux_sequence_traits : map::flux_sequence_traits {
+        using value_type = value_t<Base>;
+
         static constexpr auto data(auto& self)
             requires contiguous_sequence<Base>
         {
