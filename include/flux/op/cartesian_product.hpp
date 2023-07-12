@@ -95,23 +95,19 @@ private:
             return cur;
 
         auto& base = std::get<I>(self.bases_);
-        auto& this_index = std::get<I>(cur);
+        const auto this_index = flux::distance(base, flux::first(base), std::get<I>(cur));
+        auto new_index = num::checked_add(this_index, offset);
         auto this_size = flux::size(base);
 
-        this_index += offset;
-
-        if (this_index >= 0 && this_index < this_size)
-            return cur;
-
         // If the new index overflows the maximum or underflows zero, calculate the carryover and fix it.
-        else {
-            offset = this_index / this_size;
-            this_index %= this_size;
+        if (new_index < 0 || new_index >= this_size) {
+            offset = num::checked_div(new_index, this_size);
+            new_index = num::checked_mod(new_index, this_size);
 
             // Correct for negative index which may happen when underflowing.
-            if (this_index < 0) {
-                this_index += this_size;
-                --offset;
+            if (new_index < 0) {
+                new_index = num::checked_add(new_index, this_size);
+                offset = num::checked_sub(offset, flux::distance_t(1));
             }
 
             // Call the next level down if necessary.
@@ -121,6 +117,8 @@ private:
                 }
             }
         }
+
+        flux::inc(base, std::get<I>(cur), num::checked_sub(new_index, this_index));
 
         return cur;
     }
