@@ -211,6 +211,14 @@ TEST_CASE("to")
 
             CHECK(check_equal(vec, {"The", "quick", "brown", "fox"}));
         }
+
+        SECTION("from set_union adaptor")
+        {
+            auto union_seq = flux::set_union(std::array{1,2,3}, std::array{4,5});
+            auto vec = flux::to<std::vector<int>>(union_seq);
+
+            CHECK(check_equal(vec, {1,2,3,4,5}));
+        }
     }
 
     SECTION("...using CTAD")
