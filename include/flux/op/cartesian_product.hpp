@@ -207,29 +207,19 @@ public:
     }
 };
 
-template <typename Self, typename I>
-struct cartesian_product_partial_cursor;
+template <typename T, std::size_t I, typename Is>
+struct drop_impl;
 
-template <typename Self>
-struct cartesian_product_partial_cursor<Self,
-    std::integral_constant<std::size_t, std::tuple_size_v<cursor_t<Self>> - 1>>
-{
-    using type = std::tuple<std::tuple_element_t<std::tuple_size_v<cursor_t<Self>> - 1, cursor_t<Self>>>;
+template <typename T, std::size_t I, std::size_t... Js>
+struct drop_impl<T, I, std::index_sequence<Js...>> {
+    using type = std::tuple<std::tuple_element_t<I + Js, T>...>;
 };
 
-template <typename Self, typename I>
-struct cartesian_product_partial_cursor
-{
-    using type = decltype(std::tuple_cat(
-        std::declval<std::tuple<std::tuple_element_t<I::value, cursor_t<Self>>>>(),
-        std::declval<typename cartesian_product_partial_cursor<Self,
-            std::integral_constant<std::size_t, I::value + 1>>::type>()));
-};
+template <typename T, std::size_t I>
+using drop = typename drop_impl<T, I, std::make_index_sequence<std::tuple_size_v<T> - I>>::type;
 
 template <typename Self, std::size_t I>
-using cartesian_product_partial_cursor_t =
-    typename cartesian_product_partial_cursor<Self, std::integral_constant<std::size_t, I>>::type;
-
+using cartesian_product_partial_cursor_t = drop<cursor_t<Self>, I>;
 
 } // end namespace detail
 
