@@ -204,13 +204,13 @@ constexpr bool test_cartesian_product()
         static_assert(flux::bounded_sequence<C const>);
         static_assert(flux::sized_sequence<C const>);
 
-        static_assert(std::same_as<flux::element_t<C>, std::tuple<long, long, long>>);
-        static_assert(std::same_as<flux::value_t<C>, std::tuple<long, long, long>>);
-        static_assert(std::same_as<flux::rvalue_element_t<C>, std::tuple<long, long, long>>);
+        static_assert(std::same_as<flux::element_t<C>, std::tuple<flux::distance_t, flux::distance_t, flux::distance_t>>);
+        static_assert(std::same_as<flux::value_t<C>, std::tuple<flux::distance_t, flux::distance_t, flux::distance_t>>);
+        static_assert(std::same_as<flux::rvalue_element_t<C>, std::tuple<flux::distance_t, flux::distance_t, flux::distance_t>>);
 
-        static_assert(std::same_as<flux::element_t<C const>, std::tuple<long, long, long>>);
-        static_assert(std::same_as<flux::value_t<C const>, std::tuple<long, long, long>>);
-        static_assert(std::same_as<flux::rvalue_element_t<C const>, std::tuple<long, long, long>>);
+        static_assert(std::same_as<flux::element_t<C const>, std::tuple<flux::distance_t, flux::distance_t, flux::distance_t>>);
+        static_assert(std::same_as<flux::value_t<C const>, std::tuple<flux::distance_t, flux::distance_t, flux::distance_t>>);
+        static_assert(std::same_as<flux::rvalue_element_t<C const>, std::tuple<flux::distance_t, flux::distance_t, flux::distance_t>>);
 
         STATIC_CHECK(flux::size(cart) == 4 * 2 * 3);
 
