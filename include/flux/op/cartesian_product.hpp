@@ -256,10 +256,10 @@ private:
     }
 
     template <std::size_t I, typename Self, typename Function,
-              typename... PartialCursor>
+              typename... PartialElements>
     static constexpr auto for_each_while_impl(Self& self,
                                               Function&& func,
-                                              PartialCursor&&... partial_cursor)
+                                              PartialElements&&... partial_elements)
         -> std::tuple<bool, detail::cartesian_product_partial_cursor_t<Self, I>>
     {
         // We need to iterate right to left.
@@ -268,7 +268,7 @@ private:
             auto this_current = flux::for_each_while(std::get<I>(self.bases_),
                 [&](auto&& elem) {
                     keep_going = std::invoke(func,
-                        cursor_t<Self>(FLUX_FWD(partial_cursor)..., FLUX_FWD(elem)));
+                        element_t<Self>(FLUX_FWD(partial_elements)..., FLUX_FWD(elem)));
                     return keep_going;
                 });
             return std::tuple(keep_going, std::tuple(std::move(this_current)));
@@ -278,7 +278,7 @@ private:
             auto this_current = flux::for_each_while(std::get<I>(self.bases_),
                 [&](auto&& elem) {
                     std::tie(keep_going, nested_current) = for_each_while_impl<I+1>(
-                        self, func, FLUX_FWD(partial_cursor)..., FLUX_FWD(elem));
+                        self, func, FLUX_FWD(partial_elements)..., FLUX_FWD(elem));
                     return keep_going;
                 });
             return std::tuple(keep_going,
