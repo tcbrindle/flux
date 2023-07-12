@@ -19,7 +19,7 @@ constexpr bool test_read_only() {
     {
         std::array arr{1, 2, 3, 4, 5};
 
-        auto seq = flux::read_only(flux::ref(arr));
+        auto seq = flux::read_only(flux::mut_ref(arr));
         using S = decltype(seq);
 
         static_assert(flux::contiguous_sequence<S>);
