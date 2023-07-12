@@ -8652,7 +8652,7 @@ public:
                      bounded_sequence<Base1> && bounded_sequence<Base2>
         static constexpr auto last(Self& self) -> cursor_type
         {
-            return cursor_type{flux::last(self.base1_), flux::last(self.base2_)};
+            return cursor_type{flux::last(self.base1_), flux::last(self.base2_), cursor_type::second};
         }
 
         template <typename Self>
@@ -9083,6 +9083,7 @@ inline constexpr auto set_intersection = detail::set_intersection_fn{};
 } // namespace flux
 
 #endif // namespace FLUX_OP_SET_ADAPTORS_HPP_INCLUDED
+
 
 
 // Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
