@@ -1899,6 +1899,263 @@ struct sequence_traits<R> {
 #endif // FLUX_CORE_DEFAULT_IMPLS_HPP_INCLUDED
 
 
+// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_CORE_FUNCTIONAL_HPP_INCLUDED
+#define FLUX_CORE_FUNCTIONAL_HPP_INCLUDED
+
+
+
+#include <functional>
+#include <type_traits>
+
+namespace flux {
+
+template <typename Fn, typename Proj = std::identity>
+struct proj {
+    Fn fn;
+    Proj prj{};
+
+    template <typename... Args>
+    constexpr auto operator()(Args&&... args)
+        noexcept(noexcept(std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...)))
+        -> decltype(std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...))
+    {
+        return std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...);
+    }
+
+    template <typename... Args>
+    constexpr auto operator()(Args&&... args) const
+        noexcept(noexcept(std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...)))
+        -> decltype(std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...))
+    {
+        return std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...);
+    }
+};
+
+template <typename F, typename P = std::identity>
+proj(F, P = {}) -> proj<F, P>;
+
+template <typename Fn, typename Lhs = std::identity, typename Rhs = std::identity>
+struct proj2 {
+    Fn fn;
+    Lhs lhs{};
+    Rhs rhs{};
+
+    template <typename Arg1, typename Arg2>
+    constexpr auto operator()(Arg1&& arg1, Arg2&& arg2)
+        noexcept(noexcept(std::invoke(fn, std::invoke(lhs, FLUX_FWD(arg1)),
+                                          std::invoke(rhs, FLUX_FWD(arg2)))))
+        -> decltype(std::invoke(fn, std::invoke(lhs, FLUX_FWD(arg1)),
+                                    std::invoke(rhs, FLUX_FWD(arg2))))
+    {
+        return std::invoke(fn, std::invoke(lhs, FLUX_FWD(arg1)),
+                           std::invoke(rhs, FLUX_FWD(arg2)));
+    }
+
+    template <typename Arg1, typename Arg2>
+    constexpr auto operator()(Arg1&& arg1, Arg2&& arg2) const
+        noexcept(noexcept(std::invoke(fn, std::invoke(lhs, FLUX_FWD(arg1)),
+                                      std::invoke(rhs, FLUX_FWD(arg2)))))
+            -> decltype(std::invoke(fn, std::invoke(lhs, FLUX_FWD(arg1)),
+                                    std::invoke(rhs, FLUX_FWD(arg2))))
+    {
+        return std::invoke(fn, std::invoke(lhs, FLUX_FWD(arg1)),
+                           std::invoke(rhs, FLUX_FWD(arg2)));
+    }
+};
+
+template <typename F, typename L = std::identity, typename R = std::identity>
+proj2(F, L = {}, R = {}) -> proj2<F, L, R>;
+
+namespace detail {
+
+template <typename Func>
+struct lazy_apply {
+    Func func_;
+
+    template <typename Tuple>
+    constexpr auto operator()(Tuple&& tuple) &
+        noexcept(noexcept(std::apply(func_, FLUX_FWD(tuple))))
+        -> decltype(std::apply(func_, FLUX_FWD(tuple)))
+    {
+        return std::apply(func_, FLUX_FWD(tuple));
+    }
+
+    template <typename Tuple>
+    constexpr auto operator()(Tuple&& tuple) const&
+        noexcept(noexcept(std::apply(func_, FLUX_FWD(tuple))))
+        -> decltype(std::apply(func_, FLUX_FWD(tuple)))
+    {
+        return std::apply(func_, FLUX_FWD(tuple));
+    }
+
+    template <typename Tuple>
+    constexpr auto operator()(Tuple&& tuple) &&
+        noexcept(noexcept(std::apply(std::move(func_), FLUX_FWD(tuple))))
+        -> decltype(std::apply(std::move(func_), FLUX_FWD(tuple)))
+    {
+        return std::apply(std::move(func_), FLUX_FWD(tuple));
+    }
+
+    template <typename Tuple>
+    constexpr auto operator()(Tuple&& tuple) const&&
+        noexcept(noexcept(std::apply(std::move(func_), FLUX_FWD(tuple))))
+        -> decltype(std::apply(std::move(func_), FLUX_FWD(tuple)))
+    {
+        return std::apply(std::move(func_), FLUX_FWD(tuple));
+    }
+};
+
+struct unpack_fn {
+    template <typename Func>
+    constexpr auto operator()(Func&& func) const
+        -> lazy_apply<std::decay_t<Func>>
+    {
+        return lazy_apply<std::decay_t<Func>>{.func_ = FLUX_FWD(func)};
+    }
+};
+
+} // namespace detail
+
+inline constexpr auto unpack = detail::unpack_fn{};
+
+namespace pred {
+
+namespace detail {
+
+template <typename Lambda>
+struct predicate : Lambda {};
+
+template <typename L>
+predicate(L) -> predicate<L>;
+
+template <typename Op>
+inline constexpr auto cmp = [](auto&& val) {
+    return predicate{[val = FLUX_FWD(val)](auto const& other) {
+            return Op{}(other, val);
+        }};
+};
+
+} // namespace detail
+
+/// Given a predicate, returns a new predicate with the condition reversed
+inline constexpr auto not_ = [](auto&& pred) {
+    return detail::predicate([p = FLUX_FWD(pred)] (auto const&... args) {
+        return !std::invoke(p, FLUX_FWD(args)...);
+    });
+};
+
+/// Returns a new predicate which is satisifed only if both the given predicates
+/// return `true`.
+///
+/// The returned predicate is short-circuiting: if the first predicate returns
+/// `false`, the second will not be evaluated.
+inline constexpr auto both = [](auto&& p, auto&& and_) {
+    return detail::predicate{[p1 = FLUX_FWD(p), p2 = FLUX_FWD(and_)] (auto const&... args) {
+        return std::invoke(p1, args...) && std::invoke(p2, args...);
+    }};
+};
+
+/// Returns a new predicate which is satisfied only if either of the given
+/// predicates return `true`.
+///
+/// The returned predicate is short-circuiting: if the first predicate returns
+/// `true`, the second will not be evaluated
+inline constexpr auto either = [](auto&& p, auto&& or_) {
+     return detail::predicate{[p1 = FLUX_FWD(p), p2 = FLUX_FWD(or_)] (auto const&... args) {
+        return std::invoke(p1, args...) || std::invoke(p2, args...);
+     }};
+};
+
+namespace detail {
+
+template <typename P>
+constexpr auto operator!(detail::predicate<P> pred)
+{
+    return not_(std::move(pred));
+}
+
+template <typename L, typename R>
+constexpr auto operator&&(detail::predicate<L> lhs, detail::predicate<R> rhs)
+{
+    return both(std::move(lhs), std::move(rhs));
+}
+
+template <typename L, typename R>
+constexpr auto operator||(detail::predicate<L> lhs, detail::predicate<R> rhs)
+{
+    return either(std::move(lhs), std::move(rhs));
+}
+
+} // namespace detail
+
+/// Returns a new predicate with is satified only if both of the given
+/// predicates return `false`.
+///
+/// The returned predicate is short-circuiting: if the first predicate returns
+/// `true`, the second will not be evaluated.
+inline constexpr auto neither = [](auto&& p1, auto&& nor) {
+    return not_(either(FLUX_FWD(p1), FLUX_FWD(nor)));
+};
+
+inline constexpr auto eq = detail::cmp<std::ranges::equal_to>;
+inline constexpr auto neq = detail::cmp<std::ranges::not_equal_to>;
+inline constexpr auto lt = detail::cmp<std::ranges::less>;
+inline constexpr auto gt = detail::cmp<std::ranges::greater>;
+inline constexpr auto leq = detail::cmp<std::ranges::less_equal>;
+inline constexpr auto geq = detail::cmp<std::ranges::greater_equal>;
+
+/// A predicate which always returns true
+inline constexpr auto true_ = detail::predicate{[](auto const&...) -> bool { return true; }};
+
+/// A predicate which always returns false
+inline constexpr auto false_ = detail::predicate{[](auto const&...) -> bool { return false; }};
+
+/// Identity predicate, returns the boolean value given to it
+inline constexpr auto id = detail::predicate{[](bool b) -> bool { return b; }};
+
+/// Returns true if the given value is greater than a zero of the same type.
+inline constexpr auto positive = detail::predicate{[](auto const& val) -> bool {
+    return val > decltype(val){0};
+}};
+
+/// Returns true if the given value is less than a zero of the same type.
+inline constexpr auto negative = detail::predicate{[](auto const& val) -> bool {
+    return val < decltype(val){0};
+}};
+
+/// Returns true if the given value is not equal to a zero of the same type.
+inline constexpr auto nonzero = detail::predicate{[](auto const& val) -> bool {
+    return val != decltype(val){0};
+}};
+
+/// Given a sequence of values, constructs a predicate which returns true
+/// if its argument compares equal to one of the values
+inline constexpr auto in = [](auto const&... vals)  requires (sizeof...(vals) > 0)
+{
+    return detail::predicate{[vals...](auto const& arg) -> bool {
+        return ((arg == vals) || ...);
+    }};
+};
+
+inline constexpr auto even = detail::predicate([](auto const& val) -> bool {
+    return val % decltype(val){2} == decltype(val){0};
+});
+
+inline constexpr auto odd = detail::predicate([](auto const& val) -> bool {
+  return val % decltype(val){2} != decltype(val){0};
+});
+
+} // namespace pred
+
+} // namespace flux
+
+#endif
+
+
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -2406,211 +2663,6 @@ public:
 #endif // FLUX_CORE_SEQUENCE_IFACE_HPP_INCLUDED
 
 
-
-
-// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_CORE_PREDICATES_HPP_INCLUDED
-#define FLUX_CORE_PREDICATES_HPP_INCLUDED
-
-
-
-#include <functional>
-#include <type_traits>
-
-namespace flux {
-
-template <typename Fn, typename Proj = std::identity>
-struct proj {
-    Fn fn;
-    Proj prj{};
-
-    template <typename... Args>
-    constexpr auto operator()(Args&&... args)
-        noexcept(noexcept(std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...)))
-        -> decltype(std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...))
-    {
-        return std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...);
-    }
-
-    template <typename... Args>
-    constexpr auto operator()(Args&&... args) const
-        noexcept(noexcept(std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...)))
-        -> decltype(std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...))
-    {
-        return std::invoke(fn, std::invoke(prj, FLUX_FWD(args))...);
-    }
-};
-
-template <typename F, typename P = std::identity>
-proj(F, P = {}) -> proj<F, P>;
-
-template <typename Fn, typename Lhs = std::identity, typename Rhs = std::identity>
-struct proj2 {
-    Fn fn;
-    Lhs lhs{};
-    Rhs rhs{};
-
-    template <typename Arg1, typename Arg2>
-    constexpr auto operator()(Arg1&& arg1, Arg2&& arg2)
-        noexcept(noexcept(std::invoke(fn, std::invoke(lhs, FLUX_FWD(arg1)),
-                                          std::invoke(rhs, FLUX_FWD(arg2)))))
-        -> decltype(std::invoke(fn, std::invoke(lhs, FLUX_FWD(arg1)),
-                                    std::invoke(rhs, FLUX_FWD(arg2))))
-    {
-        return std::invoke(fn, std::invoke(lhs, FLUX_FWD(arg1)),
-                           std::invoke(rhs, FLUX_FWD(arg2)));
-    }
-
-    template <typename Arg1, typename Arg2>
-    constexpr auto operator()(Arg1&& arg1, Arg2&& arg2) const
-        noexcept(noexcept(std::invoke(fn, std::invoke(lhs, FLUX_FWD(arg1)),
-                                      std::invoke(rhs, FLUX_FWD(arg2)))))
-            -> decltype(std::invoke(fn, std::invoke(lhs, FLUX_FWD(arg1)),
-                                    std::invoke(rhs, FLUX_FWD(arg2))))
-    {
-        return std::invoke(fn, std::invoke(lhs, FLUX_FWD(arg1)),
-                           std::invoke(rhs, FLUX_FWD(arg2)));
-    }
-};
-
-template <typename F, typename L = std::identity, typename R = std::identity>
-proj2(F, L = {}, R = {}) -> proj2<F, L, R>;
-
-namespace pred {
-
-namespace detail {
-
-template <typename Lambda>
-struct predicate : Lambda {};
-
-template <typename L>
-predicate(L) -> predicate<L>;
-
-template <typename Op>
-inline constexpr auto cmp = [](auto&& val) {
-    return predicate{[val = FLUX_FWD(val)](auto const& other) {
-            return Op{}(other, val);
-        }};
-};
-
-} // namespace detail
-
-/// Given a predicate, returns a new predicate with the condition reversed
-inline constexpr auto not_ = [](auto&& pred) {
-    return detail::predicate([p = FLUX_FWD(pred)] (auto const&... args) {
-        return !std::invoke(p, FLUX_FWD(args)...);
-    });
-};
-
-/// Returns a new predicate which is satisifed only if both the given predicates
-/// return `true`.
-///
-/// The returned predicate is short-circuiting: if the first predicate returns
-/// `false`, the second will not be evaluated.
-inline constexpr auto both = [](auto&& p, auto&& and_) {
-    return detail::predicate{[p1 = FLUX_FWD(p), p2 = FLUX_FWD(and_)] (auto const&... args) {
-        return std::invoke(p1, args...) && std::invoke(p2, args...);
-    }};
-};
-
-/// Returns a new predicate which is satisfied only if either of the given
-/// predicates return `true`.
-///
-/// The returned predicate is short-circuiting: if the first predicate returns
-/// `true`, the second will not be evaluated
-inline constexpr auto either = [](auto&& p, auto&& or_) {
-     return detail::predicate{[p1 = FLUX_FWD(p), p2 = FLUX_FWD(or_)] (auto const&... args) {
-        return std::invoke(p1, args...) || std::invoke(p2, args...);
-     }};
-};
-
-namespace detail {
-
-template <typename P>
-constexpr auto operator!(detail::predicate<P> pred)
-{
-    return not_(std::move(pred));
-}
-
-template <typename L, typename R>
-constexpr auto operator&&(detail::predicate<L> lhs, detail::predicate<R> rhs)
-{
-    return both(std::move(lhs), std::move(rhs));
-}
-
-template <typename L, typename R>
-constexpr auto operator||(detail::predicate<L> lhs, detail::predicate<R> rhs)
-{
-    return either(std::move(lhs), std::move(rhs));
-}
-
-} // namespace detail
-
-/// Returns a new predicate with is satified only if both of the given
-/// predicates return `false`.
-///
-/// The returned predicate is short-circuiting: if the first predicate returns
-/// `true`, the second will not be evaluated.
-inline constexpr auto neither = [](auto&& p1, auto&& nor) {
-    return not_(either(FLUX_FWD(p1), FLUX_FWD(nor)));
-};
-
-inline constexpr auto eq = detail::cmp<std::ranges::equal_to>;
-inline constexpr auto neq = detail::cmp<std::ranges::not_equal_to>;
-inline constexpr auto lt = detail::cmp<std::ranges::less>;
-inline constexpr auto gt = detail::cmp<std::ranges::greater>;
-inline constexpr auto leq = detail::cmp<std::ranges::less_equal>;
-inline constexpr auto geq = detail::cmp<std::ranges::greater_equal>;
-
-/// A predicate which always returns true
-inline constexpr auto true_ = detail::predicate{[](auto const&...) -> bool { return true; }};
-
-/// A predicate which always returns false
-inline constexpr auto false_ = detail::predicate{[](auto const&...) -> bool { return false; }};
-
-/// Identity predicate, returns the boolean value given to it
-inline constexpr auto id = detail::predicate{[](bool b) -> bool { return b; }};
-
-/// Returns true if the given value is greater than a zero of the same type.
-inline constexpr auto positive = detail::predicate{[](auto const& val) -> bool {
-    return val > decltype(val){0};
-}};
-
-/// Returns true if the given value is less than a zero of the same type.
-inline constexpr auto negative = detail::predicate{[](auto const& val) -> bool {
-    return val < decltype(val){0};
-}};
-
-/// Returns true if the given value is not equal to a zero of the same type.
-inline constexpr auto nonzero = detail::predicate{[](auto const& val) -> bool {
-    return val != decltype(val){0};
-}};
-
-/// Given a sequence of values, constructs a predicate which returns true
-/// if its argument compares equal to one of the values
-inline constexpr auto in = [](auto const&... vals)  requires (sizeof...(vals) > 0)
-{
-    return detail::predicate{[vals...](auto const& arg) -> bool {
-        return ((arg == vals) || ...);
-    }};
-};
-
-inline constexpr auto even = detail::predicate([](auto const& val) -> bool {
-    return val % decltype(val){2} == decltype(val){0};
-});
-
-inline constexpr auto odd = detail::predicate([](auto const& val) -> bool {
-  return val % decltype(val){2} != decltype(val){0};
-});
-
-} // namespace pred
-
-} // namespace flux
-
-#endif
 
 
 
@@ -7992,108 +8044,32 @@ namespace flux {
 
 namespace detail {
 
+template <typename T>
+struct cast_to_const {
+    constexpr auto operator()(auto&& elem) const -> T { return FLUX_FWD(elem); }
+};
+
 template <sequence Base>
     requires (not read_only_sequence<Base>)
-struct read_only_adaptor : inline_sequence_base<read_only_adaptor<Base>> {
+struct read_only_adaptor : map_adaptor<Base, cast_to_const<const_element_t<Base>>> {
 private:
-    FLUX_NO_UNIQUE_ADDRESS Base base_;
+    using map = map_adaptor<Base, cast_to_const<const_element_t<Base>>>;
 
 public:
-    constexpr read_only_adaptor(decays_to<Base> auto&& base)
-        : base_(FLUX_FWD(base))
+    constexpr explicit read_only_adaptor(decays_to<Base> auto&& base)
+        : map(FLUX_FWD(base), cast_to_const<const_element_t<Base>>{})
     {}
 
-    struct flux_sequence_traits {
-    private:
-        using const_rvalue_element_t = std::common_reference_t<
-            value_t<Base> const&&, rvalue_element_t<Base>>;
-
-    public:
+    struct flux_sequence_traits : map::flux_sequence_traits {
         using value_type = value_t<Base>;
-
-        static constexpr auto first(auto& self) -> cursor_t<Base> { return flux::first(self.base_); }
-
-        static constexpr auto is_last(auto& self, cursor_t<Base> const& cur) -> bool
-        {
-            return flux::is_last(self.base_,  cur);
-        }
-
-        static constexpr auto inc(auto& self, cursor_t<Base>& cur) -> void
-        {
-            flux::inc(self.base_, cur);
-        }
-
-        static constexpr auto read_at(auto& self, cursor_t<Base> const& cur)
-            -> const_element_t<Base>
-        {
-            return static_cast<const_element_t<Base>>(flux::read_at(self.base_, cur));
-        }
-
-        static constexpr auto read_at_unchecked(auto& self, cursor_t<Base> const& cur)
-            -> const_element_t<Base>
-        {
-            return static_cast<const_element_t<Base>>(flux::read_at_unchecked(self.base_, cur));
-        }
-
-        static constexpr auto move_at(auto& self, cursor_t<Base> const& cur)
-            -> const_rvalue_element_t
-        {
-            return static_cast<const_rvalue_element_t>(flux::move_at(self.base_, cur));
-        }
-
-        static constexpr auto move_at_unchecked(auto& self, cursor_t<Base> const& cur)
-            -> const_rvalue_element_t
-        {
-            return static_cast<const_rvalue_element_t>(flux::move_at_unchecked(self.base_, cur));
-        }
-
-        static constexpr auto last(auto& self) -> cursor_t<Base>
-            requires bounded_sequence<Base>
-        {
-            return flux::last(self.base_);
-        }
-
-        static constexpr auto dec(auto& self, cursor_t<Base>& cur)
-            requires bidirectional_sequence<Base>
-        {
-            return flux::dec(self.base_, cur);
-        }
-
-        static constexpr auto inc(auto& self, cursor_t<Base>& cur, distance_t o)
-            requires random_access_sequence<Base>
-        {
-            return flux::inc(self.base_, cur, o);
-        }
-
-        static constexpr auto distance(auto& self, cursor_t<Base> const& from,
-                                       cursor_t<Base> const& to) -> distance_t
-            requires random_access_sequence<Base>
-        {
-            return flux::distance(self.base_, from, to);
-        }
-
-        static constexpr auto size(auto& self) -> distance_t
-            requires sized_sequence<Base>
-        {
-            return flux::size(self.base_);
-        }
 
         static constexpr auto data(auto& self)
             requires contiguous_sequence<Base>
         {
             using P = std::add_pointer_t<std::remove_reference_t<const_element_t<Base>>>;
-            return static_cast<P>(flux::data(self.base_));
-        }
-
-        static constexpr auto for_each_while(auto& self, auto&& pred)
-        {
-            return flux::for_each_while(self.base_, [&pred](auto&& elem) {
-                return std::invoke(pred, static_cast<const_element_t<Base>>(FLUX_FWD(elem)));
-            });
+            return static_cast<P>(flux::data(self.base()));
         }
     };
-
-
 };
 
 struct read_only_fn {
@@ -8600,7 +8576,7 @@ public:
                      bounded_sequence<Base1> && bounded_sequence<Base2>
         static constexpr auto last(Self& self) -> cursor_type
         {
-            return cursor_type{flux::last(self.base1_), flux::last(self.base2_)};
+            return cursor_type{flux::last(self.base1_), flux::last(self.base2_), cursor_type::second};
         }
 
         template <typename Self>
@@ -9031,6 +9007,7 @@ inline constexpr auto set_intersection = detail::set_intersection_fn{};
 } // namespace flux
 
 #endif // namespace FLUX_OP_SET_ADAPTORS_HPP_INCLUDED
+
 
 
 // Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)

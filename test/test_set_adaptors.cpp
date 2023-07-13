@@ -153,6 +153,20 @@ constexpr bool test_set_union()
         STATIC_CHECK(check_equal(union_seq, {1.0, 2.0, 3.0, 4.0, 5.0, 6.0}));
     }
 
+    // test cursor iteration
+    {
+        int arr1[] = {0,    2,    4,   6};
+        int arr2[] = {   1,    3,    5};
+        auto union_seq = flux::set_union(flux::ref(arr1), flux::ref(arr2));
+
+        auto first = flux::first(union_seq);
+        auto last = flux::last(union_seq);
+        while (first != last) {
+            flux::inc(union_seq, first);
+        }
+        STATIC_CHECK(first == last);
+    }
+
     return true;
 }
 
