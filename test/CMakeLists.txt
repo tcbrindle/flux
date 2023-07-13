@@ -41,6 +41,7 @@ add_executable(test-libflux
     test_front_back.cpp
     test_generator.cpp
     test_map.cpp
+    test_mask.cpp
     test_minmax.cpp
     test_output_to.cpp
     test_range_iface.cpp

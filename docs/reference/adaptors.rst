@@ -221,7 +221,34 @@ Adaptors
 
 .. function::
    template <sequence Seq, std::copy_constructable Func> \
-   auto map(Seq seq, Func func) -> sequence auto
+   auto map(Seq seq, Func func) -> sequence auto;
+
+``mask``
+^^^^^^^^
+
+..  function::
+    template <sequence Seq, sequence Mask> \
+        requires boolean_testable<element_t<Mask>> \
+    auto mask(Seq seq, Mask where) -> sequence auto;
+
+    Given a sequence of values and a sequence of booleans, :func:`mask` yields those elements of :var:`seq` for which the corresponding element of :var:`where` evaluates to :expr:`true`. Iteration is complete when either of the two input sequences is exhausted.
+
+    The returned sequence models the lowest common category of the two input sequences, up to :concept:`bidirectional_sequence`. It is also a :concept:`bounded_sequence` and a :concept:`sized_sequence` when both inputs model these concepts.
+
+    :param seq: A sequence of values
+    :param where: A sequence whose element type is convertible to :expr:`bool`
+
+    :returns: An adapted sequence whose elements are the elements of :var:`seq`, filtered by the corresponding elements of :var:`where`
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/mask.cpp
+        :language: cpp
+        :dedent:
+        :lines: 16-30
+
+    :see also:
+        * :func:`flux::filter`
 
 ``pairwise``
 ^^^^^^^^^^^^

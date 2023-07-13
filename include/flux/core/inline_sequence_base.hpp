@@ -266,6 +266,11 @@ public:
     [[nodiscard]]
     constexpr auto map(Func func) &&;
 
+    template <adaptable_sequence Mask>
+        requires detail::boolean_testable<element_t<Mask>>
+    [[nodiscard]]
+    constexpr auto mask(Mask&& mask_) &&;
+
     [[nodiscard]]
     constexpr auto pairwise() && requires multipass_sequence<Derived>;
 
