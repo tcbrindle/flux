@@ -50,10 +50,9 @@ constexpr bool test_cartesian_product()
         static_assert(std::same_as<flux::value_t<C>, std::tuple<int>>);
         static_assert(std::same_as<flux::rvalue_element_t<C>, std::tuple<int&&>>);
 
-        // FIXME: These currently fail - they're actually `tuple<const int>` etc. Is that correct?
-        //static_assert(std::same_as<flux::element_t<C const>, std::tuple<int&>>);
-        //static_assert(std::same_as<flux::value_t<C const>, std::tuple<int>>);
-        //static_assert(std::same_as<flux::rvalue_element_t<C const>, std::tuple<int&&>>);
+        static_assert(std::same_as<flux::element_t<C const>, std::tuple<int const&>>);
+        static_assert(std::same_as<flux::value_t<C const>, std::tuple<int>>);
+        static_assert(std::same_as<flux::rvalue_element_t<C const>, std::tuple<int const&&>>);
 
         STATIC_CHECK(flux::size(cart) == 3);
 
