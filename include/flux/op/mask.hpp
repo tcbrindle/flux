@@ -44,6 +44,8 @@ public:
                 : true;
 
     public:
+        using value_type = value_t<Base>;
+
         static inline constexpr bool is_infinite =
             infinite_sequence<Base> && infinite_sequence<Mask>;
 
