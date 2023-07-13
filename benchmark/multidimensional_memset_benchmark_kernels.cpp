@@ -7,18 +7,62 @@
 #include <flux/op/cartesian_product.hpp>
 #include <flux/source/iota.hpp>
 #include <flux/op/for_each.hpp>
+#include <flux/op/filter.hpp>
 
-void memset_2d_reference(double* A, std::size_t N, std::size_t M)
+#include "ranges_cartesian_product.hpp"
+
+#include <ranges>
+#include <algorithm>
+
+void memset_2d_reference(double* A, flux::distance_t N, flux::distance_t M)
 {
-    for (std::size_t j = 0; j != M; ++j)
-        for (std::size_t i = 0; i != N; ++i)
-            A[i + j * N] = 0.0;
+    for (flux::distance_t i = 0; i != N; ++i)
+        for (flux::distance_t j = 0; j != M; ++j)
+            A[i * M + j] = 0.0;
 }
 
-void memset_2d_flux_cartesian_product_iota(double* A, std::size_t N, std::size_t M)
+void memset_2d_std_cartesian_product_iota(double* A, flux::distance_t N, flux::distance_t M)
 {
-    flux::cartesian_product(flux::iota(0LU, N), flux::iota(0LU, M))
-        .for_each(flux::unpack([&] (auto i, auto j) {
-            A[i + j * N] = 0.0;
+    std::ranges::for_each(
+        std::views::cartesian_product(std::views::iota(0, N), std::views::iota(0, M)),
+        flux::unpack([&] (auto i, auto j) {
+            A[i * M + j] = 0.0;
         }));
 }
+
+void memset_2d_flux_cartesian_product_iota(double* A, flux::distance_t N, flux::distance_t M)
+{
+    flux::for_each(
+        flux::cartesian_product(flux::ints(0, N), flux::ints(0, M)),
+        flux::unpack([&] (auto i, auto j) {
+            A[i * M + j] = 0.0;
+        }));
+}
+
+void memset_diagonal_2d_reference(double* A, flux::distance_t N, flux::distance_t M)
+{
+    for (flux::distance_t i = 0; i != N; ++i)
+        for (flux::distance_t j = 0; j != M; ++j)
+            if (i == j) A[i * M + j] = 0.0;
+}
+
+void memset_diagonal_2d_std_cartesian_product_iota_filter(double* A, flux::distance_t N, flux::distance_t M)
+{
+    std::ranges::for_each(
+        std::views::cartesian_product(std::views::iota(0, N), std::views::iota(0, M))
+            | std::views::filter(flux::unpack([] (auto i, auto j) { return i == j; })),
+        flux::unpack([&] (auto i, auto j) {
+            A[i * M + j] = 0.0;
+        }));
+}
+
+void memset_diagonal_2d_flux_cartesian_product_iota_filter(double* A, flux::distance_t N, flux::distance_t M)
+{
+    flux::for_each(
+        flux::cartesian_product(flux::ints(0, N), flux::ints(0, M))
+            .filter(flux::unpack([] (auto i, auto j) { return i == j; })),
+        flux::unpack([&] (auto i, auto j) {
+            A[i * M + j] = 0.0;
+        }));
+}
+

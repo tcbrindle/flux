@@ -10,38 +10,84 @@
 #include <flux.hpp>
 
 #include <numeric>
+#include <ranges>
+#include <iostream>
 
 namespace an = ankerl::nanobench;
 
-extern void memset_2d_reference(double* A, std::size_t N, std::size_t M);
-
-extern void memset_2d_flux_cartesian_product_iota(double* A, std::size_t N, std::size_t M);
+// Kernels are placed in a separate translation unit to prevent compilers from
+// optimizing them based on the input that we'll be giving them and to make it
+// easier to study their compiled assembly.
+extern void memset_2d_reference(double* A, flux::distance_t N, flux::distance_t M);
+extern void memset_2d_std_cartesian_product_iota(double* A, flux::distance_t N, flux::distance_t M);
+extern void memset_2d_flux_cartesian_product_iota(double* A, flux::distance_t N, flux::distance_t M);
+extern void memset_diagonal_2d_reference(double* A, flux::distance_t N, flux::distance_t M);
+extern void memset_diagonal_2d_std_cartesian_product_iota_filter(double* A, flux::distance_t N, flux::distance_t M);
+extern void memset_diagonal_2d_flux_cartesian_product_iota_filter(double* A, flux::distance_t N, flux::distance_t M);
 
 int main(int argc, char** argv)
 {
     int const n_iters = argc > 1 ? std::atoi(argv[1]) : 40;
 
-    constexpr std::size_t N = 1024;
-    constexpr std::size_t M = 2048;
+    constexpr flux::distance_t N = 1024;
+    constexpr flux::distance_t M = 2048;
     std::vector<double> A(N * M);
 
+    const auto run_benchmark =
+    [] (auto& bench, auto& A, auto N, auto M, auto name, auto func, auto check) {
+        std::iota(A.begin(), A.end(), 0);
+        bench.run(name, [&] { func(A.data(), N, M); });
+        check(A, N, M);
+    };
+
     {
-        auto bench = an::Bench().minEpochIterations(n_iters).relative(true);
+        const auto check_2d = [] (auto& A, auto N, auto M) {
+            const auto it = std::ranges::find_if_not(A, [&] (auto e) { return e == 0.0; });
+            if (it != A.end())
+                throw false;
+        };
 
-        std::iota(A.begin(), A.end(), 0);
+        auto bench = an::Bench()
+            .minEpochIterations(n_iters)
+            .relative(true)
+            .performanceCounters(false);
 
-        bench.run("memset_2d_handwritten",
-            [&] { memset_2d_reference(A.data(), N, M); });
+        const auto run_2d_benchmark_impl = [&] (auto name, auto func) {
+            run_benchmark(bench, A, N, M, name, func, check_2d);
+        };
 
-        if (auto it = std::ranges::find_if_not(A, [&] (auto e) { return e == 0; }); it != A.end())
-            throw false;
+        #define run_2d_benchmark(func) run_2d_benchmark_impl(#func, func)
 
-        std::iota(A.begin(), A.end(), 0);
+        run_2d_benchmark(memset_2d_reference);
+        run_2d_benchmark(memset_2d_std_cartesian_product_iota);
+        run_2d_benchmark(memset_2d_flux_cartesian_product_iota);
+    }
 
-        bench.run("memset_2d_flux_cartesian_product_iota",
-            [&] { memset_2d_flux_cartesian_product_iota(A.data(), N, M); });
+    {
+        const auto check_diagonal_2d = [] (auto& A, auto N, auto M) {
+            for (auto i : std::views::iota(0, N))
+                for (auto j : std::views::iota(0, M)) {
+                    if (i == j) {
+                        if (A[i * M + j] != 0.0) throw false;
+                    } else {
+                        if (A[i * M + j] != i * M + j) throw false;
+                    }
+                }
+        };
 
-        if (auto it = std::ranges::find_if_not(A, [&] (auto e) { return e == 0; }); it != A.end())
-            throw false;
+        auto bench = an::Bench()
+            .minEpochIterations(n_iters)
+            .relative(true)
+            .performanceCounters(false);
+
+        const auto run_diagonal_2d_benchmark_impl = [&] (auto name, auto func) {
+            run_benchmark(bench, A, N, M, name, func, check_diagonal_2d);
+        };
+
+        #define run_diagonal_2d_benchmark(func) run_diagonal_2d_benchmark_impl(#func, func)
+
+        run_diagonal_2d_benchmark(memset_diagonal_2d_reference);
+        run_diagonal_2d_benchmark(memset_diagonal_2d_std_cartesian_product_iota_filter);
+        run_diagonal_2d_benchmark(memset_diagonal_2d_flux_cartesian_product_iota_filter);
     }
 }
