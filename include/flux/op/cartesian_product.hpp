@@ -210,18 +210,19 @@ public:
 };
 
 template <typename T, std::size_t I, typename Is>
-struct drop_impl;
+struct cartesian_product_tuple_drop_impl;
 
 template <typename T, std::size_t I, std::size_t... Js>
-struct drop_impl<T, I, std::index_sequence<Js...>> {
+struct cartesian_product_tuple_drop_impl<T, I, std::index_sequence<Js...>> {
     using type = std::tuple<std::tuple_element_t<I + Js, T>...>;
 };
 
 template <typename T, std::size_t I>
-using drop = typename drop_impl<T, I, std::make_index_sequence<std::tuple_size_v<T> - I>>::type;
+using cartesian_product_tuple_drop =
+    typename cartesian_product_tuple_drop_impl<T, I, std::make_index_sequence<std::tuple_size_v<T> - I>>::type;
 
 template <typename Self, std::size_t I>
-using cartesian_product_partial_cursor_t = drop<cursor_t<Self>, I>;
+using cartesian_product_partial_cursor_t = cartesian_product_tuple_drop<cursor_t<Self>, I>;
 
 } // end namespace detail
 
