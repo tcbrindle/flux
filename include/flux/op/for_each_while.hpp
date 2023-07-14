@@ -18,16 +18,7 @@ struct for_each_while_fn {
                  boolean_testable<std::invoke_result_t<Pred&, element_t<Seq>>>
     constexpr auto operator()(Seq&& seq, Pred pred) const -> cursor_t<Seq>
     {
-        if constexpr (requires { traits_t<Seq>::for_each_while(seq, std::move(pred)); }) {
-            return traits_t<Seq>::for_each_while(seq, std::move(pred));
-        } else {
-            auto cur = first(seq);
-            while (!is_last(seq, cur)) {
-                if (!std::invoke(pred, read_at(seq, cur))) { break; }
-                inc(seq, cur);
-            }
-            return cur;
-        }
+        return iterate_while(seq, FLUX_FWD(pred), flux::first(seq));
     }
 };
 
