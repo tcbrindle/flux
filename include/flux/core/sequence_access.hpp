@@ -354,6 +354,62 @@ struct back_fn {
     }
 };
 
+template <typename Seq, typename Pred>
+concept has_custom_iterate_while =
+    sequence<Seq> &&
+    requires (Seq& seq, Pred&& pred, cursor_t<Seq> from) {
+        { traits_t<Seq>::iterate_while(seq, FLUX_FWD(pred), std::move(from)) }
+            -> std::same_as<cursor_t<Seq>>;
+    };
+
+template <typename Seq, typename Pred>
+concept has_custom_iterate_while_upto =
+    sequence<Seq> &&
+    requires (Seq& seq, Pred&& pred, cursor_t<Seq> from, cursor_t<Seq> to) {
+        { traits_t<Seq>::iterate_while(seq, FLUX_FWD(pred), std::move(from), std::move(to)) }
+            -> std::same_as<cursor_t<Seq>>;
+    };
+
+struct iterate_while_fn {
+    template <sequence Seq, typename Pred>
+        requires std::invocable<Pred&, element_t<Seq>> &&
+                 boolean_testable<std::invoke_result_t<Pred&, element_t<Seq>>>
+    [[nodiscard]]
+    constexpr auto operator()(Seq& seq, Pred&& pred, cursor_t<Seq> from) const
+        -> cursor_t<Seq>
+    {
+        if constexpr (has_custom_iterate_while<Seq, Pred>) {
+            return traits_t<Seq>::iterate_while(seq, FLUX_FWD(pred), std::move(from));
+        } else {
+            while (!is_last(seq, from)) {
+                if (!std::invoke(pred, read_at_unchecked(seq, from))) { break; }
+                inc(seq, from);
+            }
+            return from;
+        }
+    }
+
+    template <sequence Seq, typename Pred>
+        requires regular_cursor<cursor_t<Seq>> &&
+                 std::invocable<Pred&, element_t<Seq>> &&
+                 boolean_testable<std::invoke_result_t<Pred&, element_t<Seq>>>
+    [[nodiscard]]
+    constexpr auto operator()(Seq& seq, Pred&& pred,
+                              cursor_t<Seq> from, cursor_t<Seq> to) const
+        -> cursor_t<Seq>
+    {
+        if constexpr (has_custom_iterate_while_upto<Seq, Pred>) {
+            return traits_t<Seq>::iterate_while(seq, FLUX_FWD(pred), std::move(from), std::move(to));
+        } else {
+            while (from != to) {
+                if (!std::invoke(pred, read_at_unchecked(seq, from))) { break; }
+                inc(seq, from);
+            }
+            return from;
+        }
+    }
+};
+
 } // namespace detail
 
 
@@ -364,6 +420,7 @@ inline constexpr auto swap_with = detail::swap_with_fn{};
 inline constexpr auto swap_at = detail::swap_at_fn{};
 inline constexpr auto front = detail::front_fn{};
 inline constexpr auto back = detail::back_fn{};
+inline constexpr auto iterate_while = detail::iterate_while_fn{};
 
 } // namespace flux
 
