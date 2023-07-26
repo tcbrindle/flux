@@ -53,9 +53,9 @@ constexpr bool test_repeat()
         // Check that internal iteration works as expected
         {
             auto counter = 0;
-            auto cur =
+            auto inner_cur =
                 flux::for_each_while(seq, [&](int) { return counter++ < 5; });
-            STATIC_CHECK(cur == 5);
+            STATIC_CHECK(inner_cur == 5);
         }
     }
 

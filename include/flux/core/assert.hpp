@@ -52,9 +52,9 @@ struct assert_fn {
     constexpr void operator()(bool cond, char const* msg,
                               std::source_location loc = std::source_location::current()) const
     {
-        if (cond) [[likely]] {
+        if (cond) {
             return;
-        } else [[unlikely]] {
+        } else {
             runtime_error(msg, std::move(loc));
         }
     }
