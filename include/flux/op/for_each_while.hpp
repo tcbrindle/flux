@@ -18,7 +18,7 @@ struct for_each_while_fn {
                  boolean_testable<std::invoke_result_t<Pred&, element_t<Seq>>>
     constexpr auto operator()(Seq&& seq, Pred pred) const -> cursor_t<Seq>
     {
-        return iterate_while(seq, FLUX_FWD(pred), flux::first(seq));
+        return iterate_while(seq, flux::first(seq), FLUX_FWD(pred));
     }
 };
 
