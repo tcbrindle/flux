@@ -101,6 +101,7 @@ endif()
 if(MSVC)
     target_compile_options(test-libflux PRIVATE /W4
         /wd4459 # local variable name hides global variable
+        /wd4702 # unreachable code
     )
 endif()
 
