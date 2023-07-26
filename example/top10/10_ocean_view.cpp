@@ -16,23 +16,19 @@
 
 #include <flux.hpp>
 
+#include <algorithm>
 #include <cassert>
 #include <vector>
 
 using index_vec = std::vector<flux::index_t>;
 
-// Alas, no nice way to do this with Flux adaptors (yet)
 auto const ocean_view = [](std::vector<int> const& heights) -> index_vec
 {
-    int max_so_far = 0;
-    index_vec indices;
-
-    flux::ints(0, flux::size(heights)).reverse().for_each([&](auto idx){
-        if (heights[idx] > max_so_far) {
-            max_so_far = heights[idx];
-            indices.push_back(idx);
-        }
-    });
+    auto indices = flux::zip(flux::ref(heights).cursors().reverse(),
+                             flux::ref(heights).reverse().prescan(std::ranges::max, 0))
+        .filter([&](auto pair) { return heights[pair.first] > pair.second; })
+        .map([](auto pair) { return pair.first; })
+        .to<index_vec>();
 
     flux::inplace_reverse(indices);
 
