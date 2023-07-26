@@ -218,9 +218,9 @@ struct assert_fn {
     constexpr void operator()(bool cond, char const* msg,
                               std::source_location loc = std::source_location::current()) const
     {
-        if (cond) [[likely]] {
+        if (cond) {
             return;
-        } else [[unlikely]] {
+        } else {
             runtime_error(msg, std::move(loc));
         }
     }
@@ -8920,8 +8920,7 @@ public:
                                           flux::read_at(self.base2_, cur.base2_cursor))) {
                     cur.state_ = cursor_type::first;
                     return;
-                }
-                else {
+                } else {
                     if(std::invoke(self.cmp_, flux::read_at(self.base2_, cur.base2_cursor), 
                                               flux::read_at(self.base1_, cur.base1_cursor))) {
                         cur.state_ = cursor_type::second;
@@ -8988,9 +8987,13 @@ public:
             -> std::common_reference_t<decltype(flux::read_at(self.base1_, cur.base1_cursor)),
                                        decltype(flux::read_at(self.base2_, cur.base2_cursor))>
         {
-            if (cur.state_ == cursor_type::first || cur.state_ == cursor_type::second_done)
-                return flux::read_at(self.base1_, cur.base1_cursor);
-            return flux::read_at(self.base2_, cur.base2_cursor);
+            using R = std::common_reference_t<decltype(flux::read_at(self.base1_, cur.base1_cursor)),
+                                              decltype(flux::read_at(self.base2_, cur.base2_cursor))>;
+            if (cur.state_ == cursor_type::first || cur.state_ == cursor_type::second_done) {
+                return static_cast<R>(flux::read_at(self.base1_, cur.base1_cursor));
+            } else {
+                return static_cast<R>(flux::read_at(self.base2_, cur.base2_cursor));
+            }
         }
 
         template <typename Self>
@@ -9006,11 +9009,14 @@ public:
             -> std::common_reference_t<decltype(flux::move_at(self.base1_, cur.base1_cursor)),
                                        decltype(flux::move_at(self.base2_, cur.base2_cursor))>
         {
-            if (cur.state_ == cursor_type::first || cur.state_ == cursor_type::second_done)
-                return flux::move_at(self.base1_, cur.base1_cursor);
-            return flux::move_at(self.base2_, cur.base2_cursor);
+            using R = std::common_reference_t<decltype(flux::move_at(self.base1_, cur.base1_cursor)),
+                                              decltype(flux::move_at(self.base2_, cur.base2_cursor))>;
+            if (cur.state_ == cursor_type::first || cur.state_ == cursor_type::second_done) {
+                return static_cast<R>(flux::move_at(self.base1_, cur.base1_cursor));
+            } else {
+                return static_cast<R>(flux::move_at(self.base2_, cur.base2_cursor));
+            }
         }
-        
     };
 };
 
