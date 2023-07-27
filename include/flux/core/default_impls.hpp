@@ -65,16 +65,16 @@ struct sequence_traits<T[N]> {
 
     static constexpr auto size(auto const&) -> distance_t { return N; }
 
-    static constexpr auto for_each_while(auto& self, auto&& pred) -> index_t
+    static constexpr auto iterate_while(auto& self, index_t from, index_t to,
+                                        auto&& pred) -> index_t
     {
-        index_t idx = 0;
-        while (idx < N) {
-            if (!std::invoke(pred, self[idx])) {
+        while (from <  to) {
+            if (!std::invoke(pred, self[from])) {
                 break;
             }
-            ++idx;
+            ++from;
         }
-        return idx;
+        return from;
     }
 };
 
@@ -163,6 +163,20 @@ struct sequence_traits<std::reference_wrapper<Seq>> {
     {
         return flux::move_at(self.get(), cur);
     }
+
+    static constexpr auto iterate_while(self_t self, cursor_t<Seq> from,
+                                        auto&& pred) -> cursor_t<Seq>
+    {
+        return flux::iterate_while(self.get(), std::move(from), FLUX_FWD(pred));
+    }
+
+    static constexpr auto iterate_while(self_t self, cursor_t<Seq> from,
+                                        cursor_t<Seq> to, auto&& pred)
+        -> cursor_t<Seq>
+    {
+        return flux::iterate_while(self.get(), std::move(from),
+                                   std::move(to), FLUX_FWD(pred));
+    }
 };
 
 // Default implementation for contiguous, sized ranges
@@ -231,19 +245,17 @@ struct sequence_traits<R> {
         return std::ranges::data(self);
     }
 
-    static constexpr auto for_each_while(auto& self, auto&& pred) -> index_t
+    static constexpr auto iterate_while(auto& self, index_t from, index_t to,
+                                        auto&& pred) -> index_t
     {
-        auto iter = std::ranges::begin(self);
-        auto const end = std::ranges::end(self);
-
-        while (iter != end) {
-            if (!std::invoke(pred, *iter)) {
+        while (from < to) {
+            if (!std::invoke(pred, data(self)[from])) {
                 break;
             }
-            ++iter;
+            ++from;
         }
 
-        return checked_cast<index_t>(iter - std::ranges::begin(self));
+        return from;
     }
 };
 
