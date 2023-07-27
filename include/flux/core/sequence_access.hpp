@@ -354,6 +354,64 @@ struct back_fn {
     }
 };
 
+template <typename Seq, typename Pred>
+concept has_custom_iterate_while =
+    sequence<Seq> &&
+    requires (Seq& seq, cursor_t<Seq> from, Pred&& pred) {
+        { traits_t<Seq>::iterate_while(seq, std::move(from), FLUX_FWD(pred)) }
+            -> std::same_as<cursor_t<Seq>>;
+    };
+
+template <typename Seq, typename Pred>
+concept has_custom_iterate_while_upto =
+    sequence<Seq> &&
+    requires (Seq& seq, cursor_t<Seq> from, cursor_t<Seq> to, Pred&& pred) {
+        { traits_t<Seq>::iterate_while(seq, std::move(from), std::move(to), FLUX_FWD(pred)) }
+            -> std::same_as<cursor_t<Seq>>;
+    };
+
+struct iterate_while_fn {
+    template <sequence Seq, typename Pred>
+        requires std::invocable<Pred&, element_t<Seq>> &&
+                 boolean_testable<std::invoke_result_t<Pred&, element_t<Seq>>>
+    [[nodiscard]]
+    constexpr auto operator()(Seq& seq, cursor_t<Seq> from, Pred&& pred) const
+        -> cursor_t<Seq>
+    {
+        if constexpr (has_custom_iterate_while<Seq, Pred>) {
+            return traits_t<Seq>::iterate_while(seq, std::move(from), FLUX_FWD(pred));
+        } else if constexpr (bounded_sequence<Seq> && has_custom_iterate_while_upto<Seq, Pred>) {
+            return traits_t<Seq>::iterate_while(seq, std::move(from), last(seq), FLUX_FWD(pred));
+        } else {
+            while (!is_last(seq, from)) {
+                if (!std::invoke(pred, read_at_unchecked(seq, from))) { break; }
+                inc(seq, from);
+            }
+            return from;
+        }
+    }
+
+    template <sequence Seq, typename Pred>
+        requires regular_cursor<cursor_t<Seq>> &&
+                 std::invocable<Pred&, element_t<Seq>> &&
+                 boolean_testable<std::invoke_result_t<Pred&, element_t<Seq>>>
+    [[nodiscard]]
+    constexpr auto operator()(Seq& seq, cursor_t<Seq> from, cursor_t<Seq> to,
+                              Pred&& pred) const
+        -> cursor_t<Seq>
+    {
+        if constexpr (has_custom_iterate_while_upto<Seq, Pred>) {
+            return traits_t<Seq>::iterate_while(seq, std::move(from), std::move(to), FLUX_FWD(pred));
+        } else {
+            while (from != to) {
+                if (!std::invoke(pred, read_at_unchecked(seq, from))) { break; }
+                inc(seq, from);
+            }
+            return from;
+        }
+    }
+};
+
 } // namespace detail
 
 
@@ -364,6 +422,7 @@ inline constexpr auto swap_with = detail::swap_with_fn{};
 inline constexpr auto swap_at = detail::swap_at_fn{};
 inline constexpr auto front = detail::front_fn{};
 inline constexpr auto back = detail::back_fn{};
+inline constexpr auto iterate_while = detail::iterate_while_fn{};
 
 } // namespace flux
 

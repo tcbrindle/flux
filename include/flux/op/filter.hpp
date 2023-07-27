@@ -97,15 +97,30 @@ public:
             return flux::last(self.base_);
         }
 
-        static constexpr auto for_each_while(self_t& self, auto&& func) -> cursor_t<Base>
+        static constexpr auto iterate_while(self_t& self, cursor_t<Base> from,
+                                            auto&& func) -> cursor_t<Base>
         {
-            return flux::for_each_while(self.base_, [&](auto&& elem) {
+            return flux::iterate_while(self.base_, std::move(from), [&](auto&& elem) {
                 if (std::invoke(self.pred_, elem)) {
                     return std::invoke(func, FLUX_FWD(elem));
                 } else {
                     return true;
                 }
             });
+        }
+
+        static constexpr auto iterate_while(self_t& self, cursor_t<Base> from,
+                                            cursor_t<Base> to, auto&& func)
+            -> cursor_t<Base>
+        {
+            return flux::iterate_while(self.base_, std::move(from), std::move(to),
+                                       [&](auto&& elem) {
+                    if (std::invoke(self.pred_, elem)) {
+                        return std::invoke(func, FLUX_FWD(elem));
+                    } else {
+                        return true;
+                    }
+                });
         }
     };
 };
