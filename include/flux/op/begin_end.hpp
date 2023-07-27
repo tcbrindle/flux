@@ -201,8 +201,8 @@ struct end_fn {
 
 } // namespace detail
 
-inline constexpr auto begin = detail::begin_fn{};
-inline constexpr auto end = detail::end_fn{};
+FLUX_EXPORT inline constexpr auto begin = detail::begin_fn{};
+FLUX_EXPORT inline constexpr auto end = detail::end_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::begin() &

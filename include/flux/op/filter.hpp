@@ -123,7 +123,7 @@ struct filter_fn {
 
 } // namespace detail
 
-inline constexpr auto filter = detail::filter_fn{};
+FLUX_EXPORT inline constexpr auto filter = detail::filter_fn{};
 
 template <typename D>
 template <typename Pred>

@@ -25,12 +25,15 @@ namespace flux {
 /*
  * Cursor concepts
  */
+FLUX_EXPORT
 template <typename Cur>
 concept cursor = std::movable<Cur>;
 
+FLUX_EXPORT
 template <typename Cur>
 concept regular_cursor = cursor<Cur> && std::regular<Cur>;
 
+FLUX_EXPORT
 template <typename Cur>
 concept ordered_cursor =
     regular_cursor<Cur> &&
@@ -40,6 +43,7 @@ concept ordered_cursor =
  * Sequence concepts and associated types
  */
 
+FLUX_EXPORT
 template <typename T>
 struct sequence_traits;
 
@@ -50,9 +54,11 @@ using traits_t = sequence_traits<std::remove_cvref_t<T>>;
 
 } // namespace detail
 
+FLUX_EXPORT
 template <typename Seq>
 using cursor_t = decltype(detail::traits_t<Seq>::first(FLUX_DECLVAL(Seq&)));
 
+FLUX_EXPORT
 template <typename Seq>
 using element_t = decltype(detail::traits_t<Seq>::read_at(FLUX_DECLVAL(Seq&), FLUX_DECLVAL(cursor_t<Seq> const&)));
 
@@ -93,19 +99,25 @@ struct rvalue_element_type<T> {
 
 } // namespace detail
 
+FLUX_EXPORT
 template <typename Seq>
 using value_t = typename detail::value_type<Seq>::type;
 
+FLUX_EXPORT
 using distance_t = flux::config::int_type;
 
+FLUX_EXPORT
 using index_t = flux::config::int_type;
 
+FLUX_EXPORT
 template <typename Seq>
 using rvalue_element_t = typename detail::rvalue_element_type<Seq>::type;
 
+FLUX_EXPORT
 template <typename Seq>
 using common_element_t = std::common_reference_t<element_t<Seq>, value_t<Seq>&>;
 
+FLUX_EXPORT
 template <typename Seq>
 using const_element_t = std::common_reference_t<value_t<Seq> const&&, element_t<Seq>>;
 
@@ -144,6 +156,7 @@ concept sequence_concept =
 
 } // namespace detail
 
+FLUX_EXPORT
 template <typename Seq>
 concept sequence = detail::sequence_concept<Seq>;
 
@@ -159,6 +172,7 @@ inline constexpr bool disable_multipass<T> = T::disable_multipass;
 
 } // namespace detail
 
+FLUX_EXPORT
 template <typename Seq>
 concept multipass_sequence =
     sequence<Seq> && regular_cursor<cursor_t<Seq>> &&
@@ -175,6 +189,7 @@ concept bidirectional_sequence_concept =
 
 } // namespace detail
 
+FLUX_EXPORT
 template <typename Seq>
 concept bidirectional_sequence = detail::bidirectional_sequence_concept<Seq>;
 
@@ -192,6 +207,7 @@ concept random_access_sequence_concept =
 
 } // namespace detail
 
+FLUX_EXPORT
 template <typename Seq>
 concept random_access_sequence = detail::random_access_sequence_concept<Seq>;
 
@@ -208,6 +224,7 @@ concept contiguous_sequence_concept =
 
 } // namespace detail
 
+FLUX_EXPORT
 template <typename Seq>
 concept contiguous_sequence = detail::contiguous_sequence_concept<Seq>;
 
@@ -222,6 +239,7 @@ concept bounded_sequence_concept =
 
 } // namespace detail
 
+FLUX_EXPORT
 template <typename Seq>
 concept bounded_sequence = detail::bounded_sequence_concept<Seq>;
 
@@ -238,9 +256,11 @@ concept sized_sequence_concept =
 
 } // namespace detail
 
+FLUX_EXPORT
 template <typename Seq>
 concept sized_sequence = detail::sized_sequence_concept<Seq>;
 
+FLUX_EXPORT
 template <typename Seq, typename T>
 concept writable_sequence_of =
     sequence<Seq> &&
@@ -260,11 +280,13 @@ inline constexpr bool is_infinite_seq<T> = T::is_infinite;
 
 }
 
+FLUX_EXPORT
 template <typename Seq>
 concept infinite_sequence =
     sequence<Seq> &&
     detail::is_infinite_seq<detail::traits_t<Seq>>;
 
+FLUX_EXPORT
 template <typename Seq>
 concept read_only_sequence =
     sequence<Seq> &&
@@ -292,6 +314,7 @@ concept trivially_copyable_sequence =
 
 }
 
+FLUX_EXPORT
 template <typename Seq>
 concept adaptable_sequence =
     (detail::rvalue_sequence<Seq>

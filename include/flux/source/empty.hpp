@@ -57,6 +57,7 @@ struct empty_sequence : inline_sequence_base<empty_sequence<T>> {
 
 } // namespace detail
 
+FLUX_EXPORT
 template <typename T>
     requires std::is_object_v<T>
 inline constexpr auto empty = detail::empty_sequence<T>{};

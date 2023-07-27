@@ -45,7 +45,7 @@ struct write_to_fn {
 
 } // namespace detail
 
-inline constexpr auto write_to = detail::write_to_fn{};
+FLUX_EXPORT inline constexpr auto write_to = detail::write_to_fn{};
 
 template <typename Derived>
 auto inline_sequence_base<Derived>::write_to(std::ostream& os) -> std::ostream&

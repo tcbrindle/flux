@@ -6,6 +6,8 @@
 #ifndef FLUX_CORE_CONFIG_HPP_INCLUDED
 #define FLUX_CORE_CONFIG_HPP_INCLUDED
 
+#include <flux/core/macros.hpp>
+
 #include <concepts>
 #include <cstddef>
 #include <type_traits>
@@ -71,11 +73,13 @@
 
 namespace flux {
 
+FLUX_EXPORT
 enum class error_policy {
     terminate = FLUX_ERROR_POLICY_TERMINATE,
     unwind = FLUX_ERROR_POLICY_UNWIND
 };
 
+FLUX_EXPORT
 enum class overflow_policy {
     ignore = FLUX_OVERFLOW_POLICY_IGNORE,
     wrap = FLUX_OVERFLOW_POLICY_WRAP,
@@ -84,16 +88,21 @@ enum class overflow_policy {
 
 namespace config {
 
+FLUX_EXPORT
 using int_type = FLUX_INT_TYPE;
 static_assert(std::signed_integral<int_type> && (sizeof(int_type) >= sizeof(std::ptrdiff_t)),
               "Custom FLUX_INT_TYPE must be a signed integer type at least as large as ptrdiff_t");
 
+FLUX_EXPORT
 inline constexpr error_policy on_error = static_cast<error_policy>(FLUX_ERROR_POLICY);
 
+FLUX_EXPORT
 inline constexpr overflow_policy on_overflow = static_cast<overflow_policy>(FLUX_OVERFLOW_POLICY);
 
+FLUX_EXPORT
 inline constexpr bool print_error_on_terminate = FLUX_PRINT_ERROR_ON_TERMINATE;
 
+FLUX_EXPORT
 inline constexpr bool enable_debug_asserts = FLUX_ENABLE_DEBUG_ASSERTS;
 
 } // namespace config

@@ -85,6 +85,7 @@ public:
     }
 };
 
+FLUX_EXPORT
 template <std::default_initializable T>
 inline constexpr auto from_istream = detail::from_istream_fn<T>{};
 

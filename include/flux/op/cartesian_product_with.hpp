@@ -58,9 +58,7 @@ struct cartesian_product_with_fn
 
 } // namespace detail
 
-
-
-inline constexpr auto cartesian_product_with = detail::cartesian_product_with_fn{};
+FLUX_EXPORT inline constexpr auto cartesian_product_with = detail::cartesian_product_with_fn{};
 
 } // namespace flux
 

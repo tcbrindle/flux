@@ -40,7 +40,7 @@ struct starts_with_fn {
 
 } // namespace detail
 
-inline constexpr auto starts_with = detail::starts_with_fn{};
+FLUX_EXPORT inline constexpr auto starts_with = detail::starts_with_fn{};
 
 template <typename Derived>
 template <sequence Needle, typename Cmp>

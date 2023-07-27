@@ -40,7 +40,7 @@ struct zip_for_each_while_fn {
 
 } // namespace detail
 
-inline constexpr auto zip_for_each_while = detail::zip_for_each_while_fn{};
+FLUX_EXPORT inline constexpr auto zip_for_each_while = detail::zip_for_each_while_fn{};
 
 namespace detail {
 
@@ -93,9 +93,9 @@ struct zip_fold_fn {
 
 } // namespace detail
 
-inline constexpr auto zip_for_each = detail::zip_for_each_fn{};
-inline constexpr auto zip_find_if = detail::zip_find_if_fn{};
-inline constexpr auto zip_fold = detail::zip_fold_fn{};
+FLUX_EXPORT inline constexpr auto zip_for_each = detail::zip_for_each_fn{};
+FLUX_EXPORT inline constexpr auto zip_find_if = detail::zip_find_if_fn{};
+FLUX_EXPORT inline constexpr auto zip_fold = detail::zip_fold_fn{};
 
 } // namespace pred
 

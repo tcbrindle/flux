@@ -30,7 +30,7 @@ struct swap_elements_fn {
 
 }
 
-inline constexpr auto swap_elements = detail::swap_elements_fn{};
+FLUX_EXPORT inline constexpr auto swap_elements = detail::swap_elements_fn{};
 
 }
 

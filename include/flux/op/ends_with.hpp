@@ -84,7 +84,7 @@ public:
 
 } // namespace detail
 
-inline constexpr auto ends_with = detail::ends_with_fn{};
+FLUX_EXPORT inline constexpr auto ends_with = detail::ends_with_fn{};
 
 template <typename Derived>
 template <sequence Needle, typename Cmp>

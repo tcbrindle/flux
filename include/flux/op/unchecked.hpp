@@ -57,7 +57,7 @@ struct unchecked_fn {
 
 } // namespace detail
 
-inline constexpr auto unchecked = detail::unchecked_fn{};
+FLUX_EXPORT inline constexpr auto unchecked = detail::unchecked_fn{};
 
 } // namespace flux
 

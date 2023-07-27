@@ -244,7 +244,7 @@ public:
     }
 };
 
-inline constexpr auto cartesian_product = detail::cartesian_product_fn{};
+FLUX_EXPORT inline constexpr auto cartesian_product = detail::cartesian_product_fn{};
 
 } // end namespace flux
 

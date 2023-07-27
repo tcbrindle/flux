@@ -16,6 +16,7 @@
 
 namespace flux {
 
+FLUX_EXPORT
 struct unrecoverable_error : std::logic_error {
     explicit unrecoverable_error(char const* msg) : std::logic_error(msg) {}
 };
@@ -44,7 +45,7 @@ struct runtime_error_fn {
 
 }
 
-inline constexpr auto runtime_error = detail::runtime_error_fn{};
+FLUX_EXPORT inline constexpr auto runtime_error = detail::runtime_error_fn{};
 
 namespace detail {
 
@@ -71,8 +72,8 @@ struct bounds_check_fn {
 
 } // namespace detail
 
-inline constexpr auto assert_ = detail::assert_fn{};
-inline constexpr auto bounds_check = detail::bounds_check_fn{};
+FLUX_EXPORT inline constexpr auto assert_ = detail::assert_fn{};
+FLUX_EXPORT inline constexpr auto bounds_check = detail::bounds_check_fn{};
 
 #define FLUX_ASSERT(cond) (::flux::assert_(cond, "assertion '" #cond "' failed"))
 

@@ -49,9 +49,9 @@ struct find_if_not_fn {
 
 } // namespace detail
 
-inline constexpr auto find = detail::find_fn{};
-inline constexpr auto find_if = detail::find_if_fn{};
-inline constexpr auto find_if_not = detail::find_if_not_fn{};
+FLUX_EXPORT inline constexpr auto find = detail::find_fn{};
+FLUX_EXPORT inline constexpr auto find_if = detail::find_if_fn{};
+FLUX_EXPORT inline constexpr auto find_if_not = detail::find_if_not_fn{};
 
 template <typename D>
 template <typename Value>

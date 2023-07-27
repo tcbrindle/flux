@@ -235,8 +235,8 @@ struct from_crange_fn {
 
 } // namespace detail
 
-inline constexpr auto from_range = detail::from_range_fn{};
-inline constexpr auto from_crange = detail::from_crange_fn{};
+FLUX_EXPORT inline constexpr auto from_range = detail::from_range_fn{};
+FLUX_EXPORT inline constexpr auto from_crange = detail::from_crange_fn{};
 
 } // namespace flux
 

@@ -208,19 +208,19 @@ struct move_at_unchecked_fn {
 
 } // namespace detail
 
-inline constexpr auto first = detail::first_fn{};
-inline constexpr auto is_last = detail::is_last_fn{};
-inline constexpr auto read_at = detail::read_at_fn{};
-inline constexpr auto move_at = detail::move_at_fn{};
-inline constexpr auto read_at_unchecked = detail::read_at_unchecked_fn{};
-inline constexpr auto move_at_unchecked = detail::move_at_unchecked_fn{};
-inline constexpr auto inc = detail::inc_fn{};
-inline constexpr auto dec = detail::dec_fn{};
-inline constexpr auto distance = detail::distance_fn{};
-inline constexpr auto data = detail::data_fn{};
-inline constexpr auto last = detail::last_fn{};
-inline constexpr auto size = detail::size_fn{};
-inline constexpr auto usize = detail::usize_fn{};
+FLUX_EXPORT inline constexpr auto first = detail::first_fn{};
+FLUX_EXPORT inline constexpr auto is_last = detail::is_last_fn{};
+FLUX_EXPORT inline constexpr auto read_at = detail::read_at_fn{};
+FLUX_EXPORT inline constexpr auto move_at = detail::move_at_fn{};
+FLUX_EXPORT inline constexpr auto read_at_unchecked = detail::read_at_unchecked_fn{};
+FLUX_EXPORT inline constexpr auto move_at_unchecked = detail::move_at_unchecked_fn{};
+FLUX_EXPORT inline constexpr auto inc = detail::inc_fn{};
+FLUX_EXPORT inline constexpr auto dec = detail::dec_fn{};
+FLUX_EXPORT inline constexpr auto distance = detail::distance_fn{};
+FLUX_EXPORT inline constexpr auto data = detail::data_fn{};
+FLUX_EXPORT inline constexpr auto last = detail::last_fn{};
+FLUX_EXPORT inline constexpr auto size = detail::size_fn{};
+FLUX_EXPORT inline constexpr auto usize = detail::usize_fn{};
 
 namespace detail {
 
@@ -357,13 +357,13 @@ struct back_fn {
 } // namespace detail
 
 
-inline constexpr auto next = detail::next_fn{};
-inline constexpr auto prev = detail::prev_fn{};
-inline constexpr auto is_empty = detail::is_empty_fn{};
-inline constexpr auto swap_with = detail::swap_with_fn{};
-inline constexpr auto swap_at = detail::swap_at_fn{};
-inline constexpr auto front = detail::front_fn{};
-inline constexpr auto back = detail::back_fn{};
+FLUX_EXPORT inline constexpr auto next = detail::next_fn{};
+FLUX_EXPORT inline constexpr auto prev = detail::prev_fn{};
+FLUX_EXPORT inline constexpr auto is_empty = detail::is_empty_fn{};
+FLUX_EXPORT inline constexpr auto swap_with = detail::swap_with_fn{};
+FLUX_EXPORT inline constexpr auto swap_at = detail::swap_at_fn{};
+FLUX_EXPORT inline constexpr auto front = detail::front_fn{};
+FLUX_EXPORT inline constexpr auto back = detail::back_fn{};
 
 } // namespace flux
 

@@ -323,7 +323,7 @@ public:
 
 };
 
-inline constexpr auto chain = detail::chain_fn{};
+FLUX_EXPORT inline constexpr auto chain = detail::chain_fn{};
 
 } // namespace flux
 

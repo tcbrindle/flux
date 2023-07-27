@@ -128,7 +128,7 @@ public:
     }
 };
 
-inline constexpr auto split = detail::split_fn{};
+FLUX_EXPORT inline constexpr auto split = detail::split_fn{};
 
 template <typename Derived>
 template <multipass_sequence Pattern>

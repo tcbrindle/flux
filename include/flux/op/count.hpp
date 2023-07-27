@@ -68,9 +68,9 @@ struct count_if_fn {
 
 } // namespace detail
 
-inline constexpr auto count = detail::count_fn{};
-inline constexpr auto count_eq = detail::count_eq_fn{};
-inline constexpr auto count_if = detail::count_if_fn{};
+FLUX_EXPORT inline constexpr auto count = detail::count_fn{};
+FLUX_EXPORT inline constexpr auto count_eq = detail::count_eq_fn{};
+FLUX_EXPORT inline constexpr auto count_if = detail::count_if_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::count()
