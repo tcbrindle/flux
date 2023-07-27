@@ -49,11 +49,23 @@ public:
             return std::invoke(self.func_, flux::read_at(self.base_, cur));
         }
 
-        static constexpr auto for_each_while(auto& self, auto&& pred)
+        static constexpr auto iterate_while(auto& self, cursor_t<Base> from,
+                                            auto&& pred)
+            -> cursor_t<Base>
         {
-            return flux::for_each_while(self.base_, [&](auto&& elem) {
+            return flux::iterate_while(self.base_, std::move(from), [&](auto&& elem) {
                 return std::invoke(pred, std::invoke(self.func_, FLUX_FWD(elem)));
             });
+        }
+
+        static constexpr auto iterate_while(auto& self, cursor_t<Base> from,
+                                            cursor_t<Base> to, auto&& pred)
+            -> cursor_t<Base>
+        {
+            return flux::iterate_while(self.base_, std::move(from),
+                                       std::move(to), [&](auto&& elem) {
+                    return std::invoke(pred, std::invoke(self.func_, FLUX_FWD(elem)));
+                });
         }
 
         static void move_at() = delete; // Use the base version of move_at
