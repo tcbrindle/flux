@@ -51,6 +51,12 @@
               ::flux::inc(_flux_seq_, _flux_cur_))         \
             if (_flux_var_decl_ = ::flux::read_at(_flux_seq_, _flux_cur_); true)
 
+#ifdef FLUX_MODULE_INTERFACE
+#define FLUX_EXPORT export
+#else
+#define FLUX_EXPORT
+#endif
+
 #endif // FLUX_CORE_MACROS_HPP_INCLUDED
 
 
@@ -76,6 +82,8 @@
 
 #ifndef FLUX_CORE_CONFIG_HPP_INCLUDED
 #define FLUX_CORE_CONFIG_HPP_INCLUDED
+
+
 
 #include <concepts>
 #include <cstddef>
@@ -142,11 +150,13 @@
 
 namespace flux {
 
+FLUX_EXPORT
 enum class error_policy {
     terminate = FLUX_ERROR_POLICY_TERMINATE,
     unwind = FLUX_ERROR_POLICY_UNWIND
 };
 
+FLUX_EXPORT
 enum class overflow_policy {
     ignore = FLUX_OVERFLOW_POLICY_IGNORE,
     wrap = FLUX_OVERFLOW_POLICY_WRAP,
@@ -155,16 +165,21 @@ enum class overflow_policy {
 
 namespace config {
 
+FLUX_EXPORT
 using int_type = FLUX_INT_TYPE;
 static_assert(std::signed_integral<int_type> && (sizeof(int_type) >= sizeof(std::ptrdiff_t)),
               "Custom FLUX_INT_TYPE must be a signed integer type at least as large as ptrdiff_t");
 
+FLUX_EXPORT
 inline constexpr error_policy on_error = static_cast<error_policy>(FLUX_ERROR_POLICY);
 
+FLUX_EXPORT
 inline constexpr overflow_policy on_overflow = static_cast<overflow_policy>(FLUX_OVERFLOW_POLICY);
 
+FLUX_EXPORT
 inline constexpr bool print_error_on_terminate = FLUX_PRINT_ERROR_ON_TERMINATE;
 
+FLUX_EXPORT
 inline constexpr bool enable_debug_asserts = FLUX_ENABLE_DEBUG_ASSERTS;
 
 } // namespace config
@@ -182,6 +197,7 @@ inline constexpr bool enable_debug_asserts = FLUX_ENABLE_DEBUG_ASSERTS;
 
 namespace flux {
 
+FLUX_EXPORT
 struct unrecoverable_error : std::logic_error {
     explicit unrecoverable_error(char const* msg) : std::logic_error(msg) {}
 };
@@ -210,7 +226,7 @@ struct runtime_error_fn {
 
 }
 
-inline constexpr auto runtime_error = detail::runtime_error_fn{};
+FLUX_EXPORT inline constexpr auto runtime_error = detail::runtime_error_fn{};
 
 namespace detail {
 
@@ -237,8 +253,8 @@ struct bounds_check_fn {
 
 } // namespace detail
 
-inline constexpr auto assert_ = detail::assert_fn{};
-inline constexpr auto bounds_check = detail::bounds_check_fn{};
+FLUX_EXPORT inline constexpr auto assert_ = detail::assert_fn{};
+FLUX_EXPORT inline constexpr auto bounds_check = detail::bounds_check_fn{};
 
 #define FLUX_ASSERT(cond) (::flux::assert_(cond, "assertion '" #cond "' failed"))
 
@@ -270,18 +286,21 @@ inline constexpr auto bounds_check = detail::bounds_check_fn{};
 
 namespace flux::num {
 
+FLUX_EXPORT
 inline constexpr auto wrapping_add = []<std::signed_integral T>(T lhs, T rhs) -> T
 {
     using U = std::make_unsigned_t<T>;
     return static_cast<T>(static_cast<U>(lhs) + static_cast<U>(rhs));
 };
 
+FLUX_EXPORT
 inline constexpr auto wrapping_sub = []<std::signed_integral T>(T lhs, T rhs) -> T
 {
     using U = std::make_unsigned_t<T>;
     return static_cast<T>(static_cast<U>(lhs) - static_cast<U>(rhs));
 };
 
+FLUX_EXPORT
 inline constexpr auto wrapping_mul = []<std::signed_integral T>(T lhs, T rhs) -> T
 {
     using U = std::make_unsigned_t<T>;
@@ -308,12 +327,14 @@ namespace detail {
 
 }
 
+FLUX_EXPORT
 template <std::signed_integral T>
 struct overflow_result {
     T value;
     bool overflowed;
 };
 
+FLUX_EXPORT
 inline constexpr auto overflowing_add = []<std::signed_integral T>(T lhs, T rhs)
     -> overflow_result<T>
 {
@@ -327,6 +348,7 @@ inline constexpr auto overflowing_add = []<std::signed_integral T>(T lhs, T rhs)
     }
 };
 
+FLUX_EXPORT
 inline constexpr auto overflowing_sub = []<std::signed_integral T>(T lhs, T rhs)
     -> overflow_result<T>
 {
@@ -341,6 +363,7 @@ inline constexpr auto overflowing_sub = []<std::signed_integral T>(T lhs, T rhs)
     }
 };
 
+FLUX_EXPORT
 inline constexpr auto overflowing_mul = []<std::signed_integral T>(T lhs, T rhs)
     -> overflow_result<T>
 {
@@ -353,6 +376,7 @@ inline constexpr auto overflowing_mul = []<std::signed_integral T>(T lhs, T rhs)
     }
 };
 
+FLUX_EXPORT
 inline constexpr auto checked_add =
     []<std::signed_integral T>(T lhs, T rhs,
                                std::source_location loc = std::source_location::current())
@@ -375,6 +399,7 @@ inline constexpr auto checked_add =
     }
 };
 
+FLUX_EXPORT
 inline constexpr auto checked_sub =
     []<std::signed_integral T>(T lhs, T rhs,
                                std::source_location loc = std::source_location::current())
@@ -397,6 +422,7 @@ inline constexpr auto checked_sub =
   }
 };
 
+FLUX_EXPORT
 inline constexpr auto checked_mul =
     []<std::signed_integral T>(T lhs, T rhs,
                                std::source_location loc = std::source_location::current())
@@ -429,6 +455,7 @@ namespace flux {
 /*
  * Useful helpers
  */
+FLUX_EXPORT
 template <typename From, typename To>
 concept decays_to = std::same_as<std::remove_cvref_t<From>, To>;
 
@@ -447,7 +474,7 @@ struct copy_fn {
 
 } // namespace detail
 
-inline constexpr auto copy = detail::copy_fn{};
+FLUX_EXPORT inline constexpr auto copy = detail::copy_fn{};
 
 namespace detail {
 
@@ -472,6 +499,7 @@ struct checked_cast_fn {
 
 } // namespace detail
 
+FLUX_EXPORT
 template <std::integral To>
 inline constexpr auto checked_cast = detail::checked_cast_fn<To>{};
 
@@ -496,12 +524,15 @@ namespace flux {
 /*
  * Cursor concepts
  */
+FLUX_EXPORT
 template <typename Cur>
 concept cursor = std::movable<Cur>;
 
+FLUX_EXPORT
 template <typename Cur>
 concept regular_cursor = cursor<Cur> && std::regular<Cur>;
 
+FLUX_EXPORT
 template <typename Cur>
 concept ordered_cursor =
     regular_cursor<Cur> &&
@@ -511,6 +542,7 @@ concept ordered_cursor =
  * Sequence concepts and associated types
  */
 
+FLUX_EXPORT
 template <typename T>
 struct sequence_traits;
 
@@ -521,9 +553,11 @@ using traits_t = sequence_traits<std::remove_cvref_t<T>>;
 
 } // namespace detail
 
+FLUX_EXPORT
 template <typename Seq>
 using cursor_t = decltype(detail::traits_t<Seq>::first(FLUX_DECLVAL(Seq&)));
 
+FLUX_EXPORT
 template <typename Seq>
 using element_t = decltype(detail::traits_t<Seq>::read_at(FLUX_DECLVAL(Seq&), FLUX_DECLVAL(cursor_t<Seq> const&)));
 
@@ -564,19 +598,25 @@ struct rvalue_element_type<T> {
 
 } // namespace detail
 
+FLUX_EXPORT
 template <typename Seq>
 using value_t = typename detail::value_type<Seq>::type;
 
+FLUX_EXPORT
 using distance_t = flux::config::int_type;
 
+FLUX_EXPORT
 using index_t = flux::config::int_type;
 
+FLUX_EXPORT
 template <typename Seq>
 using rvalue_element_t = typename detail::rvalue_element_type<Seq>::type;
 
+FLUX_EXPORT
 template <typename Seq>
 using common_element_t = std::common_reference_t<element_t<Seq>, value_t<Seq>&>;
 
+FLUX_EXPORT
 template <typename Seq>
 using const_element_t = std::common_reference_t<value_t<Seq> const&&, element_t<Seq>>;
 
@@ -615,6 +655,7 @@ concept sequence_concept =
 
 } // namespace detail
 
+FLUX_EXPORT
 template <typename Seq>
 concept sequence = detail::sequence_concept<Seq>;
 
@@ -630,6 +671,7 @@ inline constexpr bool disable_multipass<T> = T::disable_multipass;
 
 } // namespace detail
 
+FLUX_EXPORT
 template <typename Seq>
 concept multipass_sequence =
     sequence<Seq> && regular_cursor<cursor_t<Seq>> &&
@@ -646,6 +688,7 @@ concept bidirectional_sequence_concept =
 
 } // namespace detail
 
+FLUX_EXPORT
 template <typename Seq>
 concept bidirectional_sequence = detail::bidirectional_sequence_concept<Seq>;
 
@@ -663,6 +706,7 @@ concept random_access_sequence_concept =
 
 } // namespace detail
 
+FLUX_EXPORT
 template <typename Seq>
 concept random_access_sequence = detail::random_access_sequence_concept<Seq>;
 
@@ -679,6 +723,7 @@ concept contiguous_sequence_concept =
 
 } // namespace detail
 
+FLUX_EXPORT
 template <typename Seq>
 concept contiguous_sequence = detail::contiguous_sequence_concept<Seq>;
 
@@ -693,6 +738,7 @@ concept bounded_sequence_concept =
 
 } // namespace detail
 
+FLUX_EXPORT
 template <typename Seq>
 concept bounded_sequence = detail::bounded_sequence_concept<Seq>;
 
@@ -709,9 +755,11 @@ concept sized_sequence_concept =
 
 } // namespace detail
 
+FLUX_EXPORT
 template <typename Seq>
 concept sized_sequence = detail::sized_sequence_concept<Seq>;
 
+FLUX_EXPORT
 template <typename Seq, typename T>
 concept writable_sequence_of =
     sequence<Seq> &&
@@ -731,11 +779,13 @@ inline constexpr bool is_infinite_seq<T> = T::is_infinite;
 
 }
 
+FLUX_EXPORT
 template <typename Seq>
 concept infinite_sequence =
     sequence<Seq> &&
     detail::is_infinite_seq<detail::traits_t<Seq>>;
 
+FLUX_EXPORT
 template <typename Seq>
 concept read_only_sequence =
     sequence<Seq> &&
@@ -763,6 +813,7 @@ concept trivially_copyable_sequence =
 
 }
 
+FLUX_EXPORT
 template <typename Seq>
 concept adaptable_sequence =
     (detail::rvalue_sequence<Seq>
@@ -841,8 +892,8 @@ struct sequence_traits<T> : T::flux_sequence_traits {};
 
 namespace flux {
 
-using nullopt_t = std::nullopt_t;
-inline constexpr nullopt_t const& nullopt = std::nullopt;
+FLUX_EXPORT using nullopt_t = std::nullopt_t;
+FLUX_EXPORT inline constexpr nullopt_t const& nullopt = std::nullopt;
 
 namespace detail {
 
@@ -854,6 +905,7 @@ concept can_optional =
 
 }
 
+FLUX_EXPORT
 template <typename T>
 class optional;
 
@@ -1493,19 +1545,19 @@ struct move_at_unchecked_fn {
 
 } // namespace detail
 
-inline constexpr auto first = detail::first_fn{};
-inline constexpr auto is_last = detail::is_last_fn{};
-inline constexpr auto read_at = detail::read_at_fn{};
-inline constexpr auto move_at = detail::move_at_fn{};
-inline constexpr auto read_at_unchecked = detail::read_at_unchecked_fn{};
-inline constexpr auto move_at_unchecked = detail::move_at_unchecked_fn{};
-inline constexpr auto inc = detail::inc_fn{};
-inline constexpr auto dec = detail::dec_fn{};
-inline constexpr auto distance = detail::distance_fn{};
-inline constexpr auto data = detail::data_fn{};
-inline constexpr auto last = detail::last_fn{};
-inline constexpr auto size = detail::size_fn{};
-inline constexpr auto usize = detail::usize_fn{};
+FLUX_EXPORT inline constexpr auto first = detail::first_fn{};
+FLUX_EXPORT inline constexpr auto is_last = detail::is_last_fn{};
+FLUX_EXPORT inline constexpr auto read_at = detail::read_at_fn{};
+FLUX_EXPORT inline constexpr auto move_at = detail::move_at_fn{};
+FLUX_EXPORT inline constexpr auto read_at_unchecked = detail::read_at_unchecked_fn{};
+FLUX_EXPORT inline constexpr auto move_at_unchecked = detail::move_at_unchecked_fn{};
+FLUX_EXPORT inline constexpr auto inc = detail::inc_fn{};
+FLUX_EXPORT inline constexpr auto dec = detail::dec_fn{};
+FLUX_EXPORT inline constexpr auto distance = detail::distance_fn{};
+FLUX_EXPORT inline constexpr auto data = detail::data_fn{};
+FLUX_EXPORT inline constexpr auto last = detail::last_fn{};
+FLUX_EXPORT inline constexpr auto size = detail::size_fn{};
+FLUX_EXPORT inline constexpr auto usize = detail::usize_fn{};
 
 namespace detail {
 
@@ -1642,13 +1694,13 @@ struct back_fn {
 } // namespace detail
 
 
-inline constexpr auto next = detail::next_fn{};
-inline constexpr auto prev = detail::prev_fn{};
-inline constexpr auto is_empty = detail::is_empty_fn{};
-inline constexpr auto swap_with = detail::swap_with_fn{};
-inline constexpr auto swap_at = detail::swap_at_fn{};
-inline constexpr auto front = detail::front_fn{};
-inline constexpr auto back = detail::back_fn{};
+FLUX_EXPORT inline constexpr auto next = detail::next_fn{};
+FLUX_EXPORT inline constexpr auto prev = detail::prev_fn{};
+FLUX_EXPORT inline constexpr auto is_empty = detail::is_empty_fn{};
+FLUX_EXPORT inline constexpr auto swap_with = detail::swap_with_fn{};
+FLUX_EXPORT inline constexpr auto swap_at = detail::swap_at_fn{};
+FLUX_EXPORT inline constexpr auto front = detail::front_fn{};
+FLUX_EXPORT inline constexpr auto back = detail::back_fn{};
 
 } // namespace flux
 
@@ -1913,6 +1965,7 @@ struct sequence_traits<R> {
 
 namespace flux {
 
+FLUX_EXPORT
 template <typename Fn, typename Proj = std::identity>
 struct proj {
     Fn fn;
@@ -1938,6 +1991,7 @@ struct proj {
 template <typename F, typename P = std::identity>
 proj(F, P = {}) -> proj<F, P>;
 
+FLUX_EXPORT
 template <typename Fn, typename Lhs = std::identity, typename Rhs = std::identity>
 struct proj2 {
     Fn fn;
@@ -2020,7 +2074,7 @@ struct unpack_fn {
 
 } // namespace detail
 
-inline constexpr auto unpack = detail::unpack_fn{};
+FLUX_EXPORT inline constexpr auto unpack = detail::unpack_fn{};
 
 namespace pred {
 
@@ -2042,7 +2096,7 @@ inline constexpr auto cmp = [](auto&& val) {
 } // namespace detail
 
 /// Given a predicate, returns a new predicate with the condition reversed
-inline constexpr auto not_ = [](auto&& pred) {
+FLUX_EXPORT inline constexpr auto not_ = [](auto&& pred) {
     return detail::predicate([p = FLUX_FWD(pred)] (auto const&... args) {
         return !std::invoke(p, FLUX_FWD(args)...);
     });
@@ -2053,7 +2107,7 @@ inline constexpr auto not_ = [](auto&& pred) {
 ///
 /// The returned predicate is short-circuiting: if the first predicate returns
 /// `false`, the second will not be evaluated.
-inline constexpr auto both = [](auto&& p, auto&& and_) {
+FLUX_EXPORT inline constexpr auto both = [](auto&& p, auto&& and_) {
     return detail::predicate{[p1 = FLUX_FWD(p), p2 = FLUX_FWD(and_)] (auto const&... args) {
         return std::invoke(p1, args...) && std::invoke(p2, args...);
     }};
@@ -2064,7 +2118,7 @@ inline constexpr auto both = [](auto&& p, auto&& and_) {
 ///
 /// The returned predicate is short-circuiting: if the first predicate returns
 /// `true`, the second will not be evaluated
-inline constexpr auto either = [](auto&& p, auto&& or_) {
+FLUX_EXPORT inline constexpr auto either = [](auto&& p, auto&& or_) {
      return detail::predicate{[p1 = FLUX_FWD(p), p2 = FLUX_FWD(or_)] (auto const&... args) {
         return std::invoke(p1, args...) || std::invoke(p2, args...);
      }};
@@ -2097,55 +2151,55 @@ constexpr auto operator||(detail::predicate<L> lhs, detail::predicate<R> rhs)
 ///
 /// The returned predicate is short-circuiting: if the first predicate returns
 /// `true`, the second will not be evaluated.
-inline constexpr auto neither = [](auto&& p1, auto&& nor) {
+FLUX_EXPORT inline constexpr auto neither = [](auto&& p1, auto&& nor) {
     return not_(either(FLUX_FWD(p1), FLUX_FWD(nor)));
 };
 
-inline constexpr auto eq = detail::cmp<std::ranges::equal_to>;
-inline constexpr auto neq = detail::cmp<std::ranges::not_equal_to>;
-inline constexpr auto lt = detail::cmp<std::ranges::less>;
-inline constexpr auto gt = detail::cmp<std::ranges::greater>;
-inline constexpr auto leq = detail::cmp<std::ranges::less_equal>;
-inline constexpr auto geq = detail::cmp<std::ranges::greater_equal>;
+FLUX_EXPORT inline constexpr auto eq = detail::cmp<std::ranges::equal_to>;
+FLUX_EXPORT inline constexpr auto neq = detail::cmp<std::ranges::not_equal_to>;
+FLUX_EXPORT inline constexpr auto lt = detail::cmp<std::ranges::less>;
+FLUX_EXPORT inline constexpr auto gt = detail::cmp<std::ranges::greater>;
+FLUX_EXPORT inline constexpr auto leq = detail::cmp<std::ranges::less_equal>;
+FLUX_EXPORT inline constexpr auto geq = detail::cmp<std::ranges::greater_equal>;
 
 /// A predicate which always returns true
-inline constexpr auto true_ = detail::predicate{[](auto const&...) -> bool { return true; }};
+FLUX_EXPORT inline constexpr auto true_ = detail::predicate{[](auto const&...) -> bool { return true; }};
 
 /// A predicate which always returns false
-inline constexpr auto false_ = detail::predicate{[](auto const&...) -> bool { return false; }};
+FLUX_EXPORT inline constexpr auto false_ = detail::predicate{[](auto const&...) -> bool { return false; }};
 
 /// Identity predicate, returns the boolean value given to it
-inline constexpr auto id = detail::predicate{[](bool b) -> bool { return b; }};
+FLUX_EXPORT inline constexpr auto id = detail::predicate{[](bool b) -> bool { return b; }};
 
 /// Returns true if the given value is greater than a zero of the same type.
-inline constexpr auto positive = detail::predicate{[](auto const& val) -> bool {
+FLUX_EXPORT inline constexpr auto positive = detail::predicate{[](auto const& val) -> bool {
     return val > decltype(val){0};
 }};
 
 /// Returns true if the given value is less than a zero of the same type.
-inline constexpr auto negative = detail::predicate{[](auto const& val) -> bool {
+FLUX_EXPORT inline constexpr auto negative = detail::predicate{[](auto const& val) -> bool {
     return val < decltype(val){0};
 }};
 
 /// Returns true if the given value is not equal to a zero of the same type.
-inline constexpr auto nonzero = detail::predicate{[](auto const& val) -> bool {
+FLUX_EXPORT inline constexpr auto nonzero = detail::predicate{[](auto const& val) -> bool {
     return val != decltype(val){0};
 }};
 
 /// Given a sequence of values, constructs a predicate which returns true
 /// if its argument compares equal to one of the values
-inline constexpr auto in = [](auto const&... vals)  requires (sizeof...(vals) > 0)
+FLUX_EXPORT inline constexpr auto in = [](auto const&... vals)  requires (sizeof...(vals) > 0)
 {
     return detail::predicate{[vals...](auto const& arg) -> bool {
         return ((arg == vals) || ...);
     }};
 };
 
-inline constexpr auto even = detail::predicate([](auto const& val) -> bool {
+FLUX_EXPORT inline constexpr auto even = detail::predicate([](auto const& val) -> bool {
     return val % decltype(val){2} == decltype(val){0};
 });
 
-inline constexpr auto odd = detail::predicate([](auto const& val) -> bool {
+FLUX_EXPORT inline constexpr auto odd = detail::predicate([](auto const& val) -> bool {
   return val % decltype(val){2} != decltype(val){0};
 });
 
@@ -2177,6 +2231,7 @@ inline constexpr auto odd = detail::predicate([](auto const& val) -> bool {
 
 namespace flux {
 
+FLUX_EXPORT
 template <typename Seq, typename Func, typename Init>
 using fold_result_t = std::decay_t<std::invoke_result_t<Func&, Init, element_t<Seq>>>;
 
@@ -2191,12 +2246,14 @@ concept foldable_ =
 
 } // namespace detail
 
+FLUX_EXPORT
 template <typename Seq, typename Func, typename Init>
 concept foldable =
     sequence<Seq> &&
     std::invocable<Func&, Init, element_t<Seq>> &&
     detail::foldable_<Seq, Func, Init>;
 
+FLUX_EXPORT
 template <typename Fn, typename Seq1, typename Seq2 = Seq1>
 concept strict_weak_order_for =
     sequence<Seq1> &&
@@ -2214,6 +2271,7 @@ concept strict_weak_order_for =
 
 namespace flux {
 
+FLUX_EXPORT
 template <cursor Cur>
 struct bounds {
     FLUX_NO_UNIQUE_ADDRESS Cur from;
@@ -2225,6 +2283,7 @@ struct bounds {
 template <cursor Cur>
 bounds(Cur, Cur) -> bounds<Cur>;
 
+FLUX_EXPORT
 template <sequence Seq>
 using bounds_t = bounds<cursor_t<Seq>>;
 
@@ -2682,6 +2741,7 @@ public:
 
 namespace flux {
 
+FLUX_EXPORT
 template <typename D>
 struct simple_sequence_base : inline_sequence_base<D> {};
 
@@ -2982,8 +3042,8 @@ struct end_fn {
 
 } // namespace detail
 
-inline constexpr auto begin = detail::begin_fn{};
-inline constexpr auto end = detail::end_fn{};
+FLUX_EXPORT inline constexpr auto begin = detail::begin_fn{};
+FLUX_EXPORT inline constexpr auto end = detail::end_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::begin() &
@@ -3085,7 +3145,7 @@ struct for_each_while_fn {
 
 } // namespace detail
 
-inline constexpr auto for_each_while = detail::for_each_while_fn{};
+FLUX_EXPORT inline constexpr auto for_each_while = detail::for_each_while_fn{};
 
 template <typename Derived>
 template <typename Pred>
@@ -3304,8 +3364,8 @@ struct ref_fn {
 
 } // namespace detail
 
-inline constexpr auto mut_ref = detail::mut_ref_fn{};
-inline constexpr auto ref = detail::ref_fn{};
+FLUX_EXPORT inline constexpr auto mut_ref = detail::mut_ref_fn{};
+FLUX_EXPORT inline constexpr auto ref = detail::ref_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::ref() const&
@@ -3362,8 +3422,8 @@ struct from_fwd_ref_fn {
 
 } // namespace detail
 
-inline constexpr auto from = detail::from_fn{};
-inline constexpr auto from_fwd_ref = detail::from_fwd_ref_fn{};
+FLUX_EXPORT inline constexpr auto from = detail::from_fn{};
+FLUX_EXPORT inline constexpr auto from_fwd_ref = detail::from_fwd_ref_fn{};
 
 } // namespace flux
 
@@ -3515,7 +3575,7 @@ struct reverse_fn {
 
 } // namespace detail
 
-inline constexpr auto reverse = detail::reverse_fn{};
+FLUX_EXPORT inline constexpr auto reverse = detail::reverse_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::reverse() &&
@@ -3596,6 +3656,7 @@ struct empty_sequence : inline_sequence_base<empty_sequence<T>> {
 
 } // namespace detail
 
+FLUX_EXPORT
 template <typename T>
     requires std::is_object_v<T>
 inline constexpr auto empty = detail::empty_sequence<T>{};
@@ -3788,7 +3849,7 @@ public:
     }
 };
 
-inline constexpr auto zip = detail::zip_fn{};
+FLUX_EXPORT inline constexpr auto zip = detail::zip_fn{};
 
 } // namespace flux
 
@@ -3982,8 +4043,8 @@ struct ints_fn {
 
 } // namespace detail
 
-inline constexpr auto iota = detail::iota_fn{};
-inline constexpr auto ints = detail::ints_fn{};
+FLUX_EXPORT inline constexpr auto iota = detail::iota_fn{};
+FLUX_EXPORT inline constexpr auto ints = detail::ints_fn{};
 
 } // namespace flux
 
@@ -4219,17 +4280,19 @@ struct adjacent_map_fn {
 
 } // namespace detail
 
+FLUX_EXPORT
 template <distance_t N>
     requires (N > 0)
 inline constexpr auto adjacent = detail::adjacent_fn<N>{};
 
-inline constexpr auto pairwise = adjacent<2>;
+FLUX_EXPORT inline constexpr auto pairwise = adjacent<2>;
 
+FLUX_EXPORT
 template <distance_t N>
     requires (N > 0)
 inline constexpr auto adjacent_map = detail::adjacent_map_fn<N>{};
 
-inline constexpr auto pairwise_map = adjacent_map<2>;
+FLUX_EXPORT inline constexpr auto pairwise_map = adjacent_map<2>;
 
 template <typename D>
 template <distance_t N>
@@ -4294,7 +4357,7 @@ struct fn {
 
 } // namespace all_detail
 
-inline constexpr auto all = all_detail::fn{};
+FLUX_EXPORT inline constexpr auto all = all_detail::fn{};
 
 namespace none_detail {
 
@@ -4311,7 +4374,7 @@ struct fn {
 
 } // namespace none_detail
 
-inline constexpr auto none = none_detail::fn{};
+FLUX_EXPORT inline constexpr auto none = none_detail::fn{};
 
 namespace any_detail {
 
@@ -4328,7 +4391,7 @@ struct fn {
 
 } // namespace any_detail
 
-inline constexpr auto any = any_detail::fn{};
+FLUX_EXPORT inline constexpr auto any = any_detail::fn{};
 
 template <typename D>
 template <typename Pred>
@@ -4438,7 +4501,7 @@ struct cache_last_fn {
 
 } // namespace detail
 
-inline constexpr auto cache_last = detail::cache_last_fn{};
+FLUX_EXPORT inline constexpr auto cache_last = detail::cache_last_fn{};
 
 template <typename Derived>
 constexpr auto inline_sequence_base<Derived>::cache_last() &&
@@ -4698,7 +4761,7 @@ public:
     }
 };
 
-inline constexpr auto cartesian_product = detail::cartesian_product_fn{};
+FLUX_EXPORT inline constexpr auto cartesian_product = detail::cartesian_product_fn{};
 
 } // end namespace flux
 
@@ -4765,9 +4828,7 @@ struct cartesian_product_with_fn
 
 } // namespace detail
 
-
-
-inline constexpr auto cartesian_product_with = detail::cartesian_product_with_fn{};
+FLUX_EXPORT inline constexpr auto cartesian_product_with = detail::cartesian_product_with_fn{};
 
 } // namespace flux
 
@@ -5098,7 +5159,7 @@ public:
 
 };
 
-inline constexpr auto chain = detail::chain_fn{};
+FLUX_EXPORT inline constexpr auto chain = detail::chain_fn{};
 
 } // namespace flux
 
@@ -5254,7 +5315,7 @@ struct sequence_traits<subsequence<Base, Bounded>>
     void for_each_while() = delete;
 };
 
-inline constexpr auto slice = detail::slice_fn{};
+FLUX_EXPORT inline constexpr auto slice = detail::slice_fn{};
 
 #if 0
 template <typename Derived>
@@ -5539,7 +5600,7 @@ struct stride_fn {
 
 } // namespace detail
 
-inline constexpr auto stride = detail::stride_fn{};
+FLUX_EXPORT inline constexpr auto stride = detail::stride_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::stride(std::integral auto by) &&
@@ -5714,7 +5775,7 @@ struct take_fn {
 
 } // namespace detail
 
-inline constexpr auto take = detail::take_fn{};
+FLUX_EXPORT inline constexpr auto take = detail::take_fn{};
 
 template <typename Derived>
 constexpr auto inline_sequence_base<Derived>::take(std::integral auto count) &&
@@ -6024,7 +6085,7 @@ struct chunk_fn {
 
 } // namespace detail
 
-inline constexpr auto chunk = detail::chunk_fn{};
+FLUX_EXPORT inline constexpr auto chunk = detail::chunk_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::chunk(std::integral auto chunk_sz) &&
@@ -6171,7 +6232,7 @@ struct chunk_by_fn {
 
 } // namespace detail
 
-inline constexpr auto chunk_by = detail::chunk_by_fn{};
+FLUX_EXPORT inline constexpr auto chunk_by = detail::chunk_by_fn{};
 
 template <typename Derived>
 template <typename Pred>
@@ -6236,7 +6297,7 @@ struct compare_fn {
 
 } // namespace detail
 
-inline constexpr auto compare = detail::compare_fn{};
+FLUX_EXPORT inline constexpr auto compare = detail::compare_fn{};
 
 } // namespace flux
 
@@ -6271,7 +6332,7 @@ struct contains_fn {
 
 } // namespace detail
 
-inline constexpr auto contains = detail::contains_fn{};
+FLUX_EXPORT inline constexpr auto contains = detail::contains_fn{};
 
 template <typename D>
 template <typename Value>
@@ -6355,9 +6416,9 @@ struct count_if_fn {
 
 } // namespace detail
 
-inline constexpr auto count = detail::count_fn{};
-inline constexpr auto count_eq = detail::count_eq_fn{};
-inline constexpr auto count_if = detail::count_if_fn{};
+FLUX_EXPORT inline constexpr auto count = detail::count_fn{};
+FLUX_EXPORT inline constexpr auto count_eq = detail::count_eq_fn{};
+FLUX_EXPORT inline constexpr auto count_if = detail::count_if_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::count()
@@ -6479,7 +6540,7 @@ struct cursors_fn {
 
 } // namespace detail
 
-inline constexpr auto cursors = detail::cursors_fn{};
+FLUX_EXPORT inline constexpr auto cursors = detail::cursors_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::cursors() &&
@@ -6733,7 +6794,7 @@ struct cycle_fn {
 
 } // namespace detail
 
-inline constexpr auto cycle = detail::cycle_fn{};
+FLUX_EXPORT inline constexpr auto cycle = detail::cycle_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::cycle() &&
@@ -6840,7 +6901,7 @@ struct drop_fn {
 
 } // namespace detail
 
-inline constexpr auto drop = detail::drop_fn{};
+FLUX_EXPORT inline constexpr auto drop = detail::drop_fn{};
 
 template <typename Derived>
 constexpr auto inline_sequence_base<Derived>::drop(std::integral auto count) &&
@@ -6926,7 +6987,7 @@ struct drop_while_fn {
 
 } // namespace detail
 
-inline constexpr auto drop_while = detail::drop_while_fn{};
+FLUX_EXPORT inline constexpr auto drop_while = detail::drop_while_fn{};
 
 template <typename D>
 template <typename Pred>
@@ -6992,7 +7053,7 @@ struct equal_fn {
 
 } // namespace detail
 
-inline constexpr auto equal = detail::equal_fn{};
+FLUX_EXPORT inline constexpr auto equal = detail::equal_fn{};
 
 } // namespace flux
 
@@ -7074,7 +7135,7 @@ public:
 
 } // namespace detail
 
-inline constexpr auto ends_with = detail::ends_with_fn{};
+FLUX_EXPORT inline constexpr auto ends_with = detail::ends_with_fn{};
 
 template <typename Derived>
 template <sequence Needle, typename Cmp>
@@ -7130,7 +7191,7 @@ struct for_each_fn {
 
 } // namespace detail
 
-inline constexpr auto for_each = detail::for_each_fn{};
+FLUX_EXPORT inline constexpr auto for_each = detail::for_each_fn{};
 
 template <typename D>
 template <typename Func>
@@ -7161,7 +7222,7 @@ struct fill_fn {
 
 } // namespace detail
 
-inline constexpr auto fill = detail::fill_fn{};
+FLUX_EXPORT inline constexpr auto fill = detail::fill_fn{};
 
 template <typename D>
 template <typename Value>
@@ -7300,7 +7361,7 @@ struct filter_fn {
 
 } // namespace detail
 
-inline constexpr auto filter = detail::filter_fn{};
+FLUX_EXPORT inline constexpr auto filter = detail::filter_fn{};
 
 template <typename D>
 template <typename Pred>
@@ -7367,9 +7428,9 @@ struct find_if_not_fn {
 
 } // namespace detail
 
-inline constexpr auto find = detail::find_fn{};
-inline constexpr auto find_if = detail::find_if_fn{};
-inline constexpr auto find_if_not = detail::find_if_not_fn{};
+FLUX_EXPORT inline constexpr auto find = detail::find_fn{};
+FLUX_EXPORT inline constexpr auto find_if = detail::find_if_fn{};
+FLUX_EXPORT inline constexpr auto find_if_not = detail::find_if_not_fn{};
 
 template <typename D>
 template <typename Value>
@@ -7638,7 +7699,7 @@ struct flatten_fn {
 
 } // namespace detail
 
-inline constexpr auto flatten = detail::flatten_fn{};
+FLUX_EXPORT inline constexpr auto flatten = detail::flatten_fn{};
 
 template <typename Derived>
 constexpr auto inline_sequence_base<Derived>::flatten() &&
@@ -7735,10 +7796,10 @@ struct product_op {
 
 } // namespace detail
 
-inline constexpr auto fold = detail::fold_op{};
-inline constexpr auto fold_first = detail::fold_first_op{};
-inline constexpr auto sum = detail::sum_op{};
-inline constexpr auto product = detail::product_op{};
+FLUX_EXPORT inline constexpr auto fold = detail::fold_op{};
+FLUX_EXPORT inline constexpr auto fold_first = detail::fold_first_op{};
+FLUX_EXPORT inline constexpr auto sum = detail::sum_op{};
+FLUX_EXPORT inline constexpr auto product = detail::product_op{};
 
 template <typename Derived>
 template <typename D, typename Func, typename Init>
@@ -7813,7 +7874,7 @@ struct inplace_reverse_fn {
 
 } // namespace detail
 
-inline constexpr auto inplace_reverse = detail::inplace_reverse_fn{};
+FLUX_EXPORT inline constexpr auto inplace_reverse = detail::inplace_reverse_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::inplace_reverse()
@@ -7901,7 +7962,7 @@ struct map_fn {
 
 } // namespace detail
 
-inline constexpr auto map = detail::map_fn{};
+FLUX_EXPORT inline constexpr auto map = detail::map_fn{};
 
 template <typename Derived>
 template <typename Func>
@@ -8070,7 +8131,7 @@ struct mask_fn {
 
 } // namespace detail
 
-inline constexpr auto mask = detail::mask_fn{};
+FLUX_EXPORT inline constexpr auto mask = detail::mask_fn{};
 
 template <typename D>
 template <adaptable_sequence Mask>
@@ -8098,6 +8159,7 @@ constexpr auto inline_sequence_base<D>::mask(Mask&& mask_) &&
 
 namespace flux {
 
+FLUX_EXPORT
 template <typename T>
 struct minmax_result {
     T min;
@@ -8171,9 +8233,9 @@ struct minmax_op {
 
 } // namespace detail
 
-inline constexpr auto min = detail::min_op{};
-inline constexpr auto max = detail::max_op{};
-inline constexpr auto minmax = detail::minmax_op{};
+FLUX_EXPORT inline constexpr auto min = detail::min_op{};
+FLUX_EXPORT inline constexpr auto max = detail::max_op{};
+FLUX_EXPORT inline constexpr auto minmax = detail::minmax_op{};
 
 template <typename Derived>
 template <typename Cmp>
@@ -8262,7 +8324,7 @@ struct read_only_fn {
 
 } // namespace detail
 
-inline constexpr auto read_only = detail::read_only_fn{};
+FLUX_EXPORT inline constexpr auto read_only = detail::read_only_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::read_only() &&
@@ -8455,8 +8517,8 @@ struct prescan_fn {
 
 } // namespace detail
 
-inline constexpr auto scan = detail::scan_fn{};
-inline constexpr auto prescan = detail::prescan_fn{};
+FLUX_EXPORT inline constexpr auto scan = detail::scan_fn{};
+FLUX_EXPORT inline constexpr auto prescan = detail::prescan_fn{};
 
 template <typename Derived>
 template <typename D, typename Func, typename Init>
@@ -8606,7 +8668,7 @@ struct scan_first_fn {
 
 } // namespace detail
 
-inline constexpr auto scan_first = detail::scan_first_fn{};
+FLUX_EXPORT inline constexpr auto scan_first = detail::scan_first_fn{};
 
 template <typename Derived>
 template <typename Func>
@@ -9179,10 +9241,10 @@ struct set_intersection_fn {
 
 namespace flux {
 
-inline constexpr auto set_union = detail::set_union_fn{};
-inline constexpr auto set_difference = detail::set_difference_fn{};
-inline constexpr auto set_symmetric_difference = detail::set_symmetric_difference_fn{};
-inline constexpr auto set_intersection = detail::set_intersection_fn{};
+FLUX_EXPORT inline constexpr auto set_union = detail::set_union_fn{};
+FLUX_EXPORT inline constexpr auto set_difference = detail::set_difference_fn{};
+FLUX_EXPORT inline constexpr auto set_symmetric_difference = detail::set_symmetric_difference_fn{};
+FLUX_EXPORT inline constexpr auto set_intersection = detail::set_intersection_fn{};
 
 } // namespace flux
 
@@ -9316,7 +9378,7 @@ struct slide_fn {
 
 } // namespace detail
 
-inline constexpr auto slide = detail::slide_fn{};
+FLUX_EXPORT inline constexpr auto slide = detail::slide_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::slide(std::integral auto win_sz) &&
@@ -10187,7 +10249,7 @@ struct unchecked_fn {
 
 } // namespace detail
 
-inline constexpr auto unchecked = detail::unchecked_fn{};
+FLUX_EXPORT inline constexpr auto unchecked = detail::unchecked_fn{};
 
 } // namespace flux
 
@@ -10212,7 +10274,7 @@ struct sort_fn {
 
 } // namespace detail
 
-inline constexpr auto sort = detail::sort_fn{};
+FLUX_EXPORT inline constexpr auto sort = detail::sort_fn{};
 
 template <typename D>
 template <typename Cmp>
@@ -10292,7 +10354,7 @@ struct search_fn {
 
 } // namespace detail
 
-inline constexpr auto search = detail::search_fn{};
+FLUX_EXPORT inline constexpr auto search = detail::search_fn{};
 
 } // namespace flux
 
@@ -10429,7 +10491,7 @@ public:
 
 };
 
-inline constexpr auto single = detail::single_fn{};
+FLUX_EXPORT inline constexpr auto single = detail::single_fn{};
 
 } // namespace flux
 
@@ -10551,7 +10613,7 @@ public:
     }
 };
 
-inline constexpr auto split = detail::split_fn{};
+FLUX_EXPORT inline constexpr auto split = detail::split_fn{};
 
 template <typename Derived>
 template <multipass_sequence Pattern>
@@ -10636,7 +10698,7 @@ struct split_string_fn {
 
 } // namespace detail
 
-inline constexpr auto split_string = detail::split_string_fn{};
+FLUX_EXPORT inline constexpr auto split_string = detail::split_string_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::split_string(auto&& pattern) &&
@@ -10691,7 +10753,7 @@ struct starts_with_fn {
 
 } // namespace detail
 
-inline constexpr auto starts_with = detail::starts_with_fn{};
+FLUX_EXPORT inline constexpr auto starts_with = detail::starts_with_fn{};
 
 template <typename Derived>
 template <sequence Needle, typename Cmp>
@@ -10739,7 +10801,7 @@ struct swap_elements_fn {
 
 }
 
-inline constexpr auto swap_elements = detail::swap_elements_fn{};
+FLUX_EXPORT inline constexpr auto swap_elements = detail::swap_elements_fn{};
 
 }
 
@@ -10832,7 +10894,7 @@ struct sequence_traits<detail::take_while_adaptor<Base, Pred>>
     }
 };
 
-inline constexpr auto take_while = detail::take_while_fn{};
+FLUX_EXPORT inline constexpr auto take_while = detail::take_while_fn{};
 
 template <typename D>
 template <typename Pred>
@@ -10912,7 +10974,7 @@ public:
 
 }
 
-inline constexpr auto output_to = detail::output_to_fn{};
+FLUX_EXPORT inline constexpr auto output_to = detail::output_to_fn{};
 
 template <typename D>
 template <typename Iter>
@@ -11035,6 +11097,7 @@ using deduced_container_t = typename decltype(deduce_container_type<C, Seq, Args
 
 } // namespace detail
 
+FLUX_EXPORT
 template <typename Container, sequence Seq, typename... Args>
     requires (std::convertible_to<element_t<Seq>, detail::container_value_t<Container>> &&
                  detail::container_convertible<Container, Seq, Args...>) ||
@@ -11065,6 +11128,7 @@ constexpr auto to(Seq&& seq, Args&&... args) -> Container
     }
 }
 
+FLUX_EXPORT
 template <template <typename...> typename Container, sequence Seq, typename... Args>
     requires detail::can_deduce_container_type<Container, Seq, Args...> &&
              detail::container_convertible<
@@ -11142,7 +11206,7 @@ struct write_to_fn {
 
 } // namespace detail
 
-inline constexpr auto write_to = detail::write_to_fn{};
+FLUX_EXPORT inline constexpr auto write_to = detail::write_to_fn{};
 
 template <typename Derived>
 auto inline_sequence_base<Derived>::write_to(std::ostream& os) -> std::ostream&
@@ -11197,7 +11261,7 @@ struct zip_for_each_while_fn {
 
 } // namespace detail
 
-inline constexpr auto zip_for_each_while = detail::zip_for_each_while_fn{};
+FLUX_EXPORT inline constexpr auto zip_for_each_while = detail::zip_for_each_while_fn{};
 
 namespace detail {
 
@@ -11250,9 +11314,9 @@ struct zip_fold_fn {
 
 } // namespace detail
 
-inline constexpr auto zip_for_each = detail::zip_for_each_fn{};
-inline constexpr auto zip_find_if = detail::zip_find_if_fn{};
-inline constexpr auto zip_fold = detail::zip_fold_fn{};
+FLUX_EXPORT inline constexpr auto zip_for_each = detail::zip_for_each_fn{};
+FLUX_EXPORT inline constexpr auto zip_find_if = detail::zip_find_if_fn{};
+FLUX_EXPORT inline constexpr auto zip_fold = detail::zip_fold_fn{};
 
 } // namespace pred
 
@@ -11280,6 +11344,7 @@ struct make_array_ptr_unchecked_fn;
 
 }
 
+FLUX_EXPORT
 template <typename T>
     requires (std::is_object_v<T> && !std::is_abstract_v<T>)
 struct array_ptr : inline_sequence_base<array_ptr<T>> {
@@ -11413,7 +11478,8 @@ struct make_array_ptr_unchecked_fn {
 
 } // namespace detail
 
-inline constexpr auto make_array_ptr_unchecked = detail::make_array_ptr_unchecked_fn{};
+FLUX_EXPORT inline constexpr auto make_array_ptr_unchecked =
+    detail::make_array_ptr_unchecked_fn{};
 
 } // namespace flux
 
@@ -11435,6 +11501,7 @@ inline constexpr auto make_array_ptr_unchecked = detail::make_array_ptr_unchecke
 
 namespace flux {
 
+FLUX_EXPORT
 template <typename ElemT>
 struct generator : inline_sequence_base<generator<ElemT>> {
 
@@ -11628,7 +11695,7 @@ struct getlines_fn {
 
 } // namespace detail
 
-inline constexpr auto getlines = detail::getlines_fn{};
+FLUX_EXPORT inline constexpr auto getlines = detail::getlines_fn{};
 
 } // namespace flux
 
@@ -11722,6 +11789,7 @@ public:
     }
 };
 
+FLUX_EXPORT
 template <std::default_initializable T>
 inline constexpr auto from_istream = detail::from_istream_fn<T>{};
 
@@ -11807,6 +11875,7 @@ public:
     }
 };
 
+FLUX_EXPORT
 inline constexpr auto from_istreambuf = detail::from_istreambuf_fn{};
 
 } // namespace flux
@@ -12050,8 +12119,8 @@ struct from_crange_fn {
 
 } // namespace detail
 
-inline constexpr auto from_range = detail::from_range_fn{};
-inline constexpr auto from_crange = detail::from_crange_fn{};
+FLUX_EXPORT inline constexpr auto from_range = detail::from_range_fn{};
+FLUX_EXPORT inline constexpr auto from_crange = detail::from_crange_fn{};
 
 } // namespace flux
 
@@ -12197,7 +12266,7 @@ struct repeat_fn {
 
 } // namespace detail
 
-inline constexpr auto repeat = detail::repeat_fn{};
+FLUX_EXPORT inline constexpr auto repeat = detail::repeat_fn{};
 
 } // namespace flux
 
@@ -12290,7 +12359,7 @@ struct unfold_fn {
 
 } // namespace detail
 
-inline constexpr auto unfold = detail::unfold_fn{};
+FLUX_EXPORT inline constexpr auto unfold = detail::unfold_fn{};
 
 } // namespace flux
 
