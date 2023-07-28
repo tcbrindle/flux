@@ -192,7 +192,7 @@ public:
     }
 };
 
-inline constexpr auto zip = detail::zip_fn{};
+FLUX_EXPORT inline constexpr auto zip = detail::zip_fn{};
 
 } // namespace flux
 

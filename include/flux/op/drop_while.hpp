@@ -72,7 +72,7 @@ struct drop_while_fn {
 
 } // namespace detail
 
-inline constexpr auto drop_while = detail::drop_while_fn{};
+FLUX_EXPORT inline constexpr auto drop_while = detail::drop_while_fn{};
 
 template <typename D>
 template <typename Pred>

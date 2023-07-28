@@ -138,7 +138,7 @@ struct repeat_fn {
 
 } // namespace detail
 
-inline constexpr auto repeat = detail::repeat_fn{};
+FLUX_EXPORT inline constexpr auto repeat = detail::repeat_fn{};
 
 } // namespace flux
 

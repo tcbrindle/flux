@@ -50,7 +50,7 @@ struct search_fn {
 
 } // namespace detail
 
-inline constexpr auto search = detail::search_fn{};
+FLUX_EXPORT inline constexpr auto search = detail::search_fn{};
 
 } // namespace flux
 

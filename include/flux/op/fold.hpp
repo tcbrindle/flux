@@ -82,10 +82,10 @@ struct product_op {
 
 } // namespace detail
 
-inline constexpr auto fold = detail::fold_op{};
-inline constexpr auto fold_first = detail::fold_first_op{};
-inline constexpr auto sum = detail::sum_op{};
-inline constexpr auto product = detail::product_op{};
+FLUX_EXPORT inline constexpr auto fold = detail::fold_op{};
+FLUX_EXPORT inline constexpr auto fold_first = detail::fold_first_op{};
+FLUX_EXPORT inline constexpr auto sum = detail::sum_op{};
+FLUX_EXPORT inline constexpr auto product = detail::product_op{};
 
 template <typename Derived>
 template <typename D, typename Func, typename Init>

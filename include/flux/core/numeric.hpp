@@ -12,18 +12,21 @@
 
 namespace flux::num {
 
+FLUX_EXPORT
 inline constexpr auto wrapping_add = []<std::signed_integral T>(T lhs, T rhs) -> T
 {
     using U = std::make_unsigned_t<T>;
     return static_cast<T>(static_cast<U>(lhs) + static_cast<U>(rhs));
 };
 
+FLUX_EXPORT
 inline constexpr auto wrapping_sub = []<std::signed_integral T>(T lhs, T rhs) -> T
 {
     using U = std::make_unsigned_t<T>;
     return static_cast<T>(static_cast<U>(lhs) - static_cast<U>(rhs));
 };
 
+FLUX_EXPORT
 inline constexpr auto wrapping_mul = []<std::signed_integral T>(T lhs, T rhs) -> T
 {
     using U = std::make_unsigned_t<T>;
@@ -50,12 +53,14 @@ namespace detail {
 
 }
 
+FLUX_EXPORT
 template <std::signed_integral T>
 struct overflow_result {
     T value;
     bool overflowed;
 };
 
+FLUX_EXPORT
 inline constexpr auto overflowing_add = []<std::signed_integral T>(T lhs, T rhs)
     -> overflow_result<T>
 {
@@ -69,6 +74,7 @@ inline constexpr auto overflowing_add = []<std::signed_integral T>(T lhs, T rhs)
     }
 };
 
+FLUX_EXPORT
 inline constexpr auto overflowing_sub = []<std::signed_integral T>(T lhs, T rhs)
     -> overflow_result<T>
 {
@@ -83,6 +89,7 @@ inline constexpr auto overflowing_sub = []<std::signed_integral T>(T lhs, T rhs)
     }
 };
 
+FLUX_EXPORT
 inline constexpr auto overflowing_mul = []<std::signed_integral T>(T lhs, T rhs)
     -> overflow_result<T>
 {
@@ -95,6 +102,7 @@ inline constexpr auto overflowing_mul = []<std::signed_integral T>(T lhs, T rhs)
     }
 };
 
+FLUX_EXPORT
 inline constexpr auto checked_add =
     []<std::signed_integral T>(T lhs, T rhs,
                                std::source_location loc = std::source_location::current())
@@ -117,6 +125,7 @@ inline constexpr auto checked_add =
     }
 };
 
+FLUX_EXPORT
 inline constexpr auto checked_sub =
     []<std::signed_integral T>(T lhs, T rhs,
                                std::source_location loc = std::source_location::current())
@@ -139,6 +148,7 @@ inline constexpr auto checked_sub =
   }
 };
 
+FLUX_EXPORT
 inline constexpr auto checked_mul =
     []<std::signed_integral T>(T lhs, T rhs,
                                std::source_location loc = std::source_location::current())

@@ -60,7 +60,7 @@ struct split_string_fn {
 
 } // namespace detail
 
-inline constexpr auto split_string = detail::split_string_fn{};
+FLUX_EXPORT inline constexpr auto split_string = detail::split_string_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::split_string(auto&& pattern) &&

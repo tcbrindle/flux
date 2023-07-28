@@ -126,7 +126,7 @@ struct scan_first_fn {
 
 } // namespace detail
 
-inline constexpr auto scan_first = detail::scan_first_fn{};
+FLUX_EXPORT inline constexpr auto scan_first = detail::scan_first_fn{};
 
 template <typename Derived>
 template <typename Func>

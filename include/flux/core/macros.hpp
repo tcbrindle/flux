@@ -27,4 +27,10 @@
               ::flux::inc(_flux_seq_, _flux_cur_))         \
             if (_flux_var_decl_ = ::flux::read_at(_flux_seq_, _flux_cur_); true)
 
+#ifdef FLUX_MODULE_INTERFACE
+#define FLUX_EXPORT export
+#else
+#define FLUX_EXPORT
+#endif
+
 #endif // FLUX_CORE_MACROS_HPP_INCLUDED

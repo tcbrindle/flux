@@ -557,10 +557,10 @@ struct set_intersection_fn {
 
 namespace flux {
 
-inline constexpr auto set_union = detail::set_union_fn{};
-inline constexpr auto set_difference = detail::set_difference_fn{};
-inline constexpr auto set_symmetric_difference = detail::set_symmetric_difference_fn{};
-inline constexpr auto set_intersection = detail::set_intersection_fn{};
+FLUX_EXPORT inline constexpr auto set_union = detail::set_union_fn{};
+FLUX_EXPORT inline constexpr auto set_difference = detail::set_difference_fn{};
+FLUX_EXPORT inline constexpr auto set_symmetric_difference = detail::set_symmetric_difference_fn{};
+FLUX_EXPORT inline constexpr auto set_intersection = detail::set_intersection_fn{};
 
 } // namespace flux
 

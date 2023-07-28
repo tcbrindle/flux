@@ -41,7 +41,7 @@ struct equal_fn {
 
 } // namespace detail
 
-inline constexpr auto equal = detail::equal_fn{};
+FLUX_EXPORT inline constexpr auto equal = detail::equal_fn{};
 
 } // namespace flux
 

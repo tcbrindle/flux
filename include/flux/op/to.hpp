@@ -117,6 +117,7 @@ using deduced_container_t = typename decltype(deduce_container_type<C, Seq, Args
 
 } // namespace detail
 
+FLUX_EXPORT
 template <typename Container, sequence Seq, typename... Args>
     requires (std::convertible_to<element_t<Seq>, detail::container_value_t<Container>> &&
                  detail::container_convertible<Container, Seq, Args...>) ||
@@ -147,6 +148,7 @@ constexpr auto to(Seq&& seq, Args&&... args) -> Container
     }
 }
 
+FLUX_EXPORT
 template <template <typename...> typename Container, sequence Seq, typename... Args>
     requires detail::can_deduce_container_type<Container, Seq, Args...> &&
              detail::container_convertible<

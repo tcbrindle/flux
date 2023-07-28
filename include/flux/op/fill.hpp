@@ -23,7 +23,7 @@ struct fill_fn {
 
 } // namespace detail
 
-inline constexpr auto fill = detail::fill_fn{};
+FLUX_EXPORT inline constexpr auto fill = detail::fill_fn{};
 
 template <typename D>
 template <typename Value>

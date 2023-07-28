@@ -186,8 +186,8 @@ struct ints_fn {
 
 } // namespace detail
 
-inline constexpr auto iota = detail::iota_fn{};
-inline constexpr auto ints = detail::ints_fn{};
+FLUX_EXPORT inline constexpr auto iota = detail::iota_fn{};
+FLUX_EXPORT inline constexpr auto ints = detail::ints_fn{};
 
 } // namespace flux
 

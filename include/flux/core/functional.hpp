@@ -13,6 +13,7 @@
 
 namespace flux {
 
+FLUX_EXPORT
 template <typename Fn, typename Proj = std::identity>
 struct proj {
     Fn fn;
@@ -38,6 +39,7 @@ struct proj {
 template <typename F, typename P = std::identity>
 proj(F, P = {}) -> proj<F, P>;
 
+FLUX_EXPORT
 template <typename Fn, typename Lhs = std::identity, typename Rhs = std::identity>
 struct proj2 {
     Fn fn;
@@ -120,7 +122,7 @@ struct unpack_fn {
 
 } // namespace detail
 
-inline constexpr auto unpack = detail::unpack_fn{};
+FLUX_EXPORT inline constexpr auto unpack = detail::unpack_fn{};
 
 namespace pred {
 
@@ -142,7 +144,7 @@ inline constexpr auto cmp = [](auto&& val) {
 } // namespace detail
 
 /// Given a predicate, returns a new predicate with the condition reversed
-inline constexpr auto not_ = [](auto&& pred) {
+FLUX_EXPORT inline constexpr auto not_ = [](auto&& pred) {
     return detail::predicate([p = FLUX_FWD(pred)] (auto const&... args) {
         return !std::invoke(p, FLUX_FWD(args)...);
     });
@@ -153,7 +155,7 @@ inline constexpr auto not_ = [](auto&& pred) {
 ///
 /// The returned predicate is short-circuiting: if the first predicate returns
 /// `false`, the second will not be evaluated.
-inline constexpr auto both = [](auto&& p, auto&& and_) {
+FLUX_EXPORT inline constexpr auto both = [](auto&& p, auto&& and_) {
     return detail::predicate{[p1 = FLUX_FWD(p), p2 = FLUX_FWD(and_)] (auto const&... args) {
         return std::invoke(p1, args...) && std::invoke(p2, args...);
     }};
@@ -164,7 +166,7 @@ inline constexpr auto both = [](auto&& p, auto&& and_) {
 ///
 /// The returned predicate is short-circuiting: if the first predicate returns
 /// `true`, the second will not be evaluated
-inline constexpr auto either = [](auto&& p, auto&& or_) {
+FLUX_EXPORT inline constexpr auto either = [](auto&& p, auto&& or_) {
      return detail::predicate{[p1 = FLUX_FWD(p), p2 = FLUX_FWD(or_)] (auto const&... args) {
         return std::invoke(p1, args...) || std::invoke(p2, args...);
      }};
@@ -197,55 +199,55 @@ constexpr auto operator||(detail::predicate<L> lhs, detail::predicate<R> rhs)
 ///
 /// The returned predicate is short-circuiting: if the first predicate returns
 /// `true`, the second will not be evaluated.
-inline constexpr auto neither = [](auto&& p1, auto&& nor) {
+FLUX_EXPORT inline constexpr auto neither = [](auto&& p1, auto&& nor) {
     return not_(either(FLUX_FWD(p1), FLUX_FWD(nor)));
 };
 
-inline constexpr auto eq = detail::cmp<std::ranges::equal_to>;
-inline constexpr auto neq = detail::cmp<std::ranges::not_equal_to>;
-inline constexpr auto lt = detail::cmp<std::ranges::less>;
-inline constexpr auto gt = detail::cmp<std::ranges::greater>;
-inline constexpr auto leq = detail::cmp<std::ranges::less_equal>;
-inline constexpr auto geq = detail::cmp<std::ranges::greater_equal>;
+FLUX_EXPORT inline constexpr auto eq = detail::cmp<std::ranges::equal_to>;
+FLUX_EXPORT inline constexpr auto neq = detail::cmp<std::ranges::not_equal_to>;
+FLUX_EXPORT inline constexpr auto lt = detail::cmp<std::ranges::less>;
+FLUX_EXPORT inline constexpr auto gt = detail::cmp<std::ranges::greater>;
+FLUX_EXPORT inline constexpr auto leq = detail::cmp<std::ranges::less_equal>;
+FLUX_EXPORT inline constexpr auto geq = detail::cmp<std::ranges::greater_equal>;
 
 /// A predicate which always returns true
-inline constexpr auto true_ = detail::predicate{[](auto const&...) -> bool { return true; }};
+FLUX_EXPORT inline constexpr auto true_ = detail::predicate{[](auto const&...) -> bool { return true; }};
 
 /// A predicate which always returns false
-inline constexpr auto false_ = detail::predicate{[](auto const&...) -> bool { return false; }};
+FLUX_EXPORT inline constexpr auto false_ = detail::predicate{[](auto const&...) -> bool { return false; }};
 
 /// Identity predicate, returns the boolean value given to it
-inline constexpr auto id = detail::predicate{[](bool b) -> bool { return b; }};
+FLUX_EXPORT inline constexpr auto id = detail::predicate{[](bool b) -> bool { return b; }};
 
 /// Returns true if the given value is greater than a zero of the same type.
-inline constexpr auto positive = detail::predicate{[](auto const& val) -> bool {
+FLUX_EXPORT inline constexpr auto positive = detail::predicate{[](auto const& val) -> bool {
     return val > decltype(val){0};
 }};
 
 /// Returns true if the given value is less than a zero of the same type.
-inline constexpr auto negative = detail::predicate{[](auto const& val) -> bool {
+FLUX_EXPORT inline constexpr auto negative = detail::predicate{[](auto const& val) -> bool {
     return val < decltype(val){0};
 }};
 
 /// Returns true if the given value is not equal to a zero of the same type.
-inline constexpr auto nonzero = detail::predicate{[](auto const& val) -> bool {
+FLUX_EXPORT inline constexpr auto nonzero = detail::predicate{[](auto const& val) -> bool {
     return val != decltype(val){0};
 }};
 
 /// Given a sequence of values, constructs a predicate which returns true
 /// if its argument compares equal to one of the values
-inline constexpr auto in = [](auto const&... vals)  requires (sizeof...(vals) > 0)
+FLUX_EXPORT inline constexpr auto in = [](auto const&... vals)  requires (sizeof...(vals) > 0)
 {
     return detail::predicate{[vals...](auto const& arg) -> bool {
         return ((arg == vals) || ...);
     }};
 };
 
-inline constexpr auto even = detail::predicate([](auto const& val) -> bool {
+FLUX_EXPORT inline constexpr auto even = detail::predicate([](auto const& val) -> bool {
     return val % decltype(val){2} == decltype(val){0};
 });
 
-inline constexpr auto odd = detail::predicate([](auto const& val) -> bool {
+FLUX_EXPORT inline constexpr auto odd = detail::predicate([](auto const& val) -> bool {
   return val % decltype(val){2} != decltype(val){0};
 });
 

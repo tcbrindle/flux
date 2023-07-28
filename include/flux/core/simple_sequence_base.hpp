@@ -10,6 +10,7 @@
 
 namespace flux {
 
+FLUX_EXPORT
 template <typename D>
 struct simple_sequence_base : inline_sequence_base<D> {};
 

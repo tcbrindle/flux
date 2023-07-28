@@ -46,8 +46,8 @@ struct from_fwd_ref_fn {
 
 } // namespace detail
 
-inline constexpr auto from = detail::from_fn{};
-inline constexpr auto from_fwd_ref = detail::from_fwd_ref_fn{};
+FLUX_EXPORT inline constexpr auto from = detail::from_fn{};
+FLUX_EXPORT inline constexpr auto from_fwd_ref = detail::from_fwd_ref_fn{};
 
 } // namespace flux
 

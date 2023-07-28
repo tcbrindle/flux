@@ -48,7 +48,7 @@ struct compare_fn {
 
 } // namespace detail
 
-inline constexpr auto compare = detail::compare_fn{};
+FLUX_EXPORT inline constexpr auto compare = detail::compare_fn{};
 
 } // namespace flux
 

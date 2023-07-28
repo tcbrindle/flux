@@ -33,7 +33,7 @@ struct for_each_while_fn {
 
 } // namespace detail
 
-inline constexpr auto for_each_while = detail::for_each_while_fn{};
+FLUX_EXPORT inline constexpr auto for_each_while = detail::for_each_while_fn{};
 
 template <typename Derived>
 template <typename Pred>

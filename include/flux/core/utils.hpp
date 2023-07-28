@@ -22,6 +22,7 @@ namespace flux {
 /*
  * Useful helpers
  */
+FLUX_EXPORT
 template <typename From, typename To>
 concept decays_to = std::same_as<std::remove_cvref_t<From>, To>;
 
@@ -40,7 +41,7 @@ struct copy_fn {
 
 } // namespace detail
 
-inline constexpr auto copy = detail::copy_fn{};
+FLUX_EXPORT inline constexpr auto copy = detail::copy_fn{};
 
 namespace detail {
 
@@ -65,6 +66,7 @@ struct checked_cast_fn {
 
 } // namespace detail
 
+FLUX_EXPORT
 template <std::integral To>
 inline constexpr auto checked_cast = detail::checked_cast_fn<To>{};
 

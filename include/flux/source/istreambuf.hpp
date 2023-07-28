@@ -76,6 +76,7 @@ public:
     }
 };
 
+FLUX_EXPORT
 inline constexpr auto from_istreambuf = detail::from_istreambuf_fn{};
 
 } // namespace flux

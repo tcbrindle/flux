@@ -27,7 +27,7 @@ struct contains_fn {
 
 } // namespace detail
 
-inline constexpr auto contains = detail::contains_fn{};
+FLUX_EXPORT inline constexpr auto contains = detail::contains_fn{};
 
 template <typename D>
 template <typename Value>

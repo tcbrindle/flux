@@ -153,7 +153,7 @@ struct mask_fn {
 
 } // namespace detail
 
-inline constexpr auto mask = detail::mask_fn{};
+FLUX_EXPORT inline constexpr auto mask = detail::mask_fn{};
 
 template <typename D>
 template <adaptable_sequence Mask>

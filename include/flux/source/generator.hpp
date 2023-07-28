@@ -13,6 +13,7 @@
 
 namespace flux {
 
+FLUX_EXPORT
 template <typename ElemT>
 struct generator : inline_sequence_base<generator<ElemT>> {
 

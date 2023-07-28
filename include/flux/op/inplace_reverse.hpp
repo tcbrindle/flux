@@ -30,7 +30,7 @@ struct inplace_reverse_fn {
 
 } // namespace detail
 
-inline constexpr auto inplace_reverse = detail::inplace_reverse_fn{};
+FLUX_EXPORT inline constexpr auto inplace_reverse = detail::inplace_reverse_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::inplace_reverse()
