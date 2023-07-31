@@ -128,7 +128,7 @@ private:
     static constexpr iota_traits traits{.has_start = true, .has_end = false};
 
 public:
-    constexpr explicit iota_sequence(T from)
+    inline constexpr explicit iota_sequence(T from)
         : start_(std::move(from))
     {}
 
@@ -144,7 +144,7 @@ struct bounded_iota_sequence : inline_sequence_base<bounded_iota_sequence<T>> {
     static constexpr iota_traits traits{.has_start = true, .has_end = true};
 
 public:
-    constexpr bounded_iota_sequence(T from, T to)
+    inline constexpr bounded_iota_sequence(T from, T to)
         : start_(std::move(from)),
           end_(std::move(to))
     {}
@@ -168,17 +168,17 @@ struct iota_fn {
 };
 
 struct ints_fn {
-    constexpr auto operator()() const
+    inline constexpr auto operator()() const
     {
         return basic_iota_sequence<distance_t>();
     }
 
-    constexpr auto operator()(distance_t from) const
+    inline constexpr auto operator()(distance_t from) const
     {
         return iota_sequence<distance_t>(from);
     }
 
-    constexpr auto operator()(distance_t from, distance_t to) const
+    inline constexpr auto operator()(distance_t from, distance_t to) const
     {
         return bounded_iota_sequence<distance_t>(from, to);
     }
