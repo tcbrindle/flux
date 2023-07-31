@@ -20,11 +20,6 @@ endif()
 
 target_include_directories(flux INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-
-if (MSVC)
-    target_compile_options(flux INTERFACE /permissive-)
-endif()
-
 set(CMAKE_CXX_EXTENSIONS Off)
 
 option(FLUX_BUILD_DOCS "Build Flux documentation (requires Sphinx)" Off)
@@ -32,6 +27,7 @@ option(FLUX_BUILD_EXAMPLES "Build Flux examples" On)
 option(FLUX_BUILD_TESTS "Build Flux tests" On)
 option(FLUX_BUILD_BENCHMARKS "Build Flux benchmarks" Off)
 option(FLUX_BUILD_TOOLS "Build single-header generator tool" Off)
+option(FLUX_BUILD_MODULE "Build C++20 module (experimental)" Off)
 option(FLUX_ENABLE_ASAN "Enable Address Sanitizer for tests" Off)
 option(FLUX_ENABLE_UBSAN "Enable Undefined Behaviour Sanitizer for tests" Off)
 
@@ -55,4 +51,8 @@ endif()
 
 if (${FLUX_BUILD_TOOLS})
     add_subdirectory(tools)
+endif()
+
+if (${FLUX_BUILD_MODULE})
+    add_subdirectory(module)
 endif()

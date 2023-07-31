@@ -105,5 +105,10 @@ if(MSVC)
     )
 endif()
 
+if(${FLUX_BUILD_MODULE})
+    add_executable(test-module-import test_module_import.cpp)
+    target_link_libraries(test-module-import PUBLIC flux-mod)
+endif()
+
 include(Catch)
 catch_discover_tests(test-libflux)
