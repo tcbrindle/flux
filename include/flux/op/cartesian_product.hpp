@@ -209,21 +209,6 @@ public:
     }
 };
 
-template <typename T, std::size_t I, typename Is>
-struct cartesian_product_tuple_drop_impl;
-
-template <typename T, std::size_t I, std::size_t... Js>
-struct cartesian_product_tuple_drop_impl<T, I, std::index_sequence<Js...>> {
-    using type = std::tuple<std::tuple_element_t<I + Js, T>...>;
-};
-
-template <typename T, std::size_t I>
-using cartesian_product_tuple_drop =
-    typename cartesian_product_tuple_drop_impl<T, I, std::make_index_sequence<std::tuple_size_v<T> - I>>::type;
-
-template <typename Self, std::size_t I>
-using cartesian_product_partial_cursor_t = cartesian_product_tuple_drop<cursor_t<Self>, I>;
-
 } // end namespace detail
 
 template <typename... Bases>
@@ -248,32 +233,28 @@ private:
 
     template <std::size_t I, typename Self, typename Function,
               typename... PartialElements>
-    static constexpr auto for_each_while_impl(Self& self,
+    static constexpr void for_each_while_impl(Self& self,
+                                              bool& keep_going,
+                                              cursor_t<Self>& cur,
                                               Function&& func,
                                               PartialElements&&... partial_elements)
-        -> std::tuple<bool, detail::cartesian_product_partial_cursor_t<Self, I>>
     {
         // We need to iterate right to left.
         if constexpr (I == sizeof...(Bases) - 1) {
-            bool keep_going = true;
-            auto this_current = flux::for_each_while(std::get<I>(self.bases_),
+            std::get<I>(cur) = flux::for_each_while(std::get<I>(self.bases_),
                 [&](auto&& elem) {
                     keep_going = std::invoke(func,
                         element_t<Self>(FLUX_FWD(partial_elements)..., FLUX_FWD(elem)));
                     return keep_going;
                 });
-            return std::tuple(keep_going, std::tuple(std::move(this_current)));
         } else {
-            bool keep_going = true;
-            detail::cartesian_product_partial_cursor_t<Self, I+1> nested_current;
-            auto this_current = flux::for_each_while(std::get<I>(self.bases_),
+            std::get<I>(cur) = flux::for_each_while(std::get<I>(self.bases_),
                 [&](auto&& elem) {
-                    std::tie(keep_going, nested_current) = for_each_while_impl<I+1>(
-                        self, func, FLUX_FWD(partial_elements)..., FLUX_FWD(elem));
+                    for_each_while_impl<I+1>(
+                        self, keep_going, cur,
+                        func, FLUX_FWD(partial_elements)..., FLUX_FWD(elem));
                     return keep_going;
                 });
-            return std::tuple(keep_going,
-                std::tuple_cat(std::tuple(std::move(this_current)), std::move(nested_current)));
         }
     }
 
@@ -308,7 +289,10 @@ public:
     static constexpr auto for_each_while(Self& self, Function&& func)
         -> cursor_t<Self>
     {
-        return std::get<1>(for_each_while_impl<0>(self, FLUX_FWD(func)));
+        bool keep_going = true;
+        cursor_t<Self> cur;
+        for_each_while_impl<0>(self, keep_going, cur, FLUX_FWD(func));
+        return cur;
     }
 };
 
