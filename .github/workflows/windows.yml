@@ -27,6 +27,7 @@ jobs:
       run: |
         cmake -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
               -DFLUX_BUILD_BENCHMARKS=${{matrix.build_type == 'Release'}} \
+              -DFLUX_BUILD_MODULE=On \
               -A ${{matrix.platform}} \
               $GITHUB_WORKSPACE
 
