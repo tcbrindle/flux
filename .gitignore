@@ -16,6 +16,7 @@ cmake-build*/
 # VS
 .vs/
 CMakeSettings.json
+CMakeUserPresets.json
 out/
 
 # conan
