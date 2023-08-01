@@ -18,7 +18,7 @@ namespace flux {
 
 FLUX_EXPORT
 struct unrecoverable_error : std::logic_error {
-    explicit unrecoverable_error(char const* msg) : std::logic_error(msg) {}
+    explicit inline unrecoverable_error(char const* msg) : std::logic_error(msg) {}
 };
 
 namespace detail {
@@ -50,7 +50,7 @@ FLUX_EXPORT inline constexpr auto runtime_error = detail::runtime_error_fn{};
 namespace detail {
 
 struct assert_fn {
-    constexpr void operator()(bool cond, char const* msg,
+    inline constexpr void operator()(bool cond, char const* msg,
                               std::source_location loc = std::source_location::current()) const
     {
         if (cond) {
@@ -62,7 +62,7 @@ struct assert_fn {
 };
 
 struct bounds_check_fn {
-    constexpr void operator()(bool cond, std::source_location loc = std::source_location::current()) const
+    inline constexpr void operator()(bool cond, std::source_location loc = std::source_location::current()) const
     {
         if (!std::is_constant_evaluated()) {
             assert_fn{}(cond, "out of bounds sequence access", std::move(loc));
