@@ -199,7 +199,7 @@ namespace flux {
 
 FLUX_EXPORT
 struct unrecoverable_error : std::logic_error {
-    explicit unrecoverable_error(char const* msg) : std::logic_error(msg) {}
+    explicit inline unrecoverable_error(char const* msg) : std::logic_error(msg) {}
 };
 
 namespace detail {
@@ -231,7 +231,7 @@ FLUX_EXPORT inline constexpr auto runtime_error = detail::runtime_error_fn{};
 namespace detail {
 
 struct assert_fn {
-    constexpr void operator()(bool cond, char const* msg,
+    inline constexpr void operator()(bool cond, char const* msg,
                               std::source_location loc = std::source_location::current()) const
     {
         if (cond) {
@@ -243,7 +243,7 @@ struct assert_fn {
 };
 
 struct bounds_check_fn {
-    constexpr void operator()(bool cond, std::source_location loc = std::source_location::current()) const
+    inline constexpr void operator()(bool cond, std::source_location loc = std::source_location::current()) const
     {
         if (!std::is_constant_evaluated()) {
             assert_fn{}(cond, "out of bounds sequence access", std::move(loc));
@@ -3985,7 +3985,7 @@ private:
     static constexpr iota_traits traits{.has_start = true, .has_end = false};
 
 public:
-    constexpr explicit iota_sequence(T from)
+    inline constexpr explicit iota_sequence(T from)
         : start_(std::move(from))
     {}
 
@@ -4001,7 +4001,7 @@ struct bounded_iota_sequence : inline_sequence_base<bounded_iota_sequence<T>> {
     static constexpr iota_traits traits{.has_start = true, .has_end = true};
 
 public:
-    constexpr bounded_iota_sequence(T from, T to)
+    inline constexpr bounded_iota_sequence(T from, T to)
         : start_(std::move(from)),
           end_(std::move(to))
     {}
@@ -4025,17 +4025,17 @@ struct iota_fn {
 };
 
 struct ints_fn {
-    constexpr auto operator()() const
+    inline constexpr auto operator()() const
     {
         return basic_iota_sequence<distance_t>();
     }
 
-    constexpr auto operator()(distance_t from) const
+    inline constexpr auto operator()(distance_t from) const
     {
         return iota_sequence<distance_t>(from);
     }
 
-    constexpr auto operator()(distance_t from, distance_t to) const
+    inline constexpr auto operator()(distance_t from, distance_t to) const
     {
         return bounded_iota_sequence<distance_t>(from, to);
     }
