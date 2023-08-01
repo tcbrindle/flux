@@ -1,0 +1,22 @@
+# Format Style Options - Created with Clang Power Tools
+---
+ColumnLimit: 80
+BasedOnStyle: Microsoft
+AccessModifierOffset: -4
+AlignAfterOpenBracket: DontAlign
+AlignOperands: DontAlign
+AllowShortFunctionsOnASingleLine: Empty
+AlwaysBreakTemplateDeclarations: Yes
+BraceWrapping: 
+  AfterEnum: false
+  AfterNamespace: false
+  AfterStruct: false
+  BeforeElse: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+BreakBeforeBraces: WebKit
+BreakConstructorInitializersBeforeComma: true
+DerivePointerAlignment: true
+FixNamespaceComments: false
+MaxEmptyLinesToKeep: 2
+...
