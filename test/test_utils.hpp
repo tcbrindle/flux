@@ -1,5 +1,7 @@
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Copyright (c) 2023 NVIDIA Corporation (reply-to: brycelelbach@gmail.com)
+//
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -9,7 +11,7 @@
 #include <flux/op/from.hpp>
 #include <flux/op/ref.hpp>
 
-#define STATIC_CHECK(...) if (!(__VA_ARGS__)) return false
+#define STATIC_CHECK(...) if (!(__VA_ARGS__)) throw false
 
 inline namespace test_utils {
 

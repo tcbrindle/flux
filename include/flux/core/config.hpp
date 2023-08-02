@@ -19,6 +19,9 @@
 #define FLUX_OVERFLOW_POLICY_WRAP    11
 #define FLUX_OVERFLOW_POLICY_IGNORE  12
 
+#define FLUX_DIVIDE_BY_ZERO_POLICY_ERROR   100
+#define FLUX_DIVIDE_BY_ZERO_POLICY_IGNORE  101
+
 // Default error policy is terminate
 #define FLUX_DEFAULT_ERROR_POLICY FLUX_ERROR_POLICY_TERMINATE
 
@@ -27,6 +30,13 @@
 #  define FLUX_DEFAULT_OVERFLOW_POLICY FLUX_OVERFLOW_POLICY_WRAP
 #else
 #  define FLUX_DEFAULT_OVERFLOW_POLICY FLUX_OVERFLOW_POLICY_ERROR
+#endif // NDEBUG
+
+// Default divide by zero policy is error in debug builds, ignore in release builds
+#ifdef NDEBUG
+#  define FLUX_DEFAULT_DIVIDE_BY_ZERO_POLICY FLUX_DIVIDE_BY_ZERO_POLICY_IGNORE
+#else
+#  define FLUX_DEFAULT_DIVIDE_BY_ZERO_POLICY FLUX_DIVIDE_BY_ZERO_POLICY_ERROR
 #endif // NDEBUG
 
 // Select which error policy to use
@@ -63,6 +73,15 @@
 #  define FLUX_OVERFLOW_POLICY FLUX_DEFAULT_OVERFLOW_POLICY
 #endif // FLUX_ERROR_ON_OVERFLOW
 
+// Select which overflow policy to use
+#if defined(FLUX_ERROR_ON_DIVIDE_BY_ZERO)
+#  define FLUX_DIVIDE_BY_ZERO_POLICY FLUX_DIVIDE_BY_ZERO_POLICY_ERROR
+#elif defined(FLUX_IGNORE_DIVIDE_BY_ZERO)
+#  define FLUX_DIVIDE_BY_ZERO_POLICY FLUX_DIVIDE_BY_ZERO_POLICY_IGNORE
+#else
+#  define FLUX_DIVIDE_BY_ZERO_POLICY FLUX_DEFAULT_DIVIDE_BY_ZERO_POLICY
+#endif // FLUX_ERROR_ON_DIVIDE_BY_ZERO
+
 // Default int_t is ptrdiff_t
 #define FLUX_DEFAULT_INT_TYPE std::ptrdiff_t
 
@@ -86,6 +105,11 @@ enum class overflow_policy {
     error = FLUX_OVERFLOW_POLICY_ERROR
 };
 
+enum class divide_by_zero_policy {
+    ignore = FLUX_DIVIDE_BY_ZERO_POLICY_IGNORE,
+    error = FLUX_DIVIDE_BY_ZERO_POLICY_ERROR
+};
+
 namespace config {
 
 FLUX_EXPORT
@@ -98,6 +122,9 @@ inline constexpr error_policy on_error = static_cast<error_policy>(FLUX_ERROR_PO
 
 FLUX_EXPORT
 inline constexpr overflow_policy on_overflow = static_cast<overflow_policy>(FLUX_OVERFLOW_POLICY);
+
+FLUX_EXPORT
+inline constexpr divide_by_zero_policy on_divide_by_zero = static_cast<divide_by_zero_policy>(FLUX_DIVIDE_BY_ZERO_POLICY);
 
 FLUX_EXPORT
 inline constexpr bool print_error_on_terminate = FLUX_PRINT_ERROR_ON_TERMINATE;

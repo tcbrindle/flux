@@ -171,6 +171,44 @@ inline constexpr auto checked_mul =
   }
 };
 
+inline constexpr auto checked_div =
+    []<std::signed_integral T>(T lhs, T rhs,
+                               std::source_location loc = std::source_location::current())
+    -> T
+{
+    if (std::is_constant_evaluated()) {
+        return lhs / rhs;
+    } else {
+        if constexpr (config::on_divide_by_zero == divide_by_zero_policy::ignore) {
+            return lhs / rhs;
+        } else {
+            if (rhs == 0) {
+                runtime_error("divide by zero", loc);
+            }
+            return lhs / rhs;
+        }
+    }
+};
+
+inline constexpr auto checked_mod =
+    []<std::signed_integral T>(T lhs, T rhs,
+                               std::source_location loc = std::source_location::current())
+    -> T
+{
+    if (std::is_constant_evaluated()) {
+        return lhs % rhs;
+    } else {
+        if constexpr (config::on_divide_by_zero == divide_by_zero_policy::ignore) {
+            return lhs % rhs;
+        } else {
+            if (rhs == 0) {
+                runtime_error("divide by zero", loc);
+            }
+            return lhs % rhs;
+        }
+    }
+};
+
 } // namespace flux::num
 
 #endif
