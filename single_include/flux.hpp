@@ -96,6 +96,9 @@
 #define FLUX_OVERFLOW_POLICY_WRAP    11
 #define FLUX_OVERFLOW_POLICY_IGNORE  12
 
+#define FLUX_DIVIDE_BY_ZERO_POLICY_ERROR   100
+#define FLUX_DIVIDE_BY_ZERO_POLICY_IGNORE  101
+
 // Default error policy is terminate
 #define FLUX_DEFAULT_ERROR_POLICY FLUX_ERROR_POLICY_TERMINATE
 
@@ -104,6 +107,13 @@
 #  define FLUX_DEFAULT_OVERFLOW_POLICY FLUX_OVERFLOW_POLICY_WRAP
 #else
 #  define FLUX_DEFAULT_OVERFLOW_POLICY FLUX_OVERFLOW_POLICY_ERROR
+#endif // NDEBUG
+
+// Default divide by zero policy is error in debug builds, ignore in release builds
+#ifdef NDEBUG
+#  define FLUX_DEFAULT_DIVIDE_BY_ZERO_POLICY FLUX_DIVIDE_BY_ZERO_POLICY_IGNORE
+#else
+#  define FLUX_DEFAULT_DIVIDE_BY_ZERO_POLICY FLUX_DIVIDE_BY_ZERO_POLICY_ERROR
 #endif // NDEBUG
 
 // Select which error policy to use
@@ -140,6 +150,15 @@
 #  define FLUX_OVERFLOW_POLICY FLUX_DEFAULT_OVERFLOW_POLICY
 #endif // FLUX_ERROR_ON_OVERFLOW
 
+// Select which overflow policy to use
+#if defined(FLUX_ERROR_ON_DIVIDE_BY_ZERO)
+#  define FLUX_DIVIDE_BY_ZERO_POLICY FLUX_DIVIDE_BY_ZERO_POLICY_ERROR
+#elif defined(FLUX_IGNORE_DIVIDE_BY_ZERO)
+#  define FLUX_DIVIDE_BY_ZERO_POLICY FLUX_DIVIDE_BY_ZERO_POLICY_IGNORE
+#else
+#  define FLUX_DIVIDE_BY_ZERO_POLICY FLUX_DEFAULT_DIVIDE_BY_ZERO_POLICY
+#endif // FLUX_ERROR_ON_DIVIDE_BY_ZERO
+
 // Default int_t is ptrdiff_t
 #define FLUX_DEFAULT_INT_TYPE std::ptrdiff_t
 
@@ -163,6 +182,11 @@ enum class overflow_policy {
     error = FLUX_OVERFLOW_POLICY_ERROR
 };
 
+enum class divide_by_zero_policy {
+    ignore = FLUX_DIVIDE_BY_ZERO_POLICY_IGNORE,
+    error = FLUX_DIVIDE_BY_ZERO_POLICY_ERROR
+};
+
 namespace config {
 
 FLUX_EXPORT
@@ -175,6 +199,9 @@ inline constexpr error_policy on_error = static_cast<error_policy>(FLUX_ERROR_PO
 
 FLUX_EXPORT
 inline constexpr overflow_policy on_overflow = static_cast<overflow_policy>(FLUX_OVERFLOW_POLICY);
+
+FLUX_EXPORT
+inline constexpr divide_by_zero_policy on_divide_by_zero = static_cast<divide_by_zero_policy>(FLUX_DIVIDE_BY_ZERO_POLICY);
 
 FLUX_EXPORT
 inline constexpr bool print_error_on_terminate = FLUX_PRINT_ERROR_ON_TERMINATE;
@@ -443,6 +470,44 @@ inline constexpr auto checked_mul =
           return res.value;
       }
   }
+};
+
+inline constexpr auto checked_div =
+    []<std::signed_integral T>(T lhs, T rhs,
+                               std::source_location loc = std::source_location::current())
+    -> T
+{
+    if (std::is_constant_evaluated()) {
+        return lhs / rhs;
+    } else {
+        if constexpr (config::on_divide_by_zero == divide_by_zero_policy::ignore) {
+            return lhs / rhs;
+        } else {
+            if (rhs == 0) {
+                runtime_error("divide by zero", loc);
+            }
+            return lhs / rhs;
+        }
+    }
+};
+
+inline constexpr auto checked_mod =
+    []<std::signed_integral T>(T lhs, T rhs,
+                               std::source_location loc = std::source_location::current())
+    -> T
+{
+    if (std::is_constant_evaluated()) {
+        return lhs % rhs;
+    } else {
+        if constexpr (config::on_divide_by_zero == divide_by_zero_policy::ignore) {
+            return lhs % rhs;
+        } else {
+            if (rhs == 0) {
+                runtime_error("divide by zero", loc);
+            }
+            return lhs % rhs;
+        }
+    }
 };
 
 } // namespace flux::num
@@ -4517,11 +4582,14 @@ constexpr auto inline_sequence_base<Derived>::cache_last() &&
 
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Copyright (c) 2023 NVIDIA Corporation (reply-to: brycelelbach@gmail.com)
+//
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #ifndef FLUX_OP_CARTESIAN_PRODUCT_HPP_INCLUDED
 #define FLUX_OP_CARTESIAN_PRODUCT_HPP_INCLUDED
+
 
 
 
@@ -4605,23 +4673,36 @@ private:
 
     template <std::size_t I, typename Self>
     static constexpr auto ra_inc_impl(Self& self, cursor_type<Self>& cur, distance_t offset)
-    -> cursor_type<Self>&
+        -> cursor_type<Self>&
     {
+        if (offset == 0)
+            return cur;
+
         auto& base = std::get<I>(self.bases_);
+        const auto this_index = flux::distance(base, flux::first(base), std::get<I>(cur));
+        auto new_index = num::checked_add(this_index, offset);
+        auto this_size = flux::size(base);
 
-        auto this_sz = flux::size(base);
-        auto this_offset = offset  % this_sz;
-        auto next_offset = offset/this_sz;
+        // If the new index overflows the maximum or underflows zero, calculate the carryover and fix it.
+        if (new_index < 0 || new_index >= this_size) {
+            offset = num::checked_div(new_index, this_size);
+            new_index = num::checked_mod(new_index, this_size);
 
-        // Adjust this cursor by the corrected offset
-        flux::inc(base, std::get<I>(cur), this_offset);
+            // Correct for negative index which may happen when underflowing.
+            if (new_index < 0) {
+                new_index = num::checked_add(new_index, this_size);
+                offset = num::checked_sub(offset, flux::distance_t(1));
+            }
 
-        // Call the next level down if necessary
-        if constexpr (I > 0) {
-            if (next_offset != 0) {
-                ra_inc_impl<I-1>(self, cur, next_offset);
+            // Call the next level down if necessary.
+            if constexpr (I > 0) {
+                if (offset != 0) {
+                    ra_inc_impl<I-1>(self, cur, offset);
+                }
             }
         }
+
+        flux::inc(base, std::get<I>(cur), num::checked_sub(new_index, this_index));
 
         return cur;
     }
@@ -4674,25 +4755,25 @@ public:
     }
 
     template <typename Self>
-    requires (bidirectional_sequence<const_like_t<Self, Bases>> && ...) &&
-             (bounded_sequence<const_like_t<Self, Bases>> && ...)
+        requires (bidirectional_sequence<const_like_t<Self, Bases>> && ...) &&
+                 (bounded_sequence<const_like_t<Self, Bases>> && ...)
     static constexpr auto dec(Self& self, cursor_type<Self>& cur) -> cursor_type<Self>&
     {
         return dec_impl<sizeof...(Bases) - 1>(self, cur);
     }
 
     template <typename Self>
-    requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
-             (sized_sequence<const_like_t<Self, Bases>> && ...)
+        requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
+                 (sized_sequence<const_like_t<Self, Bases>> && ...)
     static constexpr auto inc(Self& self, cursor_type<Self>& cur, distance_t offset)
-    -> cursor_type<Self>&
+        -> cursor_type<Self>&
     {
         return ra_inc_impl<sizeof...(Bases) - 1>(self, cur, offset);
     }
 
     template <typename Self>
-    requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
-             (sized_sequence<const_like_t<Self, Bases>> && ...)
+        requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
+                 (sized_sequence<const_like_t<Self, Bases>> && ...)
     static constexpr auto distance(Self& self,
                                    cursor_type<Self> const& from,
                                    cursor_type<Self> const& to) -> distance_t
@@ -4709,7 +4790,6 @@ public:
         }, self.bases_);
     }
 };
-
 
 } // end namespace detail
 
@@ -4731,6 +4811,33 @@ private:
         return [&]<std::size_t... N>(std::index_sequence<N...>) {
             return std::tuple<decltype(read1_<N>(fn, self, cur))...>(read1_<N>(fn, self, cur)...);
         }(std::index_sequence_for<Bases...>{});
+    }
+
+    template <std::size_t I, typename Self, typename Function,
+              typename... PartialElements>
+    static constexpr void for_each_while_impl(Self& self,
+                                              bool& keep_going,
+                                              cursor_t<Self>& cur,
+                                              Function&& func,
+                                              PartialElements&&... partial_elements)
+    {
+        // We need to iterate right to left.
+        if constexpr (I == sizeof...(Bases) - 1) {
+            std::get<I>(cur) = flux::for_each_while(std::get<I>(self.bases_),
+                [&](auto&& elem) {
+                    keep_going = std::invoke(func,
+                        element_t<Self>(FLUX_FWD(partial_elements)..., FLUX_FWD(elem)));
+                    return keep_going;
+                });
+        } else {
+            std::get<I>(cur) = flux::for_each_while(std::get<I>(self.bases_),
+                [&](auto&& elem) {
+                    for_each_while_impl<I+1>(
+                        self, keep_going, cur,
+                        func, FLUX_FWD(partial_elements)..., FLUX_FWD(elem));
+                    return keep_going;
+                });
+        }
     }
 
 public:
@@ -4758,6 +4865,16 @@ public:
     static constexpr auto move_at_unchecked(Self& self, cursor_t<Self> const& cur)
     {
         return read_(flux::move_at_unchecked, self, cur);
+    }
+
+    template <typename Self, typename Function>
+    static constexpr auto for_each_while(Self& self, Function&& func)
+        -> cursor_t<Self>
+    {
+        bool keep_going = true;
+        cursor_t<Self> cur;
+        for_each_while_impl<0>(self, keep_going, cur, FLUX_FWD(func));
+        return cur;
     }
 };
 
