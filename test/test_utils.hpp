@@ -11,7 +11,7 @@
 #include <flux/op/from.hpp>
 #include <flux/op/ref.hpp>
 
-#define STATIC_CHECK(...) if (!(__VA_ARGS__)) throw false
+#define STATIC_CHECK(...) if (!(__VA_ARGS__)) throw std::runtime_error("Test assertion failed")
 
 inline namespace test_utils {
 

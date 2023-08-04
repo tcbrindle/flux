@@ -35,6 +35,7 @@ add_executable(test-libflux
     test_fill.cpp
     test_filter.cpp
     test_find.cpp
+    test_find_min_max.cpp
     test_flatten.cpp
     test_for_each.cpp
     test_fold.cpp
