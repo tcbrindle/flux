@@ -2712,6 +2712,21 @@ public:
     [[nodiscard]]
     constexpr auto find_if_not(Pred pred);
 
+    template <typename Cmp = std::ranges::less>
+        requires strict_weak_order_for<Cmp, Derived>
+    [[nodiscard]]
+    constexpr auto find_max(Cmp cmp = Cmp{});
+
+    template <typename Cmp = std::ranges::less>
+        requires strict_weak_order_for<Cmp, Derived>
+    [[nodiscard]]
+    constexpr auto find_min(Cmp cmp = Cmp{});
+
+    template <typename Cmp = std::ranges::less>
+        requires strict_weak_order_for<Cmp, Derived>
+    [[nodiscard]]
+    constexpr auto find_minmax(Cmp cmp = Cmp{});
+
     template <typename D = Derived, typename Func, typename Init>
         requires foldable<Derived, Func, Init>
     [[nodiscard]]
@@ -7581,6 +7596,365 @@ constexpr auto inline_sequence_base<D>::find_if_not(Pred pred)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
+#ifndef FLUX_OP_FIND_MIN_MAX_HPP_INCLUDED
+#define FLUX_OP_FIND_MIN_MAX_HPP_INCLUDED
+
+
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_OP_MINMAX_HPP_INCLUDED
+#define FLUX_OP_MINMAX_HPP_INCLUDED
+
+
+
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_OP_FOLD_HPP_INCLUDED
+#define FLUX_OP_FOLD_HPP_INCLUDED
+
+
+
+namespace flux {
+
+namespace detail {
+
+template <typename Seq, typename Func, typename Init>
+using fold_result_t = std::decay_t<std::invoke_result_t<Func&, Init, element_t<Seq>>>;
+
+struct fold_op {
+    template <sequence Seq, typename Func, std::movable Init = value_t<Seq>,
+              typename R = fold_result_t<Seq, Func, Init>>
+        requires std::invocable<Func&,  Init, element_t<Seq>> &&
+                 std::invocable<Func&, R, element_t<Seq>> &&
+                 std::convertible_to<Init, R> &&
+                 std::assignable_from<Init&, std::invoke_result_t<Func&, R, element_t<Seq>>>
+    constexpr auto operator()(Seq&& seq, Func func, Init init = Init{}) const -> R
+    {
+        R init_ = R(std::move(init));
+        flux::for_each_while(seq, [&func, &init_](auto&& elem) {
+            init_ = std::invoke(func, std::move(init_), FLUX_FWD(elem));
+            return true;
+        });
+        return init_;
+    }
+};
+
+struct fold_first_op {
+    template <sequence Seq, typename Func, typename V = value_t<Seq>>
+        requires std::invocable<Func&, V, element_t<Seq>> &&
+                 std::assignable_from<value_t<Seq>&, std::invoke_result_t<Func&, V&&, element_t<Seq>>>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq, Func func) const -> flux::optional<V>
+    {
+        auto cur = flux::first(seq);
+
+        if (flux::is_last(seq, cur)) {
+            return std::nullopt;
+        }
+
+        V init(flux::read_at(seq, cur));
+        flux::inc(seq, cur);
+
+        while (!flux::is_last(seq, cur)) {
+            init = std::invoke(func, std::move(init), flux::read_at(seq, cur));
+            flux::inc(seq, cur);
+        }
+
+        return flux::optional<V>(std::in_place, std::move(init));
+    }
+};
+
+struct sum_op {
+    template <sequence Seq>
+        requires std::default_initializable<value_t<Seq>> &&
+                 std::invocable<fold_op, Seq, std::plus<>>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq) const -> value_t<Seq>
+    {
+        return fold_op{}(FLUX_FWD(seq), std::plus<>{}, value_t<Seq>(0));
+    }
+};
+
+struct product_op {
+    template <sequence Seq>
+        requires std::invocable<fold_op, Seq, std::multiplies<>> &&
+                 requires { value_t<Seq>(1); }
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq) const -> value_t<Seq>
+    {
+        return fold_op{}(FLUX_FWD(seq), std::multiplies<>{}, value_t<Seq>(1));
+    }
+};
+
+} // namespace detail
+
+FLUX_EXPORT inline constexpr auto fold = detail::fold_op{};
+FLUX_EXPORT inline constexpr auto fold_first = detail::fold_first_op{};
+FLUX_EXPORT inline constexpr auto sum = detail::sum_op{};
+FLUX_EXPORT inline constexpr auto product = detail::product_op{};
+
+template <typename Derived>
+template <typename D, typename Func, typename Init>
+    requires foldable<Derived, Func, Init>
+[[nodiscard]]
+constexpr auto inline_sequence_base<Derived>::fold(Func func, Init init) -> fold_result_t<D, Func, Init>
+{
+    return flux::fold(derived(), std::move(func), std::move(init));
+}
+
+template <typename Derived>
+template <typename D, typename Func>
+    requires std::invocable<Func&, value_t<D>, element_t<D>> &&
+             std::assignable_from<value_t<D>&, std::invoke_result_t<Func&, value_t<D>, element_t<D>>>
+constexpr auto inline_sequence_base<Derived>::fold_first(Func func)
+{
+    return flux::fold_first(derived(), std::move(func));
+}
+
+template <typename D>
+constexpr auto inline_sequence_base<D>::sum()
+    requires foldable<D, std::plus<>, value_t<D>> &&
+             std::default_initializable<value_t<D>>
+{
+    return flux::sum(derived());
+}
+
+template <typename D>
+constexpr auto inline_sequence_base<D>::product()
+    requires foldable<D, std::multiplies<>, value_t<D>> &&
+             requires { value_t<D>(1); }
+{
+    return flux::product(derived());
+}
+
+} // namespace flux
+
+#endif // FLUX_OP_FOLD_HPP_INCLUDED
+
+
+
+namespace flux {
+
+FLUX_EXPORT
+template <typename T>
+struct minmax_result {
+    T min;
+    T max;
+};
+
+namespace detail {
+
+struct min_op {
+    template <sequence Seq, strict_weak_order_for<Seq> Cmp = std::ranges::less>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
+        -> flux::optional<value_t<Seq>>
+    {
+        return flux::fold_first(FLUX_FWD(seq), [&](auto min, auto&& elem) -> value_t<Seq> {
+            if (std::invoke(cmp, elem, min)) {
+                return value_t<Seq>(FLUX_FWD(elem));
+            } else {
+                return min;
+            }
+        });
+    }
+};
+
+struct max_op {
+    template <sequence Seq, strict_weak_order_for<Seq> Cmp = std::ranges::less>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
+        -> flux::optional<value_t<Seq>>
+    {
+        return flux::fold_first(FLUX_FWD(seq), [&](auto max, auto&& elem) -> value_t<Seq> {
+            if (!std::invoke(cmp, elem, max)) {
+                return value_t<Seq>(FLUX_FWD(elem));
+            } else {
+                return max;
+            }
+        });
+    }
+};
+
+struct minmax_op {
+    template <sequence Seq, strict_weak_order_for<Seq> Cmp = std::ranges::less>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
+        -> flux::optional<minmax_result<value_t<Seq>>>
+    {
+        using R = minmax_result<value_t<Seq>>;
+
+        auto cur = flux::first(seq);
+        if (flux::is_last(seq, cur)) {
+            return std::nullopt;
+        }
+
+        R init = R{value_t<Seq>(flux::read_at(seq, cur)),
+                   value_t<Seq>(flux::read_at(seq, cur))};
+
+        auto fold_fn = [&](R mm, auto&& elem) -> R {
+            if (std::invoke(cmp, elem, mm.min)) {
+                mm.min = value_t<Seq>(elem);
+            }
+            if (!std::invoke(cmp, elem, mm.max)) {
+                mm.max = value_t<Seq>(FLUX_FWD(elem));
+            }
+            return mm;
+        };
+
+        return flux::optional<R>(std::in_place,
+                                flux::fold(flux::slice(seq, std::move(cur), flux::last), fold_fn, std::move(init)));
+    }
+};
+
+} // namespace detail
+
+FLUX_EXPORT inline constexpr auto min = detail::min_op{};
+FLUX_EXPORT inline constexpr auto max = detail::max_op{};
+FLUX_EXPORT inline constexpr auto minmax = detail::minmax_op{};
+
+template <typename Derived>
+template <typename Cmp>
+    requires strict_weak_order_for<Cmp, Derived>
+constexpr auto inline_sequence_base<Derived>::max(Cmp cmp)
+{
+    return flux::max(derived(), std::move(cmp));
+}
+
+template <typename Derived>
+template <typename Cmp>
+    requires strict_weak_order_for<Cmp, Derived>
+constexpr auto inline_sequence_base<Derived>::min(Cmp cmp)
+{
+    return flux::min(derived(), std::move(cmp));
+}
+
+template <typename Derived>
+template <typename Cmp>
+    requires strict_weak_order_for<Cmp, Derived>
+constexpr auto inline_sequence_base<Derived>::minmax(Cmp cmp)
+{
+    return flux::minmax(derived(), std::move(cmp));
+}
+
+} // namespace flux
+
+#endif // FLUX_OP_MINMAX_HPP_INCLUDED
+
+
+namespace flux {
+
+namespace detail {
+
+struct find_min_fn {
+    template <multipass_sequence Seq,
+              strict_weak_order_for<Seq> Cmp = std::ranges::less>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq, Cmp cmp = {}) const -> cursor_t<Seq>
+    {
+        auto min = first(seq);
+        if (!is_last(seq, min)) {
+            for (auto cur = next(seq, min); !is_last(seq, cur); inc(seq, cur)) {
+                if (std::invoke(cmp, read_at(seq, cur), read_at(seq, min))) {
+                    min = cur;
+                }
+            }
+        }
+
+        return min;
+    }
+};
+
+struct find_max_fn {
+    template <multipass_sequence Seq,
+              strict_weak_order_for<Seq> Cmp = std::ranges::less>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq, Cmp cmp = {}) const -> cursor_t<Seq>
+    {
+        auto max = first(seq);
+        if (!is_last(seq, max)) {
+            for (auto cur = next(seq, max); !is_last(seq, cur); inc(seq, cur)) {
+                if (!std::invoke(cmp, read_at(seq, cur), read_at(seq, max))) {
+                    max = cur;
+                }
+            }
+        }
+
+        return max;
+    }
+};
+
+struct find_minmax_fn {
+    template <multipass_sequence Seq,
+              strict_weak_order_for<Seq> Cmp = std::ranges::less>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq, Cmp cmp = {}) const
+        -> minmax_result<cursor_t<Seq>>
+    {
+        auto min = first(seq);
+        auto max = min;
+        if (!is_last(seq, min)) {
+            for (auto cur = next(seq, min); !is_last(seq, cur); inc(seq, cur)) {
+                auto&& elem = read_at(seq, cur);
+
+                if (std::invoke(cmp, elem, read_at(seq, min))) {
+                    min = cur;
+                }
+                if (!std::invoke(cmp, elem, read_at(seq, max))) {
+                    max = cur;
+                }
+            }
+        }
+
+        return {std::move(min), std::move(max)};
+    }
+};
+
+} // namespace detail
+
+FLUX_EXPORT inline constexpr auto find_min = detail::find_min_fn{};
+FLUX_EXPORT inline constexpr auto find_max = detail::find_max_fn{};
+FLUX_EXPORT inline constexpr auto find_minmax = detail::find_minmax_fn{};
+
+template <typename D>
+template <typename Cmp>
+    requires strict_weak_order_for<Cmp, D>
+constexpr auto inline_sequence_base<D>::find_min(Cmp cmp)
+{
+    return flux::find_min(derived(), std::move(cmp));
+}
+
+template <typename D>
+template <typename Cmp>
+    requires strict_weak_order_for<Cmp, D>
+constexpr auto inline_sequence_base<D>::find_max(Cmp cmp)
+{
+    return flux::find_max(derived(), std::move(cmp));
+}
+
+template <typename D>
+template <typename Cmp>
+    requires strict_weak_order_for<Cmp, D>
+constexpr auto inline_sequence_base<D>::find_minmax(Cmp cmp)
+{
+    return flux::find_minmax(derived(), std::move(cmp));
+}
+
+} // namespace flux
+
+#endif // FLUX_OP_FIND_MIN_MAX_HPP_INCLUDED
+
+
+// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
 #ifndef FLUX_OP_FLATTEN_HPP_INCLUDED
 #define FLUX_OP_FLATTEN_HPP_INCLUDED
 
@@ -7829,132 +8203,6 @@ constexpr auto inline_sequence_base<Derived>::flatten() &&
 
 #endif // FLUX_OP_FLATTEN_HPP_INCLUDED
 
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_FOLD_HPP_INCLUDED
-#define FLUX_OP_FOLD_HPP_INCLUDED
-
-
-
-namespace flux {
-
-namespace detail {
-
-template <typename Seq, typename Func, typename Init>
-using fold_result_t = std::decay_t<std::invoke_result_t<Func&, Init, element_t<Seq>>>;
-
-struct fold_op {
-    template <sequence Seq, typename Func, std::movable Init = value_t<Seq>,
-              typename R = fold_result_t<Seq, Func, Init>>
-        requires std::invocable<Func&,  Init, element_t<Seq>> &&
-                 std::invocable<Func&, R, element_t<Seq>> &&
-                 std::convertible_to<Init, R> &&
-                 std::assignable_from<Init&, std::invoke_result_t<Func&, R, element_t<Seq>>>
-    constexpr auto operator()(Seq&& seq, Func func, Init init = Init{}) const -> R
-    {
-        R init_ = R(std::move(init));
-        flux::for_each_while(seq, [&func, &init_](auto&& elem) {
-            init_ = std::invoke(func, std::move(init_), FLUX_FWD(elem));
-            return true;
-        });
-        return init_;
-    }
-};
-
-struct fold_first_op {
-    template <sequence Seq, typename Func, typename V = value_t<Seq>>
-        requires std::invocable<Func&, V, element_t<Seq>> &&
-                 std::assignable_from<value_t<Seq>&, std::invoke_result_t<Func&, V&&, element_t<Seq>>>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Func func) const -> flux::optional<V>
-    {
-        auto cur = flux::first(seq);
-
-        if (flux::is_last(seq, cur)) {
-            return std::nullopt;
-        }
-
-        V init(flux::read_at(seq, cur));
-        flux::inc(seq, cur);
-
-        while (!flux::is_last(seq, cur)) {
-            init = std::invoke(func, std::move(init), flux::read_at(seq, cur));
-            flux::inc(seq, cur);
-        }
-
-        return flux::optional<V>(std::in_place, std::move(init));
-    }
-};
-
-struct sum_op {
-    template <sequence Seq>
-        requires std::default_initializable<value_t<Seq>> &&
-                 std::invocable<fold_op, Seq, std::plus<>>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const -> value_t<Seq>
-    {
-        return fold_op{}(FLUX_FWD(seq), std::plus<>{}, value_t<Seq>(0));
-    }
-};
-
-struct product_op {
-    template <sequence Seq>
-        requires std::invocable<fold_op, Seq, std::multiplies<>> &&
-                 requires { value_t<Seq>(1); }
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const -> value_t<Seq>
-    {
-        return fold_op{}(FLUX_FWD(seq), std::multiplies<>{}, value_t<Seq>(1));
-    }
-};
-
-} // namespace detail
-
-FLUX_EXPORT inline constexpr auto fold = detail::fold_op{};
-FLUX_EXPORT inline constexpr auto fold_first = detail::fold_first_op{};
-FLUX_EXPORT inline constexpr auto sum = detail::sum_op{};
-FLUX_EXPORT inline constexpr auto product = detail::product_op{};
-
-template <typename Derived>
-template <typename D, typename Func, typename Init>
-    requires foldable<Derived, Func, Init>
-[[nodiscard]]
-constexpr auto inline_sequence_base<Derived>::fold(Func func, Init init) -> fold_result_t<D, Func, Init>
-{
-    return flux::fold(derived(), std::move(func), std::move(init));
-}
-
-template <typename Derived>
-template <typename D, typename Func>
-    requires std::invocable<Func&, value_t<D>, element_t<D>> &&
-             std::assignable_from<value_t<D>&, std::invoke_result_t<Func&, value_t<D>, element_t<D>>>
-constexpr auto inline_sequence_base<Derived>::fold_first(Func func)
-{
-    return flux::fold_first(derived(), std::move(func));
-}
-
-template <typename D>
-constexpr auto inline_sequence_base<D>::sum()
-    requires foldable<D, std::plus<>, value_t<D>> &&
-             std::default_initializable<value_t<D>>
-{
-    return flux::sum(derived());
-}
-
-template <typename D>
-constexpr auto inline_sequence_base<D>::product()
-    requires foldable<D, std::multiplies<>, value_t<D>> &&
-             requires { value_t<D>(1); }
-{
-    return flux::product(derived());
-}
-
-} // namespace flux
-
-#endif // FLUX_OP_FOLD_HPP_INCLUDED
 
 
 
@@ -8262,125 +8510,6 @@ constexpr auto inline_sequence_base<D>::mask(Mask&& mask_) &&
 
 #endif // FLUX_OP_MASK_HPP_INCLUDED
 
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_MINMAX_HPP_INCLUDED
-#define FLUX_OP_MINMAX_HPP_INCLUDED
-
-
-
-
-
-namespace flux {
-
-FLUX_EXPORT
-template <typename T>
-struct minmax_result {
-    T min;
-    T max;
-};
-
-namespace detail {
-
-struct min_op {
-    template <sequence Seq, strict_weak_order_for<Seq> Cmp = std::ranges::less>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
-        -> flux::optional<value_t<Seq>>
-    {
-        return flux::fold_first(FLUX_FWD(seq), [&](auto min, auto&& elem) -> value_t<Seq> {
-            if (std::invoke(cmp, elem, min)) {
-                return value_t<Seq>(FLUX_FWD(elem));
-            } else {
-                return min;
-            }
-        });
-    }
-};
-
-struct max_op {
-    template <sequence Seq, strict_weak_order_for<Seq> Cmp = std::ranges::less>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
-        -> flux::optional<value_t<Seq>>
-    {
-        return flux::fold_first(FLUX_FWD(seq), [&](auto max, auto&& elem) -> value_t<Seq> {
-            if (!std::invoke(cmp, elem, max)) {
-                return value_t<Seq>(FLUX_FWD(elem));
-            } else {
-                return max;
-            }
-        });
-    }
-};
-
-struct minmax_op {
-    template <sequence Seq, strict_weak_order_for<Seq> Cmp = std::ranges::less>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
-        -> flux::optional<minmax_result<value_t<Seq>>>
-    {
-        using R = minmax_result<value_t<Seq>>;
-
-        auto cur = flux::first(seq);
-        if (flux::is_last(seq, cur)) {
-            return std::nullopt;
-        }
-
-        R init = R{value_t<Seq>(flux::read_at(seq, cur)),
-                   value_t<Seq>(flux::read_at(seq, cur))};
-
-        auto fold_fn = [&](R mm, auto&& elem) -> R {
-            if (std::invoke(cmp, elem, mm.min)) {
-                mm.min = value_t<Seq>(elem);
-            }
-            if (!std::invoke(cmp, elem, mm.max)) {
-                mm.max = value_t<Seq>(FLUX_FWD(elem));
-            }
-            return mm;
-        };
-
-        return flux::optional<R>(std::in_place,
-                                flux::fold(flux::slice(seq, std::move(cur), flux::last), fold_fn, std::move(init)));
-    }
-};
-
-} // namespace detail
-
-FLUX_EXPORT inline constexpr auto min = detail::min_op{};
-FLUX_EXPORT inline constexpr auto max = detail::max_op{};
-FLUX_EXPORT inline constexpr auto minmax = detail::minmax_op{};
-
-template <typename Derived>
-template <typename Cmp>
-    requires strict_weak_order_for<Cmp, Derived>
-constexpr auto inline_sequence_base<Derived>::max(Cmp cmp)
-{
-    return flux::max(derived(), std::move(cmp));
-}
-
-template <typename Derived>
-template <typename Cmp>
-    requires strict_weak_order_for<Cmp, Derived>
-constexpr auto inline_sequence_base<Derived>::min(Cmp cmp)
-{
-    return flux::min(derived(), std::move(cmp));
-}
-
-template <typename Derived>
-template <typename Cmp>
-    requires strict_weak_order_for<Cmp, Derived>
-constexpr auto inline_sequence_base<Derived>::minmax(Cmp cmp)
-{
-    return flux::minmax(derived(), std::move(cmp));
-}
-
-} // namespace flux
-
-#endif // FLUX_OP_MINMAX_HPP_INCLUDED
 
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
