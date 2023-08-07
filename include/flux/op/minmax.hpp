@@ -8,6 +8,7 @@
 
 #include <flux/core.hpp>
 
+#include <flux/op/fold.hpp>
 #include <flux/op/slice.hpp>
 
 namespace flux {

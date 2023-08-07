@@ -345,6 +345,102 @@ Algorithms
         requires std::predicate<Pred&, element_t<Seq>> \
     auto find_if_not(Seq&& seq, Pred pred) -> cursor_t<Seq>;
 
+``find_max``
+------------
+
+..  function::
+    template <multipass_sequence Seq, strict_weak_order_for<Seq> Cmp = std::ranges::less> \
+    auto find_max(Seq&& seq, Cmp cmp = {}) -> cursor_t<Seq>;
+
+    Returns a cursor to the maximum element of :var:`seq`, compared using :var:`cmp`.
+
+    If several elements are equally maximal, :func:`find_max` returns a cursor to the **last** such element.
+
+    ..  note:: This behaviour differs from :func:`std::max_element()`, which returns an iterator to the *first* maximal element.
+
+    :param seq: A multipass sequence
+    :param cmp: A comparator to use to find the maximum element, defaulting to :type:`std::ranges::less`
+
+    :returns: A cursor pointing to the maximum element of :var:`seq`.
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/find_max.cpp
+        :language: cpp
+        :linenos:
+        :dedent:
+        :lines: 10-31
+
+    :see also:
+      * `std::ranges::max_element() <https://en.cppreference.com/w/cpp/algorithm/ranges/max_element>`_
+      * :func:`flux::max`
+      * :func:`flux::find_minmax`
+
+``find_min``
+------------
+
+..  function::
+    template <multipass_sequence Seq, strict_weak_order_for<Seq> Cmp = std::ranges::less> \
+    auto find_min(Seq&& seq, Cmp cmp = {}) -> cursor_t<Seq>;
+
+    Returns a cursor to the minimum element of :var:`seq`, compared using :var:`cmp`.
+
+    If several elements are equally minimal, :func:`find_min` returns a cursor to the **first** such element.
+
+    :param seq: A multipass sequence
+    :param cmp: A comparator to use to find the minimum element, defaulting to :type:`std::ranges::less`
+
+    :returns: A cursor pointing to the minimum element of :var:`seq`.
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/find_min.cpp
+        :language: cpp
+        :linenos:
+        :dedent:
+        :lines: 10-31
+
+    :see also:
+      * `std::ranges::min_element() <https://en.cppreference.com/w/cpp/algorithm/ranges/min_element>`_
+      * :func:`flux::min`
+      * :func:`flux::minmax`
+
+``find_minmax``
+---------------
+
+..  function::
+    template <multipass_sequence Seq, strict_weak_order_for<Seq> Cmp = std::ranges::less> \
+    auto find_minmax(Seq&& seq, Cmp cmp = {}) -> minmax_result<cursor_t<Seq>>;
+
+    Returns a pair of cursors to the minimum and maximum elements of :var:`seq`, compared using :var:`cmp`.
+
+    If several elements are equally minimal, :func:`find_minmax` returns a cursor to the first. If several elements are equally maximal, :func:`find_minmax` returns a cursor to the last.
+
+    Equivalent to::
+
+        minmax_element<cursor_t<Seq>>{.min = find_min(seq, cmp),
+                                      .max = find_max(seq, cmp)};
+
+    but only does a single pass over :var:`seq`.
+
+    :param seq: A multipass sequence
+    :param cmp: A comparator to use to find the maximum element, defaulting to :type:`std::ranges::less`
+
+    :returns: A cursor pointing to the maximum element of :var:`seq`.
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/find_minmax.cpp
+        :language: cpp
+        :linenos:
+        :dedent:
+        :lines: 10-33
+
+    :see also:
+      * `std::ranges::minmax_element() <https://en.cppreference.com/w/cpp/algorithm/ranges/minmax_element>`_
+      * :func:`flux::minmax`
+
+
 ``fold``
 --------
 
@@ -408,7 +504,7 @@ Algorithms
 ``minmax``
 ----------
 
-..  struct:: template <sequence Seq> minmax_result;
+..  struct:: template <typename T> minmax_result;
 
 ..  function::
     template <sequence Seq, typename Cmp = std::ranges::less> \

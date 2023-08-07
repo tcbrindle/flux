@@ -388,6 +388,21 @@ public:
     [[nodiscard]]
     constexpr auto find_if_not(Pred pred);
 
+    template <typename Cmp = std::ranges::less>
+        requires strict_weak_order_for<Cmp, Derived>
+    [[nodiscard]]
+    constexpr auto find_max(Cmp cmp = Cmp{});
+
+    template <typename Cmp = std::ranges::less>
+        requires strict_weak_order_for<Cmp, Derived>
+    [[nodiscard]]
+    constexpr auto find_min(Cmp cmp = Cmp{});
+
+    template <typename Cmp = std::ranges::less>
+        requires strict_weak_order_for<Cmp, Derived>
+    [[nodiscard]]
+    constexpr auto find_minmax(Cmp cmp = Cmp{});
+
     template <typename D = Derived, typename Func, typename Init>
         requires foldable<Derived, Func, Init>
     [[nodiscard]]
