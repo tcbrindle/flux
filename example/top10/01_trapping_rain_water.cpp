@@ -15,28 +15,10 @@
 
 #include <algorithm>
 
-/* This is a rough version of `std::max_element`, returning a cursor pointing to
- * the maximum element, which we don't have in the main library yet */
-auto const find_max = [](flux::multipass_sequence auto&& seq)
-{
-    auto max = flux::first(seq);
-    if (flux::is_last(seq, max)) {
-        return max;
-    }
-
-    for (auto cur = flux::next(seq, max); !flux::is_last(seq, cur); flux::inc(seq, cur)) {
-        if (flux::read_at(seq, cur) > flux::read_at(seq, max)) {
-            max = cur;
-        }
-    }
-
-    return max;
-};
-
 auto const rain_water = [](std::initializer_list<int> heights)
 {
     // Find the index of the maximum height
-    flux::cursor auto max_idx = find_max(heights);
+    flux::cursor auto max_idx = flux::find_max(heights);
 
     // Split the input sequence into two at the max position
     auto left = flux::slice(heights, flux::first(heights), max_idx);
@@ -46,7 +28,7 @@ auto const rain_water = [](std::initializer_list<int> heights)
     // difference between each element and the maximum seen up to that point
     auto trapped = [](flux::sequence auto seq) {
         return flux::zip(flux::scan(seq, std::ranges::max), seq)
-                .map([](auto p) { return p.first - p.second; })
+                .map(flux::unpack(std::minus{}))
                 .sum();
     };
 
@@ -58,6 +40,4 @@ auto const rain_water = [](std::initializer_list<int> heights)
 static_assert(rain_water({0,1,0,2,1,0,1,3,2,1,2,1}) == 6);
 static_assert(rain_water({4,2,0,3,2,5}) == 9);
 
-int main() {
-    rain_water({0,1,0,2,1,0,1,3,2,1,2,1});
-}
+int main() {}
