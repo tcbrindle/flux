@@ -2270,6 +2270,39 @@ FLUX_EXPORT inline constexpr auto odd = detail::predicate([](auto const& val) ->
 
 } // namespace pred
 
+namespace cmp {
+
+namespace detail {
+
+struct min_fn {
+    template <typename T, typename U, typename Cmp = std::ranges::less>
+        requires std::strict_weak_order<Cmp&, T&, U&>
+    [[nodiscard]]
+    constexpr auto operator()(T&& t, U&& u, Cmp cmp = Cmp{}) const
+        -> std::common_reference_t<T, U>
+    {
+        return std::invoke(cmp, u, t) ? FLUX_FWD(u) : FLUX_FWD(t);
+    }
+};
+
+struct max_fn {
+    template <typename T, typename U, typename Cmp = std::ranges::less>
+        requires std::strict_weak_order<Cmp&, T&, U&>
+    [[nodiscard]]
+    constexpr auto operator()(T&& t, U&& u, Cmp cmp = Cmp{}) const
+        -> std::common_reference_t<T, U>
+    {
+        return !std::invoke(cmp, u, t) ? FLUX_FWD(u) : FLUX_FWD(t);
+    }
+};
+
+} // namespace detail
+
+FLUX_EXPORT inline constexpr auto min = detail::min_fn{};
+FLUX_EXPORT inline constexpr auto max = detail::max_fn{};
+
+} // namespace cmp
+
 } // namespace flux
 
 #endif
