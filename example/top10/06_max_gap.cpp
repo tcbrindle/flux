@@ -14,6 +14,8 @@
 
 #include <flux.hpp>
 
+#include <cassert>
+
 namespace {
 
 // std::abs is not constexpr in C++20
@@ -28,9 +30,10 @@ auto const max_gap = [](std::vector<int> nums)
             .value_or(0);
 };
 
-static_assert(max_gap({3, 6, 9, 1}) == 3);
-static_assert(max_gap({10}) == 0);
-
 }
 
-int main() {}
+int main()
+{
+    assert(max_gap({3, 6, 9, 1}) == 3);
+    assert(max_gap({10}) == 0);
+}
