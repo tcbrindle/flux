@@ -45,12 +45,13 @@ public:
             }
         }
 
-        constexpr bool can_memcmp = contiguous_sequence<Seq1> &&
-            contiguous_sequence<Seq2> && sized_sequence<Seq1> &&
-            sized_sequence<Seq2> &&
-            std::is_trivially_copyable_v<value_t<Seq1>> &&
-            std::is_trivially_copyable_v<value_t<Seq2>> &&
-            std::same_as<value_t<Seq1>, value_t<Seq2>>;
+        constexpr bool can_memcmp = 
+            std::same_as<Cmp, std::ranges::equal_to> &&
+            contiguous_sequence<Seq1> && contiguous_sequence<Seq2> &&
+            sized_sequence<Seq1> && sized_sequence<Seq2> &&
+            std::same_as<value_t<Seq1>, value_t<Seq2>> &&
+            (std::integral<value_t<Seq1>> || std::is_pointer_v<value_t<Seq1>>) &&
+            std::has_unique_object_representations_v<value_t<Seq1>>;
 
         if constexpr (can_memcmp) {
             if (std::is_constant_evaluated()) {
