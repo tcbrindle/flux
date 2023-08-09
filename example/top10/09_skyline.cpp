@@ -21,7 +21,7 @@ auto const skyline = [](std::initializer_list<int> heights)
 {
     auto h = flux::ref(heights);
 
-    return 1 + flux::zip(flux::drop(h, 1), flux::scan(h, std::ranges::max))
+    return 1 + flux::zip(flux::drop(h, 1), flux::scan(h, flux::cmp::max))
                    .count_if([](auto p) { return p.first > p.second; });
 };
 

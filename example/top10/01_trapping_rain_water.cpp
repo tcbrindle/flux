@@ -27,7 +27,7 @@ auto const rain_water = [](std::initializer_list<int> heights)
     // To calculate the trapped rain water for each half, we sum up the
     // difference between each element and the maximum seen up to that point
     auto trapped = [](flux::sequence auto seq) {
-        return flux::zip(flux::scan(seq, std::ranges::max), seq)
+        return flux::zip(flux::scan(seq, flux::cmp::max), seq)
                 .map(flux::unpack(std::minus{}))
                 .sum();
     };

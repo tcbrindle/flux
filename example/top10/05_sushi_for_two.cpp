@@ -14,7 +14,7 @@ auto const sushi_for_two = [](std::initializer_list<int> sushi)
     return 2 * flux::ref(sushi)
                 .chunk_by(std::equal_to{})
                 .map(flux::count)
-                .pairwise_map(std::ranges::min)
+                .pairwise_map(flux::cmp::min)
                 .max()
                 .value_or(0);
 };

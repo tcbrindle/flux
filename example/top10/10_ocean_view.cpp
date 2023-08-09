@@ -25,7 +25,7 @@ using index_vec = std::vector<flux::index_t>;
 auto const ocean_view = [](std::vector<int> const& heights) -> index_vec
 {
     auto indices = flux::zip(flux::ref(heights).cursors().reverse(),
-                             flux::ref(heights).reverse().prescan(std::ranges::max, 0))
+                             flux::ref(heights).reverse().prescan(flux::cmp::max, 0))
         .filter([&](auto pair) { return heights[pair.first] > pair.second; })
         .map([](auto pair) { return pair.first; })
         .to<index_vec>();
