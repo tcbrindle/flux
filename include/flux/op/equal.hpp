@@ -7,22 +7,18 @@
 #define FLUX_OP_EQUAL_HPP_INCLUDED
 
 #include <flux/core.hpp>
+#include <type_traits>
+#include <cstring>
 
 namespace flux {
 
 namespace detail {
 
 struct equal_fn {
-    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::equal_to>
-        requires std::predicate<Cmp&, element_t<Seq1>, element_t<Seq2>>
-    constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const -> bool
+private:
+    template <typename Seq1, typename Seq2, typename Cmp>
+    static constexpr auto impl(Seq1& seq1, Seq2& seq2, Cmp cmp)
     {
-        if constexpr (sized_sequence<Seq1> && sized_sequence<Seq2>) {
-            if (flux::size(seq1) != flux::size(seq2)) {
-                return false;
-            }
-        }
-
         auto cur1 = flux::first(seq1);
         auto cur2 = flux::first(seq2);
 
@@ -37,6 +33,37 @@ struct equal_fn {
         return flux::is_last(seq1, cur1) == flux::is_last(seq2, cur2);
     }
 
+public:
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::equal_to>
+        requires std::predicate<Cmp&, element_t<Seq1>, element_t<Seq2>>
+    constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const
+        -> bool
+    {
+        if constexpr (sized_sequence<Seq1> && sized_sequence<Seq2>) {
+            if (flux::size(seq1) != flux::size(seq2)) {
+                return false;
+            }
+        }
+
+        constexpr bool cam_memcmp = contiguous_sequence<Seq1> &&
+            contiguous_sequence<Seq2> && sized_sequence<Seq1> &&
+            sized_sequence<Seq2> &&
+            std::is_trivially_copyable_v<value_t<Seq1>> &&
+            std::is_trivially_copyable_v<value_t<Seq2>> &&
+            std::same_as<value_t<Seq1>, value_t<Seq2>>;
+
+        if constexpr (cam_memcmp) {
+            if (std::is_constant_evaluated()) {
+                return impl(seq1, seq2, cmp);
+            } else {
+                auto result = std::memcmp(flux::data(seq1), flux::data(seq2),
+                    flux::usize(seq1) * sizeof(value_t<Seq1>));
+                return result == 0;
+            }
+        } else {
+            return impl(seq1, seq2, cmp);
+        }
+    }
 };
 
 } // namespace detail
