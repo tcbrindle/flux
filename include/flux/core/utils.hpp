@@ -70,6 +70,13 @@ FLUX_EXPORT
 template <std::integral To>
 inline constexpr auto checked_cast = detail::checked_cast_fn<To>{};
 
+namespace detail {
+
+template <typename T, typename... U>
+concept any_of = (std::same_as<T, U> || ...);
+
+} // namespace detail
+
 } // namespace flux
 
 #endif
