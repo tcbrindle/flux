@@ -6,18 +6,42 @@
 #define FLUX_OP_FILL_HPP_INCLUDED
 
 #include <flux/op/for_each.hpp>
+#include <type_traits>
+#include <cstring>
 
 namespace flux {
 
 namespace detail {
 
 struct fill_fn {
+private:
+    template <typename Seq, typename Value>
+    static constexpr auto impl(Seq& seq, Value& value)
+    {
+        flux::for_each(seq, [&value](auto&& elem) { FLUX_FWD(elem) = value; });
+    }
+
+public:
     template <typename Value, writable_sequence_of<Value> Seq>
     constexpr void operator()(Seq&& seq, Value const& value) const
     {
-        flux::for_each(seq, [&value](auto&& elem) {
-            FLUX_FWD(elem) = value;
-        });
+        constexpr bool can_memset = 
+            contiguous_sequence<Seq> &&
+            sized_sequence<Seq> &&
+            // only allow memset on single byte types
+            sizeof(value) == sizeof(std::uint8_t) &&
+            std::is_trivially_copyable_v<value_t<Seq>>;
+
+        if constexpr (can_memset) {
+            if (std::is_constant_evaluated()) {
+                impl(seq, value);
+            } else {
+                std::memset(flux::data(seq), value,
+                    flux::usize(seq) * sizeof(value_t<Seq>));
+            }
+        } else {
+            impl(seq, value);
+        }
     }
 };
 
