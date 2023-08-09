@@ -25,7 +25,7 @@ concept is_comparison_category =
 struct compare_fn {
 private:
     template <typename Seq1, typename Seq2, typename Cmp>
-    static constexpr auto impl(Seq1 &&seq1, Seq2 &&seq2, Cmp cmp = {})
+    static constexpr auto impl(Seq1& seq1, Seq2& seq2, Cmp& cmp)
         -> std::decay_t<
             std::invoke_result_t<Cmp &, element_t<Seq1>, element_t<Seq2>>>
     {
@@ -58,12 +58,13 @@ public:
     {
         constexpr bool can_memcmp = 
             std::same_as<Cmp, std::compare_three_way> &&
-            contiguous_sequence<Seq1> && contiguous_sequence<Seq2> &&
-            sized_sequence<Seq1> && sized_sequence<Seq2> &&
+            contiguous_sequence<Seq1> && 
+            contiguous_sequence<Seq2> &&
+            sized_sequence<Seq1> && 
+            sized_sequence<Seq2> &&
             std::same_as<value_t<Seq1>, value_t<Seq2>> &&
             std::unsigned_integral<value_t<Seq1>> &&
-            ((sizeof(value_t<Seq1>) == 1) ||
-                (std::endian::native == std::endian::big));
+            ((sizeof(value_t<Seq1>) == 1) || (std::endian::native == std::endian::big));
 
         if constexpr (can_memcmp) {
             if (std::is_constant_evaluated()) {
