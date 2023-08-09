@@ -45,14 +45,14 @@ public:
             }
         }
 
-        constexpr bool cam_memcmp = contiguous_sequence<Seq1> &&
+        constexpr bool can_memcmp = contiguous_sequence<Seq1> &&
             contiguous_sequence<Seq2> && sized_sequence<Seq1> &&
             sized_sequence<Seq2> &&
             std::is_trivially_copyable_v<value_t<Seq1>> &&
             std::is_trivially_copyable_v<value_t<Seq2>> &&
             std::same_as<value_t<Seq1>, value_t<Seq2>>;
 
-        if constexpr (cam_memcmp) {
+        if constexpr (can_memcmp) {
             if (std::is_constant_evaluated()) {
                 return impl(seq1, seq2, cmp);
             } else {
