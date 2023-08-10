@@ -43,7 +43,7 @@ public:
             auto location = std::memchr(flux::data(seq), static_cast<unsigned char>(value),
                 flux::usize(seq) * sizeof(value_t<Seq>));
             if (location == nullptr) {
-                return flux::usize(seq);
+                return flux::last(seq);
             } else {
                 auto offset = static_cast<value_t<Seq> const*>(location) - flux::data(seq);
                 return flux::next(seq, flux::first(seq), offset);
