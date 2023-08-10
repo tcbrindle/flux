@@ -8576,7 +8576,24 @@ public:
     {}
 
     struct flux_sequence_traits : map::flux_sequence_traits {
+    private:
+        using const_rvalue_element_t = std::common_reference_t<
+            value_t<Base> const&&, rvalue_element_t<Base>>;
+
+    public:
         using value_type = value_t<Base>;
+
+        static constexpr auto move_at(auto& self, cursor_t<Base> const& cur)
+            -> const_rvalue_element_t
+        {
+            return static_cast<const_rvalue_element_t>(flux::move_at(self.base(), cur));
+        }
+
+        static constexpr auto move_at_unchecked(auto& self, cursor_t<Base> const& cur)
+            -> const_rvalue_element_t
+        {
+            return static_cast<const_rvalue_element_t>(flux::move_at_unchecked(self.base(), cur));
+        }
 
         static constexpr auto data(auto& self)
             requires contiguous_sequence<Base>
