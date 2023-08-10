@@ -39,16 +39,17 @@ public:
         if constexpr (can_memchr) {
             if (std::is_constant_evaluated()) {
                 return impl(seq, value);
-            }
-            auto location = std::memchr(flux::data(seq), static_cast<unsigned char>(value),
-                flux::usize(seq) * sizeof(value_t<Seq>));
-            if (location == nullptr) {
-                return flux::last(seq);
             } else {
-                auto offset = static_cast<value_t<Seq> const*>(location) - flux::data(seq);
-                return flux::next(seq, flux::first(seq), offset);
+                FLUX_ASSERT(flux::data(seq) != nullptr);
+                auto location = std::memchr(flux::data(seq), static_cast<unsigned char>(value),
+                    flux::usize(seq) * sizeof(value_t<Seq>));
+                if (location == nullptr) {
+                    return flux::last(seq);
+                } else {
+                    auto offset = static_cast<value_t<Seq> const*>(location) - flux::data(seq);
+                    return flux::next(seq, flux::first(seq), offset);
+                }
             }
-
         } else {
             return impl(seq, value);
         }

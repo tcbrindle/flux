@@ -37,6 +37,8 @@ public:
             if (std::is_constant_evaluated()) {
                 impl(seq, value);
             } else {
+                FLUX_ASSERT(flux::data(seq) != nullptr);
+                
                 std::memset(flux::data(seq), value,
                     flux::usize(seq) * sizeof(value_t<Seq>));
             }

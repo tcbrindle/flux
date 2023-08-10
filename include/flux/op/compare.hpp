@@ -73,8 +73,13 @@ public:
                 auto const seq1_size = flux::usize(seq1);
                 auto const seq2_size = flux::usize(seq2);
                 auto min_size = std::min(seq1_size, seq2_size);
+            
+                FLUX_ASSERT(flux::data(seq1) != nullptr);
+                FLUX_ASSERT(flux::data(seq2) != nullptr);
+            
                 auto cmp_result =
                     std::memcmp(flux::data(seq1), flux::data(seq2), min_size);
+            
                 if (cmp_result == 0) {
                     if (seq1_size == seq2_size) {
                         return std::strong_ordering::equal;

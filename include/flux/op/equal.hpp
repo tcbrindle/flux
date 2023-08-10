@@ -57,6 +57,10 @@ public:
             if (std::is_constant_evaluated()) {
                 return impl(seq1, seq2, cmp);
             } else {
+                
+                FLUX_ASSERT(flux::data(seq1) != nullptr);
+                FLUX_ASSERT(flux::data(seq2) != nullptr);
+
                 auto result = std::memcmp(flux::data(seq1), flux::data(seq2),
                     flux::usize(seq1) * sizeof(value_t<Seq1>));
                 return result == 0;
