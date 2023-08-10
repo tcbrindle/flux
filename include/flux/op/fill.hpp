@@ -16,7 +16,7 @@ namespace detail {
 struct fill_fn {
 private:
     template <typename Seq, typename Value>
-    static constexpr auto impl(Seq& seq, Value& value)
+    static constexpr auto impl(Seq& seq, Value const& value)
     {
         flux::for_each(seq, [&value](auto&& elem) { FLUX_FWD(elem) = value; });
     }
