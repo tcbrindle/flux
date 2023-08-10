@@ -28,8 +28,9 @@ public:
         constexpr bool can_memset = 
             contiguous_sequence<Seq> &&
             sized_sequence<Seq> &&
+            std::same_as<Value, value_t<Seq>> &&
             // only allow memset on single byte types
-            sizeof(value) == sizeof(std::uint8_t) &&
+            sizeof(value_t<Seq>) == 1 &&
             std::is_trivially_copyable_v<value_t<Seq>>;
 
         if constexpr (can_memset) {
