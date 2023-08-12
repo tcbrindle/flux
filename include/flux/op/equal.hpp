@@ -57,7 +57,16 @@ public:
             if (std::is_constant_evaluated()) {
                 return impl(seq1, seq2, cmp);
             } else {
-                
+                auto size1 = flux::usize(seq1);
+                auto size2 = flux::usize(seq2);
+                if(size1 == 0 && size2 == 0) 
+                {
+                    return true;
+                }
+                else if(size1 != size2 && (size1 == 0 || size2 == 0)) {
+                    return false;
+                }
+
                 FLUX_ASSERT(flux::data(seq1) != nullptr);
                 FLUX_ASSERT(flux::data(seq2) != nullptr);
 
