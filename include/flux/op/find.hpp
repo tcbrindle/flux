@@ -40,6 +40,8 @@ public:
             if (std::is_constant_evaluated()) {
                 return impl(seq, value);
             } else {
+                auto size = flux::usize(seq);
+                if(size == 0) return flux::last(seq);
                 FLUX_ASSERT(flux::data(seq) != nullptr);
                 auto location = std::memchr(flux::data(seq), static_cast<unsigned char>(value),
                     flux::usize(seq) * sizeof(value_t<Seq>));
