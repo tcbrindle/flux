@@ -18,11 +18,11 @@ struct drop_while_adaptor : inline_sequence_base<drop_while_adaptor<Base, Pred>>
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Pred pred_;
-    flux::optional<cursor_t<Base>> cached_first_{};
 
     friend struct passthrough_traits_base<Base>;
 
     constexpr auto base() & -> Base& { return base_; }
+    constexpr auto base() const& -> Base const& { return base_; }
 
 public:
     constexpr drop_while_adaptor(decays_to<Base> auto&& base, decays_to<Pred> auto&& pred)
@@ -32,23 +32,15 @@ public:
 
     struct flux_sequence_traits : detail::passthrough_traits_base<Base> {
         using value_type = value_t<Base>;
-        using self_t = drop_while_adaptor;
 
         static constexpr bool disable_multipass = !multipass_sequence<Base>;
 
-        static constexpr auto first(self_t& self)
+        static constexpr auto first(auto& self)
         {
-            if constexpr (std::copy_constructible<cursor_t<Base>>) {
-                if (!self.cached_first_) {
-                    self.cached_first_ = flux::optional(flux::for_each_while(self.base_, self.pred_));
-                }
-                return self.cached_first_.value_unchecked();
-            } else {
-                return flux::for_each_while(self.base_, self.pred_);
-            }
+            return flux::for_each_while(self.base_, std::ref(self.pred_));
         }
 
-        static constexpr auto data(self_t& self)
+        static constexpr auto data(auto& self)
             requires contiguous_sequence<Base>
         {
             return flux::data(self.base_) +
