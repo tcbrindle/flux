@@ -9,6 +9,7 @@
 #include <flux/core.hpp>
 #include <flux/op/find.hpp>
 #include <flux/op/for_each_while.hpp>
+#include <flux/op/slice.hpp>
 
 namespace flux {
 
