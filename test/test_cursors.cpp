@@ -70,7 +70,8 @@ constexpr bool test_cursors()
         auto const arr = std::array{101, 102, 103, 104, 105, 106, 107, 108, 109, 110};
 
         auto evens = flux::filter(arr, flux::pred::even);
-        auto indices_of_evens = std::move(evens).cursors();
+        auto indices_of_evens = std::move(evens).cursors()
+                                    .map([](auto cur) { return cur.base_cur; });
 
         STATIC_CHECK(flux::count(indices_of_evens) == 5);
         STATIC_CHECK(check_equal(indices_of_evens, {1, 3, 5, 7, 9}));

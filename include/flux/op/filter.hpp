@@ -32,56 +32,67 @@ public:
     constexpr auto base() && -> Base { return std::move(base_); }
 
     struct flux_sequence_traits {
+    private:
+        struct cursor_type {
+            cursor_t<Base> base_cur;
 
+            friend auto operator==(cursor_type const&, cursor_type const&) -> bool
+                requires std::equality_comparable<cursor_t<Base>>
+                = default;
+        };
+
+    public:
         using value_type = value_t<Base>;
 
         static constexpr bool disable_multipass = !multipass_sequence<Base>;
 
-        static constexpr auto first(auto& self) -> cursor_t<Base>
+        static constexpr auto first(auto& self) -> cursor_type
         {
-            return flux::find_if(self.base_, self.pred_);
+            return cursor_type{flux::find_if(self.base_, std::ref(self.pred_))};
         }
 
-        static constexpr auto is_last(auto& self, cursor_t<Base> const& cur) -> bool
+        static constexpr auto is_last(auto& self, cursor_type const& cur) -> bool
         {
-            return flux::is_last(self.base_, cur);
+            return flux::is_last(self.base_, cur.base_cur);
         }
 
-        static constexpr auto read_at(auto& self, cursor_t<Base> const& cur)
-            -> decltype(flux::read_at(self.base_, cur))
+        static constexpr auto read_at(auto& self, cursor_type const& cur)
+            -> decltype(flux::read_at(self.base_, cur.base_cur))
         {
-            return flux::read_at(self.base_, cur);
+            return flux::read_at(self.base_, cur.base_cur);
         }
 
-        static constexpr auto inc(auto& self, cursor_t<Base>& cur) -> void
+        static constexpr auto inc(auto& self, cursor_type& cur) -> void
         {
-            flux::inc(self.base_, cur);
-            cur = flux::slice(self.base_, std::move(cur), flux::last).find_if(self.pred_);
+            flux::inc(self.base_, cur.base_cur);
+            cur.base_cur = flux::slice(self.base_, std::move(cur).base_cur, flux::last)
+                               .find_if(std::ref(self.pred_));
         }
 
-        static constexpr auto dec(auto& self, cursor_t<Base>& cur) -> void
+        static constexpr auto dec(auto& self, cursor_type& cur) -> void
             requires bidirectional_sequence<Base>
         {
             do {
-                flux::dec(self.base_, cur);
-            } while(!std::invoke(self.pred_, flux::read_at(self.base_, cur)));
+                flux::dec(self.base_, cur.base_cur);
+            } while(!std::invoke(self.pred_, flux::read_at(self.base_, cur.base_cur)));
         }
 
-        static constexpr auto last(auto& self) -> cursor_t<Base>
+        static constexpr auto last(auto& self) -> cursor_type
             requires bounded_sequence<Base>
         {
-            return flux::last(self.base_);
+            return cursor_type{flux::last(self.base_)};
         }
 
-        static constexpr auto for_each_while(auto& self, auto&& func) -> cursor_t<Base>
+        static constexpr auto for_each_while(auto& self, auto&& func)
+            -> cursor_type
         {
-            return flux::for_each_while(self.base_, [&](auto&& elem) {
+            return cursor_type{flux::for_each_while(self.base_, [&](auto&& elem) {
                 if (std::invoke(self.pred_, elem)) {
                     return std::invoke(func, FLUX_FWD(elem));
                 } else {
                     return true;
                 }
-            });
+            })};
         }
     };
 };
