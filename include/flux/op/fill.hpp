@@ -38,7 +38,9 @@ public:
                 impl(seq, value);
             } else {
                 auto size = flux::usize(seq);
-                if(size == 0) return;
+                if(size == 0){
+                    return;
+                }
                 
                 FLUX_ASSERT(flux::data(seq) != nullptr);
                 
