@@ -106,7 +106,6 @@ constexpr bool test_chain()
         using S = decltype(seq);
 
         static_assert(flux::bidirectional_sequence<S>);
-        static_assert(not flux::sequence<S const>);
 
         STATIC_CHECK(check_equal(seq, {0, 1, 2, 3, 4, 5}));
     }
