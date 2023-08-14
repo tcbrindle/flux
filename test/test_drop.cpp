@@ -27,9 +27,18 @@ constexpr bool test_drop() {
         static_assert(flux::sized_sequence<D>);
         static_assert(flux::bounded_sequence<D>);
 
+        static_assert(flux::contiguous_sequence<D const>);
+        static_assert(flux::sized_sequence<D const>);
+        static_assert(flux::bounded_sequence<D const>);
+
         STATIC_CHECK(flux::size(dropped) == 5);
         STATIC_CHECK(flux::data(dropped) == arr + 5);
         STATIC_CHECK(check_equal(dropped, {5, 6, 7, 8, 9}));
+
+        auto const& c_dropped = dropped;
+        STATIC_CHECK(flux::size(c_dropped) == 5);
+        STATIC_CHECK(flux::data(c_dropped) == arr + 5);
+        STATIC_CHECK(check_equal(c_dropped, {5, 6, 7, 8, 9}));
     }
 
     {
@@ -42,8 +51,16 @@ constexpr bool test_drop() {
         static_assert(flux::sized_sequence<D>);
         static_assert(flux::bounded_sequence<D>);
 
+        static_assert(flux::contiguous_sequence<D const>);
+        static_assert(flux::sized_sequence<D const>);
+        static_assert(flux::bounded_sequence<D const>);
+
         STATIC_CHECK(flux::size(dropped) == 5);
         STATIC_CHECK(check_equal(dropped, {5, 6, 7, 8, 9}));
+
+        auto const& c_dropped = dropped;
+        STATIC_CHECK(flux::size(c_dropped) == 5);
+        STATIC_CHECK(check_equal(c_dropped, {5, 6, 7, 8, 9}));
     }
 
     {
