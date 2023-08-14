@@ -7,8 +7,8 @@
 #define FLUX_OP_FILTER_HPP_INCLUDED
 
 #include <flux/core.hpp>
+#include <flux/op/find.hpp>
 #include <flux/op/for_each_while.hpp>
-#include <flux/op/from.hpp>
 
 namespace flux {
 
@@ -19,7 +19,6 @@ class filter_adaptor : public inline_sequence_base<filter_adaptor<Base, Pred>>
 {
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Pred pred_;
-    flux::optional<cursor_t<Base>> cached_first_{};
 
 public:
     constexpr filter_adaptor(decays_to<Base> auto&& base, decays_to<Pred> auto&& pred)
@@ -39,23 +38,7 @@ public:
 
         static constexpr auto first(self_t& self) -> cursor_t<Base>
         {
-            // If the cursor_type is not copy-constructible, we can't cache it
-            // and hand out copies. But this only applies to single-pass sequences
-            // where we probably can't call first() more than once anyway
-            if constexpr (!std::copy_constructible<cursor_t<Base>>) {
-                return flux::for_each_while(self.base_, [&](auto&& elem) {
-                    return !std::invoke(self.pred_, elem);
-                });
-            } else {
-                if (!self.cached_first_) {
-                    self.cached_first_ = flux::optional(
-                        flux::for_each_while(self.base_, [&](auto&& elem) {
-                            return !std::invoke(self.pred_, elem);
-                        }));
-                }
-
-                return self.cached_first_.value_unchecked();
-            }
+            return flux::find_if(self.base_, self.pred_);
         }
 
         static constexpr auto is_last(self_t& self, cursor_t<Base> const& cur) -> bool
@@ -69,26 +52,18 @@ public:
             return flux::read_at(self.base_, cur);
         }
 
-        static constexpr auto inc(self_t& self, cursor_t<Base>& cur) -> cursor_t<Base>&
+        static constexpr auto inc(self_t& self, cursor_t<Base>& cur) -> void
         {
-            // base_[{next(base_, cur), _}].for_each_while(!pred)?
-            while (!flux::is_last(self.base_, flux::inc(self.base_, cur))) {
-                if (std::invoke(self.pred_, flux::read_at(self.base_, cur))) {
-                    break;
-                }
-            }
-
-            return cur;
+            flux::inc(self.base_, cur);
+            cur = flux::slice(self.base_, std::move(cur), flux::last).find_if(self.pred_);
         }
 
-        static constexpr auto dec(self_t& self, cursor_t<Base>& cur) -> cursor_t<Base>&
+        static constexpr auto dec(self_t& self, cursor_t<Base>& cur) -> void
             requires bidirectional_sequence<Base>
         {
             do {
                 flux::dec(self.base_, cur);
             } while(!std::invoke(self.pred_, flux::read_at(self.base_, cur)));
-
-            return cur;
         }
 
         static constexpr auto last(self_t& self) -> cursor_t<Base>
