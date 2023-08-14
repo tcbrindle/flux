@@ -218,6 +218,12 @@ public:
     [[nodiscard]]
     constexpr auto adjacent() && requires multipass_sequence<Derived>;
 
+    template <typename Pred>
+        requires multipass_sequence<Derived> &&
+                 std::predicate<Pred&, element_t<Derived>, element_t<Derived>>
+    [[nodiscard]]
+    constexpr auto adjacent_filter(Pred pred) &&;
+
     template <distance_t N, typename Func>
         requires multipass_sequence<Derived>
     [[nodiscard]]
@@ -246,6 +252,11 @@ public:
 
     [[nodiscard]]
     constexpr auto cycle(std::integral auto count) && requires multipass_sequence<Derived>;
+
+    [[nodiscard]]
+    constexpr auto dedup() &&
+        requires multipass_sequence<Derived> &&
+                 std::equality_comparable<element_t<Derived>>;
 
     [[nodiscard]]
     constexpr auto drop(std::integral auto count) &&;

@@ -18,6 +18,7 @@ add_example(example-shortest-path shortest_path.cpp)
 add_example(example-moving-average moving_average.cpp)
 
 add_example(example-docs-adjacent docs/adjacent.cpp)
+add_example(example-docs-adjacent-filter docs/adjacent_filter.cpp)
 add_example(example-docs-all docs/all.cpp)
 add_example(example-docs-any docs/any.cpp)
 add_example(example-docs-compare docs/compare.cpp)

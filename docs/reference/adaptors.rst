@@ -46,6 +46,36 @@ Adaptors
         * :func:`flux::pairwise`
         * :func:`flux::slide`
 
+``adjacent_filter``
+^^^^^^^^^^^^^^^^^^^
+
+..  function::
+    template <multipass_sequence Seq, typename Pred> \
+        requires std::predicate<Pred&, element_t<Seq>, element_t<Seq>> \
+    auto adjacent_filter(Seq seq, Pred pred) -> multipass_sequence auto;
+
+    Applies the given binary predicate :var:`pred` to each pair of adjacent elements of :var:`seq`. If the predicate returns ``false``, the second element of the pair does not appear in the resulting sequence. The first element of :var:`seq` is always included in the output.
+
+    The resulting sequence is always multipass; it is also a :concept:`bidirectional_sequence` if :var:`Seq` is bidirectional, and a :concept:`bounded_sequence` if :var:`Seq` is bounded.
+
+    A common use for :func:`adjacent_filter` is to remove adjacent equal elements from a sequence, which can be achieved by passing :expr:`std::not_equal_to{}` as the predicate. The :func:`dedup` function is a handy alias for :expr:`adjacent_filter(not_equal_to{})`.
+
+    :param seq: A multipass sequence
+    :param pred: A binary predicate to compare sequence elements
+
+    :returns: The filtered sequence
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/adjacent_filter.cpp
+        :language: cpp
+        :dedent:
+        :lines: 15-34
+
+    :see also:
+       * :func:`flux::dedup`
+       * :func:`flux::filter`
+
 
 ``adjacent_map``
 ^^^^^^^^^^^^^^^^
@@ -164,6 +194,18 @@ Adaptors
 
     :see also:
 
+``dedup``
+^^^^^^^^^
+
+..  function::
+    template <multipass_sequence Seq> \
+        requires std::equality_comparable<element_t<Seq>> \
+    auto dedup(Seq seq) -> multipass_sequence auto;
+
+    An alias for :expr:`adjacent_filter(seq, std::ranges::not_equal_to{})`. This can be used to remove adjacent elements from a sequence.
+
+    :see also:
+        * :func:`flux::adjacent_filter`
 
 ``drop``
 ^^^^^^^^
