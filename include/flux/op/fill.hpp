@@ -38,14 +38,14 @@ public:
                 impl(seq, value);
             } else {
                 auto size = flux::usize(seq);
-                if(size == 0){
+                if(size == 0) {
                     return;
                 }
                 
                 FLUX_ASSERT(flux::data(seq) != nullptr);
                 
                 std::memset(flux::data(seq), value,
-                    flux::usize(seq) * sizeof(value_t<Seq>));
+                    size * sizeof(value_t<Seq>));
             }
         } else {
             impl(seq, value);
