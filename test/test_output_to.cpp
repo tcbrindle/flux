@@ -82,4 +82,15 @@ TEST_CASE("output to")
 
         REQUIRE(oss.str() == " hello world!! ");
     }
+    
+    SECTION("...with empty input sequences")
+    {
+        std::vector<int> const in;
+        std::vector<int> out;
+
+        auto iter = flux::output_to(in, out.begin());
+
+        REQUIRE(iter == out.begin());
+        REQUIRE(out.empty());
+    }
 }
