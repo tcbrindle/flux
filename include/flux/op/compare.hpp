@@ -75,8 +75,7 @@ public:
                 auto min_size = std::min(seq1_size, seq2_size);
 
                 int cmp_result = 0;
-                if(min_size > 0)
-                {
+                if(min_size > 0) {
                     auto data1 = flux::data(seq1);
                     FLUX_ASSERT(data1 != nullptr);
                     auto data2 = flux::data(seq2);
