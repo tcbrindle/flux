@@ -43,12 +43,12 @@ public:
                 return impl(seq, iter);
             } else {
                 auto size = flux::usize(seq);
-                if(size == 0) {
+                if (size == 0) {
                     return iter;
                 }
                 FLUX_ASSERT(flux::data(seq) != nullptr);
                 std::memmove(std::to_address(iter), flux::data(seq),
-                             flux::usize(seq) * sizeof(value_t<Seq>));
+                             size * sizeof(value_t<Seq>));
                 return iter + checked_cast<std::iter_difference_t<Iter>>(flux::size(seq));
             }
         } else {
