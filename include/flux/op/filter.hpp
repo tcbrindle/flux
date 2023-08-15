@@ -7,8 +7,9 @@
 #define FLUX_OP_FILTER_HPP_INCLUDED
 
 #include <flux/core.hpp>
+#include <flux/op/find.hpp>
 #include <flux/op/for_each_while.hpp>
-#include <flux/op/from.hpp>
+#include <flux/op/slice.hpp>
 
 namespace flux {
 
@@ -19,7 +20,6 @@ class filter_adaptor : public inline_sequence_base<filter_adaptor<Base, Pred>>
 {
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Pred pred_;
-    flux::optional<cursor_t<Base>> cached_first_{};
 
 public:
     constexpr filter_adaptor(decays_to<Base> auto&& base, decays_to<Pred> auto&& pred)
@@ -33,83 +33,88 @@ public:
     constexpr auto base() && -> Base { return std::move(base_); }
 
     struct flux_sequence_traits {
-        using self_t = filter_adaptor;
+    private:
+        struct cursor_type {
+            cursor_t<Base> base_cur;
+
+            friend auto operator==(cursor_type const&, cursor_type const&) -> bool
+                requires std::equality_comparable<cursor_t<Base>>
+                = default;
+        };
+
+    public:
+        using value_type = value_t<Base>;
 
         static constexpr bool disable_multipass = !multipass_sequence<Base>;
 
-        static constexpr auto first(self_t& self) -> cursor_t<Base>
+        static constexpr auto first(auto& self) -> cursor_type
         {
-            // If the cursor_type is not copy-constructible, we can't cache it
-            // and hand out copies. But this only applies to single-pass sequences
-            // where we probably can't call first() more than once anyway
-            if constexpr (!std::copy_constructible<cursor_t<Base>>) {
-                return flux::for_each_while(self.base_, [&](auto&& elem) {
-                    return !std::invoke(self.pred_, elem);
-                });
-            } else {
-                if (!self.cached_first_) {
-                    self.cached_first_ = flux::optional(
-                        flux::for_each_while(self.base_, [&](auto&& elem) {
-                            return !std::invoke(self.pred_, elem);
-                        }));
-                }
-
-                return self.cached_first_.value_unchecked();
-            }
+            return cursor_type{flux::find_if(self.base_, std::ref(self.pred_))};
         }
 
-        static constexpr auto is_last(self_t& self, cursor_t<Base> const& cur) -> bool
+        static constexpr auto is_last(auto& self, cursor_type const& cur) -> bool
         {
-            return flux::is_last(self.base_, cur);
+            return flux::is_last(self.base_, cur.base_cur);
         }
 
-        static constexpr auto read_at(self_t& self, cursor_t<Base> const& cur)
-            -> element_t<Base>
+        static constexpr auto read_at(auto& self, cursor_type const& cur)
+            -> decltype(flux::read_at(self.base_, cur.base_cur))
         {
-            return flux::read_at(self.base_, cur);
+            return flux::read_at(self.base_, cur.base_cur);
         }
 
-        static constexpr auto inc(self_t& self, cursor_t<Base>& cur) -> cursor_t<Base>&
+        static constexpr auto read_at_unchecked(auto& self, cursor_type const& cur)
+            -> decltype(flux::read_at_unchecked(self.base_, cur.base_cur))
         {
-            // base_[{next(base_, cur), _}].for_each_while(!pred)?
-            while (!flux::is_last(self.base_, flux::inc(self.base_, cur))) {
-                if (std::invoke(self.pred_, flux::read_at(self.base_, cur))) {
-                    break;
-                }
-            }
-
-            return cur;
+            return flux::read_at_unchecked(self.base_, cur.base_cur);
         }
 
-        static constexpr auto dec(self_t& self, cursor_t<Base>& cur) -> cursor_t<Base>&
+        static constexpr auto move_at(auto& self, cursor_type const& cur)
+            -> decltype(flux::move_at(self.base_, cur.base_cur))
+        {
+            return flux::move_at(self.base_, cur.base_cur);
+        }
+
+        static constexpr auto move_at_unchecked(auto& self, cursor_type const& cur)
+            -> decltype(flux::move_at_unchecked(self.base_, cur.base_cur))
+        {
+            return flux::move_at_unchecked(self.base_, cur.base_cur);
+        }
+
+        static constexpr auto inc(auto& self, cursor_type& cur) -> void
+        {
+            flux::inc(self.base_, cur.base_cur);
+            cur.base_cur = flux::slice(self.base_, std::move(cur).base_cur, flux::last)
+                               .find_if(std::ref(self.pred_));
+        }
+
+        static constexpr auto dec(auto& self, cursor_type& cur) -> void
             requires bidirectional_sequence<Base>
         {
             do {
-                flux::dec(self.base_, cur);
-            } while(!std::invoke(self.pred_, flux::read_at(self.base_, cur)));
-
-            return cur;
+                flux::dec(self.base_, cur.base_cur);
+            } while(!std::invoke(self.pred_, flux::read_at(self.base_, cur.base_cur)));
         }
 
-        static constexpr auto last(self_t& self) -> cursor_t<Base>
+        static constexpr auto last(auto& self) -> cursor_type
             requires bounded_sequence<Base>
         {
-            return flux::last(self.base_);
+            return cursor_type{flux::last(self.base_)};
         }
 
-        static constexpr auto for_each_while(self_t& self, auto&& func) -> cursor_t<Base>
+        static constexpr auto for_each_while(auto& self, auto&& func)
+            -> cursor_type
         {
-            return flux::for_each_while(self.base_, [&](auto&& elem) {
+            return cursor_type{flux::for_each_while(self.base_, [&](auto&& elem) {
                 if (std::invoke(self.pred_, elem)) {
                     return std::invoke(func, FLUX_FWD(elem));
                 } else {
                     return true;
                 }
-            });
+            })};
         }
     };
 };
-
 
 struct filter_fn {
     template <adaptable_sequence Seq, std::move_constructible Pred>

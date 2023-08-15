@@ -19,7 +19,6 @@ struct drop_adaptor : inline_sequence_base<drop_adaptor<Base>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     distance_t count_;
-    flux::optional<cursor_t<Base>> cached_first_;
 
 public:
     constexpr drop_adaptor(decays_to<Base> auto&& base, distance_t count)
@@ -35,33 +34,24 @@ public:
 
         static constexpr bool disable_multipass = !multipass_sequence<Base>;
 
-        static constexpr auto first(drop_adaptor& self) -> cursor_t<Base>
+        static constexpr auto first(auto& self) -> cursor_t<Base>
         {
-            if constexpr (std::copy_constructible<cursor_t<Base>>) {
-                if (!self.cached_first_) {
-                    auto cur = flux::first(self.base_);
-                    detail::advance(self.base_, cur, self.count_);
-                    self.cached_first_ = flux::optional(std::move(cur));
-                }
-
-                return self.cached_first_.value_unchecked();
-            } else {
-                auto cur = flux::first(self.base_);
-                detail::advance(self.base_, cur, self.count_);
-                return cur;
-            }
+            auto cur = flux::first(self.base_);
+            detail::advance(self.base_, cur, self.count_);
+            return cur;
         }
 
-        static constexpr auto size(drop_adaptor& self)
+        static constexpr auto size(auto& self)
             requires sized_sequence<Base>
         {
-            return (std::max)(flux::size(self.base()) - self.count_, distance_t{0});
+            return (cmp::max)(num::checked_sub(flux::size(self.base()), self.count_),
+                              distance_t{0});
         }
 
-        static constexpr auto data(drop_adaptor& self)
+        static constexpr auto data(auto& self)
             requires contiguous_sequence<Base> && sized_sequence<Base>
         {
-            return flux::data(self.base()) + (std::min)(self.count_, flux::size(self.base_));
+            return flux::data(self.base()) + (cmp::min)(self.count_, flux::size(self.base_));
         }
 
         void for_each_while(...) = delete;

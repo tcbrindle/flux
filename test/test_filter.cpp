@@ -51,11 +51,14 @@ constexpr bool test_filter()
         static_assert(not flux::ordered_cursor<F>);
         static_assert(not flux::sized_sequence<F>);
 
-        static_assert(not flux::sequence<F const>);
+        static_assert(flux::sequence<F const>);
+        static_assert(flux::bidirectional_sequence<F const>);
+        static_assert(flux::bounded_sequence<F const>);
+        static_assert(not flux::ordered_cursor<F const>);
+        static_assert(not flux::sized_sequence<F const>);
 
-        if (!check_equal(filtered, {0, 2, 4, 6, 8})) {
-            return false;
-        }
+        STATIC_CHECK(check_equal(filtered, {0, 2, 4, 6, 8}));
+        STATIC_CHECK(check_equal(std::as_const(filtered), {0, 2, 4, 6, 8}));
     }
 
     // Filtering single-pass sequences works okay
