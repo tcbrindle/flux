@@ -68,6 +68,13 @@ constexpr bool test_fill()
         STATIC_CHECK(check_equal(arr, {5, 5, 5, 5, 5}));
     }
 
+    // fill empty sequence with char
+    {
+        std::array<std::uint8_t, 0> arr{};
+        std::uint8_t c = 5;
+        flux::fill(arr, c);
+    }
+
     return true;
 }
 
