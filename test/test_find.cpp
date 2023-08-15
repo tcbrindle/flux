@@ -83,4 +83,10 @@ TEST_CASE("find")
         auto idx = flux::find(str, 'd');
         REQUIRE(idx == 3);
     }
+
+    {
+        std::string str = "";
+        auto idx = flux::find(str, 'a');
+        REQUIRE(idx == flux::last(str));
+    }
 }
