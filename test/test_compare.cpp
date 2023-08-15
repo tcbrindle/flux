@@ -117,6 +117,24 @@ constexpr bool test_compare()
         STATIC_CHECK(r == std::strong_ordering::equal);
     }
 
+    {
+        std::array<std::uint8_t, 3> arr1{1, 2, 3};
+        std::array<std::uint8_t, 3> arr2{1, 2, 3};
+        auto r = flux::compare(arr1, arr2);
+
+        static_assert(std::same_as<decltype(r), std::strong_ordering>);
+        STATIC_CHECK(r == std::strong_ordering::equal);
+    }
+
+    {
+        std::array<std::uint8_t, 3> arr1{1, 2, 3};
+        std::array<std::uint8_t, 0> arr2{};
+        auto r = flux::compare(arr1, arr2);
+
+        static_assert(std::same_as<decltype(r), std::strong_ordering>);
+        STATIC_CHECK(r == std::strong_ordering::greater);
+    }
+
     return true;
 }
 static_assert(test_compare());
