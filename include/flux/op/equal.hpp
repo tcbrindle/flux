@@ -57,21 +57,17 @@ public:
             if (std::is_constant_evaluated()) {
                 return impl(seq1, seq2, cmp);
             } else {
-                auto size1 = flux::usize(seq1);
-                auto size2 = flux::usize(seq2);
-                if(size1 == 0 && size2 == 0) 
-                {
+                auto size = flux::usize(seq1);
+                if(size == 0) {
                     return true;
                 }
-                else if(size1 != size2 && (size1 == 0 || size2 == 0)) {
-                    return false;
-                }
 
-                FLUX_ASSERT(flux::data(seq1) != nullptr);
-                FLUX_ASSERT(flux::data(seq2) != nullptr);
+                auto data1 = flux::data(seq1);
+                auto data2 = flux::data(seq2);
+                FLUX_ASSERT(data1 != nullptr);
+                FLUX_ASSERT(data2 != nullptr);
 
-                auto result = std::memcmp(flux::data(seq1), flux::data(seq2),
-                    flux::usize(seq1) * sizeof(value_t<Seq1>));
+                auto result = std::memcmp(data1, data2, size * sizeof(value_t<Seq1>));
                 return result == 0;
             }
         } else {
