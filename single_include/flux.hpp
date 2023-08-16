@@ -568,6 +568,13 @@ FLUX_EXPORT
 template <std::integral To>
 inline constexpr auto checked_cast = detail::checked_cast_fn<To>{};
 
+namespace detail {
+
+template <typename T, typename... U>
+concept any_of = (std::same_as<T, U> || ...);
+
+} // namespace detail
+
 } // namespace flux
 
 #endif
@@ -6586,6 +6593,8 @@ constexpr auto inline_sequence_base<Derived>::chunk_by(Pred pred) &&
 
 
 #include <compare>
+#include <cstring>
+#include <bit>
 
 namespace flux {
 
@@ -6598,11 +6607,11 @@ concept is_comparison_category =
     std::same_as<Cmp, std::partial_ordering>;
 
 struct compare_fn {
-    template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way>
-        requires std::invocable<Cmp&, element_t<Seq1>, element_t<Seq2>> &&
-                 is_comparison_category<std::decay_t<std::invoke_result_t<Cmp&, element_t<Seq1>, element_t<Seq2>>>>
-    constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const
-        -> std::decay_t<std::invoke_result_t<Cmp&, element_t<Seq1>, element_t<Seq2>>>
+private:
+    template <typename Seq1, typename Seq2, typename Cmp>
+    static constexpr auto impl(Seq1& seq1, Seq2& seq2, Cmp& cmp)
+        -> std::decay_t<
+            std::invoke_result_t<Cmp &, element_t<Seq1>, element_t<Seq2>>>
     {
         auto cur1 = flux::first(seq1);
         auto cur2 = flux::first(seq2);
@@ -6618,9 +6627,65 @@ struct compare_fn {
 
         return !flux::is_last(seq1, cur1) ? std::strong_ordering::greater :
                !flux::is_last(seq2, cur2) ? std::strong_ordering::less :
-                                           std::strong_ordering::equal;
+                                            std::strong_ordering::equal;
     }
 
+public:
+    template <sequence Seq1, sequence Seq2,
+        typename Cmp = std::compare_three_way>
+        requires std::invocable<Cmp &, element_t<Seq1>, element_t<Seq2>> &&
+        is_comparison_category<std::decay_t<
+            std::invoke_result_t<Cmp &, element_t<Seq1>, element_t<Seq2>>>>
+    constexpr auto operator()(Seq1 &&seq1, Seq2 &&seq2, Cmp cmp = {}) const
+        -> std::decay_t<
+            std::invoke_result_t<Cmp &, element_t<Seq1>, element_t<Seq2>>>
+    {
+        constexpr bool can_memcmp = 
+            std::same_as<Cmp, std::compare_three_way> &&
+            contiguous_sequence<Seq1> && 
+            contiguous_sequence<Seq2> &&
+            sized_sequence<Seq1> && 
+            sized_sequence<Seq2> &&
+            std::same_as<value_t<Seq1>, value_t<Seq2>> &&
+            std::unsigned_integral<value_t<Seq1>> &&
+            ((sizeof(value_t<Seq1>) == 1) || (std::endian::native == std::endian::big));
+
+        if constexpr (can_memcmp) {
+            if (std::is_constant_evaluated()) {
+                return impl(seq1, seq2, cmp);
+            } else {
+                auto const seq1_size = flux::usize(seq1);
+                auto const seq2_size = flux::usize(seq2);
+                auto min_size = std::min(seq1_size, seq2_size);
+
+                int cmp_result = 0;
+                if(min_size > 0) {
+                    auto data1 = flux::data(seq1);
+                    FLUX_ASSERT(data1 != nullptr);
+                    auto data2 = flux::data(seq2);
+                    FLUX_ASSERT(data2 != nullptr);
+
+                    cmp_result = std::memcmp(data1, data2, min_size);
+                }
+
+                if (cmp_result == 0) {
+                    if (seq1_size == seq2_size) {
+                        return std::strong_ordering::equal;
+                    } else if (seq1_size < seq2_size) {
+                        return std::strong_ordering::less;
+                    } else /* seq1_size > seq2_size */ {
+                        return std::strong_ordering::greater;
+                    }
+                } else if (cmp_result > 0) {
+                    return std::strong_ordering::greater;
+                } else /* cmp_result < 0 */ {
+                    return std::strong_ordering::less;
+                }
+            }
+        } else {
+            return impl(seq1, seq2, cmp);
+        }
+    }
 };
 
 } // namespace detail
@@ -7329,22 +7394,18 @@ constexpr auto inline_sequence_base<D>::drop_while(Pred pred) &&
 #define FLUX_OP_EQUAL_HPP_INCLUDED
 
 
+#include <type_traits>
+#include <cstring>
 
 namespace flux {
 
 namespace detail {
 
 struct equal_fn {
-    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::equal_to>
-        requires std::predicate<Cmp&, element_t<Seq1>, element_t<Seq2>>
-    constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const -> bool
+private:
+    template <typename Seq1, typename Seq2, typename Cmp>
+    static constexpr auto impl(Seq1& seq1, Seq2& seq2, Cmp cmp)
     {
-        if constexpr (sized_sequence<Seq1> && sized_sequence<Seq2>) {
-            if (flux::size(seq1) != flux::size(seq2)) {
-                return false;
-            }
-        }
-
         auto cur1 = flux::first(seq1);
         auto cur2 = flux::first(seq2);
 
@@ -7359,6 +7420,47 @@ struct equal_fn {
         return flux::is_last(seq1, cur1) == flux::is_last(seq2, cur2);
     }
 
+public:
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::equal_to>
+        requires std::predicate<Cmp&, element_t<Seq1>, element_t<Seq2>>
+    constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const
+        -> bool
+    {
+        if constexpr (sized_sequence<Seq1> && sized_sequence<Seq2>) {
+            if (flux::size(seq1) != flux::size(seq2)) {
+                return false;
+            }
+        }
+
+        constexpr bool can_memcmp = 
+            std::same_as<Cmp, std::ranges::equal_to> &&
+            contiguous_sequence<Seq1> && contiguous_sequence<Seq2> &&
+            sized_sequence<Seq1> && sized_sequence<Seq2> &&
+            std::same_as<value_t<Seq1>, value_t<Seq2>> &&
+            (std::integral<value_t<Seq1>> || std::is_pointer_v<value_t<Seq1>>) &&
+            std::has_unique_object_representations_v<value_t<Seq1>>;
+
+        if constexpr (can_memcmp) {
+            if (std::is_constant_evaluated()) {
+                return impl(seq1, seq2, cmp);
+            } else {
+                auto size = flux::usize(seq1);
+                if(size == 0) {
+                    return true;
+                }
+
+                auto data1 = flux::data(seq1);
+                auto data2 = flux::data(seq2);
+                FLUX_ASSERT(data1 != nullptr);
+                FLUX_ASSERT(data2 != nullptr);
+
+                auto result = std::memcmp(data1, data2, size * sizeof(value_t<Seq1>));
+                return result == 0;
+            }
+        } else {
+            return impl(seq1, seq2, cmp);
+        }
+    }
 };
 
 } // namespace detail
@@ -7515,18 +7617,50 @@ constexpr auto inline_sequence_base<D>::for_each(Func func) -> Func
 
 #endif
 
+#include <type_traits>
+#include <cstring>
 
 namespace flux {
 
 namespace detail {
 
 struct fill_fn {
+private:
+    template <typename Seq, typename Value>
+    static constexpr auto impl(Seq& seq, Value const& value)
+    {
+        flux::for_each(seq, [&value](auto&& elem) { FLUX_FWD(elem) = value; });
+    }
+
+public:
     template <typename Value, writable_sequence_of<Value> Seq>
     constexpr void operator()(Seq&& seq, Value const& value) const
     {
-        flux::for_each(seq, [&value](auto&& elem) {
-            FLUX_FWD(elem) = value;
-        });
+        constexpr bool can_memset = 
+            contiguous_sequence<Seq> &&
+            sized_sequence<Seq> &&
+            std::same_as<Value, value_t<Seq>> &&
+            // only allow memset on single byte types
+            sizeof(value_t<Seq>) == 1 &&
+            std::is_trivially_copyable_v<value_t<Seq>>;
+
+        if constexpr (can_memset) {
+            if (std::is_constant_evaluated()) {
+                impl(seq, value);
+            } else {
+                auto size = flux::usize(seq);
+                if(size == 0) {
+                    return;
+                }
+                
+                FLUX_ASSERT(flux::data(seq) != nullptr);
+                
+                std::memset(flux::data(seq), value,
+                    size * sizeof(value_t<Seq>));
+            }
+        } else {
+            impl(seq, value);
+        }
     }
 };
 
@@ -7565,18 +7699,55 @@ constexpr void inline_sequence_base<D>::fill(Value const& value)
 
 
 
+
+#include <cstring>
+#include <type_traits>
+
 namespace flux {
 
 namespace detail {
 
 struct find_fn {
-    template <sequence Seq, typename Value>
-        requires std::equality_comparable_with<element_t<Seq>, Value const&>
-    constexpr auto operator()(Seq&& seq, Value const& value) const -> cursor_t<Seq>
+private:
+    template <typename Seq, typename Value>
+    static constexpr auto impl(Seq&& seq, Value const& value) -> cursor_t<Seq>
     {
         return for_each_while(seq, [&](auto&& elem) {
             return FLUX_FWD(elem) != value;
         });
+    }
+
+public:
+    template <sequence Seq, typename Value>
+        requires std::equality_comparable_with<element_t<Seq>, Value const&>
+    constexpr auto operator()(Seq&& seq, Value const& value) const -> cursor_t<Seq>
+    {
+        constexpr auto can_memchr = 
+            contiguous_sequence<Seq> && sized_sequence<Seq> && 
+            std::same_as<Value, value_t<Seq>> &&
+            flux::detail::any_of<value_t<Seq>, char, signed char, unsigned char, char8_t, std::byte>;
+
+        if constexpr (can_memchr) {
+            if (std::is_constant_evaluated()) {
+                return impl(seq, value);
+            } else {
+                auto size = flux::usize(seq);
+                if (size == 0) {
+                    return flux::last(seq);
+                }
+                FLUX_ASSERT(flux::data(seq) != nullptr);
+                auto location = std::memchr(flux::data(seq), static_cast<unsigned char>(value),
+                    size * sizeof(value_t<Seq>));
+                if (location == nullptr) {
+                    return flux::last(seq);
+                } else {
+                    auto offset = static_cast<value_t<Seq> const*>(location) - flux::data(seq);
+                    return flux::next(seq, flux::first(seq), offset);
+                }
+            }
+        } else {
+            return impl(seq, value);
+        }
     }
 };
 
@@ -11092,14 +11263,12 @@ constexpr auto inline_sequence_base<Derived>::split(ValueType&& delim) &&
 
 
 
+
 #include <string_view>
 
 namespace flux {
 
 namespace detail {
-
-template <typename T, typename... U>
-concept any_of = (std::same_as<T, U> || ...);
 
 template <typename C>
 concept character = any_of<C, char, wchar_t, char8_t, char16_t, char32_t>;
@@ -11408,8 +11577,13 @@ public:
             if (std::is_constant_evaluated()) {
                 return impl(seq, iter);
             } else {
+                auto size = flux::usize(seq);
+                if (size == 0) {
+                    return iter;
+                }
+                FLUX_ASSERT(flux::data(seq) != nullptr);
                 std::memmove(std::to_address(iter), flux::data(seq),
-                             flux::usize(seq) * sizeof(value_t<Seq>));
+                             size * sizeof(value_t<Seq>));
                 return iter + checked_cast<std::iter_difference_t<Iter>>(flux::size(seq));
             }
         } else {
