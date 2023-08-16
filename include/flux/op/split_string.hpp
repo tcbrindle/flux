@@ -7,15 +7,13 @@
 #define FLUX_STRING_SPLIT_HPP_INCLUDED
 
 #include <flux/op/split.hpp>
+#include <flux/core/utils.hpp>
 
 #include <string_view>
 
 namespace flux {
 
 namespace detail {
-
-template <typename T, typename... U>
-concept any_of = (std::same_as<T, U> || ...);
 
 template <typename C>
 concept character = any_of<C, char, wchar_t, char8_t, char16_t, char32_t>;

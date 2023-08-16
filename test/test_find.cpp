@@ -78,4 +78,15 @@ TEST_CASE("find")
         REQUIRE(idx == std::ssize(vec));
     }
 
+    {
+        std::string_view str = "abcdefg";
+        auto idx = flux::find(str, 'd');
+        REQUIRE(idx == 3);
+    }
+
+    {
+        std::string str = "";
+        auto idx = flux::find(str, 'a');
+        REQUIRE(idx == flux::last(str));
+    }
 }

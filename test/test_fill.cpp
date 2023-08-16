@@ -53,15 +53,31 @@ constexpr bool test_fill()
 
     // single sequences can be filled
     {
-        auto s= flux::single(0);
+        auto s = flux::single(0);
 
         flux::fill(s, short{1});
 
         STATIC_CHECK(s.value() == 1);
     }
 
+    // string fill with char
+    {
+        std::array<std::uint8_t, 5> arr{};
+        std::uint8_t c = 5;
+        flux::fill(arr, c);
+        STATIC_CHECK(check_equal(arr, {5, 5, 5, 5, 5}));
+    }
+
+    // fill empty sequence with char
+    {
+        std::array<std::uint8_t, 0> arr{};
+        std::uint8_t c = 5;
+        flux::fill(arr, c);
+    }
+
     return true;
 }
+
 static_assert(test_fill());
 
 }

@@ -97,6 +97,11 @@ constexpr bool test_equal()
         static_assert(flux::equal(flux::empty<int>, flux::empty<float>));
     }
 
+    {
+        std::array<int, 0> arr;
+        STATIC_CHECK(flux::equal(arr, arr) == true);
+    }
+
     return true;
 }
 static_assert(test_equal());

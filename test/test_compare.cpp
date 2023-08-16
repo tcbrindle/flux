@@ -117,6 +117,39 @@ constexpr bool test_compare()
         STATIC_CHECK(r == std::strong_ordering::equal);
     }
 
+    {
+        std::array<std::uint8_t, 3> arr1{1, 2, 3};
+        std::array<std::uint8_t, 3> arr2{1, 2, 3};
+        auto r = flux::compare(arr1, arr2);
+
+        static_assert(std::same_as<decltype(r), std::strong_ordering>);
+        STATIC_CHECK(r == std::strong_ordering::equal);
+    }
+
+    {
+        std::array<std::uint8_t, 3> arr1{1, 2, 3};
+        std::array<std::uint8_t, 0> arr2{};
+        auto r = flux::compare(arr1, arr2);
+        static_assert(std::same_as<decltype(r), std::strong_ordering>);
+        STATIC_CHECK(r == std::strong_ordering::greater);
+        
+        auto r2 = flux::compare(arr2, arr1);
+        STATIC_CHECK(r2 == std::strong_ordering::less);
+    }
+
+    {
+        std::array<std::uint8_t, 3> arr1{1, 2, 3};
+        std::array<std::uint8_t, 3> arr2{1, 2, 4};
+        
+        auto r1 = flux::compare(arr1, arr2);
+        
+        static_assert(std::same_as<decltype(r1), std::strong_ordering>);
+        STATIC_CHECK(r1 == std::strong_ordering::less);
+        
+        auto r2 = flux::compare(arr2, arr1);
+        STATIC_CHECK(r2 == std::strong_ordering::greater);
+    }
+
     return true;
 }
 static_assert(test_compare());
