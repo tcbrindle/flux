@@ -8657,6 +8657,13 @@ public:
             return std::invoke(self.func_, flux::read_at(self.base_, cur));
         }
 
+        template <typename Self>
+        static constexpr auto read_at_unchecked(Self& self, cursor_t<Self> const& cur)
+            -> decltype(std::invoke(self.func_, flux::read_at_unchecked(self.base_, cur)))
+        {
+            return std::invoke(self.func_, flux::read_at_unchecked(self.base_, cur));
+        }
+
         static constexpr auto for_each_while(auto& self, auto&& pred)
         {
             return flux::for_each_while(self.base_, [&](auto&& elem) {
