@@ -56,14 +56,14 @@ These basis operations are equivalent to the basis operations on STL iterators (
 
 > STL iterators are "smart", but Flux cursors are not!
 
-This seemingly small change as some far-reaching consequences. In particular:
+This seemingly small change has some far-reaching consequences. In particular:
 
  * Because we have access to the sequence object during increment and dereference operations, we can provide *inexpensive bounds checking* for sequences
  * Because we need the sequence object in order to do anything useful with a cursor, "dangling" cursors are not possible by design: if the sequence object is no longer around, the cursor can't be used
  * Because a cursor only represents a position in a sequence (like an integer index for an array), modifying the underlying sequence is less likely to invalidate a cursor -- if the element at the given position no longer exists, this will be caught by the bounds check at the next attempted read.
  * Because element access requires the original sequence, we don't need to make a distinction between mutable `iterator`s and `const_iterator`s -- the same cursor type is used for both const and non-const access, making cursors considerably simpler to implement than STL iterators.
 
-Like STL input ranges, basic Flux sequences are assumed to be single-pass by default. Flux also provides various for more powerful sequences, closely modeled on their STL counterparts:
+Like STL input ranges, basic Flux sequences are assumed to be single-pass by default. Flux also provides various far more powerful sequences, closely modeled on their STL counterparts:
 
  * `multipass_sequence`s allow multiple cursors to iterate over the sequence independently, potentially passing over each position multiple times
  * `bidirectional_sequence`s are multipass sequences whose cursors can be decremented as well as incremented
