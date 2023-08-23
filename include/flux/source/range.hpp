@@ -122,7 +122,7 @@ public:
                 bounds_check(offset < distance(self, cur, last(self)));
             }
 
-            cur.iter += checked_cast<std::ranges::range_difference_t<V>>(offset);
+            cur.iter += num::checked_cast<std::ranges::range_difference_t<V>>(offset);
         }
 
         template <typename Self>
@@ -131,7 +131,7 @@ public:
             -> distance_t
             requires std::ranges::random_access_range<R>
         {
-            return checked_cast<distance_t>(std::ranges::distance(from.iter, to.iter));
+            return num::checked_cast<distance_t>(std::ranges::distance(from.iter, to.iter));
         }
 
         template <typename Self>
@@ -159,7 +159,7 @@ public:
         static constexpr auto size(Self& self) -> distance_t
             requires std::ranges::sized_range<R>
         {
-            return checked_cast<distance_t>(std::ranges::ssize(self.rng_));
+            return num::checked_cast<distance_t>(std::ranges::ssize(self.rng_));
         }
 
         template <typename Self>

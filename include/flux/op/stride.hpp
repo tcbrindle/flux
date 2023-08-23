@@ -255,7 +255,8 @@ struct stride_fn {
     constexpr auto operator()(Seq&& seq, std::integral auto by) const
     {
         FLUX_ASSERT(by > 0);
-        return stride_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq), checked_cast<distance_t>(by));
+        return stride_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq),
+                                                 num::checked_cast<distance_t>(by));
     }
 };
 

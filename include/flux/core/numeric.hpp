@@ -12,6 +12,33 @@
 
 namespace flux::num {
 
+namespace detail {
+
+template <std::integral To>
+struct checked_cast_fn {
+    template <std::integral From>
+    [[nodiscard]]
+    constexpr auto operator()(From from) const -> To
+    {
+        if constexpr (requires { To{from}; }) {
+            return To{from}; // not a narrowing conversion
+        } else {
+            To to = static_cast<To>(from);
+            FLUX_DEBUG_ASSERT(static_cast<From>(to) == from);
+            if constexpr (std::is_signed_v<From> != std::is_signed_v<To>) {
+                FLUX_DEBUG_ASSERT((to < To{}) == (from < From{}));
+            }
+            return to;
+        }
+    }
+};
+
+} // namespace detail
+
+FLUX_EXPORT
+template <std::integral To>
+inline constexpr auto checked_cast = detail::checked_cast_fn<To>{};
+
 FLUX_EXPORT
 inline constexpr auto wrapping_add = []<std::signed_integral T>(T lhs, T rhs) -> T
 {

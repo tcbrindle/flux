@@ -147,7 +147,7 @@ struct make_array_ptr_unchecked_fn {
         requires (std::is_object_v<T> && !std::is_abstract_v<T>)
     constexpr auto operator()(T* ptr, std::integral auto size) const -> array_ptr<T>
     {
-        return array_ptr<T>(ptr, checked_cast<distance_t>(size));
+        return array_ptr<T>(ptr, num::checked_cast<distance_t>(size));
     }
 };
 

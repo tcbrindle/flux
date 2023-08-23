@@ -5,7 +5,7 @@
 
 #include "catch.hpp"
 
-#include <flux/core/utils.hpp>
+#include <flux/core/numeric.hpp>
 
 #include <limits>
 
