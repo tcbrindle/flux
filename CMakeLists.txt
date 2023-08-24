@@ -66,19 +66,25 @@ endif()
 set(PORT_NAME flux)
 set(CONFIG_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PORT_NAME}")
 
+set(FOO "-1")
+math (EXPR BAR "${FOO} + 1")
+message(STATUS "BAR=${BAR}")
+
+
 # header-only doesn't need architeture differences so clear CMAKE_SIZEOF_VOIDP
 # temporarily when creating the version file.
 set(ORIGINAL_CMAKE_SIZEOF_VOIDP ${CMAKE_SIZEOF_VOIDP})
 set(CMAKE_SIZEOF_VOIDP "")
 write_basic_package_version_file(
     "${PROJECT_BINARY_DIR}/${PORT_NAME}-version.cmake"
-    VERSION 0.0.1
+    VERSION -1 # When there is a PROJECT_VERSION, remove this line
     COMPATIBILITY SameMajorVersion
+    # ARCH_INDEPENDENT # showed up in CMake 3.14 and gets rid of the need to do the CMAKE_SIZEOF_VOIDP thing
 )
 set(CMAKE_SIZEOF_VOIDP ${ORIGINAL_CMAKE_SIZEOF_VOIDP})
 
 configure_package_config_file(
-    "${PROJECT_SOURCE_DIR}/${PORT_NAME}-config.cmake.in"
+    "${PROJECT_SOURCE_DIR}/cmake/${PORT_NAME}-config.cmake.in"
     "${PROJECT_BINARY_DIR}/${PORT_NAME}-config.cmake"
     INSTALL_DESTINATION "${CONFIG_DESTINATION}"
     NO_SET_AND_CHECK_MACRO

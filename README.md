@@ -22,28 +22,8 @@ static_assert(result == 12);
 Try it [on Compiler Explorer](https://godbolt.org/z/WvqeKr1h3)
 
 ## Getting Started ##
-### Easy way
+
 Right now the easiest way to get started with Flux is to download the [latest automatically generated single header file](https://raw.githubusercontent.com/tcbrindle/flux/main/single_include/flux.hpp) and `#include` it in your sources like any other header.
-
-### CMake Target
-
-There is a CMake target for just including Flux in other source code.
-
-To create it in the local `install` directory (CMake requires an absolute path to the install location):
-
-```sh
-cmake -S . -B build --install-prefix "$(realpath .)/install" -DFLUX_BUILD_EXAMPLES=Off -DFLUX_BUILD_TESTS=Off .
-cmake --install build
-```
-(on windows, you can use `--install-prefix "%CD%\install"`)
-
-An `include` directory with the headers and a `lib` directory with the CMake target get installed into the `install` directory.
-
-With the install location where CMake can find it, use the target from your CMakeLists.txt like:
-```cmake
-find_package(flux CONFIG REQUIRED)
-target_link_libraries(mytarget PRIVATE flux::flux)
-```
 
 ## Compiler support ##
 
@@ -93,7 +73,6 @@ Like STL input ranges, basic Flux sequences are assumed to be single-pass by def
 ## Reference documentation ##
 
 Incomplete, work-in-progress documentation can be found at [tristanbrindle.com/flux](https://tristanbrindle.com/flux)
-
 
 
 
