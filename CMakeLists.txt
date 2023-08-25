@@ -69,11 +69,6 @@ endif()
 set(PORT_NAME flux)
 set(CONFIG_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PORT_NAME}")
 
-set(FOO "-1")
-math (EXPR BAR "${FOO} + 1")
-message(STATUS "BAR=${BAR}")
-
-
 # header-only doesn't need architeture differences so clear CMAKE_SIZEOF_VOIDP
 # temporarily when creating the version file.
 set(ORIGINAL_CMAKE_SIZEOF_VOIDP ${CMAKE_SIZEOF_VOIDP})
