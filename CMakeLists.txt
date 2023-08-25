@@ -1,15 +1,18 @@
 
-cmake_minimum_required(VERSION 3.3)
-cmake_policy(SET CMP0092 NEW)
+cmake_minimum_required(VERSION 3.5)
+cmake_policy(SET CMP0076 NEW) # remove warning for target_sources(flux...) for < 3.13
+cmake_policy(SET CMP0092 NEW) # remove warning for CMAKE_LANG_FLAG MSVC for < 3.15
+
+project(libflux CXX)
+
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
-project(libflux CXX)
 
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 add_library(flux INTERFACE)
-file(GLOB_RECURSE FLUX_HPPS "${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp" )
+file(GLOB_RECURSE FLUX_HPPS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp" )
 target_sources(flux INTERFACE $<BUILD_INTERFACE:${FLUX_HPPS}>)
 
 if (MSVC)
