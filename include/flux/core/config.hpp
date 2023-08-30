@@ -105,6 +105,7 @@ enum class overflow_policy {
     error = FLUX_OVERFLOW_POLICY_ERROR
 };
 
+FLUX_EXPORT
 enum class divide_by_zero_policy {
     ignore = FLUX_DIVIDE_BY_ZERO_POLICY_IGNORE,
     error = FLUX_DIVIDE_BY_ZERO_POLICY_ERROR
