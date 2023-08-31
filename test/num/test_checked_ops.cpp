@@ -5,8 +5,8 @@
 
 
 /*
- * Note that these test are exactly the same as the ones in test_checked_ops.cpp
- * but calling num::xxx rather than num::checked_xxx.
+ * Note that these test are exactly the same as the ones in test_default_ops.cpp
+ * but calling num::checked_xxx rather than num::xxx.
  *
  * If adding/modifying tests, make sure to do the same in both files
  */
@@ -33,9 +33,9 @@ struct Tester {};
 #define CONSTEXPR_CALLABLE(expr) requires { typename Tester<expr>; }
 
 template <typename T>
-constexpr bool test_add_constexpr()
+constexpr bool test_checked_add_constexpr()
 {
-    constexpr auto& add = flux::num::add;
+    constexpr auto& add = flux::num::checked_add;
 
     constexpr T zero = T{0};
     constexpr T one = T{1};
@@ -51,8 +51,8 @@ constexpr bool test_add_constexpr()
     STATIC_CHECK(add(zero, max) == max);
 
     // Make sure that we *can't* add(max, one) at compile time
-    static_assert(not CONSTEXPR_CALLABLE(add(max, one)));
-    static_assert(not CONSTEXPR_CALLABLE(add(one, max)));
+    static_assert(not requires { typename Tester<add(max, one)>; });
+    static_assert(not requires { typename Tester<add(one, max)>; });
 
     if constexpr (flux::num::signed_integral<T>) {
         constexpr T minus_one = T{-1};
@@ -69,21 +69,21 @@ constexpr bool test_add_constexpr()
     return true;
 }
 
-static_assert(test_add_constexpr<signed char>());
-static_assert(test_add_constexpr<unsigned char>());
-static_assert(test_add_constexpr<signed short>());
-static_assert(test_add_constexpr<unsigned short>());
-static_assert(test_add_constexpr<signed int>());
-static_assert(test_add_constexpr<unsigned int>());
-static_assert(test_add_constexpr<signed long>());
-static_assert(test_add_constexpr<unsigned long>());
-static_assert(test_add_constexpr<signed long long>());
-static_assert(test_add_constexpr<unsigned long long>());
+static_assert(test_checked_add_constexpr<signed char>());
+static_assert(test_checked_add_constexpr<unsigned char>());
+static_assert(test_checked_add_constexpr<signed short>());
+static_assert(test_checked_add_constexpr<unsigned short>());
+static_assert(test_checked_add_constexpr<signed int>());
+static_assert(test_checked_add_constexpr<unsigned int>());
+static_assert(test_checked_add_constexpr<signed long>());
+static_assert(test_checked_add_constexpr<unsigned long>());
+static_assert(test_checked_add_constexpr<signed long long>());
+static_assert(test_checked_add_constexpr<unsigned long long>());
 
 template <typename T>
-constexpr bool test_sub_constexpr()
+constexpr bool test_checked_sub_constexpr()
 {
-    constexpr auto& sub = flux::num::sub;
+    constexpr auto& sub = flux::num::checked_sub;
 
     constexpr T zero = T{0};
     constexpr T one = T{1};
@@ -133,21 +133,21 @@ constexpr bool test_sub_constexpr()
     return true;
 }
 
-static_assert(test_sub_constexpr<signed char>());
-static_assert(test_sub_constexpr<unsigned char>());
-static_assert(test_sub_constexpr<signed short>());
-static_assert(test_sub_constexpr<unsigned short>());
-static_assert(test_sub_constexpr<signed int>());
-static_assert(test_sub_constexpr<unsigned int>());
-static_assert(test_sub_constexpr<signed long>());
-static_assert(test_sub_constexpr<unsigned long>());
-static_assert(test_sub_constexpr<signed long long>());
-static_assert(test_sub_constexpr<unsigned long long>());
+static_assert(test_checked_sub_constexpr<signed char>());
+static_assert(test_checked_sub_constexpr<unsigned char>());
+static_assert(test_checked_sub_constexpr<signed short>());
+static_assert(test_checked_sub_constexpr<unsigned short>());
+static_assert(test_checked_sub_constexpr<signed int>());
+static_assert(test_checked_sub_constexpr<unsigned int>());
+static_assert(test_checked_sub_constexpr<signed long>());
+static_assert(test_checked_sub_constexpr<unsigned long>());
+static_assert(test_checked_sub_constexpr<signed long long>());
+static_assert(test_checked_sub_constexpr<unsigned long long>());
 
 template <typename T>
-constexpr bool test_mul_constexpr()
+constexpr bool test_checked_mul_constexpr()
 {
-    constexpr auto& mul = flux::num::mul;
+    constexpr auto& mul = flux::num::checked_mul;
 
     constexpr T zero = T{0};
     constexpr T one = T{1};
@@ -205,21 +205,21 @@ constexpr bool test_mul_constexpr()
     return true;
 }
 
-static_assert(test_mul_constexpr<signed char>());
-static_assert(test_mul_constexpr<unsigned char>());
-static_assert(test_mul_constexpr<signed short>());
-static_assert(test_mul_constexpr<unsigned short>());
-static_assert(test_mul_constexpr<signed int>());
-static_assert(test_mul_constexpr<unsigned int>());
-static_assert(test_mul_constexpr<signed long>());
-static_assert(test_mul_constexpr<unsigned long>());
-static_assert(test_mul_constexpr<signed long long>());
-static_assert(test_mul_constexpr<unsigned long long>());
+static_assert(test_checked_mul_constexpr<signed char>());
+static_assert(test_checked_mul_constexpr<unsigned char>());
+static_assert(test_checked_mul_constexpr<signed short>());
+static_assert(test_checked_mul_constexpr<unsigned short>());
+static_assert(test_checked_mul_constexpr<signed int>());
+static_assert(test_checked_mul_constexpr<unsigned int>());
+static_assert(test_checked_mul_constexpr<signed long>());
+static_assert(test_checked_mul_constexpr<unsigned long>());
+static_assert(test_checked_mul_constexpr<signed long long>());
+static_assert(test_checked_mul_constexpr<unsigned long long>());
 
 template <typename T>
-constexpr bool test_div_constexpr()
+constexpr bool test_checked_div_constexpr()
 {
-    constexpr auto& div = flux::num::div;
+    constexpr auto& div = flux::num::checked_div;
 
     constexpr T zero{0};
     constexpr T one{1};
@@ -255,21 +255,21 @@ constexpr bool test_div_constexpr()
     return true;
 }
 
-static_assert(test_div_constexpr<signed char>());
-static_assert(test_div_constexpr<unsigned char>());
-static_assert(test_div_constexpr<signed short>());
-static_assert(test_div_constexpr<unsigned short>());
-static_assert(test_div_constexpr<signed int>());
-static_assert(test_div_constexpr<unsigned int>());
-static_assert(test_div_constexpr<signed long>());
-static_assert(test_div_constexpr<unsigned long>());
-static_assert(test_div_constexpr<signed long long>());
-static_assert(test_div_constexpr<unsigned long long>());
+static_assert(test_checked_div_constexpr<signed char>());
+static_assert(test_checked_div_constexpr<unsigned char>());
+static_assert(test_checked_div_constexpr<signed short>());
+static_assert(test_checked_div_constexpr<unsigned short>());
+static_assert(test_checked_div_constexpr<signed int>());
+static_assert(test_checked_div_constexpr<unsigned int>());
+static_assert(test_checked_div_constexpr<signed long>());
+static_assert(test_checked_div_constexpr<unsigned long>());
+static_assert(test_checked_div_constexpr<signed long long>());
+static_assert(test_checked_div_constexpr<unsigned long long>());
 
 template <typename T>
-constexpr bool test_mod_constexpr()
+constexpr bool test_checked_mod_constexpr()
 {
-    constexpr auto& mod = flux::num::mod;
+    constexpr auto& mod = flux::num::checked_mod;
 
     constexpr T zero{0};
     constexpr T one{1};
@@ -310,22 +310,23 @@ constexpr bool test_mod_constexpr()
     return true;
 };
 
-static_assert(test_mod_constexpr<signed char>());
-static_assert(test_mod_constexpr<unsigned char>());
-static_assert(test_mod_constexpr<signed short>());
-static_assert(test_mod_constexpr<unsigned short>());
-static_assert(test_mod_constexpr<signed int>());
-static_assert(test_mod_constexpr<unsigned int>());
-static_assert(test_mod_constexpr<signed long>());
-static_assert(test_mod_constexpr<unsigned long>());
-static_assert(test_mod_constexpr<signed long long>());
-static_assert(test_mod_constexpr<unsigned long long>());
+static_assert(test_checked_mod_constexpr<signed char>());
+static_assert(test_checked_mod_constexpr<unsigned char>());
+static_assert(test_checked_mod_constexpr<signed short>());
+static_assert(test_checked_mod_constexpr<unsigned short>());
+static_assert(test_checked_mod_constexpr<signed int>());
+static_assert(test_checked_mod_constexpr<unsigned int>());
+static_assert(test_checked_mod_constexpr<signed long>());
+static_assert(test_checked_mod_constexpr<unsigned long>());
+static_assert(test_checked_mod_constexpr<signed long long>());
+static_assert(test_checked_mod_constexpr<unsigned long long>());
+
 
 template <typename T, typename U>
-struct test_shl_constexpr {
+struct test_checked_shl_constexpr {
     constexpr bool operator()() const
     {
-        constexpr auto& shl = flux::num::shl;
+        constexpr auto& shl = flux::num::checked_shl;
 
         constexpr auto width = sizeof(T) * CHAR_BIT;
         constexpr T zero = T{0};
@@ -367,22 +368,22 @@ constexpr bool test_helper1()
     return (test_helper0<Fn, Types, Types...>() && ...);
 }
 
-constexpr bool do_test_shl_constexpr()
+constexpr bool do_test_checked_shl_constexpr()
 {
-    return test_helper1<test_shl_constexpr,
+    return test_helper1<test_checked_shl_constexpr,
                         signed char, unsigned char,
                         signed short, unsigned short,
                         signed int, unsigned int,
                         signed long, unsigned long,
                         signed long long, unsigned long long>();
 }
-static_assert(do_test_shl_constexpr());
+static_assert(do_test_checked_shl_constexpr());
 
 template <typename T, typename U>
-struct test_shr_constexpr {
+struct test_checked_shr_constexpr {
     constexpr bool operator()() const
     {
-        constexpr auto& shr = flux::num::shr;
+        constexpr auto& shr = flux::num::checked_shr;
 
         constexpr auto width = sizeof(T) * CHAR_BIT;
         constexpr T zero = T{0};
@@ -417,16 +418,16 @@ struct test_shr_constexpr {
     }
 };
 
-constexpr bool do_test_shr_constexpr()
+constexpr bool do_test_checked_shr_constexpr()
 {
-    return test_helper1<test_shr_constexpr,
+    return test_helper1<test_checked_shr_constexpr,
                         signed char, unsigned char,
                         signed short, unsigned short,
                         signed int, unsigned int,
                         signed long, unsigned long,
                         signed long long, unsigned long long>();
 }
-static_assert(do_test_shr_constexpr());
+static_assert(do_test_checked_shr_constexpr());
 
 
 /*
@@ -434,9 +435,9 @@ static_assert(do_test_shr_constexpr());
  */
 
 template <typename T>
-void test_add_runtime()
+void test_checked_add_runtime()
 {
-    constexpr auto& add = flux::num::add;
+    constexpr auto& add = flux::num::checked_add;
 
     constexpr T zero = T{0};
     constexpr T one = T{1};
@@ -469,9 +470,9 @@ void test_add_runtime()
 }
 
 template <typename T>
-void test_sub_runtime()
+void test_checked_sub_runtime()
 {
-    constexpr auto& sub = flux::num::sub;
+    constexpr auto& sub = flux::num::checked_sub;
 
     constexpr T zero = T{0};
     constexpr T one = T{1};
@@ -520,9 +521,9 @@ void test_sub_runtime()
 }
 
 template <typename T>
-void test_mul_runtime()
+void test_checked_mul_runtime()
 {
-    constexpr auto& mul = flux::num::mul;
+    constexpr auto& mul = flux::num::checked_mul;
 
     constexpr T zero = T{0};
     constexpr T one = T{1};
@@ -579,9 +580,9 @@ void test_mul_runtime()
 }
 
 template <typename T>
-void test_div_runtime()
+void test_checked_div_runtime()
 {
-    constexpr auto& div = flux::num::div;
+    constexpr auto& div = flux::num::checked_div;
 
     constexpr T zero{0};
     constexpr T one{1};
@@ -618,9 +619,9 @@ void test_div_runtime()
 }
 
 template <typename T>
-void test_mod_runtime()
+void test_checked_mod_runtime()
 {
-    constexpr auto& mod = flux::num::mod;
+    constexpr auto& mod = flux::num::checked_mod;
 
     constexpr T zero{0};
     constexpr T one{1};
@@ -661,7 +662,7 @@ void test_mod_runtime()
 
 
 template <typename T, typename U>
-struct test_shl_runtime {
+struct test_checked_shl_runtime {
     bool operator()() const
     {
         constexpr auto& shl = flux::num::checked_shl;
@@ -695,7 +696,7 @@ struct test_shl_runtime {
 };
 
 template <typename T, typename U>
-struct test_shr_runtime {
+struct test_checked_shr_runtime {
     bool operator()() const
     {
         constexpr auto& shr = flux::num::checked_shr;
@@ -735,79 +736,79 @@ struct test_shr_runtime {
 
 }
 
-TEST_CASE("num.add")
+TEST_CASE("num.checked_add")
 {
-    test_add_runtime<signed char>();
-    test_add_runtime<unsigned char>();
-    test_add_runtime<signed short>();
-    test_add_runtime<unsigned short>();
-    test_add_runtime<signed int>();
-    test_add_runtime<unsigned int>();
-    test_add_runtime<signed long>();
-    test_add_runtime<unsigned long>();
-    test_add_runtime<signed long long>();
-    test_add_runtime<unsigned long long>();
+    test_checked_add_runtime<signed char>();
+    test_checked_add_runtime<unsigned char>();
+    test_checked_add_runtime<signed short>();
+    test_checked_add_runtime<unsigned short>();
+    test_checked_add_runtime<signed int>();
+    test_checked_add_runtime<unsigned int>();
+    test_checked_add_runtime<signed long>();
+    test_checked_add_runtime<unsigned long>();
+    test_checked_add_runtime<signed long long>();
+    test_checked_add_runtime<unsigned long long>();
 }
 
-TEST_CASE("num.sub")
+TEST_CASE("num.checked_sub")
 {
-    test_sub_runtime<signed char>();
-    test_sub_runtime<unsigned char>();
-    test_sub_runtime<signed short>();
-    test_sub_runtime<unsigned short>();
-    test_sub_runtime<signed int>();
-    test_sub_runtime<unsigned int>();
-    test_sub_runtime<signed long>();
-    test_sub_runtime<unsigned long>();
-    test_sub_runtime<signed long long>();
-    test_sub_runtime<unsigned long long>();
+    test_checked_sub_runtime<signed char>();
+    test_checked_sub_runtime<unsigned char>();
+    test_checked_sub_runtime<signed short>();
+    test_checked_sub_runtime<unsigned short>();
+    test_checked_sub_runtime<signed int>();
+    test_checked_sub_runtime<unsigned int>();
+    test_checked_sub_runtime<signed long>();
+    test_checked_sub_runtime<unsigned long>();
+    test_checked_sub_runtime<signed long long>();
+    test_checked_sub_runtime<unsigned long long>();
 }
 
-TEST_CASE("num.mul")
+TEST_CASE("num.checked_mul")
 {
-    test_mul_runtime<signed char>();
-    test_mul_runtime<unsigned char>();
-    test_mul_runtime<signed short>();
-    test_mul_runtime<unsigned short>();
-    test_mul_runtime<signed int>();
-    test_mul_runtime<unsigned int>();
-    test_mul_runtime<signed long>();
-    test_mul_runtime<unsigned long>();
-    test_mul_runtime<signed long long>();
-    test_mul_runtime<unsigned long long>();
+    test_checked_mul_runtime<signed char>();
+    test_checked_mul_runtime<unsigned char>();
+    test_checked_mul_runtime<signed short>();
+    test_checked_mul_runtime<unsigned short>();
+    test_checked_mul_runtime<signed int>();
+    test_checked_mul_runtime<unsigned int>();
+    test_checked_mul_runtime<signed long>();
+    test_checked_mul_runtime<unsigned long>();
+    test_checked_mul_runtime<signed long long>();
+    test_checked_mul_runtime<unsigned long long>();
 }
 
-TEST_CASE("num.div")
+TEST_CASE("num.checked_div")
 {
-    test_div_runtime<signed char>();
-    test_div_runtime<unsigned char>();
-    test_div_runtime<signed short>();
-    test_div_runtime<unsigned short>();
-    test_div_runtime<signed int>();
-    test_div_runtime<unsigned int>();
-    test_div_runtime<signed long>();
-    test_div_runtime<unsigned long>();
-    test_div_runtime<signed long long>();
-    test_div_runtime<unsigned long long>();
+    test_checked_div_runtime<signed char>();
+    test_checked_div_runtime<unsigned char>();
+    test_checked_div_runtime<signed short>();
+    test_checked_div_runtime<unsigned short>();
+    test_checked_div_runtime<signed int>();
+    test_checked_div_runtime<unsigned int>();
+    test_checked_div_runtime<signed long>();
+    test_checked_div_runtime<unsigned long>();
+    test_checked_div_runtime<signed long long>();
+    test_checked_div_runtime<unsigned long long>();
 }
 
-TEST_CASE("num.mod")
+TEST_CASE("num.checked_mod")
 {
-    test_mod_runtime<signed char>();
-    test_mod_runtime<unsigned char>();
-    test_mod_runtime<signed short>();
-    test_mod_runtime<unsigned short>();
-    test_mod_runtime<signed int>();
-    test_mod_runtime<unsigned int>();
-    test_mod_runtime<signed long>();
-    test_mod_runtime<unsigned long>();
-    test_mod_runtime<signed long long>();
-    test_mod_runtime<unsigned long long>();
+    test_checked_mod_runtime<signed char>();
+    test_checked_mod_runtime<unsigned char>();
+    test_checked_mod_runtime<signed short>();
+    test_checked_mod_runtime<unsigned short>();
+    test_checked_mod_runtime<signed int>();
+    test_checked_mod_runtime<unsigned int>();
+    test_checked_mod_runtime<signed long>();
+    test_checked_mod_runtime<unsigned long>();
+    test_checked_mod_runtime<signed long long>();
+    test_checked_mod_runtime<unsigned long long>();
 }
 
-TEST_CASE("num.shl")
+TEST_CASE("num.checked_shl")
 {
-    test_helper1<test_shl_runtime,
+    test_helper1<test_checked_shl_runtime,
                  signed char, unsigned char,
                  signed short, unsigned short,
                  signed int, unsigned int,
@@ -815,13 +816,12 @@ TEST_CASE("num.shl")
                  signed long long, unsigned long long>();
 }
 
-TEST_CASE("num.shr")
+TEST_CASE("num.checked_shr")
 {
-    test_helper1<test_shr_runtime,
+    test_helper1<test_checked_shr_runtime,
                  signed char, unsigned char,
                  signed short, unsigned short,
                  signed int, unsigned int,
                  signed long, unsigned long,
                  signed long long, unsigned long long>();
 }
-
