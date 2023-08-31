@@ -278,8 +278,7 @@ struct overflowing_add_fn {
                 bool o = ((lhs < T{}) == (rhs < T{})) && ((lhs < T{}) != (value < T{}));
                 return {value, o};
             } else {
-                bool o = ((value < lhs) || (value < rhs));
-                return {value, o};
+                return {value, value < lhs};
             }
         }
     }
