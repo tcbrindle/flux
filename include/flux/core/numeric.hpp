@@ -9,6 +9,7 @@
 #include <flux/core/assert.hpp>
 #include <flux/core/utils.hpp>
 
+#include <climits>
 #include <limits>
 
 namespace flux::num {
@@ -188,6 +189,24 @@ struct unchecked_mod_fn {
         } else {
             return static_cast<T>(to_builtin(lhs) % to_builtin(rhs));
         }
+    }
+};
+
+struct unchecked_shl_fn {
+    template <integral T, integral U>
+    [[nodiscard]]
+    constexpr auto operator()(T lhs, U rhs) const noexcept -> T
+    {
+        return static_cast<T>(to_builtin(lhs) << to_builtin(rhs));
+    }
+};
+
+struct unchecked_shr_fn {
+    template <integral T, integral U>
+    [[nodiscard]]
+    constexpr auto operator()(T lhs, U rhs) const noexcept -> T
+    {
+        return static_cast<T>(to_builtin(lhs) >> to_builtin(rhs));
     }
 };
 
@@ -476,6 +495,40 @@ struct checked_mod_fn {
     }
 };
 
+struct checked_shl_fn {
+    template <integral T, integral U>
+    [[nodiscard]]
+    constexpr auto operator()(T lhs, U rhs,
+                              std::source_location loc = std::source_location::current()) const
+        -> T
+    {
+        constexpr std::size_t width = sizeof(T) * CHAR_BIT;
+        // If T is at least as large as int, we already get a check when
+        // in constant evaluation
+        if ((!std::is_constant_evaluated() || (sizeof(T) < sizeof(int))) &&
+            ((static_cast<std::size_t>(rhs) >= width) || rhs < U{})) {
+            flux::runtime_error("left shift argument too large or negative", loc);
+        }
+        return unchecked_shl_fn{}(lhs, rhs);
+    }
+};
+
+struct checked_shr_fn {
+    template <integral T, integral U>
+    [[nodiscard]]
+    constexpr auto operator()(T lhs, U rhs,
+               std::source_location loc = std::source_location::current()) const
+        -> T
+    {
+        constexpr std::size_t width = sizeof(T) * CHAR_BIT;
+        if ((!std::is_constant_evaluated() || (sizeof(T) < sizeof(int)))&&
+            ((static_cast<std::size_t>(rhs) >= width) || rhs < U{})) {
+            flux::runtime_error("right shift argument too large or negative", loc);
+        }
+        return unchecked_shr_fn{}(lhs, rhs);
+    }
+};
+
 template <overflow_policy>
 struct default_ops;
 
@@ -484,6 +537,8 @@ struct default_ops<overflow_policy::ignore> {
     using add_fn = unchecked_add_fn;
     using sub_fn = unchecked_sub_fn;
     using mul_fn = unchecked_mul_fn;
+    using shl_fn = unchecked_shl_fn;
+    using shr_fn = unchecked_shr_fn;
 };
 
 template <>
@@ -491,6 +546,9 @@ struct default_ops<overflow_policy::wrap> {
     using add_fn = wrapping_add_fn;
     using sub_fn = wrapping_sub_fn;
     using mul_fn = wrapping_mul_fn;
+    // no wrapping versions of these yet, so use the checked versions
+    using shl_fn = checked_shl_fn;
+    using shr_fn = checked_shr_fn;
 };
 
 template <>
@@ -498,6 +556,8 @@ struct default_ops<overflow_policy::error> {
     using add_fn = checked_add_fn;
     using sub_fn = checked_sub_fn;
     using mul_fn = checked_mul_fn;
+    using shl_fn = checked_shl_fn;
+    using shr_fn = checked_shr_fn;
 };
 
 } // namespace detail
@@ -519,6 +579,8 @@ FLUX_EXPORT inline constexpr auto unchecked_sub = detail::unchecked_sub_fn{};
 FLUX_EXPORT inline constexpr auto unchecked_mul = detail::unchecked_mul_fn{};
 FLUX_EXPORT inline constexpr auto unchecked_div = detail::unchecked_div_fn{};
 FLUX_EXPORT inline constexpr auto unchecked_mod = detail::unchecked_mod_fn{};
+FLUX_EXPORT inline constexpr auto unchecked_shl = detail::unchecked_shl_fn{};
+FLUX_EXPORT inline constexpr auto unchecked_shr = detail::unchecked_shr_fn{};
 
 FLUX_EXPORT inline constexpr auto wrapping_add = detail::wrapping_add_fn{};
 FLUX_EXPORT inline constexpr auto wrapping_sub = detail::wrapping_sub_fn{};
@@ -533,6 +595,8 @@ FLUX_EXPORT inline constexpr auto checked_sub = detail::checked_sub_fn{};
 FLUX_EXPORT inline constexpr auto checked_mul = detail::checked_mul_fn{};
 FLUX_EXPORT inline constexpr auto checked_div = detail::checked_div_fn{};
 FLUX_EXPORT inline constexpr auto checked_mod = detail::checked_mod_fn{};
+FLUX_EXPORT inline constexpr auto checked_shl = detail::checked_shl_fn{};
+FLUX_EXPORT inline constexpr auto checked_shr = detail::checked_shr_fn{};
 
 FLUX_EXPORT inline constexpr auto add = detail::default_ops<config::on_overflow>::add_fn{};
 FLUX_EXPORT inline constexpr auto sub = detail::default_ops<config::on_overflow>::sub_fn{};
@@ -541,6 +605,8 @@ FLUX_EXPORT inline constexpr auto div =
     detail::checked_div_fn<config::on_overflow, config::on_divide_by_zero>{};
 FLUX_EXPORT inline constexpr auto mod =
     detail::checked_mod_fn<config::on_overflow, config::on_divide_by_zero>{};
+FLUX_EXPORT inline constexpr auto shl = detail::default_ops<config::on_overflow>::shl_fn{};
+FLUX_EXPORT inline constexpr auto shr = detail::default_ops<config::on_overflow>::shr_fn{};
 
 } // namespace flux::num
 

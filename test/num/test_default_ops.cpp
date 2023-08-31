@@ -321,6 +321,115 @@ static_assert(test_checked_mod_constexpr<unsigned long>());
 static_assert(test_checked_mod_constexpr<signed long long>());
 static_assert(test_checked_mod_constexpr<unsigned long long>());
 
+
+template <typename T, typename U>
+struct test_checked_shl_constexpr {
+    constexpr bool operator()() const
+    {
+        constexpr auto& shl = flux::num::checked_shl;
+
+        constexpr auto width = sizeof(T) * CHAR_BIT;
+        constexpr T zero = T{0};
+        constexpr T min = std::numeric_limits<T>::lowest();
+        constexpr T max = std::numeric_limits<T>::max();
+
+        STATIC_CHECK(shl(T{1}, U{0}) == T{1});
+        STATIC_CHECK(shl(T{1}, U{1}) == T{2});
+        STATIC_CHECK(shl(T{1}, U{2}) == T{4});
+
+        // Shifts greater than width are an error
+        STATIC_CHECK(not CONSTEXPR_CALLABLE(shl(T{1}, U{width + 1})));
+
+        // Negative shifts are an error
+        if constexpr (flux::num::signed_integral<U>) {
+            STATIC_CHECK(not CONSTEXPR_CALLABLE(shl(T{1}, U{-1})));
+        }
+
+        if constexpr (flux::num::signed_integral<T>) {
+            STATIC_CHECK(shl(T{1}, U{width - 1}) == min);
+            STATIC_CHECK(shl(min, U{1}) == zero);
+        } else {
+            STATIC_CHECK(shl(T{1}, U{width - 1}) == T{1} + max / T{2});
+        }
+
+        return true;
+    }
+};
+
+template <template <typename...> class Fn, typename T0, typename... Types>
+constexpr bool test_helper0()
+{
+    return (Fn<T0, Types>{}() && ...);
+}
+
+template <template <typename...> typename Fn, typename... Types>
+constexpr bool test_helper1()
+{
+    return (test_helper0<Fn, Types, Types...>() && ...);
+}
+
+constexpr bool do_test_checked_shl_constexpr()
+{
+    return test_helper1<test_checked_shl_constexpr,
+                        signed char, unsigned char,
+                        signed short, unsigned short,
+                        signed int, unsigned int,
+                        signed long, unsigned long,
+                        signed long long, unsigned long long>();
+}
+static_assert(do_test_checked_shl_constexpr());
+
+template <typename T, typename U>
+struct test_checked_shr_constexpr {
+    constexpr bool operator()() const
+    {
+        constexpr auto& shr = flux::num::checked_shr;
+
+        constexpr auto width = sizeof(T) * CHAR_BIT;
+        constexpr T zero = T{0};
+        constexpr T min = std::numeric_limits<T>::lowest();
+        constexpr T max = std::numeric_limits<T>::max();
+
+        STATIC_CHECK(shr(max, U{1}) == max / T{2});
+        STATIC_CHECK(shr(max, U{2}) == max / T{4});
+        STATIC_CHECK(shr(max, U{3}) == max / T{8});
+
+        // Shifts greater than width are an error
+        STATIC_CHECK(not CONSTEXPR_CALLABLE(shr(T{1}, U{width + 1})));
+
+        // Negative shifts are an error
+        if constexpr (flux::num::signed_integral<U>) {
+            STATIC_CHECK(not CONSTEXPR_CALLABLE(shr(T{1}, U{-1})));
+        }
+
+        if constexpr (flux::num::unsigned_integral<T>) {
+            STATIC_CHECK(shr(max, U{width - 1}) == T{1});
+        } else {
+            STATIC_CHECK(shr(max, U{width - 1}) == zero);
+
+            STATIC_CHECK(shr(min, U{1}) == min / T{2});
+            STATIC_CHECK(shr(min, U{2}) == min / T{4});
+            STATIC_CHECK(shr(min, U{3}) == min / T{8});
+
+            STATIC_CHECK(shr(min, U{width - 1}) == T{-1});
+        }
+
+        return true;
+    }
+};
+
+constexpr bool do_test_checked_shr_constexpr()
+{
+    return test_helper1<test_checked_shr_constexpr,
+                        signed char, unsigned char,
+                        signed short, unsigned short,
+                        signed int, unsigned int,
+                        signed long, unsigned long,
+                        signed long long, unsigned long long>();
+}
+static_assert(do_test_checked_shr_constexpr());
+
+
 /*
  * Runtime tests
  */
@@ -552,6 +661,79 @@ void test_checked_mod_runtime()
 };
 
 
+template <typename T, typename U>
+struct test_checked_shl_runtime {
+    bool operator()() const
+    {
+        constexpr auto& shl = flux::num::checked_shl;
+
+        constexpr auto width = sizeof(T) * CHAR_BIT;
+        constexpr T zero = T{0};
+        constexpr T min = std::numeric_limits<T>::lowest();
+        constexpr T max = std::numeric_limits<T>::max();
+
+        REQUIRE(shl(T{1}, U{0}) == T{1});
+        REQUIRE(shl(T{1}, U{1}) == T{2});
+        REQUIRE(shl(T{1}, U{2}) == T{4});
+
+        // Shifts greater than width are an error
+        REQUIRE_THROWS_AS(shl(T{1}, U{width + 1}), flux::unrecoverable_error);
+
+        // Negative shifts are an error
+        if constexpr (flux::num::signed_integral<U>) {
+            REQUIRE_THROWS_AS(shl(T{1}, U{-1}), flux::unrecoverable_error);
+        }
+
+        if constexpr (flux::num::signed_integral<T>) {
+            REQUIRE(shl(T{1}, U{width - 1}) == min);
+            REQUIRE(shl(min, U{1}) == zero);
+        } else {
+            REQUIRE(shl(T{1}, U{width - 1}) == T{1} + max / T{2});
+        }
+
+        return true;
+    }
+};
+
+template <typename T, typename U>
+struct test_checked_shr_runtime {
+    bool operator()() const
+    {
+        constexpr auto& shr = flux::num::checked_shr;
+
+        constexpr auto width = sizeof(T) * CHAR_BIT;
+        constexpr T zero = T{0};
+        constexpr T min = std::numeric_limits<T>::lowest();
+        constexpr T max = std::numeric_limits<T>::max();
+
+        REQUIRE(shr(max, U{1}) == max / T{2});
+        REQUIRE(shr(max, U{2}) == max / T{4});
+        REQUIRE(shr(max, U{3}) == max / T{8});
+
+        // Shifts greater than width are an error
+        REQUIRE_THROWS_AS(shr(T{1}, U{width + 1}), flux::unrecoverable_error);
+
+        // Negative shifts are an error
+        if constexpr (flux::num::signed_integral<U>) {
+            REQUIRE_THROWS_AS(shr(T{1}, U{-1}), flux::unrecoverable_error);
+        }
+
+        if constexpr (flux::num::unsigned_integral<T>) {
+            REQUIRE(shr(max, U{width - 1}) == T{1});
+        } else {
+            REQUIRE(shr(max, U{width - 1}) == zero);
+
+            REQUIRE(shr(min, U{1}) == min / T{2});
+            REQUIRE(shr(min, U{2}) == min / T{4});
+            REQUIRE(shr(min, U{3}) == min / T{8});
+
+            REQUIRE(shr(min, U{width - 1}) == T{-1});
+        }
+
+        return true;
+    }
+};
+
 }
 
 TEST_CASE("num.checked_add")
@@ -622,4 +804,24 @@ TEST_CASE("num.checked_mod")
     test_checked_mod_runtime<unsigned long>();
     test_checked_mod_runtime<signed long long>();
     test_checked_mod_runtime<unsigned long long>();
+}
+
+TEST_CASE("num.checked_shl")
+{
+    test_helper1<test_checked_shl_runtime,
+                 signed char, unsigned char,
+                 signed short, unsigned short,
+                 signed int, unsigned int,
+                 signed long, unsigned long,
+                 signed long long, unsigned long long>();
+}
+
+TEST_CASE("num.checked_shr")
+{
+    test_helper1<test_checked_shr_runtime,
+                 signed char, unsigned char,
+                 signed short, unsigned short,
+                 signed int, unsigned int,
+                 signed long, unsigned long,
+                 signed long long, unsigned long long>();
 }

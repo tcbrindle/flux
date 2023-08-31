@@ -147,6 +147,59 @@ void test_unchecked_mod()
     REQUIRE(mod(max, max) == zero);
 };
 
+template <typename T, typename U>
+struct test_unchecked_shl {
+    void operator()() const
+    {
+        constexpr auto& shl = flux::num::unchecked_shl;
+
+        constexpr auto width = sizeof(T) * CHAR_BIT;
+        constexpr T zero = T{0};
+        constexpr T min = std::numeric_limits<T>::lowest();
+        constexpr T max = std::numeric_limits<T>::max();
+
+        REQUIRE(shl(T{1}, U{0}) == T{1});
+        REQUIRE(shl(T{1}, U{1}) == T{2});
+        REQUIRE(shl(T{1}, U{2}) == T{4});
+
+        if constexpr (flux::num::signed_integral<T>) {
+            REQUIRE(shl(T{1}, U{width - 1}) == min);
+            REQUIRE(shl(min, U{1}) == zero);
+        } else {
+            REQUIRE(shl(T{1}, U{width - 1}) == T{1} + max / T{2});
+        }
+    }
+};
+
+template <typename T, typename U>
+struct test_unchecked_shr {
+    void operator()() const
+    {
+        constexpr auto& shr = flux::num::unchecked_shr;
+
+        constexpr auto width = sizeof(T) * CHAR_BIT;
+        constexpr T zero = T{0};
+        constexpr T min = std::numeric_limits<T>::lowest();
+        constexpr T max = std::numeric_limits<T>::max();
+
+        REQUIRE(shr(max, U{1}) == max / T{2});
+        REQUIRE(shr(max, U{2}) == max / T{4});
+        REQUIRE(shr(max, U{3}) == max / T{8});
+
+        if constexpr (flux::num::unsigned_integral<T>) {
+            REQUIRE(shr(max, U{width - 1}) == T{1});
+        } else {
+            REQUIRE(shr(max, U{width - 1}) == zero);
+
+            REQUIRE(shr(min, U{1}) == min / T{2});
+            REQUIRE(shr(min, U{2}) == min / T{4});
+            REQUIRE(shr(min, U{3}) == min / T{8});
+
+            REQUIRE(shr(min, U{width - 1}) == T{-1});
+        }
+    }
+};
+
 }
 
 TEST_CASE("num.unchecked_add")
@@ -217,4 +270,36 @@ TEST_CASE("num.unchecked_mod")
     test_unchecked_mod<unsigned long>();
     test_unchecked_mod<signed long long>();
     test_unchecked_mod<unsigned long long>();
+}
+
+template <template <typename...> class Fn, typename T0, typename... Types>
+void test_helper0()
+{
+    (Fn<T0, Types>{}(), ...);
+}
+
+template <template <typename...> typename Fn, typename... Types>
+void test_helper1()
+{
+    (test_helper0<Fn, Types, Types...>(), ...);
+}
+
+TEST_CASE("num.unchecked_shl")
+{
+    test_helper1<test_unchecked_shl,
+                 signed char, unsigned char,
+                 signed short, unsigned short,
+                 signed int, unsigned int,
+                 signed long, unsigned long,
+                 signed long long, unsigned long long>();
+}
+
+TEST_CASE("num.unchecked_shr")
+{
+    test_helper1<test_unchecked_shr,
+                 signed char, unsigned char,
+                 signed short, unsigned short,
+                 signed int, unsigned int,
+                 signed long, unsigned long,
+                 signed long long, unsigned long long>();
 }
