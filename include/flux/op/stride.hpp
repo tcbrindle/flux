@@ -18,12 +18,12 @@ inline constexpr struct advance_fn {
     constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur, distance_t offset) const -> distance_t
     {
         if (offset > 0) {
-            while (--offset >= 0)  {
-                if (flux::is_last(seq, flux::inc(seq, cur))) {
-                    break;
-                }
+            distance_t counter = 0;
+            while (offset-- > 0 && !flux::is_last(seq, cur))  {
+                flux::inc(seq, cur);
+                ++counter;
             }
-            return offset;
+            return counter;
         } else if (offset < 0) {
             if constexpr (bidirectional_sequence<Seq>) {
                 auto const fst = flux::first(seq);

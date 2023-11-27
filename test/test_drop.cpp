@@ -116,6 +116,37 @@ constexpr bool test_drop() {
 }
 static_assert(test_drop());
 
+constexpr bool issue_132a()
+{
+    auto result = flux::from(std::array{1, 2})
+                      .filter(flux::pred::even)
+                      .drop(2)
+                      .drop(1);
+    STATIC_CHECK(flux::is_empty(result));
+    return true;
+}
+static_assert(issue_132a());
+
+void issue_132b()
+{
+    using namespace flux;
+
+    auto intersperse = [](auto r, auto e) -> auto {
+        return flux::map(std::move(r), [e](auto const& x) -> auto {
+                   return std::vector{e, x};
+               }).flatten().drop(1);
+    };
+
+    auto sfml_argument = [](std::string_view) -> std::string { return "abc";  };
+
+    auto sfml_argument_list = [&](std::span<std::string_view> mf) -> std::string {
+        return "(" + intersperse(drop(mf, 1).map(sfml_argument), std::string(", ")).flatten().to<std::string>() + ")";
+    };
+
+    std::vector<std::string_view> v {"point"};
+    (void) sfml_argument_list(v);
+}
+
 }
 
 TEST_CASE("drop")
@@ -131,4 +162,7 @@ TEST_CASE("drop")
 
         REQUIRE_THROWS_AS(flux::from_range(list).drop(-1000), flux::unrecoverable_error);
     }
+
+    issue_132b();
+
 }
