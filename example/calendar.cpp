@@ -29,8 +29,8 @@ constexpr auto max_weeks_in_month = 6;
 constexpr auto col_sep = "  ";
 constexpr auto row_sep = ' ';
 
-// Workaround: libc++16 does not support C++20 chrono::time_point::operator++
-#if defined _LIBCPP_VERSION and _LIBCPP_VERSION < 170000
+// Workaround: libc++17 does not support C++20 chrono::time_point::operator++
+#if defined _LIBCPP_VERSION and _LIBCPP_VERSION < 180000
 namespace std::chrono {
     sys_days& operator++(sys_days& d) {
         return d += days{1};
