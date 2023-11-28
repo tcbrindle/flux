@@ -82,6 +82,15 @@
 #  define FLUX_DIVIDE_BY_ZERO_POLICY FLUX_DEFAULT_DIVIDE_BY_ZERO_POLICY
 #endif // FLUX_ERROR_ON_DIVIDE_BY_ZERO
 
+// Should we try to use static bounds checking?
+#if !defined(FLUX_DISABLE_STATIC_BOUNDS_CHECKING)
+#  if defined(__has_cpp_attribute) && defined(__has_builtin)
+#    if __has_builtin(__builtin_constant_p) && __has_cpp_attribute(gnu::error)
+#      define FLUX_HAVE_GCC_STATIC_BOUNDS_CHECKING 1
+#    endif
+#  endif
+#endif // FLUX_DISABLE_STATIC_BOUNDS_CHECKING
+
 // Default int_t is ptrdiff_t
 #define FLUX_DEFAULT_INT_TYPE std::ptrdiff_t
 

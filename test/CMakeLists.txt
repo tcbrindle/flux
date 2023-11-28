@@ -77,7 +77,11 @@ add_executable(test-libflux
     test_unfold.cpp
 )
 target_link_libraries(test-libflux flux catch-main)
-target_compile_definitions(test-libflux PUBLIC FLUX_UNWIND_ON_ERROR FLUX_ERROR_ON_OVERFLOW)
+target_compile_definitions(test-libflux PUBLIC
+    FLUX_UNWIND_ON_ERROR
+    FLUX_ERROR_ON_OVERFLOW
+    FLUX_DISABLE_STATIC_BOUNDS_CHECKING
+)
 
 if(${FLUX_ENABLE_ASAN})
     target_compile_options(test-libflux PRIVATE -fsanitize=address)
