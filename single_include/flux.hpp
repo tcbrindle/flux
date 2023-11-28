@@ -159,6 +159,15 @@
 #  define FLUX_DIVIDE_BY_ZERO_POLICY FLUX_DEFAULT_DIVIDE_BY_ZERO_POLICY
 #endif // FLUX_ERROR_ON_DIVIDE_BY_ZERO
 
+// Should we try to use static bounds checking?
+#if !defined(FLUX_DISABLE_STATIC_BOUNDS_CHECKING)
+#  if defined(__has_cpp_attribute) && defined(__has_builtin)
+#    if __has_builtin(__builtin_constant_p) && __has_cpp_attribute(gnu::error)
+#      define FLUX_HAVE_GCC_STATIC_BOUNDS_CHECKING 1
+#    endif
+#  endif
+#endif // FLUX_DISABLE_STATIC_BOUNDS_CHECKING
+
 // Default int_t is ptrdiff_t
 #define FLUX_DEFAULT_INT_TYPE std::ptrdiff_t
 
@@ -255,6 +264,11 @@ struct runtime_error_fn {
 
 FLUX_EXPORT inline constexpr auto runtime_error = detail::runtime_error_fn{};
 
+#ifdef FLUX_HAVE_GCC_STATIC_BOUNDS_CHECKING
+[[gnu::error("out-of-bounds sequence access detected")]]
+void static_bounds_check_failed(); // not defined
+#endif
+
 namespace detail {
 
 struct assert_fn {
@@ -278,10 +292,30 @@ struct bounds_check_fn {
     }
 };
 
+struct indexed_bounds_check_fn {
+    template <typename T>
+    inline constexpr void operator()(T idx, T limit,
+                                     std::source_location loc = std::source_location::current()) const
+    {
+        if (!std::is_constant_evaluated()) {
+#ifdef FLUX_HAVE_GCC_STATIC_BOUNDS_CHECKING
+            if (__builtin_constant_p(idx) && __builtin_constant_p(limit)) {
+                if (idx < T{0} || idx >= limit) {
+                    static_bounds_check_failed();
+                }
+            }
+#endif
+            assert_fn{}(idx >= T{0}, "index cannot be negative", std::move(loc));
+            assert_fn{}(idx < limit, "out-of-bounds sequence access", std::move(loc));
+        }
+    }
+};
+
 } // namespace detail
 
 FLUX_EXPORT inline constexpr auto assert_ = detail::assert_fn{};
 FLUX_EXPORT inline constexpr auto bounds_check = detail::bounds_check_fn{};
+FLUX_EXPORT inline constexpr auto indexed_bounds_check = detail::indexed_bounds_check_fn{};
 
 #define FLUX_ASSERT(cond) (::flux::assert_(cond, "assertion '" #cond "' failed"))
 
@@ -1796,8 +1830,7 @@ struct sequence_traits<T[N]> {
 
     static constexpr auto read_at(auto& self, index_t idx) -> decltype(auto)
     {
-        bounds_check(idx >= 0);
-        bounds_check(idx < N);
+        indexed_bounds_check(idx, N);
         return self[idx];
     }
 
@@ -1962,8 +1995,7 @@ struct sequence_traits<R> {
 
     static constexpr auto read_at(auto& self, index_t idx) -> decltype(auto)
     {
-        bounds_check(idx >= 0);
-        bounds_check(idx < size(self));
+        indexed_bounds_check(idx, size(self));
         return data(self)[idx];
     }
 
@@ -12036,8 +12068,7 @@ public:
 
         static constexpr auto read_at(array_ptr const& self, index_t idx) -> T&
         {
-            bounds_check(idx >= 0);
-            bounds_check(idx < self.sz_);
+            indexed_bounds_check(idx, self.sz_);
             return self.data_[idx];
         }
 
