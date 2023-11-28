@@ -186,7 +186,7 @@ public:
             requires random_access_sequence<decltype(self.base_)> &&
                      sized_sequence<decltype(self.base_)>
         {
-            auto dist = checked_cast<distance_t>(to.n) - checked_cast<distance_t>(from.n);
+            auto dist = num::checked_cast<distance_t>(to.n) - num::checked_cast<distance_t>(from.n);
             dist = num::checked_mul(dist, flux::size(self.base_));
             return num::checked_add(dist,
                     flux::distance(self.base_, from.base_cur, to.base_cur));
@@ -204,7 +204,7 @@ public:
             requires (!IsInfinite && sized_sequence<Base>)
         {
             return num::checked_mul(flux::size(self.base_),
-                                    checked_cast<flux::distance_t>(self.data_.count));
+                                    num::checked_cast<flux::distance_t>(self.data_.count));
         }
     };
 };
@@ -228,12 +228,12 @@ struct cycle_fn {
     constexpr auto operator()(Seq&& seq, std::integral auto count) const
         -> multipass_sequence auto
     {
-        auto c = checked_cast<distance_t>(count);
+        auto c = num::checked_cast<distance_t>(count);
         if (c < 0) {
             runtime_error("Negative count passed to cycle()");
         }
         return cycle_adaptor<std::decay_t<Seq>, false>(
-            FLUX_FWD(seq), checked_cast<std::size_t>(c));
+            FLUX_FWD(seq), num::checked_cast<std::size_t>(c));
     }
 };
 

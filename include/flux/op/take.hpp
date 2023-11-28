@@ -150,7 +150,7 @@ struct take_fn {
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, std::integral auto count) const
     {
-        auto count_ = checked_cast<distance_t>(count);
+        auto count_ = num::checked_cast<distance_t>(count);
         if (count_ < 0) {
             runtime_error("Negative argument passed to take()");
         }

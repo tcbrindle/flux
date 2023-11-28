@@ -5,8 +5,15 @@ target_compile_definitions(catch-main PUBLIC -DCATCH_CONFIG_NO_POSIX_SIGNALS)
 
 add_executable(test-libflux
 
+    num/test_concepts.cpp
+    num/test_casts.cpp
+    num/test_unchecked_ops.cpp
+    num/test_wrapping_ops.cpp
+    num/test_overflowing_ops.cpp
+    num/test_checked_ops.cpp
+    num/test_default_ops.cpp
+
     test_concepts.cpp
-    test_overflow.cpp
     test_optional.cpp
     test_predicates.cpp
     test_simple_sequence.cpp
@@ -77,7 +84,11 @@ add_executable(test-libflux
     test_unfold.cpp
 )
 target_link_libraries(test-libflux flux catch-main)
-target_compile_definitions(test-libflux PUBLIC FLUX_UNWIND_ON_ERROR FLUX_ERROR_ON_OVERFLOW)
+target_compile_definitions(test-libflux PUBLIC
+    FLUX_UNWIND_ON_ERROR
+    FLUX_ERROR_ON_OVERFLOW
+    FLUX_ERROR_ON_DIVIDE_BY_ZERO
+)
 
 if(${FLUX_ENABLE_ASAN})
     target_compile_options(test-libflux PRIVATE -fsanitize=address)

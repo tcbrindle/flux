@@ -303,7 +303,7 @@ struct chunk_fn {
     {
         FLUX_ASSERT(chunk_sz > 0);
         return chunk_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq),
-                                                checked_cast<distance_t>(chunk_sz));
+                                                num::checked_cast<distance_t>(chunk_sz));
     }
 };
 

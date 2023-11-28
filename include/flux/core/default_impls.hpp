@@ -223,7 +223,7 @@ struct sequence_traits<R> {
 
     static constexpr auto size(auto& self) -> distance_t
     {
-        return checked_cast<distance_t>(std::ranges::ssize(self));
+        return num::checked_cast<distance_t>(std::ranges::ssize(self));
     }
 
     static constexpr auto data(auto& self) -> auto*
@@ -243,7 +243,7 @@ struct sequence_traits<R> {
             ++iter;
         }
 
-        return checked_cast<index_t>(iter - std::ranges::begin(self));
+        return num::checked_cast<index_t>(iter - std::ranges::begin(self));
     }
 };
 

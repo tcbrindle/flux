@@ -2,6 +2,7 @@
 module;
 
 #include <array>
+#include <climits>
 #include <compare>
 #include <concepts>
 #include <coroutine>

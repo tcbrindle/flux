@@ -119,7 +119,7 @@ struct slide_fn {
         -> sequence auto
     {
         return slide_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq),
-                                                checked_cast<distance_t>(win_sz));
+                                                num::checked_cast<distance_t>(win_sz));
     }
 };
 

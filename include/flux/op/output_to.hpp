@@ -49,7 +49,7 @@ public:
                 FLUX_ASSERT(flux::data(seq) != nullptr);
                 std::memmove(std::to_address(iter), flux::data(seq),
                              size * sizeof(value_t<Seq>));
-                return iter + checked_cast<std::iter_difference_t<Iter>>(flux::size(seq));
+                return iter + num::checked_cast<std::iter_difference_t<Iter>>(flux::size(seq));
             }
         } else {
             return impl(seq, iter);
