@@ -84,8 +84,7 @@ public:
 
         static constexpr auto read_at(array_ptr const& self, index_t idx) -> T&
         {
-            bounds_check(idx >= 0);
-            bounds_check(idx < self.sz_);
+            indexed_bounds_check(idx, self.sz_);
             return self.data_[idx];
         }
 

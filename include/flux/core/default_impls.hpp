@@ -25,8 +25,7 @@ struct sequence_traits<T[N]> {
 
     static constexpr auto read_at(auto& self, index_t idx) -> decltype(auto)
     {
-        bounds_check(idx >= 0);
-        bounds_check(idx < N);
+        indexed_bounds_check(idx, N);
         return self[idx];
     }
 
@@ -191,8 +190,7 @@ struct sequence_traits<R> {
 
     static constexpr auto read_at(auto& self, index_t idx) -> decltype(auto)
     {
-        bounds_check(idx >= 0);
-        bounds_check(idx < size(self));
+        indexed_bounds_check(idx, size(self));
         return data(self)[idx];
     }
 
