@@ -97,6 +97,15 @@ public:
     {}
 
     template <multipass_sequence Seq>
+        requires std::equality_comparable_with<element_t<Seq>, element_t<Pattern>>
+    constexpr auto operator()(Seq&& seq) -> bounds_t<Seq>
+    {
+        return flux::search(seq, pattern_);
+    }
+
+    template <multipass_sequence Seq>
+        requires multipass_sequence<Pattern const> &&
+                 std::equality_comparable_with<element_t<Seq>, element_t<Pattern const>>
     constexpr auto operator()(Seq&& seq) const -> bounds_t<Seq>
     {
         return flux::search(seq, pattern_);
