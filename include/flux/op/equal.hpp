@@ -74,6 +74,22 @@ public:
             return impl(seq1, seq2, cmp);
         }
     }
+
+    template <sequence Seq1, sequence Seq2>
+        requires (sequence<element_t<Seq1>> &&
+                 sequence<element_t<Seq2>> &&
+                 !std::equality_comparable_with<element_t<Seq1>, element_t<Seq2>> &&
+                 std::is_invocable_v<equal_fn&, Seq1&, Seq2&, equal_fn&>)
+    constexpr auto operator()(Seq1&& seq1, Seq2&& seq2) const -> bool
+    {
+        if constexpr (sized_sequence<Seq1> && sized_sequence<Seq2>) {
+            if (flux::size(seq1) != flux::size(seq2)) {
+                return false;
+            }
+        }
+
+        return (*this)(seq1, seq2, *this);
+    }
 };
 
 } // namespace detail
