@@ -43,6 +43,7 @@ add_example(example-docs-set-intersection docs/set_intersection.cpp)
 add_example(example-docs-set-symmetric-difference docs/set_symmetric_difference.cpp)
 add_example(example-docs-set-union docs/set_union.cpp)
 add_example(example-docs-scan-first docs/scan_first.cpp)
+add_example(example-docs-split docs/split.cpp)
 add_example(example-docs-starts-with docs/starts_with.cpp)
 add_example(example-docs-unfold docs/unfold.cpp)
 
