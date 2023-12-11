@@ -115,7 +115,7 @@ struct last_fn {
 struct size_fn {
     template <sized_sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq& seq) const -> distance_t
+    constexpr auto operator()(Seq&& seq) const -> distance_t
     {
         if constexpr (requires { traits_t<Seq>::size(seq); }) {
             return traits_t<Seq>::size(seq);
@@ -129,7 +129,7 @@ struct size_fn {
 struct usize_fn {
     template <sized_sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq& seq) const -> std::size_t
+    constexpr auto operator()(Seq&& seq) const -> std::size_t
     {
         return checked_cast<std::size_t>(size_fn{}(seq));
     }
@@ -277,7 +277,7 @@ struct is_empty_fn {
     template <sequence Seq>
         requires (multipass_sequence<Seq> || sized_sequence<Seq>)
     [[nodiscard]]
-    constexpr auto operator()(Seq& seq) const -> bool
+    constexpr auto operator()(Seq&& seq) const -> bool
     {
         if constexpr (sized_sequence<Seq>) {
             return flux::size(seq) == 0;
