@@ -330,6 +330,12 @@ public:
     [[nodiscard]]
     constexpr auto split(Delim&& delim) &&;
 
+    template <typename Pred>
+        requires multipass_sequence<Derived> &&
+                 std::predicate<Pred const&, element_t<Derived>>
+    [[nodiscard]]
+    constexpr auto split(Pred pred) &&;
+
     template <typename Pattern>
     [[nodiscard]]
     constexpr auto split_string(Pattern&& pattern) &&;

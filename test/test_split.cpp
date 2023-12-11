@@ -22,7 +22,7 @@ constexpr auto  to_string_view = []<typename Seq>(Seq&& seq) // danger Will Robi
     return std::basic_string_view<flux::value_t<Seq>>(flux::data(seq), flux::usize(seq));
 };
 
-constexpr bool test_split()
+constexpr bool test_split_with_delim()
 {
     using namespace std::string_view_literals;
 
@@ -63,6 +63,13 @@ constexpr bool test_split()
                                  std::array{"a"sv, "b"sv}));
     }
 
+    return true;
+}
+
+constexpr bool test_split_with_pattern()
+{
+    using namespace std::string_view_literals;
+
     // Split with pattern
     {
         int nums[] = {0, 1, 2, 3, 99};
@@ -90,12 +97,77 @@ constexpr bool test_split()
 
     return true;
 }
-static_assert(test_split());
+
+constexpr bool test_split_with_predicate()
+{
+    using namespace std::string_view_literals;
+
+    {
+        std::array arr{1, 2, 0, 3, 4, 0, 5};
+
+        auto split = flux::ref(arr).split(flux::pred::eq(0));
+
+        using S = decltype(split);
+
+        static_assert(flux::sequence<S>);
+        static_assert(flux::multipass_sequence<S>);
+        static_assert(not flux::bidirectional_sequence<S>);
+        static_assert(not flux::sized_sequence<S>);
+
+        static_assert(flux::sequence<S const>);
+        static_assert(flux::multipass_sequence<S const>);
+        static_assert(not flux::bidirectional_sequence<S const>);
+        static_assert(not flux::sized_sequence<S const>);
+
+        using E = flux::element_t<S>;
+        static_assert(flux::contiguous_sequence<E>);
+        static_assert(flux::sized_sequence<E>);
+
+        using EC = flux::element_t<S const>;
+        static_assert(flux::contiguous_sequence<EC>);
+        static_assert(flux::sized_sequence<EC>);
+
+        auto cur = split.first();
+        STATIC_CHECK(check_equal(split[cur], {1, 2}));
+        split.inc(cur);
+        STATIC_CHECK(check_equal(split[cur], {3, 4}));
+        split.inc(cur);
+        STATIC_CHECK(check_equal(split[cur], {5}));
+        split.inc(cur);
+        STATIC_CHECK(split.is_last(cur));
+    }
+
+    {
+        auto const seq = flux::split("two spaces ->  <-"sv, flux::pred::eq(' '))
+                            .map(to_string_view);
+
+        STATIC_CHECK(check_equal(seq,
+                                 std::array{"two"sv, "spaces"sv, "->"sv, ""sv, "<-"sv}));
+    }
+
+    return true;
+}
+
+static_assert(test_split_with_delim());
+static_assert(test_split_with_pattern());
+static_assert(test_split_with_predicate());
 
 }
 
-TEST_CASE("split")
+TEST_CASE("split with delimiter")
 {
-    bool result = test_split();
+    bool result = test_split_with_delim();
+    REQUIRE(result);
+}
+
+TEST_CASE("split with pattern")
+{
+    bool result = test_split_with_pattern();
+    REQUIRE(result);
+}
+
+TEST_CASE("split with predicate")
+{
+    bool result = test_split_with_predicate();
     REQUIRE(result);
 }

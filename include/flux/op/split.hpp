@@ -135,6 +135,29 @@ public:
     }
 };
 
+template <typename Pred>
+struct predicate_splitter {
+private:
+    FLUX_NO_UNIQUE_ADDRESS Pred pred_;
+
+public:
+    constexpr explicit predicate_splitter(decays_to<Pred> auto&& pred)
+        : pred_(FLUX_FWD(pred))
+    {}
+
+    template <multipass_sequence Seq>
+        requires std::predicate<Pred const&, element_t<Seq>>
+    constexpr auto operator()(Seq&& seq) const -> bounds_t<Seq>
+    {
+        auto nxt = flux::find_if(seq, pred_);
+        if (!flux::is_last(seq, nxt)) {
+            return bounds{nxt, flux::next(seq, nxt)};
+        } else {
+            return bounds{nxt, nxt};
+        }
+    }
+};
+
 struct split_fn {
     template <adaptable_sequence Seq, adaptable_sequence Pattern>
         requires multipass_sequence<Seq> &&
@@ -158,6 +181,17 @@ struct split_fn {
         return split_adaptor<std::decay_t<Seq>, splitter_t>(
             FLUX_FWD(seq), splitter_t(FLUX_FWD(delim)));
     }
+
+    template <adaptable_sequence Seq, typename Pred>
+        requires multipass_sequence<Seq> &&
+                 std::predicate<Pred const&, element_t<Seq>>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq, Pred pred) const
+    {
+        using splitter_t = predicate_splitter<Pred>;
+        return split_adaptor<std::decay_t<Seq>, splitter_t>(
+            FLUX_FWD(seq), splitter_t(std::move(pred)));
+    }
 };
 
 } // namespace detail
@@ -165,8 +199,10 @@ struct split_fn {
 FLUX_EXPORT inline constexpr auto split = detail::split_fn{};
 
 template <typename Derived>
-template <multipass_sequence Pattern>
-    requires std::equality_comparable_with<element_t<Derived>, element_t<Pattern>>
+template <typename Pattern>
+    requires multipass_sequence<Derived> &&
+             multipass_sequence<Pattern> &&
+             std::equality_comparable_with<element_t<Derived>, element_t<Pattern>>
 constexpr auto inline_sequence_base<Derived>::split(Pattern&& pattern) &&
 {
     return flux::split(std::move(derived()), FLUX_FWD(pattern));
@@ -174,10 +210,20 @@ constexpr auto inline_sequence_base<Derived>::split(Pattern&& pattern) &&
 
 template <typename Derived>
 template <typename Delim>
-    requires std::equality_comparable_with<element_t<Derived>, Delim const&>
+    requires multipass_sequence<Derived> &&
+             std::equality_comparable_with<element_t<Derived>, Delim const&>
 constexpr auto inline_sequence_base<Derived>::split(Delim&& delim) &&
 {
     return flux::split(std::move(derived()), FLUX_FWD(delim));
+}
+
+template <typename Derived>
+template <typename Pred>
+    requires multipass_sequence<Derived> &&
+             std::predicate<Pred const&, element_t<Derived>>
+constexpr auto inline_sequence_base<Derived>::split(Pred pred) &&
+{
+    return flux::split(std::move(derived()), std::move(pred));
 }
 
 
