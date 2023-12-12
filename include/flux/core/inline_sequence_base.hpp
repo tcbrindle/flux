@@ -317,15 +317,24 @@ public:
     [[nodiscard]]
     constexpr auto slide(std::integral auto win_sz) && requires multipass_sequence<Derived>;
 
-    template <multipass_sequence Pattern>
-        requires std::equality_comparable_with<element_t<Derived>, element_t<Pattern>>
+    template <typename Pattern>
+        requires multipass_sequence<Derived> &&
+                 multipass_sequence<Pattern> &&
+                 std::equality_comparable_with<element_t<Derived>, element_t<Pattern>>
     [[nodiscard]]
     constexpr auto split(Pattern&& pattern) &&;
 
-    template <typename ValueType>
-        requires decays_to<ValueType, value_t<Derived>>
+    template <typename Delim>
+        requires multipass_sequence<Derived> &&
+                 std::equality_comparable_with<element_t<Derived>, Delim const&>
     [[nodiscard]]
-    constexpr auto split(ValueType&& delim) &&;
+    constexpr auto split(Delim&& delim) &&;
+
+    template <typename Pred>
+        requires multipass_sequence<Derived> &&
+                 std::predicate<Pred const&, element_t<Derived>>
+    [[nodiscard]]
+    constexpr auto split(Pred pred) &&;
 
     template <typename Pattern>
     [[nodiscard]]

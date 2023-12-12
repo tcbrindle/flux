@@ -631,23 +631,57 @@ Adaptors
 ..  function::
     auto slide(multipass_sequence auto seq, std::integral auto win_sz) -> multipass_sequence auto;
 
+``split``
+^^^^^^^^^
+
+..  function::
+    template <multipass_sequence Seq, typename Delim> \
+        requires std::equality_comparable_with<element_t<Seq>, Delim const&> \
+    auto split(Seq seq, Delim delim) -> multipass_sequence auto;
+
+..  function::
+    template <multipass_sequence Seq, multipass_sequence Pattern> \
+        requires std::equality_comparable_with<element_t<Seq>, element_t<Pattern>> \
+    auto split(Seq seq, Pattern pattern) -> multipass_sequence auto;
+
+..  function::
+    template <multipass_sequence Seq, typename Pred> \
+        requires std::predicate<Pred const&, element_t<seq>> \
+    auto split(Seq seq, Pred pred) -> multipass_sequence auto;
+
+    Splits a :concept:`multipass_sequence` into a sequence-of-subsequences using the given argument.
+
+    The first overload takes a delimiter, which must be equality comparable with the source sequence's value type. The source sequence will be split on each occurrence of the delimiter, with the delimiter itself removed. Consecutive delimiters will result in empty subsequences in the output. If the source sequence begins with a delimiter then the first subsequence will be empty, and likewise if it ends with a delimiter then the final subsequence will be empty.
+
+    The second overload takes another sequence, the :var:`pattern`, whose elements must be equality comparable with the elements of the source sequence. The source is split whenever the pattern occurs as a subsequence. Consecutive (non-overlapping) occurrences of the pattern will result in empty sequences in the output. If :expr:`ends_with(seq, pattern)` is :expr:`true`, the final subsequence will be empty.
+
+    The third overload takes a unary predicate which will be called with successive elements of the source sequence and returns :expr:`true` when a split should occur. The "``true``" element will be removed from the output. If the predicate returns ``true`` for two consecutive of the source, then the output will contain an empty subsequence. If the predicate returns ``true``` for the final element of the source, then the final subsequence will be empty.
+
+    The returned sequence is always a :concept:`multipass_sequence`. It is additionally a :concept:`bounded_sequence` when :var:`Seq` is bounded.
+
+    :param seq: A multipass sequence to split.
+    :param delim: For the first overload, a delimiter to split on. Must be equality comparable with the element type of :var:`seq`
+    :param pattern: For the second overload, a multipass sequence to split on. Its element type must be equality comparable with the element type of :var:`seq`.
+    :param pred: For the third overload, a unary predicate accepting elements of :var:`seq`, returning ``true`` when a split should occur.
+
+    :returns: A multipass sequence whose elements are subsequences of :var:`seq`.
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/split.cpp
+        :language: cpp
+        :dedent:
+        :lines: 18-79
+
+    :see also:
+        * `std::views::split() <https://en.cppreference.com/w/cpp/ranges/split_view>`_
+        * :func:`flux::chunk_by`
+
 ``stride``
 ^^^^^^^^^^
 
 ..  function::
     auto stride(sequence auto seq, std::integral auto stride_len) -> sequence auto;
-
-``split``
-^^^^^^^^^
-
-..  function::
-    template <multipass_sequence Seq, multipass_sequence Pattern> \
-        requires std::equality_comparable_with<element_t<Seq>, element_t<Pattern>> \
-    auto split(Seq seq, Pattern pattern) -> sequence auto;
-
-..  function::
-    template <multipass_sequence Seq> \
-    auto split(Seq seq, value_t<Seq> delim) -> sequence auto;
 
 ``take``
 ^^^^^^^^
