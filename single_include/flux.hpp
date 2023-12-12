@@ -1558,7 +1558,7 @@ struct last_fn {
 struct size_fn {
     template <sized_sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq& seq) const -> distance_t
+    constexpr auto operator()(Seq&& seq) const -> distance_t
     {
         if constexpr (requires { traits_t<Seq>::size(seq); }) {
             return traits_t<Seq>::size(seq);
@@ -1572,7 +1572,7 @@ struct size_fn {
 struct usize_fn {
     template <sized_sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq& seq) const -> std::size_t
+    constexpr auto operator()(Seq&& seq) const -> std::size_t
     {
         return checked_cast<std::size_t>(size_fn{}(seq));
     }
@@ -1720,7 +1720,7 @@ struct is_empty_fn {
     template <sequence Seq>
         requires (multipass_sequence<Seq> || sized_sequence<Seq>)
     [[nodiscard]]
-    constexpr auto operator()(Seq& seq) const -> bool
+    constexpr auto operator()(Seq&& seq) const -> bool
     {
         if constexpr (sized_sequence<Seq>) {
             return flux::size(seq) == 0;
@@ -2713,15 +2713,24 @@ public:
     [[nodiscard]]
     constexpr auto slide(std::integral auto win_sz) && requires multipass_sequence<Derived>;
 
-    template <multipass_sequence Pattern>
-        requires std::equality_comparable_with<element_t<Derived>, element_t<Pattern>>
+    template <typename Pattern>
+        requires multipass_sequence<Derived> &&
+                 multipass_sequence<Pattern> &&
+                 std::equality_comparable_with<element_t<Derived>, element_t<Pattern>>
     [[nodiscard]]
     constexpr auto split(Pattern&& pattern) &&;
 
-    template <typename ValueType>
-        requires decays_to<ValueType, value_t<Derived>>
+    template <typename Delim>
+        requires multipass_sequence<Derived> &&
+                 std::equality_comparable_with<element_t<Derived>, Delim const&>
     [[nodiscard]]
-    constexpr auto split(ValueType&& delim) &&;
+    constexpr auto split(Delim&& delim) &&;
+
+    template <typename Pred>
+        requires multipass_sequence<Derived> &&
+                 std::predicate<Pred const&, element_t<Derived>>
+    [[nodiscard]]
+    constexpr auto split(Pred pred) &&;
 
     template <typename Pattern>
     [[nodiscard]]
@@ -7493,6 +7502,22 @@ public:
             return impl(seq1, seq2, cmp);
         }
     }
+
+    template <sequence Seq1, sequence Seq2>
+        requires (sequence<element_t<Seq1>> &&
+                 sequence<element_t<Seq2>> &&
+                 !std::equality_comparable_with<element_t<Seq1>, element_t<Seq2>> &&
+                 std::is_invocable_v<equal_fn&, Seq1&, Seq2&, equal_fn&>)
+    constexpr auto operator()(Seq1&& seq1, Seq2&& seq2) const -> bool
+    {
+        if constexpr (sized_sequence<Seq1> && sized_sequence<Seq2>) {
+            if (flux::size(seq1) != flux::size(seq2)) {
+                return false;
+            }
+        }
+
+        return (*this)(seq1, seq2, *this);
+    }
 };
 
 } // namespace detail
@@ -11158,19 +11183,154 @@ namespace flux {
 
 namespace detail {
 
-template <multipass_sequence Base, multipass_sequence Pattern>
-struct split_adaptor : inline_sequence_base<split_adaptor<Base, Pattern>> {
-private:
-    Base base_;
-    Pattern pattern_;
+template <typename Splitter, typename Seq>
+concept splitter_for = requires(Splitter& splitter, Seq& seq, cursor_t<Seq> const& cur) {
+    { splitter(flux::slice(seq, cur, flux::last)) } -> std::same_as<bounds_t<Seq>>;
+};
 
-    friend struct sequence_traits<split_adaptor>;
+template <multipass_sequence Base, splitter_for<Base> Splitter>
+struct split_adaptor : inline_sequence_base<split_adaptor<Base, Splitter>> {
+private:
+    FLUX_NO_UNIQUE_ADDRESS Base base_;
+    FLUX_NO_UNIQUE_ADDRESS Splitter splitter_;
 
 public:
-    constexpr split_adaptor(decays_to<Base> auto&& base, decays_to<Pattern> auto&& pattern)
+    constexpr split_adaptor(decays_to<Base> auto&& base, decays_to<Splitter> auto&& splitter)
         : base_(FLUX_FWD(base)),
-          pattern_(FLUX_FWD(pattern))
+          splitter_(FLUX_FWD(splitter))
     {}
+
+    struct flux_sequence_traits {
+    private:
+        struct cursor_type {
+            cursor_t<Base> cur{};
+            bounds_t<Base> next{};
+            bool trailing_empty = false;
+
+            friend constexpr bool operator==(cursor_type const& lhs, cursor_type const& rhs)
+            {
+                return lhs.cur == rhs.cur && lhs.trailing_empty == rhs.trailing_empty;
+            }
+        };
+
+    public:
+        static constexpr bool is_infinite = infinite_sequence<Base>;
+
+        static constexpr auto first(auto& self) -> cursor_type
+            requires sequence<decltype((self.base_))> &&
+                     splitter_for<decltype((self.splitter_)), decltype((self.base_))>
+        {
+            auto fst = flux::first(self.base_);
+            auto bounds = self.splitter_(flux::slice(self.base_, fst, flux::last));
+            return cursor_type{.cur = std::move(fst),
+                               .next = std::move(bounds)};
+        }
+
+        static constexpr auto is_last(auto& self, cursor_type const& cur)
+            -> bool
+        {
+            return flux::is_last(self.base_, cur.cur) && !cur.trailing_empty;
+        }
+
+        static constexpr auto read_at(auto& self, cursor_type const& cur)
+        {
+            return flux::slice(self.base_, cur.cur, cur.next.from);
+        }
+
+        static constexpr auto inc(auto& self, cursor_type& cur) -> void
+        {
+            cur.cur = cur.next.from;
+            if (!flux::is_last(self.base_, cur.cur)) {
+                cur.cur = cur.next.to;
+                if (flux::is_last(self.base_, cur.cur)) {
+                    cur.trailing_empty = true;
+                    cur.next = {cur.cur, cur.cur};
+                } else {
+                    cur.next = self.splitter_(flux::slice(self.base_, cur.cur, flux::last));
+                }
+            } else {
+                cur.trailing_empty = false;
+            }
+        }
+
+        static constexpr auto last(auto& self) -> cursor_type
+            requires bounded_sequence<decltype(self.base_)>
+        {
+            return cursor_type{.cur = flux::last(self.base_)};
+        }
+    };
+};
+
+template <multipass_sequence Pattern>
+struct pattern_splitter {
+private:
+    FLUX_NO_UNIQUE_ADDRESS Pattern pattern_;
+
+public:
+    constexpr explicit pattern_splitter(decays_to<Pattern> auto&& pattern)
+        : pattern_(FLUX_FWD(pattern))
+    {}
+
+    template <multipass_sequence Seq>
+        requires std::equality_comparable_with<element_t<Seq>, element_t<Pattern>>
+    constexpr auto operator()(Seq&& seq) -> bounds_t<Seq>
+    {
+        return flux::search(seq, pattern_);
+    }
+
+    template <multipass_sequence Seq>
+        requires multipass_sequence<Pattern const> &&
+                 std::equality_comparable_with<element_t<Seq>, element_t<Pattern const>>
+    constexpr auto operator()(Seq&& seq) const -> bounds_t<Seq>
+    {
+        return flux::search(seq, pattern_);
+    }
+};
+
+template <typename Delim>
+struct delim_splitter {
+private:
+    FLUX_NO_UNIQUE_ADDRESS Delim delim_;
+
+public:
+    constexpr explicit delim_splitter(decays_to<Delim> auto&& delim)
+        : delim_(FLUX_FWD(delim))
+    {}
+
+    template <multipass_sequence Seq>
+        requires std::equality_comparable_with<element_t<Seq>, Delim const&>
+    constexpr auto operator()(Seq&& seq) const -> bounds_t<Seq>
+    {
+        auto nxt = flux::find(seq, delim_);
+        if (!flux::is_last(seq, nxt)) {
+            return bounds{nxt, flux::next(seq, nxt)};
+        } else {
+            return bounds{nxt, nxt};
+        }
+    }
+};
+
+template <typename Pred>
+struct predicate_splitter {
+private:
+    FLUX_NO_UNIQUE_ADDRESS Pred pred_;
+
+public:
+    constexpr explicit predicate_splitter(decays_to<Pred> auto&& pred)
+        : pred_(FLUX_FWD(pred))
+    {}
+
+    template <multipass_sequence Seq>
+        requires std::predicate<Pred const&, element_t<Seq>>
+    constexpr auto operator()(Seq&& seq) const -> bounds_t<Seq>
+    {
+        auto nxt = flux::find_if(seq, pred_);
+        if (!flux::is_last(seq, nxt)) {
+            return bounds{nxt, flux::next(seq, nxt)};
+        } else {
+            return bounds{nxt, nxt};
+        }
+    }
 };
 
 struct split_fn {
@@ -11181,110 +11341,64 @@ struct split_fn {
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Pattern&& pattern) const
     {
-        return split_adaptor<std::decay_t<Seq>, std::decay_t<Pattern>>(
-                    FLUX_FWD(seq), FLUX_FWD(pattern));
+        using splitter_t = pattern_splitter<std::decay_t<Pattern>>;
+        return split_adaptor<std::decay_t<Seq>, splitter_t>(
+            FLUX_FWD(seq), splitter_t(FLUX_FWD(pattern)));
     }
 
-    template <adaptable_sequence Seq>
-        requires multipass_sequence<Seq>
+    template <adaptable_sequence Seq, typename Delim>
+        requires multipass_sequence<Seq> &&
+                 std::equality_comparable_with<element_t<Seq>, Delim const&>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, value_t<Seq> delim) const
+    constexpr auto operator()(Seq&& seq, Delim&& delim) const
     {
-        return (*this)(FLUX_FWD(seq), flux::single(std::move(delim)));
+        using splitter_t = delim_splitter<std::decay_t<Delim>>;
+        return split_adaptor<std::decay_t<Seq>, splitter_t>(
+            FLUX_FWD(seq), splitter_t(FLUX_FWD(delim)));
+    }
+
+    template <adaptable_sequence Seq, typename Pred>
+        requires multipass_sequence<Seq> &&
+                 std::predicate<Pred const&, element_t<Seq>>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq, Pred pred) const
+    {
+        using splitter_t = predicate_splitter<Pred>;
+        return split_adaptor<std::decay_t<Seq>, splitter_t>(
+            FLUX_FWD(seq), splitter_t(std::move(pred)));
     }
 };
-
-template <typename>
-inline constexpr bool is_single_seq = false;
-
-template <typename T>
-inline constexpr bool is_single_seq<single_sequence<T>> = true;
 
 } // namespace detail
-
-template <typename Base, typename Pattern>
-struct sequence_traits<detail::split_adaptor<Base, Pattern>>
-{
-private:
-    struct cursor_type {
-        cursor_t<Base> cur;
-        bounds_t<Base> next;
-        bool trailing_empty = false;
-
-        friend bool operator==(cursor_type const&, cursor_type const&) = default;
-    };
-
-    static constexpr auto find_next(auto& self, auto const& from)
-    {
-        if constexpr (detail::is_single_seq<decltype(self.pattern_)>) {
-            // auto cur = self.base_[{cur, last}].find(self.pattern_.value());
-            auto cur = flux::find(flux::slice(self.base_, from, flux::last),
-                                  self.pattern_.value());
-            if (flux::is_last(self.base_, cur)) {
-                return bounds{cur, cur};
-            } else {
-                return bounds{cur, flux::next(self.base_, cur)};
-            }
-        } else {
-            return flux::search(flux::slice(self.base_, from, flux::last),
-                                self.pattern_);
-        }
-    }
-
-public:
-
-    static constexpr bool is_infinite = infinite_sequence<Base>;
-
-    static constexpr auto first(auto& self) -> cursor_type
-    {
-        auto bounds = flux::search(self.base_, self.pattern_);
-        return cursor_type(flux::first(self.base_), std::move(bounds));
-    }
-
-    static constexpr auto is_last(auto& self, cursor_type const& cur) -> bool
-    {
-        return flux::is_last(self.base_, cur.cur) && !cur.trailing_empty;
-    }
-
-    static constexpr auto read_at(auto& self, cursor_type const& cur)
-        requires sequence<decltype((self.base_))>
-    {
-        return flux::slice(self.base_, cur.cur, cur.next.from);
-    }
-
-    static constexpr auto inc(auto& self, cursor_type& cur)
-    {
-        cur.cur = cur.next.from;
-        if (!flux::is_last(self.base_, cur.cur)) {
-            cur.cur = cur.next.to;
-            if (flux::is_last(self.base_, cur.cur)) {
-                cur.trailing_empty = true;
-                cur.next = {cur.cur, cur.cur};
-            } else {
-                cur.next = find_next(self, cur.cur);
-            }
-        } else {
-            cur.trailing_empty = false;
-        }
-    }
-};
 
 FLUX_EXPORT inline constexpr auto split = detail::split_fn{};
 
 template <typename Derived>
-template <multipass_sequence Pattern>
-    requires std::equality_comparable_with<element_t<Derived>, element_t<Pattern>>
+template <typename Pattern>
+    requires multipass_sequence<Derived> &&
+             multipass_sequence<Pattern> &&
+             std::equality_comparable_with<element_t<Derived>, element_t<Pattern>>
 constexpr auto inline_sequence_base<Derived>::split(Pattern&& pattern) &&
 {
     return flux::split(std::move(derived()), FLUX_FWD(pattern));
 }
 
 template <typename Derived>
-template <typename ValueType>
-    requires decays_to<ValueType, value_t<Derived>>
-constexpr auto inline_sequence_base<Derived>::split(ValueType&& delim) &&
+template <typename Delim>
+    requires multipass_sequence<Derived> &&
+             std::equality_comparable_with<element_t<Derived>, Delim const&>
+constexpr auto inline_sequence_base<Derived>::split(Delim&& delim) &&
 {
     return flux::split(std::move(derived()), FLUX_FWD(delim));
+}
+
+template <typename Derived>
+template <typename Pred>
+    requires multipass_sequence<Derived> &&
+             std::predicate<Pred const&, element_t<Derived>>
+constexpr auto inline_sequence_base<Derived>::split(Pred pred) &&
+{
+    return flux::split(std::move(derived()), std::move(pred));
 }
 
 
