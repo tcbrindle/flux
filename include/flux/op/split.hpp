@@ -37,11 +37,14 @@ public:
     struct flux_sequence_traits {
     private:
         struct cursor_type {
-            cursor_t<Base> cur;
-            bounds_t<Base> next;
+            cursor_t<Base> cur{};
+            bounds_t<Base> next{};
             bool trailing_empty = false;
 
-            friend bool operator==(cursor_type const&, cursor_type const&) = default;
+            friend constexpr bool operator==(cursor_type const& lhs, cursor_type const& rhs)
+            {
+                return lhs.cur == rhs.cur && lhs.trailing_empty == rhs.trailing_empty;
+            }
         };
 
     public:
@@ -82,6 +85,12 @@ public:
             } else {
                 cur.trailing_empty = false;
             }
+        }
+
+        static constexpr auto last(auto& self) -> cursor_type
+            requires bounded_sequence<decltype(self.base_)>
+        {
+            return cursor_type{.cur = flux::last(self.base_)};
         }
     };
 };

@@ -657,6 +657,8 @@ Adaptors
 
     The third overload takes a unary predicate which will be called with successive elements of the source sequence and returns :expr:`true` when a split should occur. The "``true``" element will be removed from the output. If the predicate returns ``true`` for two consecutive of the source, then the output will contain an empty subsequence. If the predicate returns ``true``` for the final element of the source, then the final subsequence will be empty.
 
+    The returned sequence is always a :concept:`multipass_sequence`. It is additionally a :concept:`bounded_sequence` when :var:`Seq` is bounded.
+
     :param seq: A multipass sequence to split.
     :param delim: For the first overload, a delimiter to split on. Must be equality comparable with the element type of :var:`seq`
     :param pattern: For the second overload, a multipass sequence to split on. Its element type must be equality comparable with the element type of :var:`seq`.

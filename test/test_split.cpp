@@ -34,9 +34,11 @@ constexpr bool test_split_with_delim()
         using S = decltype(split);
 
         static_assert(flux::multipass_sequence<S>);
+        static_assert(flux::bounded_sequence<S>);
         static_assert(flux::contiguous_sequence<flux::element_t<S>>);
 
         static_assert(flux::multipass_sequence<S const>);
+        static_assert(flux::bounded_sequence<S const>);
         static_assert(flux::contiguous_sequence<flux::element_t<S const>>);
 
         STATIC_CHECK(check_equal(std::move(split).map(to_string_view),
@@ -48,6 +50,16 @@ constexpr bool test_split_with_delim()
         auto split = flux::split(" trailing space "sv, ' ').map(to_string_view);
 
         STATIC_CHECK(check_equal(split, std::array{""sv, "trailing"sv, "space"sv, ""sv}));
+
+        auto cur = split.first();
+        split.inc(cur);
+        split.inc(cur);
+        split.inc(cur);
+        STATIC_CHECK(cur.trailing_empty == true);
+        STATIC_CHECK(cur != split.last());
+        split.inc(cur);
+        STATIC_CHECK(cur.trailing_empty == false);
+        STATIC_CHECK(cur == split.last());
     }
 
     // Non-bounded sequences can be split correctly
@@ -57,6 +69,7 @@ constexpr bool test_split_with_delim()
         using S = decltype(split);
 
         static_assert(flux::multipass_sequence<S>);
+        static_assert(not flux::bounded_sequence<S>);
         static_assert(flux::contiguous_sequence<flux::element_t<S>>);
 
         STATIC_CHECK(check_equal(std::move(split).map(to_string_view),
@@ -111,11 +124,13 @@ constexpr bool test_split_with_predicate()
 
         static_assert(flux::sequence<S>);
         static_assert(flux::multipass_sequence<S>);
+        static_assert(flux::bounded_sequence<S>);
         static_assert(not flux::bidirectional_sequence<S>);
         static_assert(not flux::sized_sequence<S>);
 
         static_assert(flux::sequence<S const>);
         static_assert(flux::multipass_sequence<S const>);
+        static_assert(flux::bounded_sequence<S const>);
         static_assert(not flux::bidirectional_sequence<S const>);
         static_assert(not flux::sized_sequence<S const>);
 
@@ -132,9 +147,12 @@ constexpr bool test_split_with_predicate()
         split.inc(cur);
         STATIC_CHECK(check_equal(split[cur], {3, 4}));
         split.inc(cur);
+        STATIC_CHECK(cur != split.last());
         STATIC_CHECK(check_equal(split[cur], {5}));
         split.inc(cur);
         STATIC_CHECK(split.is_last(cur));
+
+        STATIC_CHECK(cur == split.last());
     }
 
     {
