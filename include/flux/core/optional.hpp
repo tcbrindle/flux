@@ -456,6 +456,10 @@ public:
      */
     constexpr auto reset() -> void { ptr_ = nullptr; }
 
+    template <typename U = T>
+        requires requires(U& u) { test_fn(u); }
+    constexpr auto emplace(U& item) -> void { ptr_ = std::addressof(item); }
+
     /*
      * Monadic operations
      */
