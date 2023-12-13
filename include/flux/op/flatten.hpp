@@ -45,8 +45,8 @@ public:
         static constexpr auto satisfy(auto& self, cursor_type& cur) -> void
         {
             while (!flux::is_last(self.base_, cur.outer_cur)) {
-                self.inner_ = optional<InnerSeq>(flux::read_at(self.base_, cur.outer_cur));
-                cur.inner_cur = optional(flux::first(*self.inner_));
+                self.inner_.emplace(flux::read_at(self.base_, cur.outer_cur));
+                cur.inner_cur.emplace(flux::first(*self.inner_));
                 if (!flux::is_last(*self.inner_, *cur.inner_cur)) {
                     return;
                 }

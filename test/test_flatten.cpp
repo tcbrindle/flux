@@ -135,6 +135,18 @@ constexpr bool test_flatten_single_pass()
     }
 #endif // NO_CONSTEXPR_VECTOR
 
+    // Test awkward single-pass flatten with a non-assignable inner sequence
+    {
+        int k = 0;
+        auto seq = flux::ints(0, 2)
+                    .map([&k](auto i) {
+                           return flux::ints(0, 2).map([i, &k](int j) { return i + j + k; });
+                       })
+                    .flatten();
+
+        STATIC_CHECK(check_equal(seq, {0, 1, 1, 2}));
+    }
+
     return true;
 }
 static_assert(test_flatten_single_pass());
