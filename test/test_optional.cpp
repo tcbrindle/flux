@@ -127,6 +127,24 @@ struct MoveOnly {
     MoveOnly& operator=(MoveOnly&&) = default;
 };
 
+struct NotCopyAssignable {
+    int i;
+
+    constexpr explicit NotCopyAssignable(int i ) : i{i} {}
+    NotCopyAssignable(NotCopyAssignable const&) = default;
+    NotCopyAssignable(NotCopyAssignable&&) = default;
+    NotCopyAssignable& operator=(NotCopyAssignable const&) = delete; // Note
+    NotCopyAssignable& operator=(NotCopyAssignable&&) = default;
+};
+
+struct NotMoveAssignable {
+    int i;
+
+    constexpr explicit NotMoveAssignable(int i) : i{i} {}
+    NotMoveAssignable(NotMoveAssignable&&) = default;
+    NotMoveAssignable& operator=(NotMoveAssignable&&) = delete; // Note
+};
+
 struct TraceMove {
     bool moved_from = false;
 
@@ -515,6 +533,20 @@ constexpr bool test_optional_copy_assign()
         STATIC_CHECK(&*o == &j);
     }
 
+    // Test optional<NotCopyAssignable> can actually be copy-assigned
+    {
+        static_assert(std::copy_constructible<NotCopyAssignable>);
+        static_assert(not std::copyable<NotCopyAssignable>);
+        static_assert(std::copyable<flux::optional<NotCopyAssignable>>);
+
+        auto opt1 = flux::optional(NotCopyAssignable(1));
+        auto opt2 = flux::optional(NotCopyAssignable(2));
+
+        opt1 = opt2;
+
+        STATIC_CHECK(opt1->i == 2);
+    }
+
     return true;
 }
 static_assert(test_optional_copy_assign());
@@ -622,6 +654,20 @@ constexpr bool test_optional_move_assign()
 
         STATIC_CHECK(src->moved_from);
         STATIC_CHECK(not dest->moved_from);
+    }
+
+    // Test optional<NotMoveAssignable> can actually be move-assigned
+    {
+        static_assert(std::move_constructible<NotMoveAssignable>);
+        static_assert(not std::copyable<NotMoveAssignable>);
+        static_assert(std::movable<flux::optional<NotMoveAssignable>>);
+
+        auto opt1 = flux::optional(NotCopyAssignable(1));
+        auto opt2 = flux::optional(NotCopyAssignable(2));
+
+        opt1 = std::move(opt2);
+
+        STATIC_CHECK(opt1->i == 2);
     }
 
     return true;
