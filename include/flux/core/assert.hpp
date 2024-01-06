@@ -25,8 +25,8 @@ namespace detail {
 
 struct runtime_error_fn {
     [[noreturn]]
-    inline void operator()(char const* msg,
-                           std::source_location loc = std::source_location::current()) const
+    void operator()(char const* msg,
+                    std::source_location loc = std::source_location::current()) const
     {
         if constexpr (config::on_error == error_policy::unwind) {
             char buf[1024];
