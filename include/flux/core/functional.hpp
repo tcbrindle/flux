@@ -174,18 +174,21 @@ FLUX_EXPORT inline constexpr auto either = [](auto&& p, auto&& or_) {
 
 namespace detail {
 
+FLUX_EXPORT
 template <typename P>
 constexpr auto operator!(detail::predicate<P> pred)
 {
     return not_(std::move(pred));
 }
 
+FLUX_EXPORT
 template <typename L, typename R>
 constexpr auto operator&&(detail::predicate<L> lhs, detail::predicate<R> rhs)
 {
     return both(std::move(lhs), std::move(rhs));
 }
 
+FLUX_EXPORT
 template <typename L, typename R>
 constexpr auto operator||(detail::predicate<L> lhs, detail::predicate<R> rhs)
 {

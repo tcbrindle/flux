@@ -322,6 +322,7 @@ concept adaptable_sequence =
              detail::trivially_copyable_sequence<std::decay_t<Seq>>)) &&
     !detail::is_ilist<Seq>;
 
+FLUX_EXPORT
 template <typename D>
 struct inline_sequence_base;
 

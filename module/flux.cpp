@@ -2,6 +2,7 @@
 module;
 
 #include <array>
+#include <bitset>
 #include <compare>
 #include <concepts>
 #include <coroutine>
