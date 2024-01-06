@@ -5,11 +5,10 @@
 
 #include "catch.hpp"
 
-#include <flux.hpp>
+#include <array>
 
 #include "test_utils.hpp"
 
-#include <array>
 
 #if defined(_GLIBCXX_RELEASE)
 #  if _GLIBCXX_RELEASE < 12

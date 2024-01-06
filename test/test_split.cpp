@@ -5,15 +5,12 @@
 
 #include "catch.hpp"
 
-#include <flux.hpp>
-#include <flux/op/write_to.hpp>
-
-#include "test_utils.hpp"
-
 #include <array>
 #include <iostream>
 #include <string>
 #include <string_view>
+
+#include "test_utils.hpp"
 
 namespace {
 

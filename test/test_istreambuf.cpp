@@ -5,8 +5,6 @@
 
 #include "catch.hpp"
 
-#include <flux/source/istreambuf.hpp>
-
 #include <sstream>
 #include <string>
 

@@ -5,7 +5,11 @@
 
 #include "catch.hpp"
 
+#ifdef USE_MODULES
+import flux;
+#else
 #include <flux/source/empty.hpp>
+#endif
 
 namespace {
 

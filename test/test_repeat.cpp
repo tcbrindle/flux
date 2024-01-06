@@ -5,13 +5,11 @@
 
 #include "catch.hpp"
 
-#include <flux.hpp>
-
-#include "test_utils.hpp"
-
 #include <array>
 #include <limits>
 #include <string_view>
+
+#include "test_utils.hpp"
 
 namespace {
 

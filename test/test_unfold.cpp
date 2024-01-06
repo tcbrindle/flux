@@ -5,11 +5,9 @@
 
 #include "catch.hpp"
 
-#include <flux.hpp>
+#include <iostream>
 
 #include "test_utils.hpp"
-
-#include <iostream>
 
 namespace {
 

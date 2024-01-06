@@ -5,16 +5,14 @@
 
 #include "catch.hpp"
 
-#include <flux.hpp>
-
-#include "test_utils.hpp"
-
 #include <array>
 #include <list>
 #include <span>
 #include <string>
 #include <string_view>
 #include <vector>
+
+#include "test_utils.hpp"
 
 namespace {
 

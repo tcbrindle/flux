@@ -7,13 +7,6 @@
 
 #include "catch.hpp"
 
-#include <flux/op/cartesian_product.hpp>
-#include <flux/op/reverse.hpp>
-#include <flux/source/iota.hpp>
-#include <flux/source/empty.hpp>
-#include <flux/source/iota.hpp>
-#include <flux/op/for_each.hpp>
-
 #include <array>
 #include <iostream>
 #include <string_view>

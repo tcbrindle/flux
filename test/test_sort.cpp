@@ -1,11 +1,6 @@
 
 #include "catch.hpp"
 
-//#define FLUX_ENABLE_BOUNDS_CHECKING
-#include <flux.hpp>
-
-#include "test_utils.hpp"
-
 #include <algorithm>
 #include <array>
 #include <deque>
@@ -17,6 +12,7 @@
 #include <string>
 #include <string_view>
 
+#include "test_utils.hpp"
 
 namespace {
 
@@ -168,6 +164,7 @@ void test_sort_projected(unsigned sz)
     delete[] ptr;
 }
 
+#ifndef USE_MODULES
 void test_heapsort(unsigned sz)
 {
     auto* ptr = new int[sz];
@@ -182,6 +179,7 @@ void test_heapsort(unsigned sz)
     CHECK(std::is_sorted(ptr, ptr + sz));
     delete[] ptr;
 }
+#endif
 
 void test_adapted_deque_sort(unsigned sz)
 {
@@ -223,6 +221,7 @@ TEST_CASE("sort")
 
     test_adapted_deque_sort(100'000);
 
+#ifndef USE_MODULES
     // Test our heapsort implementation, because I don't know how to
     // synthesise a test case in which pqdsort hits this
     test_heapsort(0);
@@ -230,4 +229,5 @@ TEST_CASE("sort")
     test_heapsort(10);
     test_heapsort(100);
     test_heapsort(100'000);
+#endif
 }

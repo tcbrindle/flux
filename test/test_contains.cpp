@@ -5,11 +5,9 @@
 
 #include "catch.hpp"
 
-#include <flux/op/contains.hpp>
+#include <array>
 
 #include "test_utils.hpp"
-
-#include <array>
 
 namespace {
 

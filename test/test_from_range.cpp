@@ -5,15 +5,14 @@
 
 #include "catch.hpp"
 
-#include <flux.hpp>
-
-#include "test_utils.hpp"
-
 #include <array>
 #include <forward_list>
 #include <list>
 #include <map>
+#include <ranges>
 #include <sstream>
+
+#include "test_utils.hpp"
 
 #if defined(_GLIBCXX_RELEASE)
 #  if _GLIBCXX_RELEASE < 12

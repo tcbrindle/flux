@@ -5,9 +5,13 @@
 
 #include "catch.hpp"
 
-#include <flux/core/utils.hpp>
-
 #include <limits>
+
+#ifdef USE_MODULES
+import flux;
+#else
+#include <flux/core/utils.hpp>
+#endif
 
 namespace {
 
@@ -92,10 +96,12 @@ void test_mul()
 
     REQUIRE_THROWS_AS(mul(min, T{-1}), flux::unrecoverable_error);
 
+#ifndef USE_MODULES
     // FIXME: Raises sigfpe when not using built-in overflow checking
     if constexpr (flux::num::detail::use_builtin_overflow_ops) {
         REQUIRE_THROWS_AS(mul(T{-1}, min), flux::unrecoverable_error);
     }
+#endif
 
     REQUIRE_THROWS_AS(mul(max, T{2}), flux::unrecoverable_error);
     REQUIRE_THROWS_AS(mul(T{2}, max), flux::unrecoverable_error);

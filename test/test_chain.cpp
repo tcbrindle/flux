@@ -5,14 +5,11 @@
 
 #include "catch.hpp"
 
-#include <flux.hpp>
-#include <flux/op/write_to.hpp>
-
-#include "test_utils.hpp"
-
 #include <array>
 #include <iostream>
 #include <vector>
+
+#include "test_utils.hpp"
 
 namespace {
 

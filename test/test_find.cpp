@@ -5,13 +5,17 @@
 
 #include "catch.hpp"
 
-#include <flux/core/default_impls.hpp>
-#include <flux/op/find.hpp>
-#include <flux/op/from.hpp>
-
 #include <array>
 #include <forward_list>
 #include <vector>
+
+#ifdef USE_MODULES
+import flux;
+#else
+#include <flux/core/default_impls.hpp>
+#include <flux/op/find.hpp>
+#include <flux/op/from.hpp>
+#endif
 
 namespace {
 

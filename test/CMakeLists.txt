@@ -93,6 +93,19 @@ if(${FLUX_ENABLE_UBSAN})
     target_link_options(test-flux PRIVATE -fsanitize=undefined)
 endif()
 
+if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.28.0")
+    if (${FLUX_BUILD_MODULE})
+        target_sources(test-flux PUBLIC
+            FILE_SET CXX_MODULES
+            BASE_DIRS ${PROJECT_SOURCE_DIR}/module
+            FILES ${PROJECT_SOURCE_DIR}/module/flux.cpp
+        )
+
+        target_compile_definitions(test-flux PRIVATE -DUSE_MODULES)
+        set_target_properties(test-flux PROPERTIES CXX_SCAN_FOR_MODULES On)
+    endif()
+endif()
+
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")
     target_precompile_headers(test-flux PRIVATE "catch.hpp")
 endif()

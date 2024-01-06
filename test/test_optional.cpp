@@ -5,8 +5,6 @@
 
 #include "catch.hpp"
 
-#include <flux.hpp>
-
 #include "test_utils.hpp"
 
 // Silence warnings about unneeded comparison functions: in fact they are

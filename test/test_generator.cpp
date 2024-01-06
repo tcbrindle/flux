@@ -5,9 +5,8 @@
 
 #include "catch.hpp"
 
-#include <flux/source/generator.hpp>
-#include <flux.hpp>
-
+#include <coroutine>
+#include <ranges>
 
 #include "test_utils.hpp"
 
