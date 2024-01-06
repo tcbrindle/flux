@@ -76,7 +76,11 @@ if (FLUX_BUILD_TOOLS)
 endif()
 
 if (FLUX_BUILD_MODULE)
-    add_subdirectory(module)
+    if(${CMAKE_VERSION} VERSION_LESS "3.28.0")
+        message(WARNING "Modules support requires CMake v3.28 or later")
+    else()
+        add_subdirectory(module)
+    endif()
 endif()
 
 set(FLUX_INSTALL_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/flux)

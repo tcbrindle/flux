@@ -1,7 +1,11 @@
 
-include(modules)
+add_library(flux-mod)
+target_sources(flux-mod PUBLIC
+    FILE_SET CXX_MODULES
+    BASE_DIRS ${PROJECT_SOURCE_DIR}/module
+    FILES flux.cpp
+)
 
-add_module_library(flux-mod flux.cpp)
 target_link_libraries(flux-mod PUBLIC flux)
 set_target_properties(flux-mod PROPERTIES CXX_EXTENSIONS Off)
 
