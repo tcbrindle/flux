@@ -100,6 +100,7 @@ endif()
 if(${FLUX_BUILD_MODULE})
     add_executable(test-module-import test_module_import.cpp)
     target_link_libraries(test-module-import PUBLIC flux-mod)
+    set_target_properties(test-module-import PROPERTIES CXX_EXTENSIONS Off)
 endif()
 
 include(Catch)

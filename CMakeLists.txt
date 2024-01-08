@@ -25,11 +25,11 @@ if (MSVC)
 else()
     target_compile_features(flux INTERFACE cxx_std_20)
 endif()
-set_target_properties(flux PROPERTIES cxx_standard_required On)
+set_target_properties(flux PROPERTIES CXX_STANDARD_REQUIRED On)
 
 add_library(flux-internal INTERFACE)
 target_link_libraries(flux-internal INTERFACE flux)
-set_target_properties(flux-internal PROPERTIES cxx_extensions Off)
+set_target_properties(flux-internal PROPERTIES CXX_EXTENSIONS Off)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(flux-internal INTERFACE -Wall -Wextra -Wconversion -pedantic
