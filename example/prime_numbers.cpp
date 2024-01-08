@@ -22,7 +22,7 @@ flux::generator<std::size_t> primes()
     }
 }
 
-int main(int argc, char** argv)
+int main()
 {
     // Prints all prime numbers less than 1000
     primes().take_while(flux::pred::lt(1000)).write_to(std::cout);

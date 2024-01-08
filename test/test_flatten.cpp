@@ -140,7 +140,7 @@ constexpr bool test_flatten_single_pass()
         int k = 0;
         auto seq = flux::ints(0, 2)
                     .map([&k](auto i) {
-                           return flux::ints(0, 2).map([i, &k](int j) { return i + j + k; });
+                           return flux::ints(0, 2).map([i, &k](auto j) { return i + j + k; });
                        })
                     .flatten();
 
