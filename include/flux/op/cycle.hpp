@@ -170,7 +170,7 @@ public:
             auto off = flux::distance(self.base_, first, cur.base_cur);
             off = num::checked_add(off, offset);
 
-            cur.n += off/sz;
+            cur.n += static_cast<std::size_t>(off/sz);
 
             off = off % sz;
             if (off < 0) {

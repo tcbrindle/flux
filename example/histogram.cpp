@@ -45,7 +45,7 @@ auto to_histogram = [](hist_t&& so_far, auto x)
 void print_histogram(const hist_t& hist)
 {
     for (auto [bin, count]: hist){
-        std::cout << std::setw(2) << bin << ' ' << std::string(count / 200, '*') << '\n';
+        std::cout << std::setw(2) << bin << ' ' << std::string(std::size_t(count)/200, '*') << '\n';
     }
 };
 

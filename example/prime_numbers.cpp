@@ -8,9 +8,9 @@
 #include <iostream>
 #include <vector>
 
-flux::generator<std::size_t> primes()
+flux::generator<long long> primes()
 {
-    std::vector<std::size_t> history;
+    std::vector<long long> history;
     auto is_prime = [&](auto x) { 
         return flux::none(history, [x](auto prime) { return (x % prime) == 0; });
     };
