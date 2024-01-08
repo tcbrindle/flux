@@ -3,7 +3,7 @@ add_library(catch-main catch_main.cpp)
 target_compile_features(catch-main PUBLIC cxx_std_20)
 target_compile_definitions(catch-main PUBLIC -DCATCH_CONFIG_NO_POSIX_SIGNALS)
 
-add_executable(test-libflux
+add_executable(test-flux
 
     test_concepts.cpp
     test_overflow.cpp
@@ -76,39 +76,25 @@ add_executable(test-libflux
     test_single.cpp
     test_unfold.cpp
 )
-target_link_libraries(test-libflux flux catch-main)
-target_compile_definitions(test-libflux PUBLIC
+target_link_libraries(test-flux flux-internal catch-main)
+target_compile_definitions(test-flux PUBLIC
     FLUX_UNWIND_ON_ERROR
     FLUX_ERROR_ON_OVERFLOW
     FLUX_DISABLE_STATIC_BOUNDS_CHECKING
 )
 
 if(${FLUX_ENABLE_ASAN})
-    target_compile_options(test-libflux PRIVATE -fsanitize=address)
-    target_link_options(test-libflux PRIVATE -fsanitize=address)
+    target_compile_options(test-flux PRIVATE -fsanitize=address)
+    target_link_options(test-flux PRIVATE -fsanitize=address)
 endif()
 
 if(${FLUX_ENABLE_UBSAN})
-    target_compile_options(test-libflux PRIVATE -fsanitize=undefined)
-    target_link_options(test-libflux PRIVATE -fsanitize=undefined)
+    target_compile_options(test-flux PRIVATE -fsanitize=undefined)
+    target_link_options(test-flux PRIVATE -fsanitize=undefined)
 endif()
 
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")
-    target_precompile_headers(test-libflux PRIVATE "catch.hpp")
-endif()
-
-if(CMAKE_COMPILER_IS_GNUCXX)
-    target_compile_options(test-libflux PRIVATE -Wall -Wextra -pedantic
-        -fno-omit-frame-pointer
-        -ftemplate-backtrace-limit=0
-        -fconcepts-diagnostics-depth=2)
-endif()
-
-if(MSVC)
-    target_compile_options(test-libflux PRIVATE /W4
-        /wd4459 # local variable name hides global variable
-        /wd4702 # unreachable code
-    )
+    target_precompile_headers(test-flux PRIVATE "catch.hpp")
 endif()
 
 if(${FLUX_BUILD_MODULE})
@@ -117,4 +103,4 @@ if(${FLUX_BUILD_MODULE})
 endif()
 
 include(Catch)
-catch_discover_tests(test-libflux)
+catch_discover_tests(test-flux)

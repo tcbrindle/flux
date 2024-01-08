@@ -1,7 +1,7 @@
 
 function(ADD_EXAMPLE NAME SOURCE)
     add_executable(${NAME} ${SOURCE})
-    target_link_libraries(${NAME} flux)
+    target_link_libraries(${NAME} flux-internal)
     if(${${NAME}_SKIP_TEST})
       #pass
     else()

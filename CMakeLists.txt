@@ -1,13 +1,12 @@
 
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.12)
 cmake_policy(SET CMP0076 NEW) # remove warning for target_sources(flux...) for < 3.13
 cmake_policy(SET CMP0092 NEW) # remove warning for CMAKE_LANG_FLAG MSVC for < 3.15
 
-project(libflux CXX)
+project(flux CXX)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
-
 
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
@@ -21,6 +20,7 @@ if (MSVC)
 else()
     target_compile_features(flux INTERFACE cxx_std_20)
 endif()
+set_target_properties(flux PROPERTIES cxx_standard_required On)
 
 target_include_directories(
     flux 
@@ -29,7 +29,28 @@ target_include_directories(
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-set(CMAKE_CXX_EXTENSIONS Off)
+add_library(flux-internal INTERFACE)
+target_link_libraries(flux-internal INTERFACE flux)
+set_target_properties(flux-internal PROPERTIES cxx_extensions Off)
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(flux-internal INTERFACE -Wall -Wextra -Wconversion -pedantic
+            -fno-omit-frame-pointer
+            -ftemplate-backtrace-limit=0)
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    target_compile_options(flux-internal INTERFACE -Wall -Wextra -Wconversion -pedantic
+            -fno-omit-frame-pointer
+            -ftemplate-backtrace-limit=0
+            -fconcepts-diagnostics-depth=2)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    target_compile_options(flux-internal INTERFACE /W4
+            # Various options for closer standard conformance
+            /utf-8 /Zc:__cplusplus /Zc:throwingNew /Zc:inline /Zc:externConstexpr
+            /Zc:templateScope /Zc:checkGwOdr /Zc:enumTypes
+            /wd4459 # local variable name hides global variable
+            /wd4702 # unreachable code
+    )
+endif()
 
 option(FLUX_BUILD_DOCS "Build Flux documentation (requires Sphinx)" Off)
 option(FLUX_BUILD_EXAMPLES "Build Flux examples" On)
