@@ -100,10 +100,6 @@ FLUX_EXPORT inline constexpr auto assert_ = detail::assert_fn{};
 FLUX_EXPORT inline constexpr auto bounds_check = detail::bounds_check_fn{};
 FLUX_EXPORT inline constexpr auto indexed_bounds_check = detail::indexed_bounds_check_fn{};
 
-#define FLUX_ASSERT(cond) (::flux::assert_(cond, "assertion '" #cond "' failed"))
-
-#define FLUX_DEBUG_ASSERT(cond) (::flux::assert_(!::flux::config::enable_debug_asserts || (cond), "assertion '" #cond "' failed"));
-
 } // namespace flux
 
 #endif // FLUX_CORE_ASSERT_HPP_INCLUDED

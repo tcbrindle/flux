@@ -27,6 +27,10 @@
               ::flux::inc(_flux_seq_, _flux_cur_))         \
             if (_flux_var_decl_ = ::flux::read_at(_flux_seq_, _flux_cur_); true)
 
+#define FLUX_ASSERT(cond) (::flux::assert_(cond, "assertion '" #cond "' failed"))
+
+#define FLUX_DEBUG_ASSERT(cond) (::flux::assert_(!::flux::config::enable_debug_asserts || (cond), "assertion '" #cond "' failed"));
+
 #ifdef FLUX_MODULE_INTERFACE
 #define FLUX_EXPORT export
 #else
