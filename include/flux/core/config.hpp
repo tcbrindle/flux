@@ -6,7 +6,7 @@
 #ifndef FLUX_CORE_CONFIG_HPP_INCLUDED
 #define FLUX_CORE_CONFIG_HPP_INCLUDED
 
-#include <flux/core/macros.hpp>
+#include <flux/macros.hpp>
 
 #include <concepts>
 #include <cstddef>

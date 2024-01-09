@@ -6,7 +6,6 @@
 #ifndef FLUX_CORE_CONCEPTS_HPP_INCLUDED
 #define FLUX_CORE_CONCEPTS_HPP_INCLUDED
 
-#include <flux/core/macros.hpp>
 #include <flux/core/utils.hpp>
 
 #include <compare>

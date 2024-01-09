@@ -10,7 +10,7 @@
 #ifndef USE_MODULES
 #include <flux.hpp>
 #else
-#include <flux/core/macros.hpp>
+#include <flux/macros.hpp>
 import flux;
 #endif
 

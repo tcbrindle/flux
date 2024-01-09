@@ -6,7 +6,7 @@
 #ifndef FLUX_CORE_FUNCTIONAL_HPP_INCLUDED
 #define FLUX_CORE_FUNCTIONAL_HPP_INCLUDED
 
-#include <flux/core/macros.hpp>
+#include <flux/macros.hpp>
 
 #include <functional>
 #include <type_traits>
