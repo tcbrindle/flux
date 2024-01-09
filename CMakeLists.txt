@@ -11,11 +11,12 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 add_library(flux INTERFACE)
 add_library(flux::flux ALIAS flux)
 
-file(GLOB_RECURSE FLUX_HPPS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp" )
+file(GLOB_RECURSE FLUX_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp" )
+
 target_sources(flux INTERFACE
     FILE_SET HEADERS
     BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
-    FILES ${FLUX_HPPS})
+    FILES ${FLUX_HEADERS})
 
 target_compile_features(flux INTERFACE $<IF:$<CXX_COMPILER_ID:MSVC>,cxx_std_23,cxx_std_20>)
 set_target_properties(flux PROPERTIES CXX_STANDARD_REQUIRED On)
