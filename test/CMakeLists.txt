@@ -82,6 +82,7 @@ target_compile_definitions(test-flux PUBLIC
     FLUX_ERROR_ON_OVERFLOW
     FLUX_DISABLE_STATIC_BOUNDS_CHECKING
 )
+target_precompile_headers(test-flux PRIVATE "catch.hpp")
 
 if(${FLUX_ENABLE_ASAN})
     target_compile_options(test-flux PRIVATE -fsanitize=address)
@@ -104,10 +105,6 @@ if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.28.0")
         target_compile_definitions(test-flux PRIVATE -DUSE_MODULES)
         set_target_properties(test-flux PROPERTIES CXX_SCAN_FOR_MODULES On)
     endif()
-endif()
-
-if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")
-    target_precompile_headers(test-flux PRIVATE "catch.hpp")
 endif()
 
 if(${FLUX_BUILD_MODULE})
