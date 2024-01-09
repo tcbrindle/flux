@@ -84,18 +84,18 @@ target_compile_definitions(test-flux PUBLIC
 )
 target_precompile_headers(test-flux PRIVATE "catch.hpp")
 
-if(${FLUX_ENABLE_ASAN})
+if(FLUX_ENABLE_ASAN)
     target_compile_options(test-flux PRIVATE -fsanitize=address)
     target_link_options(test-flux PRIVATE -fsanitize=address)
 endif()
 
-if(${FLUX_ENABLE_UBSAN})
+if(FLUX_ENABLE_UBSAN)
     target_compile_options(test-flux PRIVATE -fsanitize=undefined)
     target_link_options(test-flux PRIVATE -fsanitize=undefined)
 endif()
 
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.28.0")
-    if (${FLUX_BUILD_MODULE})
+    if (FLUX_BUILD_TESTS_USING_MODULE)
         target_sources(test-flux PUBLIC
             FILE_SET CXX_MODULES
             BASE_DIRS ${PROJECT_SOURCE_DIR}/module
@@ -107,7 +107,7 @@ if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.28.0")
     endif()
 endif()
 
-if(${FLUX_BUILD_MODULE})
+if(FLUX_BUILD_MODULE)
     add_executable(test-module-import test_module_import.cpp)
     target_link_libraries(test-module-import PUBLIC flux-mod)
     set_target_properties(test-module-import PROPERTIES
