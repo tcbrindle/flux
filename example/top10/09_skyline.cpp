@@ -14,9 +14,6 @@
 
 #include <flux.hpp>
 
-#include <algorithm>
-
-
 auto const skyline = [](std::initializer_list<int> heights)
 {
     auto h = flux::ref(heights);

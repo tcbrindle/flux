@@ -76,8 +76,8 @@ public:
         std::uniform_int_distribution dist(1, 9);
         maze m(width, height);
         
-        for (auto i: flux::ints(1, m.fields_.size() - 1)) {
-             m.fields_[i] = (rng() % 4) == 0 ? wall : dist(rng);
+        for (auto i: flux::ints(1, flux::size(m.fields_) - 1)) {
+             m.fields_[size_t(i)] = (rng() % 4) == 0 ? wall : dist(rng);
         }
 
         return m;

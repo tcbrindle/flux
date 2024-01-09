@@ -8,9 +8,9 @@
 #include <iostream>
 #include <vector>
 
-flux::generator<std::size_t> primes()
+flux::generator<long long> primes()
 {
-    std::vector<std::size_t> history;
+    std::vector<long long> history;
     auto is_prime = [&](auto x) { 
         return flux::none(history, [x](auto prime) { return (x % prime) == 0; });
     };
@@ -22,7 +22,7 @@ flux::generator<std::size_t> primes()
     }
 }
 
-int main(int argc, char** argv)
+int main()
 {
     // Prints all prime numbers less than 1000
     primes().take_while(flux::pred::lt(1000)).write_to(std::cout);

@@ -40,7 +40,9 @@ struct span_seq {
         {
             return static_cast<flux::distance_t>(to) - static_cast<flux::distance_t>(from);
         }
-        static constexpr std::size_t size(span_seq const& self) { return self.sz_; }
+        static constexpr flux::distance_t size(span_seq const& self) {
+            return static_cast<flux::distance_t>(self.sz_);
+        }
         static constexpr T* data(span_seq const& self) { return self.ptr_; }
     };
 };
@@ -95,7 +97,7 @@ static_assert(test_sort_contexpr());
 
 std::mt19937 gen{};
 
-void test_already_sorted(int sz)
+void test_already_sorted(unsigned sz)
 {
     auto* ptr = new int[sz];
     std::iota(ptr, ptr + sz, int{0});
@@ -106,7 +108,7 @@ void test_already_sorted(int sz)
     delete[] ptr;
 }
 
-void test_reverse_sorted(int sz)
+void test_reverse_sorted(unsigned sz)
 {
     auto* ptr = new int[sz];
     std::iota(ptr, ptr + sz, int{0});
@@ -118,7 +120,7 @@ void test_reverse_sorted(int sz)
     delete[] ptr;
 }
 
-void test_randomised(int sz) {
+void test_randomised(unsigned sz) {
     auto* ptr = new int[sz];
     std::iota(ptr, ptr + sz, int{0});
     std::shuffle(ptr, ptr + sz, gen);
@@ -129,7 +131,7 @@ void test_randomised(int sz) {
     delete[] ptr;
 }
 
-void test_all_equal(int sz) {
+void test_all_equal(unsigned sz) {
     auto* ptr = new int[sz];
     std::fill(ptr, ptr + sz, 10);
 
@@ -139,7 +141,7 @@ void test_all_equal(int sz) {
     delete[] ptr;
 }
 
-void test_sort(int sz)
+void test_sort(unsigned sz)
 {
     test_already_sorted(sz);
     test_reverse_sorted(sz);
@@ -152,7 +154,7 @@ struct Int {
     Int& operator++() { ++i; return *this; }
 };
 
-void test_sort_projected(int sz)
+void test_sort_projected(unsigned sz)
 {
     auto* ptr = new Int[sz];
     std::iota(ptr, ptr + sz, Int{0});
@@ -166,7 +168,7 @@ void test_sort_projected(int sz)
     delete[] ptr;
 }
 
-void test_heapsort(int sz)
+void test_heapsort(unsigned sz)
 {
     auto* ptr = new int[sz];
     std::iota(ptr, ptr + sz, 0);
@@ -181,7 +183,7 @@ void test_heapsort(int sz)
     delete[] ptr;
 }
 
-void test_adapted_deque_sort(int sz)
+void test_adapted_deque_sort(unsigned sz)
 {
     std::deque<std::string> deque(sz);
     std::generate(deque.begin(), deque.end(), [i = 0]() mutable {

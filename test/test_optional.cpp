@@ -9,6 +9,12 @@
 
 #include "test_utils.hpp"
 
+// Silence warnings about unneeded comparison functions: in fact they are
+// needed during concept checks
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wunneeded-internal-declaration"
+#endif
+
 namespace {
 
 // GCC11 std::string isn't usable in constexpr, so here's a quick and dirty
@@ -1171,7 +1177,6 @@ constexpr bool test_optional_map()
         auto return_ref = [](int& i) -> int& { return i; };
 
         flux::optional<int> o{3};
-        flux::optional<int> empty;
 
         STATIC_CHECK(o.map(return_ref).value() == 3);
     }

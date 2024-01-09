@@ -6,8 +6,8 @@
 
 #include <flux.hpp>
 
+#include "assert.hpp"
 #include <array>
-#include <cassert>
 
 int main()
 {

@@ -33,7 +33,7 @@ jobs:
       run: ctest
 
     - name: Generate coverage report
-      working-directory: ${{runner.workspace}}/build/test/CMakeFiles/test-libflux.dir
+      working-directory: ${{runner.workspace}}/build/test/CMakeFiles/test-flux.dir
       run: |
         lcov --directory . --capture --gcov gcov-13 --output-file coverage.info
         lcov --remove coverage.info '*/test/*' --output-file coverage.info
@@ -41,5 +41,5 @@ jobs:
     - name: Upload coverage report
       uses: codecov/codecov-action@v3
       with:
-        files: ${{runner.workspace}}/build/test/CMakeFiles/test-libflux.dir/coverage.info
+        files: ${{runner.workspace}}/build/test/CMakeFiles/test-flux.dir/coverage.info
 

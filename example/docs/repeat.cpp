@@ -5,8 +5,8 @@
 
 #include <flux.hpp>
 
+#include "assert.hpp"
 #include <array>
-#include <cassert>
 #include <string_view>
 
 using namespace std::string_view_literals;

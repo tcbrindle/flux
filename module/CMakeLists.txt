@@ -3,6 +3,7 @@ include(modules)
 
 add_module_library(flux-mod flux.cpp)
 target_link_libraries(flux-mod PUBLIC flux)
+set_target_properties(flux-mod PROPERTIES CXX_EXTENSIONS Off)
 
 # Squish MSVC warning when building the module, hopefully we're not actually doing anything wrong
 if(MSVC)
