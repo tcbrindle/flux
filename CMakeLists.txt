@@ -6,12 +6,10 @@ project(flux CXX)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
-set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
-
-set(PORT_NAME flux)
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 add_library(flux INTERFACE)
-add_library(${PORT_NAME}::flux ALIAS flux)
+add_library(flux::flux ALIAS flux)
 
 file(GLOB_RECURSE FLUX_HPPS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp" )
 target_sources(flux INTERFACE
@@ -85,39 +83,39 @@ if (FLUX_BUILD_MODULE)
     add_subdirectory(module)
 endif()
 
-set(FLUX_INSTALL_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/${PORT_NAME})
+set(FLUX_INSTALL_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/flux)
 
 write_basic_package_version_file(
-    "${PROJECT_BINARY_DIR}/${PORT_NAME}-version.cmake"
+    "${PROJECT_BINARY_DIR}/flux-version.cmake"
     VERSION -1 # When there is a PROJECT_VERSION, remove this line
     COMPATIBILITY SameMajorVersion
-    ARCH_INDEPENDENT # showed up in CMake 3.14 and gets rid of the need to do the CMAKE_SIZEOF_VOIDP thing
+    ARCH_INDEPENDENT
 )
 
 configure_package_config_file(
-    "${PROJECT_SOURCE_DIR}/cmake/${PORT_NAME}-config.cmake.in"
-    "${PROJECT_BINARY_DIR}/${PORT_NAME}-config.cmake"
+    "${PROJECT_SOURCE_DIR}/cmake/flux-config.cmake.in"
+    "${PROJECT_BINARY_DIR}/flux-config.cmake"
     INSTALL_DESTINATION ${FLUX_INSTALL_CMAKE_DIR}
 )
 
 # set target installation location properties and associates it with the targets files
 install(
-    TARGETS ${PORT_NAME}
-    EXPORT ${PORT_NAME}-targets
+    TARGETS flux
+    EXPORT flux-targets
     FILE_SET HEADERS
 )
 
 #install the targets files
 install(
-    EXPORT ${PORT_NAME}-targets
-    NAMESPACE ${PORT_NAME}::
+    EXPORT flux-targets
+    NAMESPACE flux::
     DESTINATION ${FLUX_INSTALL_CMAKE_DIR}
 )
 
 # install the config and version files
 install(
     FILES
-        "${PROJECT_BINARY_DIR}/${PORT_NAME}-config.cmake"
-        "${PROJECT_BINARY_DIR}/${PORT_NAME}-version.cmake"
+        "${PROJECT_BINARY_DIR}/flux-config.cmake"
+        "${PROJECT_BINARY_DIR}/flux-version.cmake"
     DESTINATION ${FLUX_INSTALL_CMAKE_DIR}
 )
