@@ -4273,7 +4273,7 @@ public:
     {
         cursor_type out{flux::first(self.base_), };
 
-        for (auto i : flux::ints(1, N)) {
+        for (auto i : flux::iota(std::size_t{1}, std::size_t{N})) {
             out.arr[i] = out.arr[i - 1];
             if (!flux::is_last(self.base_, out.arr[i])) {
                 flux::inc(self.base_, out.arr[i]);
@@ -4300,7 +4300,7 @@ public:
         cursor_type out{};
         out.arr.back() = flux::last(self.base_);
         auto const first = flux::first(self.base_);
-        for (auto i : flux::ints(0, N-1).reverse()) {
+        for (auto i : flux::iota(std::size_t{0}, std::size_t{N}-1).reverse()) {
             out.arr[i] = out.arr[i + 1];
             if (out.arr[i] != first) {
                 flux::dec(self.base_, out.arr[i]);
@@ -7174,7 +7174,7 @@ public:
             auto off = flux::distance(self.base_, first, cur.base_cur);
             off = num::checked_add(off, offset);
 
-            cur.n += off/sz;
+            cur.n += static_cast<std::size_t>(off/sz);
 
             off = off % sz;
             if (off < 0) {
@@ -12987,7 +12987,7 @@ public:
 
         static constexpr auto inc(self_t const&, std::size_t& cur, distance_t offset) -> void
         {
-            cur += offset;
+            cur += static_cast<std::size_t>(offset);
         }
 
         static constexpr auto distance(self_t const&, std::size_t from, std::size_t to) -> distance_t
@@ -13025,7 +13025,7 @@ public:
         static constexpr auto size(self_t const& self) -> distance_t
             requires (!IsInfinite)
         {
-            return self.data_.count;
+            return checked_cast<distance_t>(self.data_.count);
         }
     };
 };
