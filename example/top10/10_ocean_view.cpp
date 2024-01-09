@@ -14,11 +14,9 @@
  * https://leetcode.ca/all/1762.html
  */
 
-#include <flux.hpp>
-
-#include <algorithm>
-#include <cassert>
 #include <vector>
+
+#include <flux.hpp>
 
 using index_vec = std::vector<flux::index_t>;
 
@@ -37,8 +35,8 @@ auto const ocean_view = [](std::vector<int> const& heights) -> index_vec
 
 int main()
 {
-    assert(ocean_view({4,2,3,1}) == index_vec({0,2,3}));
-    assert(ocean_view({4,3,2,1}) == index_vec({0,1,2,3}));
-    assert(ocean_view({1,3,2,4}) == index_vec{3});
-    assert(ocean_view({2,2,2,2}) == index_vec{3});
+    FLUX_ASSERT(ocean_view({4,2,3,1}) == index_vec({0,2,3}));
+    FLUX_ASSERT(ocean_view({4,3,2,1}) == index_vec({0,1,2,3}));
+    FLUX_ASSERT(ocean_view({1,3,2,4}) == index_vec{3});
+    FLUX_ASSERT(ocean_view({2,2,2,2}) == index_vec{3});
 }
