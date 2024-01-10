@@ -5,8 +5,11 @@
 
 #include "catch.hpp"
 
+#include <algorithm>
 #include <coroutine>
+#include <memory>
 #include <ranges>
+#include <utility>
 
 #include "test_utils.hpp"
 

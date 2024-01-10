@@ -5,6 +5,8 @@
 
 #include "catch.hpp"
 
+#include <algorithm>
+
 #ifdef USE_MODULES
 import flux;
 #else
