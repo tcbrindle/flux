@@ -5,6 +5,8 @@
 
 #include "catch.hpp"
 
+#include <algorithm>
+
 #include "test_utils.hpp"
 
 namespace {

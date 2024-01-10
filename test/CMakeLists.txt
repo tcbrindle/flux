@@ -1,7 +1,13 @@
 
-add_library(catch-main catch_main.cpp)
-target_compile_features(catch-main PUBLIC cxx_std_20)
-target_compile_definitions(catch-main PUBLIC -DCATCH_CONFIG_NO_POSIX_SIGNALS)
+include(FetchContent)
+
+FetchContent_Declare(Catch2
+    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+    GIT_TAG f981c9cbcac07a2690e5a86767eba490b5465463 # v3.5.1
+    FIND_PACKAGE_ARGS
+)
+
+FetchContent_MakeAvailable(Catch2)
 
 add_executable(test-flux
 
@@ -76,7 +82,7 @@ add_executable(test-flux
     test_single.cpp
     test_unfold.cpp
 )
-target_link_libraries(test-flux flux-internal catch-main)
+target_link_libraries(test-flux flux-internal Catch2::Catch2WithMain)
 target_compile_definitions(test-flux PUBLIC
     FLUX_UNWIND_ON_ERROR
     FLUX_ERROR_ON_OVERFLOW
@@ -122,5 +128,6 @@ if(FLUX_BUILD_MODULE)
                           CXX_SCAN_FOR_MODULES On)
 endif()
 
+list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(Catch)
 catch_discover_tests(test-flux)
