@@ -5,14 +5,12 @@
 
 #include "catch.hpp"
 
-#include <flux.hpp>
-
-#include "test_utils.hpp"
-
 #include <array>
 #include <limits>
 #include <list>
 #include <sstream>
+
+#include "test_utils.hpp"
 
 namespace {
 
@@ -33,8 +31,24 @@ struct NotBidir : flux::inline_sequence_base<NotBidir<Base>> {
     constexpr Base& base() & { return base_; }
     constexpr Base const& base() const& { return base_; }
 
-    struct flux_sequence_traits : flux::detail::passthrough_traits_base<Base> {
-        static void dec(...) = delete;
+    struct flux_sequence_traits {
+        static constexpr auto first(auto& self) { return flux::first(self.base_); }
+
+        static constexpr bool is_last(auto& self, auto const& cur) {
+            return flux::is_last(self.base_, cur);
+        }
+
+        static constexpr void inc(auto& self, auto& cur) {
+            flux::inc(self.base_, cur);
+        }
+
+        static constexpr decltype(auto) read_at(auto& self, auto const& cur) {
+            return flux::read_at(self.base_, cur);
+        }
+
+        static constexpr auto last(auto& self) { return flux::last(self.base_); }
+
+        static constexpr auto size(auto& self) { return flux::size(self.base_); }
     };
 };
 

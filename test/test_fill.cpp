@@ -5,11 +5,6 @@
 
 #include "catch.hpp"
 
-#include <flux/op/fill.hpp>
-#include <flux/op/take.hpp>
-#include <flux/source/empty.hpp>
-#include <flux/source/single.hpp>
-
 #include <array>
 
 #include "test_utils.hpp"

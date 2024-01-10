@@ -1,13 +1,9 @@
 
 #include "catch.hpp"
 
-#include <flux/op/equal.hpp>
-#include <flux/op/take_while.hpp>
-#include <flux/source/empty.hpp>
+#include <array>
 
 #include "test_utils.hpp"
-
-#include <array>
 
 namespace {
 

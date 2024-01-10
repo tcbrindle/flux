@@ -6,7 +6,6 @@
 #ifndef FLUX_CORE_CONCEPTS_HPP_INCLUDED
 #define FLUX_CORE_CONCEPTS_HPP_INCLUDED
 
-#include <flux/core/macros.hpp>
 #include <flux/core/utils.hpp>
 
 #include <compare>
@@ -322,6 +321,7 @@ concept adaptable_sequence =
              detail::trivially_copyable_sequence<std::decay_t<Seq>>)) &&
     !detail::is_ilist<Seq>;
 
+FLUX_EXPORT
 template <typename D>
 struct inline_sequence_base;
 

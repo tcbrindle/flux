@@ -63,6 +63,7 @@
 #include <flux/op/zip_algorithms.hpp>
 
 #include <flux/source/array_ptr.hpp>
+#include <flux/source/bitset.hpp>
 #include <flux/source/empty.hpp>
 #include <flux/source/generator.hpp>
 #include <flux/source/getlines.hpp>

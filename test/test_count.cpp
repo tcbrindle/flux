@@ -5,11 +5,7 @@
 
 #include "catch.hpp"
 
-#include <flux/op/count.hpp>
-#include <flux/op/take_while.hpp>
-
 #include "test_utils.hpp"
-
 
 namespace {
 

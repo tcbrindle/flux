@@ -4,11 +4,9 @@
 
 #include "catch.hpp"
 
-#include <flux.hpp>
+#include <array>
 
 #include "test_utils.hpp"
-
-#include <array>
 
 namespace {
 
@@ -51,7 +49,9 @@ constexpr bool test_simple_sequence()
         auto iter = array_iterator(arr);
 
         using I = decltype(iter);
+#ifndef USE_MODULES
         static_assert(flux::detail::simple_sequence<I>);
+#endif
         static_assert(flux::sequence<I>);
         static_assert(not flux::multipass_sequence<I>);
         static_assert(not flux::sized_sequence<I>);
@@ -67,7 +67,9 @@ constexpr bool test_simple_sequence()
     }
 
     {
+#ifndef USE_MODULES
         static_assert(flux::detail::simple_sequence<ints>);
+#endif
         static_assert(flux::sequence<ints>);
         static_assert(flux::infinite_sequence<ints>);
         static_assert(not flux::multipass_sequence<ints>);
@@ -76,13 +78,7 @@ constexpr bool test_simple_sequence()
         static_assert(std::same_as<flux::value_t<ints>, int>);
         static_assert(std::same_as<flux::rvalue_element_t<ints>, int const&&>);
 
-        // FIXME: ints{}.take(10).sum()
-        int sum = 0;
-        ints{}.take(10).for_each([&sum](int const& i) {
-            sum += i;
-        });
-
-        STATIC_CHECK(sum == 45);
+        STATIC_CHECK(ints{}.take(10).sum() == 45);
     }
 
     // Check that we can restart iteration

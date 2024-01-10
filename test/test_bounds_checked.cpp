@@ -5,8 +5,6 @@
 
 #include "catch.hpp"
 
-#include <flux.hpp>
-
 #include <vector>
 
 #include "test_utils.hpp"

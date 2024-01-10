@@ -5,11 +5,6 @@
 
 #include "catch.hpp"
 
-#include <flux/op/output_to.hpp>
-#include <flux/op/take.hpp>
-#include <flux/source/istream.hpp>
-#include <flux/source/istreambuf.hpp>
-
 #include <array>
 #include <list>
 #include <sstream>

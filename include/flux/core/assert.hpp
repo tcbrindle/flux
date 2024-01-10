@@ -25,8 +25,8 @@ namespace detail {
 
 struct runtime_error_fn {
     [[noreturn]]
-    inline void operator()(char const* msg,
-                           std::source_location loc = std::source_location::current()) const
+    void operator()(char const* msg,
+                    std::source_location loc = std::source_location::current()) const
     {
         if constexpr (config::on_error == error_policy::unwind) {
             char buf[1024];
@@ -99,10 +99,6 @@ struct indexed_bounds_check_fn {
 FLUX_EXPORT inline constexpr auto assert_ = detail::assert_fn{};
 FLUX_EXPORT inline constexpr auto bounds_check = detail::bounds_check_fn{};
 FLUX_EXPORT inline constexpr auto indexed_bounds_check = detail::indexed_bounds_check_fn{};
-
-#define FLUX_ASSERT(cond) (::flux::assert_(cond, "assertion '" #cond "' failed"))
-
-#define FLUX_DEBUG_ASSERT(cond) (::flux::assert_(!::flux::config::enable_debug_asserts || (cond), "assertion '" #cond "' failed"));
 
 } // namespace flux
 

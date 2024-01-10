@@ -16,12 +16,10 @@
 
 #include "catch.hpp"
 
-#include <flux.hpp>
-
-#include "test_utils.hpp"
-
 #include <array>
 #include <iostream>
+
+#include "test_utils.hpp"
 
 namespace {
 

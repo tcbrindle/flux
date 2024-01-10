@@ -12,11 +12,12 @@
 
 namespace flux {
 
+FLUX_EXPORT
 struct from_sequence_t {
     explicit from_sequence_t() = default;
 };
 
-inline constexpr auto from_sequence = from_sequence_t{};
+FLUX_EXPORT inline constexpr auto from_sequence = from_sequence_t{};
 
 namespace detail {
 

@@ -4,13 +4,11 @@
 
 #include "catch.hpp"
 
-#include <flux.hpp>
-
-#include "test_utils.hpp"
-
 #include <array>
 #include <sstream>
 #include <vector>
+
+#include "test_utils.hpp"
 
 constexpr const auto& test_str1 = "Line1\nLine2\nLine3";
 

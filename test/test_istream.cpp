@@ -5,11 +5,9 @@
 
 #include "catch.hpp"
 
-#include <flux.hpp>
+#include <sstream>
 
 #include "test_utils.hpp"
-
-#include <sstream>
 
 TEST_CASE("istream")
 {

@@ -5,12 +5,15 @@
 
 #include "catch.hpp"
 
-#include <flux.hpp>
+#include <array>
 
 #include "test_utils.hpp"
 
-#include <array>
-
+#ifndef USE_MODULES
+#include <flux.hpp>
+#else
+import flux;
+#endif
 
 namespace {
 

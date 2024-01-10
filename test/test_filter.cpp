@@ -5,12 +5,10 @@
 
 #include "catch.hpp"
 
-#include "test_utils.hpp"
-
-#include <flux.hpp>
-
 #include <array>
 #include <iostream>
+
+#include "test_utils.hpp"
 
 namespace {
 

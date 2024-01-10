@@ -82,25 +82,44 @@ target_compile_definitions(test-flux PUBLIC
     FLUX_ERROR_ON_OVERFLOW
     FLUX_DISABLE_STATIC_BOUNDS_CHECKING
 )
+target_precompile_headers(test-flux PRIVATE "catch.hpp")
 
-if(${FLUX_ENABLE_ASAN})
+if(FLUX_ENABLE_ASAN)
     target_compile_options(test-flux PRIVATE -fsanitize=address)
     target_link_options(test-flux PRIVATE -fsanitize=address)
 endif()
 
-if(${FLUX_ENABLE_UBSAN})
+if(FLUX_ENABLE_UBSAN)
     target_compile_options(test-flux PRIVATE -fsanitize=undefined)
     target_link_options(test-flux PRIVATE -fsanitize=undefined)
 endif()
 
-if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")
-    target_precompile_headers(test-flux PRIVATE "catch.hpp")
+if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.28.0")
+    if (FLUX_BUILD_TESTS_USING_MODULE)
+        target_sources(test-flux PUBLIC
+            FILE_SET CXX_MODULES
+            BASE_DIRS ${PROJECT_SOURCE_DIR}/module
+            FILES ${PROJECT_SOURCE_DIR}/module/flux.cpp
+        )
+
+        target_compile_definitions(test-flux PRIVATE -DUSE_MODULES)
+        set_target_properties(test-flux PROPERTIES CXX_SCAN_FOR_MODULES On)
+
+        # Squish MSVC warning when building the module, hopefully we're not actually doing anything wrong
+        if(MSVC)
+            target_compile_options(test-flux PRIVATE
+                    /wd5244 # '#include <flux.hpp>' in the purview of module 'flux' appears erroneous
+            )
+        endif()
+    endif()
 endif()
 
-if(${FLUX_BUILD_MODULE})
+if(FLUX_BUILD_MODULE)
     add_executable(test-module-import test_module_import.cpp)
     target_link_libraries(test-module-import PUBLIC flux-mod)
-    set_target_properties(test-module-import PROPERTIES CXX_EXTENSIONS Off)
+    set_target_properties(test-module-import PROPERTIES
+                          CXX_EXTENSIONS Off
+                          CXX_SCAN_FOR_MODULES On)
 endif()
 
 include(Catch)

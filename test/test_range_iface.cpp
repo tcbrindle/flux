@@ -5,11 +5,10 @@
 
 #include "catch.hpp"
 
-#include <flux.hpp>
-
 #include <algorithm>
 #include <array>
 #include <numeric>
+#include <ranges>
 
 #include "test_utils.hpp"
 

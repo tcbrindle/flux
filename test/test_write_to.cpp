@@ -5,10 +5,14 @@
 
 #include "catch.hpp"
 
-#include <flux.hpp>
-
 #include <sstream>
 #include <vector>
+
+#ifdef USE_MODULES
+import flux;
+#else
+#include <flux.hpp>
+#endif
 
 TEST_CASE("write to")
 {
