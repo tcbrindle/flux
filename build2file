@@ -1,5 +1,0 @@
-./: {include/ test/} doc{README.md} legal{LICENSE_1_0.txt} manifest
-
-# Don't install tests.
-#
-test/: install = false
