@@ -15,12 +15,10 @@ jobs:
     strategy:
       matrix:
         build_type: [Debug, Release]
-        cxx: [g++-12, g++-13,
+        cxx: [g++-13,
               /usr/local/opt/llvm@16/bin/clang++,
               /usr/local/opt/llvm@17/bin/clang++]
         include:
-          - cxx: g++-12
-            install: brew install gcc@12 ninja
           - cxx: g++-13
             install: |
               brew update
