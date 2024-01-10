@@ -23,6 +23,30 @@
 #define FLUX_CORE_CONCEPTS_HPP_INCLUDED
 
 
+// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_CORE_UTILS_HPP_INCLUDED
+#define FLUX_CORE_UTILS_HPP_INCLUDED
+
+
+// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_CORE_ASSERT_HPP_INCLUDED
+#define FLUX_CORE_ASSERT_HPP_INCLUDED
+
+
+// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_CORE_CONFIG_HPP_INCLUDED
+#define FLUX_CORE_CONFIG_HPP_INCLUDED
+
+
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -51,6 +75,10 @@
               ::flux::inc(_flux_seq_, _flux_cur_))         \
             if (_flux_var_decl_ = ::flux::read_at(_flux_seq_, _flux_cur_); true)
 
+#define FLUX_ASSERT(cond) (::flux::assert_(cond, "assertion '" #cond "' failed"))
+
+#define FLUX_DEBUG_ASSERT(cond) (::flux::assert_(!::flux::config::enable_debug_asserts || (cond), "assertion '" #cond "' failed"));
+
 #ifdef FLUX_MODULE_INTERFACE
 #define FLUX_EXPORT export
 #else
@@ -58,31 +86,6 @@
 #endif
 
 #endif // FLUX_CORE_MACROS_HPP_INCLUDED
-
-
-// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_CORE_UTILS_HPP_INCLUDED
-#define FLUX_CORE_UTILS_HPP_INCLUDED
-
-
-// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_CORE_ASSERT_HPP_INCLUDED
-#define FLUX_CORE_ASSERT_HPP_INCLUDED
-
-
-// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_CORE_CONFIG_HPP_INCLUDED
-#define FLUX_CORE_CONFIG_HPP_INCLUDED
-
 
 
 #include <concepts>
@@ -242,8 +245,8 @@ namespace detail {
 
 struct runtime_error_fn {
     [[noreturn]]
-    inline void operator()(char const* msg,
-                           std::source_location loc = std::source_location::current()) const
+    void operator()(char const* msg,
+                    std::source_location loc = std::source_location::current()) const
     {
         if constexpr (config::on_error == error_policy::unwind) {
             char buf[1024];
@@ -316,10 +319,6 @@ struct indexed_bounds_check_fn {
 FLUX_EXPORT inline constexpr auto assert_ = detail::assert_fn{};
 FLUX_EXPORT inline constexpr auto bounds_check = detail::bounds_check_fn{};
 FLUX_EXPORT inline constexpr auto indexed_bounds_check = detail::indexed_bounds_check_fn{};
-
-#define FLUX_ASSERT(cond) (::flux::assert_(cond, "assertion '" #cond "' failed"))
-
-#define FLUX_DEBUG_ASSERT(cond) (::flux::assert_(!::flux::config::enable_debug_asserts || (cond), "assertion '" #cond "' failed"));
 
 } // namespace flux
 
@@ -927,6 +926,7 @@ concept adaptable_sequence =
              detail::trivially_copyable_sequence<std::decay_t<Seq>>)) &&
     !detail::is_ilist<Seq>;
 
+FLUX_EXPORT
 template <typename D>
 struct inline_sequence_base;
 
@@ -2245,18 +2245,21 @@ FLUX_EXPORT inline constexpr auto either = [](auto&& p, auto&& or_) {
 
 namespace detail {
 
+FLUX_EXPORT
 template <typename P>
 constexpr auto operator!(detail::predicate<P> pred)
 {
     return not_(std::move(pred));
 }
 
+FLUX_EXPORT
 template <typename L, typename R>
 constexpr auto operator&&(detail::predicate<L> lhs, detail::predicate<R> rhs)
 {
     return both(std::move(lhs), std::move(rhs));
 }
 
+FLUX_EXPORT
 template <typename L, typename R>
 constexpr auto operator||(detail::predicate<L> lhs, detail::predicate<R> rhs)
 {
@@ -2912,7 +2915,6 @@ public:
 } // namespace flux
 
 #endif // FLUX_CORE_SEQUENCE_IFACE_HPP_INCLUDED
-
 
 
 
@@ -11780,11 +11782,12 @@ constexpr auto inline_sequence_base<D>::output_to(Iter iter) -> Iter
 
 namespace flux {
 
+FLUX_EXPORT
 struct from_sequence_t {
     explicit from_sequence_t() = default;
 };
 
-inline constexpr auto from_sequence = from_sequence_t{};
+FLUX_EXPORT inline constexpr auto from_sequence = from_sequence_t{};
 
 namespace detail {
 
@@ -12267,6 +12270,80 @@ struct make_array_ptr_unchecked_fn {
 
 FLUX_EXPORT inline constexpr auto make_array_ptr_unchecked =
     detail::make_array_ptr_unchecked_fn{};
+
+} // namespace flux
+
+#endif
+
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_SOURCE_BITSET_HPP_INCLUDED
+#define FLUX_SOURCE_BITSET_HPP_INCLUDED
+
+
+
+#include <bitset>
+
+namespace flux {
+
+template <std::size_t N>
+struct sequence_traits<std::bitset<N>> {
+
+    using value_type = bool;
+
+    using self_t = std::bitset<N>;
+
+    static constexpr auto first(self_t const&) -> std::size_t { return 0; }
+
+    static constexpr auto is_last(self_t const&, std::size_t idx) { return idx == N; }
+
+    static constexpr auto read_at(self_t& self, std::size_t idx)
+        -> typename std::bitset<N>::reference
+    {
+        return self[idx];
+    }
+
+    static constexpr auto read_at(self_t const& self, std::size_t idx) -> bool
+    {
+        return self[idx];
+    }
+
+    static constexpr auto move_at(self_t const& self, std::size_t idx) -> bool
+    {
+        return self[idx];
+    }
+
+    static constexpr auto inc(self_t const&, std::size_t& idx) -> std::size_t&
+    {
+        return ++idx;
+    }
+
+    static constexpr auto dec(self_t const&, std::size_t& idx) -> std::size_t&
+    {
+        return --idx;
+    }
+
+    static constexpr auto inc(self_t const&, std::size_t& idx, std::ptrdiff_t off)
+        -> std::size_t&
+    {
+        return idx += static_cast<std::size_t>(off);
+    }
+
+    static constexpr auto distance(self_t const&, std::size_t from, std::size_t to)
+        -> std::ptrdiff_t
+    {
+        return static_cast<std::ptrdiff_t>(to) - static_cast<std::ptrdiff_t>(from);
+    }
+
+    static constexpr auto last(self_t const&) -> std::size_t { return N; }
+
+    static constexpr auto size(self_t const&) -> std::ptrdiff_t { return N; }
+
+};
+
 
 } // namespace flux
 
