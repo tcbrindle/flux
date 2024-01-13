@@ -8,6 +8,8 @@
 
 #include <flux/core.hpp>
 
+#include <flux/op/ref.hpp>
+
 namespace flux {
 
 namespace detail {
@@ -53,6 +55,15 @@ public:
     constexpr explicit array_ptr(Seq& seq)
         : data_(flux::data(seq)),
           sz_(flux::size(seq))
+    {}
+
+    template <typename Seq>
+        requires (contiguous_sequence<Seq> &&
+                  sized_sequence<Seq> &&
+                  detail::non_slicing_ptr_convertible<std::remove_reference_t<element_t<Seq>>, T>)
+    constexpr array_ptr(detail::ref_adaptor<Seq> ref)
+        : data_(flux::data(ref)),
+          sz_(flux::size(ref))
     {}
 
     array_ptr(array_ptr&&) = default;
@@ -138,6 +149,9 @@ public:
 
 template <contiguous_sequence Seq>
 array_ptr(Seq&) -> array_ptr<std::remove_reference_t<element_t<Seq>>>;
+
+template <contiguous_sequence Seq>
+array_ptr(detail::ref_adaptor<Seq>) -> array_ptr<std::remove_reference_t<element_t<Seq>>>;
 
 namespace detail {
 
