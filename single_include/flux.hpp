@@ -818,23 +818,6 @@ concept random_access_sequence = detail::random_access_sequence_concept<Seq>;
 namespace detail {
 
 template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
-concept contiguous_sequence_concept =
-    random_access_sequence<Seq> &&
-    std::is_lvalue_reference_v<element_t<Seq>> &&
-    std::same_as<value_t<Seq>, std::remove_cvref_t<element_t<Seq>>> &&
-    requires (Seq& seq) {
-        { Traits::data(seq) } -> std::same_as<std::add_pointer_t<element_t<Seq>>>;
-    };
-
-} // namespace detail
-
-FLUX_EXPORT
-template <typename Seq>
-concept contiguous_sequence = detail::contiguous_sequence_concept<Seq>;
-
-namespace detail {
-
-template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
 concept bounded_sequence_concept =
     sequence<Seq> &&
     requires (Seq& seq) {
@@ -846,6 +829,24 @@ concept bounded_sequence_concept =
 FLUX_EXPORT
 template <typename Seq>
 concept bounded_sequence = detail::bounded_sequence_concept<Seq>;
+
+namespace detail {
+
+template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+concept contiguous_sequence_concept =
+    random_access_sequence<Seq> &&
+    bounded_sequence<Seq> &&
+    std::is_lvalue_reference_v<element_t<Seq>> &&
+    std::same_as<value_t<Seq>, std::remove_cvref_t<element_t<Seq>>> &&
+    requires (Seq& seq) {
+        { Traits::data(seq) } -> std::same_as<std::add_pointer_t<element_t<Seq>>>;
+    };
+
+} // namespace detail
+
+FLUX_EXPORT
+template <typename Seq>
+concept contiguous_sequence = detail::contiguous_sequence_concept<Seq>;
 
 namespace detail {
 
@@ -12124,6 +12125,8 @@ FLUX_EXPORT inline constexpr auto zip_fold = detail::zip_fold_fn{};
 
 
 
+
+
 namespace flux {
 
 namespace detail {
@@ -12169,6 +12172,15 @@ public:
     constexpr explicit array_ptr(Seq& seq)
         : data_(flux::data(seq)),
           sz_(flux::size(seq))
+    {}
+
+    template <typename Seq>
+        requires (contiguous_sequence<Seq> &&
+                  sized_sequence<Seq> &&
+                  detail::non_slicing_ptr_convertible<std::remove_reference_t<element_t<Seq>>, T>)
+    constexpr array_ptr(detail::ref_adaptor<Seq> ref)
+        : data_(flux::data(ref)),
+          sz_(flux::size(ref))
     {}
 
     array_ptr(array_ptr&&) = default;
@@ -12254,6 +12266,9 @@ public:
 
 template <contiguous_sequence Seq>
 array_ptr(Seq&) -> array_ptr<std::remove_reference_t<element_t<Seq>>>;
+
+template <contiguous_sequence Seq>
+array_ptr(detail::ref_adaptor<Seq>) -> array_ptr<std::remove_reference_t<element_t<Seq>>>;
 
 namespace detail {
 
