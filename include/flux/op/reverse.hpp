@@ -63,25 +63,29 @@ public:
             return cur.base_cur == flux::first(self.base_);
         }
 
-        static constexpr auto read_at(auto& self, cursor_type const& cur)
+        template <typename Self>
+        static constexpr auto read_at(Self& self, cursor_type const& cur)
             -> element_t<decltype((self.base_))>
         {
             return flux::read_at(self.base_, flux::prev(self.base_, cur.base_cur));
         }
 
-        static constexpr auto read_at_unchecked(auto& self, cursor_type const& cur)
+        template <typename Self>
+        static constexpr auto read_at_unchecked(Self& self, cursor_type const& cur)
             -> element_t<decltype((self.base_))>
         {
             return flux::read_at_unchecked(self.base_, flux::prev(self.base_, cur.base_cur));
         }
 
-        static constexpr auto move_at(auto& self, cursor_type const& cur)
+        template <typename Self>
+        static constexpr auto move_at(Self& self, cursor_type const& cur)
             -> rvalue_element_t<decltype((self.base_))>
         {
             return flux::move_at(self.base_, flux::prev(self.base_, cur.base_cur));
         }
 
-        static constexpr auto move_at_unchecked(auto& self, cursor_type const& cur)
+        template <typename Self>
+        static constexpr auto move_at_unchecked(Self& self, cursor_type const& cur)
             -> rvalue_element_t<decltype((self.base_))>
         {
             return flux::move_at_unchecked(self.base_, flux::prev(self.base_, cur.base_cur));
