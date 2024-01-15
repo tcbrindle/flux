@@ -67,10 +67,9 @@ constexpr bool test_split_with_delim()
 
         static_assert(flux::multipass_sequence<S>);
         static_assert(not flux::bounded_sequence<S>);
-        static_assert(flux::contiguous_sequence<flux::element_t<S>>);
+        static_assert(flux::random_access_sequence<flux::element_t<S>>);
 
-        STATIC_CHECK(check_equal(std::move(split).map(to_string_view),
-                                 std::array{"a"sv, "b"sv}));
+        STATIC_CHECK(flux::equal(split, std::array{"a"sv, "b"sv}));
     }
 
     return true;

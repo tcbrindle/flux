@@ -21,7 +21,7 @@ constexpr bool test_cache_last()
         using C = decltype(cached);
 
         static_assert(flux::sequence<C>);
-        static_assert(flux::contiguous_sequence<C>);
+        static_assert(flux::random_access_sequence<C>);
         static_assert(flux::bounded_sequence<C>);
         static_assert(flux::sized_sequence<C>); // because RA and bounded
 

@@ -183,6 +183,87 @@ constexpr bool test_array_ptr_ctad()
 }
 static_assert(test_array_ptr_ctad());
 
+constexpr bool test_array_ptr_conversion_from_ref()
+{
+    auto takes_mut_ptr = [](flux::array_ptr<int>) {};
+    auto takes_const_ptr = [](flux::array_ptr<int const>) {};
+
+    // Non-const array
+    {
+        std::array arr{1, 2, 3, 4, 5};
+
+        using A = decltype(arr);
+        using CFn = decltype(takes_const_ptr);
+        using MFn = decltype(takes_mut_ptr);
+
+        // We can't call either function directly with arr, whether lvalue or rvalue
+        static_assert(not std::invocable<CFn, A&>);
+        static_assert(not std::invocable<CFn, A>);
+        static_assert(not std::invocable<MFn, A&>);
+        static_assert(not std::invocable<MFn, A>);
+
+        // We can call takes_const_ptr(ref(arr)), but not takes_mut_ptr()
+        auto r = flux::ref(arr);
+        using R = decltype(r);
+
+        static_assert(std::invocable<CFn, R&>);
+        static_assert(std::invocable<CFn, R>);
+        static_assert(not std::invocable<MFn, R&>);
+        static_assert(not std::invocable<MFn, R>);
+
+        // We can call both takes_const_ptr and takes_mut_ptr with a mut_ref
+        // (but only as an rvalue)
+        auto m = flux::mut_ref(arr);
+        using M = decltype(m);
+
+        static_assert(not std::invocable<CFn, M&>);
+        static_assert(std::invocable<CFn, M>);
+        static_assert(not std::invocable<MFn, M&>);
+        static_assert(std::invocable<MFn, M>);
+
+        // Test CTAD
+        auto ptr = flux::array_ptr(r);
+        static_assert(std::same_as<decltype(ptr), flux::array_ptr<int const>>);
+
+        auto mptr = flux::array_ptr(std::move(m));
+        static_assert(std::same_as<decltype(mptr), flux::array_ptr<int>>);
+    }
+
+    // Now the same again with a const array
+    {
+        std::array const arr{1, 2, 3, 4, 5};
+
+        using A = decltype(arr);
+        using CFn = decltype(takes_const_ptr);
+        using MFn = decltype(takes_mut_ptr);
+
+        // We can't call either function directly with arr, whether lvalue or rvalue
+        static_assert(not std::invocable<CFn, A&>);
+        static_assert(not std::invocable<CFn, A>);
+        static_assert(not std::invocable<MFn, A&>);
+        static_assert(not std::invocable<MFn, A>);
+
+        // We can call takes_const_ptr(ref(arr)), but not takes_mut_ptr()
+        auto r = flux::ref(arr);
+        using R = decltype(r);
+
+        static_assert(std::invocable<CFn, R&>);
+        static_assert(std::invocable<CFn, R>);
+        static_assert(not std::invocable<MFn, R&>);
+        static_assert(not std::invocable<MFn, R>);
+
+        // We cannot call mut_ref(arr)
+        static_assert(not std::invocable<decltype(flux::mut_ref), A&>);
+
+        // Test CTAD
+        auto ptr = flux::array_ptr(r);
+        static_assert(std::same_as<decltype(ptr), flux::array_ptr<int const>>);
+    }
+
+    return true;
+}
+static_assert(test_array_ptr_conversion_from_ref());
+
 // Controversial, this one
 constexpr bool test_array_ptr_equality()
 {
@@ -375,6 +456,7 @@ TEST_CASE("array_ptr")
 {
     REQUIRE(test_array_ptr_ctor());
     REQUIRE(test_array_ptr_ctad());
+    REQUIRE(test_array_ptr_conversion_from_ref());
     REQUIRE(test_array_ptr_equality());
     REQUIRE(test_array_ptr_sequence_impl());
     REQUIRE(test_make_array_ptr());
