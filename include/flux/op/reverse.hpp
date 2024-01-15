@@ -63,22 +63,30 @@ public:
             return cur.base_cur == flux::first(self.base_);
         }
 
-        static constexpr auto read_at(auto& self, cursor_type const& cur) -> decltype(auto)
+        template <typename Self>
+        static constexpr auto read_at(Self& self, cursor_type const& cur)
+            -> element_t<decltype((self.base_))>
         {
             return flux::read_at(self.base_, flux::prev(self.base_, cur.base_cur));
         }
 
-        static constexpr auto read_at_unchecked(auto& self, cursor_type const& cur) -> decltype(auto)
+        template <typename Self>
+        static constexpr auto read_at_unchecked(Self& self, cursor_type const& cur)
+            -> element_t<decltype((self.base_))>
         {
             return flux::read_at_unchecked(self.base_, flux::prev(self.base_, cur.base_cur));
         }
 
-        static constexpr auto move_at(auto& self, cursor_type const& cur) -> decltype(auto)
+        template <typename Self>
+        static constexpr auto move_at(Self& self, cursor_type const& cur)
+            -> rvalue_element_t<decltype((self.base_))>
         {
             return flux::move_at(self.base_, flux::prev(self.base_, cur.base_cur));
         }
 
-        static constexpr auto move_at_unchecked(auto& self, cursor_type const& cur) -> decltype(auto)
+        template <typename Self>
+        static constexpr auto move_at_unchecked(Self& self, cursor_type const& cur)
+            -> rvalue_element_t<decltype((self.base_))>
         {
             return flux::move_at_unchecked(self.base_, flux::prev(self.base_, cur.base_cur));
         }
@@ -88,32 +96,31 @@ public:
             flux::dec(self.base_, cur.base_cur);
         }
 
-
         static constexpr auto dec(auto& self, cursor_type& cur) -> void
         {
             flux::inc(self.base_, cur.base_cur);
         }
 
         static constexpr auto inc(auto& self, cursor_type& cur, distance_t dist) -> void
-            requires random_access_sequence<decltype(self.base_)>
         {
-            flux::inc(self.base_, cur.base_cur, -dist);
+            flux::inc(self.base_, cur.base_cur, num::checked_sub(distance_t{}, dist));
         }
 
         static constexpr auto distance(auto& self, cursor_type const& from, cursor_type const& to)
             -> distance_t
-            requires random_access_sequence<decltype(self.base_)>
         {
             return flux::distance(self.base_, to.base_cur, from.base_cur);
         }
 
         static constexpr auto size(auto& self) -> distance_t
-            requires sized_sequence<decltype(self.base_)>
+            requires sized_sequence<decltype((self.base_))>
         {
             return flux::size(self.base_);
         }
 
-        static constexpr auto for_each_while(auto& self, auto&& pred)
+        static constexpr auto for_each_while(auto& self, auto&& pred) -> cursor_type
+            requires bidirectional_sequence<decltype((self.base_))> &&
+                     bounded_sequence<decltype((self.base_))>
         {
             auto cur = flux::last(self.base_);
             const auto end = flux::first(self.base_);

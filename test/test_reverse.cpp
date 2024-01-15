@@ -104,6 +104,29 @@ constexpr bool issue_52()
 }
 static_assert(issue_52());
 
+// Regression test for #143
+// https://github.com/tcbrindle/flux/issues/143
+constexpr bool issue_143()
+{
+    struct Int {
+        int i;
+        constexpr int get() { return i; } // not const
+    };
+
+    std::array<Int, 3> arr{Int{1}, {2}, {3}};
+
+    int sum = 0;
+    for (int i : flux::map(arr, &Int::get).reverse()) {
+        sum += i;
+    }
+
+    STATIC_CHECK(sum == 6);
+
+    return true;
+}
+static_assert(issue_143());
+
+
 }
 
 TEST_CASE("reverse")
