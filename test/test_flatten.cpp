@@ -226,9 +226,38 @@ constexpr bool test_flatten_multipass()
     }
 #endif // NO_CONSTEXPR_VECTOR
 
+    // Iterating to the end gives last()
+    {
+        std::array<std::string_view, 3> arr{"a", "b", "c"};
+
+        auto seq = flux::flatten(arr);
+
+        auto cur = seq.first();
+        while (!seq.is_last(cur)) {
+            seq.inc(cur);
+        }
+
+        STATIC_CHECK(cur == seq.last());
+    }
+
     return true;
 }
 static_assert(test_flatten_multipass());
+
+#ifndef NO_CONSTEXPR_VECTOR
+constexpr
+#endif
+bool issue_150()
+{
+    const std::vector<std::string> vec{"a", "b", "c"};
+
+    auto str = flux::ref(vec).flatten().to<std::string>();
+
+    return str == "abc";
+}
+#ifndef NO_CONSTEXPR_VECTOR
+static_assert(issue_150());
+#endif
 
 }
 
@@ -239,4 +268,7 @@ TEST_CASE("flatten")
 
     bool mp = test_flatten_multipass();
     REQUIRE(mp);
+
+    bool res = issue_150();
+    REQUIRE(res);
 }

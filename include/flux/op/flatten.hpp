@@ -129,7 +129,11 @@ public:
 
         static constexpr auto satisfy(auto& self, cursor_type& cur) -> void
         {
-            while (!flux::is_last(self.base_, cur.outer_cur)) {
+            while (true) {
+                if (flux::is_last(self.base_, cur.outer_cur)) {
+                    cur.inner_cur = cursor_t<InnerSeq>{};
+                    return;
+                }
                 auto&& inner = flux::read_at(self.base_, cur.outer_cur);
                 cur.inner_cur = flux::first(inner);
                 if (!flux::is_last(inner, cur.inner_cur)) {
