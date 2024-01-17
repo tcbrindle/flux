@@ -34,6 +34,8 @@ target_compile_options(flux-internal INTERFACE
 
     $<$<CXX_COMPILER_ID:GNU>: -fconcepts-diagnostics-depth=2>
 
+    $<$<CXX_COMPILER_ID:Clang,AppleClang>: -fconstexpr-backtrace-limit=0>
+
     $<$<CXX_COMPILER_ID:MSVC>:
         # Various options for closer standard conformance
         /utf-8 /Zc:__cplusplus /Zc:throwingNew /Zc:inline /Zc:externConstexpr
