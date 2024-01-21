@@ -301,7 +301,9 @@ concept const_iterable_sequence =
     std::same_as<cursor_t<Seq>, cursor_t<Seq const>> &&
     std::same_as<value_t<Seq>, value_t<Seq const>> &&
     // Seq and Seq const must have the same const_element type
+#ifdef FLUX_HAVE_CPP23_TUPLE_COMMON_REF
     std::same_as<const_element_t<Seq>, const_element_t<Seq const>> &&
+#endif
     // Seq and Seq const must model the same extended sequence concepts
     (multipass_sequence<Seq> == multipass_sequence<Seq const>) &&
     (bidirectional_sequence<Seq> == bidirectional_sequence<Seq const>) &&
