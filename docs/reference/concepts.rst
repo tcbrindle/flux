@@ -123,22 +123,31 @@ Concepts
 ``sequence``
 ------------
 
-.. concept::
-   template <typename S> sequence
+..  concept::
+    template <typename S> sequence
 
-   .. code-block:: cpp
+    A Flux sequence is a homogeneous collection of *elements* which we can iterate over. Sequences provide the following four operations:
 
-    template <typename Seq> sequence =
-        requires (Seq& seq) {
-            { Traits<Seq>::first(seq) } -> cursor;
-        } &&
-        requires (Seq& seq, cursor_t<Seq> const& cur) {
-            { Traits<Seq>::is_last(seq, cur) } -> std::same_as<bool>;
-            { Traits<Seq>::read_at(seq, cur) } -> /*can-reference*/;
-        } &&
-        requires (Seq& seq, cursor_t<Seq>& cur) {
-            { Traits<Seq>::inc(seq, cur) }
-        };
+    * :expr:`first(seq)`, which returns a :concept:`cursor` representing the iteration state
+    * :expr:`is_last(seq, cur)` which returns a boolean indicating whether iteration is complete
+    * :expr:`read_at(seq, cur)` which accesses the sequence element corresponding to the given cursor position
+    * :expr:`inc(seq, cur)` which takes the cursor by reference and advances it so that it refers to the next sequence element
+
+    A sequence may be *single-pass*, meaning we can only visit each position once, or may be *multipass*, indicating that we can revisit cursor positions multiple times.
+
+    The :concept:`sequence` concept is defined as::
+
+        template <typename Seq> sequence =
+            requires (Seq& seq) {
+                { Traits<Seq>::first(seq) } -> cursor;
+            } &&
+            requires (Seq& seq, cursor_t<Seq> const& cur) {
+                { Traits<Seq>::is_last(seq, cur) } -> std::same_as<bool>;
+                { Traits<Seq>::read_at(seq, cur) } -> /*can-reference*/;
+            } &&
+            requires (Seq& seq, cursor_t<Seq>& cur) {
+                { Traits<Seq>::inc(seq, cur) }
+            };
 
 ``multipass_sequence``
 ----------------------
@@ -168,6 +177,8 @@ Concepts
 ..  concept::
     template <typename Seq> bidirectional_sequence
 
+    A bidirectional sequence is a multipass sequence which additionally allows cursors to be *decremented* as well as *incremented* -- that is, one which allows backwards iteration.
+
     The :concept:`bidirectional_sequence` concept is defined as::
 
         template <typename Seq>
@@ -177,13 +188,29 @@ Concepts
                 { Traits<Seq>::dec(seq, cur); }
             };
 
-    A :concept:`bidirectional_sequence` is a multipass sequence which additionally allows cursors to be *decremented* as well as *incremented* -- that is, one which allows backwards iteration.
+
 
 ``random_access_sequence``
 --------------------------
 
-.. concept::
-   template <typename S> random_access_sequence
+..  concept::
+    template <typename S> random_access_sequence
+
+    A random-access sequence is a bidirectional sequence which allows cursors to be incremented and decremented an arbitrary number of places in constant time. Additionally, random-access sequences support a :func:`distance` operation which returns the signed offset between two cursor positions in constant time.
+
+    The cursor type for a random-access sequence must model :concept:`ordered_cursor`, meaning we can compare cursor positions to know whether one position is earlier or later in the sequence than the other.
+
+    The :concept:`random_access_sequence` concept is defined as::
+
+        template <typename Seq>
+        concept random_access_sequence =
+            bidirectional_sequence<Seq> && ordered_cursor<cursor_t<Seq>> &&
+            requires (Seq& seq, cursor_t<Seq>& cur, distance_t offset) {
+                { Traits::inc(seq, cur, offset) };
+            } &&
+            requires (Seq& seq, cursor_t<Seq> const& cur) {
+                { Traits::distance(seq, cur, cur) } -> std::convertible_to<distance_t>;
+            };
 
 ``bounded_sequence``
 --------------------
@@ -191,11 +218,39 @@ Concepts
 ..  concept::
     template <typename Seq> bounded_sequence
 
+    A *bounded sequence* is one which can provide a past-the-end cursor in constant time. Iterating over a sequence in reverse requires a sequence that is both *bounded* and *bidirectional*, because we need to be able to find the end and move backwards from there.
+
+    Iterating over a bounded always terminates, so a sequence cannot be both a :concept:`bounded_sequence` and an :concept:`infinite_sequence`.
+
+    The :concept:`bounded_sequence` concept is defined as::
+
+        template <typename Seq>
+        concept bounded_sequence =
+            sequence<Seq> &&
+            requires (Seq& seq) {
+                { Traits::last(seq) } -> std::same_as<cursor_t<Seq>>;
+            };
+
 ``sized_sequence``
 ------------------
 
 ..  concept::
     template <typename Seq> sized_sequence
+
+    A *sized sequence* is a sequence that knows the number of elements it contains in constant time.
+
+    For a bounded, random-access sequence we can always calculate the size in constant time by taking the distance between the first and last cursor positions; therefore all bounded, random-access sequences automatically satisfy :concept:`sized_sequence`.
+
+    The :concept:`sized_sequence` concept is defined as::
+
+        template <typename Seq>
+        concept sized_sequence =
+            sequence<Seq> &&
+            (requires (Seq& seq) {
+                { Traits::size(seq) } -> std::convertible_to<distance_t>;
+            } || (
+                random_access_sequence<Seq> && bounded_sequence<Seq>
+            ));
 
 ``contiguous_sequence``
 -----------------------
@@ -203,11 +258,39 @@ Concepts
 ..  concept::
     template <typename Seq> contiguous_sequence
 
+    A *contiguous sequence* is a bounded, random-access sequence whose elements are stored contiguously in memory. Some algorithms are able to use low-level operations such as :func:`memcpy` when operating on contiguous sequences of trivial types.
+
+    The :concept:`contiguous_sequence` concept is defined as::
+
+        template <typename Seq>
+        concept contiguous_sequence =
+            random_access_sequence<Seq> &&
+            bounded_sequence<Seq> &&
+            std::is_lvalue_reference_v<element_t<Seq>> &&
+            std::same_as<value_t<Seq>, std::remove_cvref_t<element_t<Seq>>> &&
+            requires (Seq& seq) {
+                { Traits::data(seq) } -> std::same_as<std::add_pointer_t<element_t<Seq>>>;
+            };
+
 ``infinite_sequence``
 ---------------------
 
 ..  concept::
     template <typename Seq> infinite_sequence
+
+    An *infinite sequence* is one which is known statically never to terminate: that is, its :func:`is_last` implementation always returns ``false``.
+
+    A sequence which is bounded or sized cannot also be an :concept:`infinite_sequence`.
+
+    ..  note::
+
+        The :concept:`infinite_sequence` concept says that iteration will never terminate, and the :concept:`bounded_sequence` concept says that iteration will terminate at the :func:`last` position after a finite number of steps. Sequences which are neither *infinite* nor *bounded* provide no compile-time information either way.
+
+    A sequence implementation may indicate that is is infinite by setting::
+
+        static constexpr bool is_infinite = true;
+
+    in its :type:`sequence_traits`.
 
 ``read_only_sequence``
 ----------------------
@@ -219,10 +302,49 @@ Concepts
 
     A *read-only sequence* is one which does not allow modification of its elements via the sequence interface -- that is, its :func:`read_at` method returns either a const reference or a prvalue.
 
+``const_iterable_sequence``
+---------------------------
+
+..  concept::
+    template <typename Seq> const_iterable_sequence
+
+    A sequence :var:`Seq` is *const-iterable* if we can also use :expr:`Seq const` as a sequence with the expected semantics. That is, ``Seq`` and ``Seq const`` must use the same cursor type, model the same set of sequence concepts, and return the same elements when iterated over (except that ``Seq const`` may strengthen the const-qualification of the elements).
+
+    ..  important::
+
+        The immutability of a sequence object is not necessarily related to the immutability of its elements. For example, it's possible to have a const-qualified sequence whose elements are mutable, or a non-const sequence whose elements are immutable.
+
+        Given a sequence ``S``:
+
+        * use :expr:`const_iterable_sequence<S>` if you need to know whether you can iterate over ``S const``
+        * use :expr:`read_only_sequence<S>` if you need to know whether you can mutate the elements of ``S`` via the sequence API
+
+    Single-pass sequences are typically not const-iterable. Multipass and higher sequences which cache elements for performance or correctness reasons are not const-iterable.
+
+    The :concept:`const_iterable_sequence` concept is defined as::
+
+        template <typename Seq>
+        concept const_iterable_sequence =
+            // Seq and Seq const must both be sequences
+            sequence<Seq> && sequence<Seq const> &&
+            // Seq and Seq const must have the same cursor and value types
+            std::same_as<cursor_t<Seq>, cursor_t<Seq const>> &&
+            std::same_as<value_t<Seq>, value_t<Seq const>> &&
+            // Seq and Seq const must have the same const_element type
+            std::same_as<const_element_t<Seq>, const_element_t<Seq const>> &&
+            // Seq and Seq const must model the same extended sequence concepts
+            (multipass_sequence<Seq> == multipass_sequence<Seq const>) &&
+            (bidirectional_sequence<Seq> == bidirectional_sequence<Seq const>) &&
+            (random_access_sequence<Seq> == random_access_sequence<Seq const>) &&
+            (contiguous_sequence<Seq> == contiguous_sequence<Seq const>) &&
+            (bounded_sequence<Seq> == bounded_sequence<Seq const>) &&
+            (sized_sequence<Seq> == sized_sequence<Seq const>) &&
+            (infinite_sequence<Seq> == infinite_sequence<Seq const>) &&
+            // If Seq is read-only, Seq const must be read-only as well
+            (!read_only_sequence<Seq> || read_only_sequence<Seq const>);
+
 ``writable_sequence_of``
 ------------------------
 
 ..  concept::
     template <typename Seq, typename T> writable_sequence_of
-
-
