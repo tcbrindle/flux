@@ -5,6 +5,8 @@
 
 #include "catch.hpp"
 
+#include <utility> // std::as_const
+
 #include "test_utils.hpp"
 
 // Silence warnings about unneeded comparison functions: in fact they are
