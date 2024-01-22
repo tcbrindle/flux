@@ -116,6 +116,7 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
         - :var:`Seq` is read-only
       * - :concept:`const_iterable_sequence`
         - :var:`Seq` is const-iterable
+
     :example:
 
     ..  literalinclude:: ../../example/docs/adjacent_filter.cpp
