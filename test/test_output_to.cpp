@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <array>
+#include <iterator>
 #include <list>
 #include <sstream>
 #include <vector>

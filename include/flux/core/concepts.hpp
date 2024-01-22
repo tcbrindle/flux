@@ -292,6 +292,29 @@ concept read_only_sequence =
     sequence<Seq> &&
     std::same_as<element_t<Seq>, const_element_t<Seq>>;
 
+FLUX_EXPORT
+template <typename Seq>
+concept const_iterable_sequence =
+    // Seq and Seq const must both be sequences
+    sequence<Seq> && sequence<Seq const> &&
+    // Seq and Seq const must have the same cursor and value types
+    std::same_as<cursor_t<Seq>, cursor_t<Seq const>> &&
+    std::same_as<value_t<Seq>, value_t<Seq const>> &&
+    // Seq and Seq const must have the same const_element type
+#ifdef FLUX_HAVE_CPP23_TUPLE_COMMON_REF
+    std::same_as<const_element_t<Seq>, const_element_t<Seq const>> &&
+#endif
+    // Seq and Seq const must model the same extended sequence concepts
+    (multipass_sequence<Seq> == multipass_sequence<Seq const>) &&
+    (bidirectional_sequence<Seq> == bidirectional_sequence<Seq const>) &&
+    (random_access_sequence<Seq> == random_access_sequence<Seq const>) &&
+    (contiguous_sequence<Seq> == contiguous_sequence<Seq const>) &&
+    (bounded_sequence<Seq> == bounded_sequence<Seq const>) &&
+    (sized_sequence<Seq> == sized_sequence<Seq const>) &&
+    (infinite_sequence<Seq> == infinite_sequence<Seq const>) &&
+    // If Seq is read-only, Seq const must be read-only as well
+    (!read_only_sequence<Seq> || read_only_sequence<Seq const>);
+
 namespace detail {
 
 template <typename T, typename R = std::remove_cvref_t<T>>

@@ -191,16 +191,15 @@ struct mut_ref_fn {
 };
 
 struct ref_fn {
-    template <typename Seq>
-        requires (!is_ref_adaptor<Seq> && sequence<Seq const>)
+    template <const_iterable_sequence Seq>
+        requires (!is_ref_adaptor<Seq>)
     [[nodiscard]]
     constexpr auto operator()(Seq const& seq) const
     {
         return ref_adaptor<Seq const>(seq);
     }
 
-    template <typename Seq>
-        requires sequence<Seq const>
+    template <const_iterable_sequence Seq>
     [[nodiscard]]
     constexpr auto operator()(ref_adaptor<Seq> ref) const
     {
@@ -218,7 +217,7 @@ FLUX_EXPORT inline constexpr auto ref = detail::ref_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::ref() const&
-    requires sequence<D const>
+    requires const_iterable_sequence<D>
 {
     return flux::ref(derived());
 }
