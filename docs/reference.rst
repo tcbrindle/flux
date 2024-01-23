@@ -10,4 +10,4 @@ Reference Documentation
    reference/sequence_access
    reference/adaptors
    reference/algorithms
-   reference/sources
+   reference/factories

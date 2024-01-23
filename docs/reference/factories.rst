@@ -1,37 +1,92 @@
 
-Sources
-*******
+Factories
+*********
 
 ..  namespace:: flux
 
 ``array_ptr``
 -------------
 
-..  class:: template <typename T> array_ptr
+..  class:: template <typename T> array_ptr : public inline_sequence_base<array_ptr<T>>
+
+    A type with "fat" pointer semantics, implemented as a ``(pointer, length)`` pair. It can be used across API boundaries as a "type erased" contiguous sequence. It is the Flux-native equivalent of :type:`std::span`.
+
+    All :type:`array_ptr` s are trivially movable. If :var:`T` is ``const`` then :type:`array_ptr<T>` is additionally trivially copyable, otherwise it is move-only.
+
+    For the purposes of documentation below, the exposition-only concept :concept:`non_slicing_ptr_convertible` is defined as::
+
+        template <typename From, typename To>
+        concept non_slicing_ptr_convertible = std::convertible_to<From (*)[], To (*)[]>;
+
 
     :constructors:
 
     ..  function:: array_ptr() = default;
 
+        Default initializes an empty :type:`array_ptr`
+
+        :postconditions:
+
+            :expr:`data() == nullptr`
+
+            :expr:`size() == 0`
+
     ..  function::
         template <contiguous_sequence Seq> \
             requires see_below \
-        array_ptr::array_ptr(Seq& seq);
+        explicit array_ptr(Seq& seq);
+
+        Constructs an :type:`array_ptr` from the contiguous sequence :var:`seq`.
+
+        :postconditions:
+
+            :expr:`data() == flux::data(seq)`
+
+            :expr:`size() == flux::size(seq)`
+
+        :requires:
+
+            * :var:`Seq` is not a specialisation of :type:`array_ptr`
+            * :expr:`non_slicing_ptr_convertible<std::remove_reference_t<element_t<Seq>>, T>` is ``true``
 
     ..  function::
         template <typename U> \
-            requires see_below \
-        array_ptr::array_ptr(array_ptr<U> other);
+            requires (!std::same_as<U, T> && non_slicing_ptr_convertible<U, T>) \
+        array_ptr(array_ptr<U> const& other) noexcept;
+
+        Implicit conversion constructor from a compatible :type:`array_ptr`.
+
+        :postconditions:
+
+            :expr:`data() == other.data()`
+
+            :expr:`size() == other.size()`
 
     :friend functions:
 
     ..  function::
         friend auto operator==(array_ptr lhs, array_ptr rhs) -> bool;
 
+        Equivalent to::
+
+            lhs.data() == rhs.data() && lhs.size() == rhs.size()
+
+        but ensures that the pointer comparison is always well defined.
+
+        ..  note::
+
+            :type:`array_ptr` has pointer semantics, and so equality comparison tests the addresses of the pointed-to objects.
+
+            If you want to check whether the elements of two :type:`array_ptr` s compare equal, you can use :func:`flux::equal`.
+
 ``empty``
 ---------
 
 ..  var:: template <typename T> requires std::is_object_v<T> contiguous_sequence auto empty;
+
+    A variable template that names a contiguous sequence of zero :var:`T` s. Any attempt to read from an :var:`empty` will result in a runtime error.
+
+    :expr:`is_empty(empty)` is vacuously :texpr:`true`.
 
 ``from_istream``
 ----------------
@@ -39,6 +94,9 @@ Sources
 ..  function::
     template <std::default_initializable T, typename CharT, typename Traits> \
     auto from_istream(std::basic_istream<CharT, Traits>& is) -> sequence auto;
+
+    Returns a single-pass, read-only sequence which yields successive :var:`T` s extracted from :var:`is` using :expr:`operator>>()`. The element type of the returned sequence is :expr:`T const&`.
+
 
 ``from_istreambuf``
 -------------------
@@ -49,7 +107,13 @@ Sources
 
 ..  function::
     template <typename CharT, typename Traits> \
-    auto from_istream(std::basic_istream<CharT, Traits>& is) -> sequence auto;
+    auto from_istreambuf(std::basic_istream<CharT, Traits>& is) -> sequence auto;
+
+    Returns a single-pass, read-only sequence which yields successive characters from the given streambuf using :func:`std::basic_streambuf::sgetc()`. Iteration is complete when the streambuf reaches EOF.
+
+    The second overload is equivalent to::
+
+        from_streambuf(is.rdbuf())
 
 ``from_range``
 --------------
