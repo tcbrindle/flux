@@ -239,8 +239,6 @@ public:
 };
 
 } // end namespace detail
-template<typename T>
-struct TD;
 
 template <std::size_t RepeatCount, typename Base>
 struct sequence_traits<detail::product_adaptor<RepeatCount, Base>>
