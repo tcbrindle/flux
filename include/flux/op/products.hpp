@@ -253,13 +253,13 @@ private:
       return fn(self.base_, std::get<I>(cur));
     }
 
-  template <typename Fn, typename Self>
-  static constexpr auto read_(Fn fn, Self& self, cursor_t<Self> const& cur)
-  {
-    return [&]<std::size_t... N>(std::index_sequence<N...>) {
-      return std::tuple<decltype(read1_<N>(fn, self, cur))...>(read1_<N>(fn, self, cur)...);
-    }(std::make_index_sequence<RepeatCount>{});
-  }
+    template <typename Fn, typename Self>
+    static constexpr auto read_(Fn fn, Self& self, cursor_t<Self> const& cur)
+    {
+      return [&]<std::size_t... N>(std::index_sequence<N...>) {
+        return std::tuple<decltype(read1_<N>(fn, self, cur))...>(read1_<N>(fn, self, cur)...);
+      }(std::make_index_sequence<RepeatCount>{});
+    }
 
     template <std::size_t I, typename Self, typename Function,
               typename... PartialElements>
