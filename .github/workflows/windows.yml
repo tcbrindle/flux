@@ -11,12 +11,15 @@ jobs:
     runs-on: windows-2022
     strategy:
       matrix:
-        #platform: [Win32, x64]
+        platform: [x86, x64]
         build_type: [Debug, Release]
 
     steps:
     - uses: actions/checkout@master
     - uses: seanmiddleditch/gha-setup-ninja@master
+    - uses: TheMrMilchmann/setup-msvc-dev@v3
+      with:
+        arch: ${{matrix.platform}}
 
     - name: Create Build Environment
       run: cmake -E make_directory ${{runner.workspace}}/build
