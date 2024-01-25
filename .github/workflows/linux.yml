@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         build_type: [Debug, Release]
-        cxx: [g++-11, g++-12, g++-13]
+        cxx: [g++-11, g++-12, g++-13, clang++]
         include:
           - cxx: g++-11
             install: |
@@ -25,6 +25,10 @@ jobs:
           - cxx: g++-13
             install: |
               brew install gcc@13 ninja binutils
+              brew link --force binutils
+          - cxx: clang++
+            install: |
+              brew install llvm@17 ninja binutils
               brew link --force binutils
 
     steps:
