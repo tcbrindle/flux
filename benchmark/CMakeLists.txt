@@ -9,11 +9,11 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(nanobench)
 
-add_executable(internal-iteration-benchmark internal_iteration_benchmark.cpp)
-target_link_libraries(internal-iteration-benchmark PUBLIC nanobench::nanobench flux)
+add_executable(benchmark-internal-iteration internal_iteration_benchmark.cpp)
+target_link_libraries(benchmark-internal-iteration PUBLIC nanobench::nanobench flux)
 
-add_executable(sort-benchmark sort_benchmark.cpp)
-target_link_libraries(sort-benchmark PUBLIC nanobench::nanobench flux)
+add_executable(benchmark-sort sort_benchmark.cpp)
+target_link_libraries(benchmark-sort PUBLIC nanobench::nanobench flux)
 
-add_executable(multidimensional-memset-benchmark multidimensional_memset_benchmark.cpp multidimensional_memset_benchmark_kernels.cpp)
-target_link_libraries(multidimensional-memset-benchmark PUBLIC nanobench::nanobench flux)
+add_executable(benchmark-multidimensional-memset multidimensional_memset_benchmark.cpp multidimensional_memset_benchmark_kernels.cpp)
+target_link_libraries(benchmark-multidimensional-memset PUBLIC nanobench::nanobench flux)
