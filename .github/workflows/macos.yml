@@ -31,7 +31,7 @@ jobs:
               brew install llvm@17 ninja
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@master
 
     - name: Create Build Environment
       run: |
