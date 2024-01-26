@@ -52,7 +52,7 @@ add_executable(test-flux
     test_mask.cpp
     test_minmax.cpp
     test_output_to.cpp
-    test_products.cpp
+    test_cartesian_power.cpp
     test_range_iface.cpp
     test_read_only.cpp
     test_reverse.cpp

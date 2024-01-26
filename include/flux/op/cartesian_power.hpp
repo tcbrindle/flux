@@ -5,8 +5,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_PRODUCT_HPP_INCLUDED
-#define FLUX_OP_PRODUCT_HPP_INCLUDED
+#ifndef FLUX_OP_CARTESIAN_POWER_HPP_INCLUDED
+#define FLUX_OP_CARTESIAN_POWER_HPP_INCLUDED
 
 #include <flux/core.hpp>
 #include <flux/core/numeric.hpp>
@@ -19,20 +19,20 @@ namespace flux {
 namespace detail {
 
 template <std::size_t RepeatCount, typename Base>
-struct product_traits_base;
+struct cartesian_power_traits_base;
 
 template <std::size_t RepeatCount, sequence Base>
-struct product_adaptor
-    : inline_sequence_base<product_adaptor<RepeatCount, Base>> {
+struct cartesian_power_adaptor
+    : inline_sequence_base<cartesian_power_adaptor<RepeatCount, Base>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
 
-    friend struct product_traits_base<RepeatCount, Base>;
-    friend struct sequence_traits<product_adaptor>;
+    friend struct cartesian_power_traits_base<RepeatCount, Base>;
+    friend struct sequence_traits<cartesian_power_adaptor>;
 
 public:
     static constexpr std::size_t count_ = RepeatCount;
-    constexpr explicit product_adaptor(Base&& base)
+    constexpr explicit cartesian_power_adaptor(Base&& base)
         : base_(FLUX_FWD(base))
     {}
 };
@@ -40,20 +40,20 @@ public:
 
 
 template<std::size_t RepeatCount>
-struct product_fn {
+struct cartesian_power_fn {
 
     template <adaptable_sequence Seq>
         requires multipass_sequence<Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const
     {
-        return product_adaptor<RepeatCount, std::decay_t<Seq>>(
+        return cartesian_power_adaptor<RepeatCount, std::decay_t<Seq>>(
                     FLUX_FWD(seq));
     }
 };
 
 template <typename B0, typename...>
-inline constexpr bool product_is_bounded = bounded_sequence<B0>;
+inline constexpr bool cartesian_power_is_bounded = bounded_sequence<B0>;
 
 
 template<typename T, std::size_t RepeatCount>
@@ -65,9 +65,7 @@ constexpr auto repeat_tuple(T value) {
 
 template<typename T, std::size_t RepeatCount>
 struct TupleRepeated {
-
   using type = decltype(repeat_tuple<T, RepeatCount>(std::declval<T>()));
-
 };
 
 template<typename T, std::size_t RepeatCount>
@@ -75,7 +73,7 @@ using tuple_repeated_t = TupleRepeated<T, RepeatCount>::type;
 
 
 template <std::size_t RepeatCount, typename Base>
-struct product_traits_base {
+struct cartesian_power_traits_base {
 private:
     template <typename From, typename To>
     using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
@@ -190,7 +188,7 @@ public:
     }
 
     template <typename Self>
-        requires product_is_bounded<const_like_t<Self, Base>>
+        requires cartesian_power_is_bounded<const_like_t<Self, Base>>
     static constexpr auto last(Self& self) -> cursor_type<Self>
     {
         auto cur = first(self);
@@ -241,8 +239,8 @@ public:
 } // end namespace detail
 
 template <std::size_t RepeatCount, typename Base>
-struct sequence_traits<detail::product_adaptor<RepeatCount, Base>>
-    : detail::product_traits_base<RepeatCount, Base>
+struct sequence_traits<detail::cartesian_power_adaptor<RepeatCount, Base>>
+    : detail::cartesian_power_traits_base<RepeatCount, Base>
 {
 private:
 
@@ -328,7 +326,7 @@ public:
 };
 
 template<std::size_t RepeatCount>
-FLUX_EXPORT inline constexpr auto products = detail::product_fn<RepeatCount>{};
+FLUX_EXPORT inline constexpr auto cartesian_power = detail::cartesian_power_fn<RepeatCount>{};
 
 } // end namespace flux
 

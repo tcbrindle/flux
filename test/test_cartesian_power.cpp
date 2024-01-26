@@ -48,7 +48,7 @@ FLUX_EXPORT inline constexpr auto cartesian_product_repeat_n = detail::cartesian
 namespace {
 
 
-constexpr bool test_products()
+constexpr bool test_cartesian_power()
 {
     // 1D `cartesian_product`.
     {
@@ -165,7 +165,7 @@ constexpr bool test_products()
     }
 
     {
-      auto cart = flux::products<2>(std::array{100, 200, 300});
+      auto cart = flux::cartesian_power<2>(std::array{100, 200, 300});
       static_assert(cart.size() == 9);
 
       using C = decltype(cart);
@@ -229,7 +229,7 @@ constexpr bool test_products()
     }
 
     {
-      auto prod = flux::products<3>(std::array{'a', 'b', 'c', 'd'});
+      auto prod = flux::cartesian_power<3>(std::array{'a', 'b', 'c', 'd'});
       static_assert(prod.size() == 64);
 
       using C = decltype(prod);
@@ -340,11 +340,11 @@ constexpr bool test_products()
     return true;
 }
 
-static_assert(test_products());
+static_assert(test_cartesian_power());
 
 }
 
-TEST_CASE("products")
+TEST_CASE("cartesian power")
 {
-    REQUIRE(test_products());
+    REQUIRE(test_cartesian_power());
 }
