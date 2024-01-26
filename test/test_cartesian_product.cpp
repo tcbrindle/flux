@@ -15,11 +15,13 @@
 
 namespace {
 
+
 constexpr bool test_cartesian_product()
 {
     // 1D `cartesian_product`.
     {
         auto cart = flux::cartesian_product(std::array{100, 200, 300});
+        static_assert(cart.size() == 3);
 
         using C = decltype(cart);
 

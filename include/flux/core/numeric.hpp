@@ -171,6 +171,20 @@ inline constexpr auto checked_mul =
   }
 };
 
+FLUX_EXPORT
+inline constexpr auto checked_pow =
+        []<std::signed_integral T, std::unsigned_integral U>(T base, U exponent,
+                                   std::source_location loc = std::source_location::current())
+                -> T
+{
+    T res{base};
+    for(U i{1}; i < exponent; i++) {
+        res = checked_mul(res, base, loc);
+    }
+    return res;
+};
+
+
 inline constexpr auto checked_div =
     []<std::signed_integral T>(T lhs, T rhs,
                                std::source_location loc = std::source_location::current())

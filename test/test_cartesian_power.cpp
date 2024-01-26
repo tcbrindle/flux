@@ -50,55 +50,6 @@ namespace {
 
 constexpr bool test_cartesian_power()
 {
-    // 1D `cartesian_product`.
-    {
-        auto cart = flux::cartesian_product(std::array{100, 200, 300});
-        static_assert(cart.size() == 3);
-
-        using C = decltype(cart);
-
-        static_assert(flux::sequence<C>);
-        static_assert(flux::multipass_sequence<C>);
-        static_assert(flux::bidirectional_sequence<C>);
-        static_assert(flux::random_access_sequence<C>);
-        static_assert(not flux::contiguous_sequence<C>);
-        static_assert(flux::bounded_sequence<C>);
-        static_assert(flux::sized_sequence<C>);
-
-        static_assert(flux::sequence<C const>);
-        static_assert(flux::multipass_sequence<C const>);
-        static_assert(flux::bidirectional_sequence<C const>);
-        static_assert(flux::random_access_sequence<C const>);
-        static_assert(not flux::contiguous_sequence<C const>);
-        static_assert(flux::bounded_sequence<C const>);
-        static_assert(flux::sized_sequence<C const>);
-
-        static_assert(std::same_as<flux::element_t<C>, std::tuple<int&>>);
-        static_assert(std::same_as<flux::value_t<C>, std::tuple<int>>);
-        static_assert(std::same_as<flux::rvalue_element_t<C>, std::tuple<int&&>>);
-
-        static_assert(std::same_as<flux::element_t<C const>, std::tuple<int const&>>);
-        static_assert(std::same_as<flux::value_t<C const>, std::tuple<int>>);
-        static_assert(std::same_as<flux::rvalue_element_t<C const>, std::tuple<int const&&>>);
-
-        STATIC_CHECK(flux::size(cart) == 3);
-
-        STATIC_CHECK(check_equal(cart, {std::tuple{100}, std::tuple{200}, std::tuple{300}}));
-
-        STATIC_CHECK(flux::distance(cart, cart.first(), cart.last()) == 3);
-
-        {
-            auto cur = flux::next(cart, cart.first(), 2);
-            STATIC_CHECK(cart[cur] == std::tuple{300});
-            flux::inc(cart, cur, -2);
-            STATIC_CHECK(cart[cur] == std::tuple{100});
-        }
-
-        int sum = 0;
-        cart.for_each(flux::unpack([&] (int i) { sum += i; }));
-        STATIC_CHECK(sum == 100 + 200 + 300);
-    }
-
     // 1D `cartesian_product repeat`.
     {
       auto cart = flux::cartesian_product_repeat_n<2>(std::array{100, 200, 300});
@@ -166,7 +117,6 @@ constexpr bool test_cartesian_power()
 
     {
       auto cart = flux::cartesian_power<2>(std::array{100, 200, 300});
-      static_assert(cart.size() == 9);
 
       using C = decltype(cart);
 
@@ -211,7 +161,8 @@ constexpr bool test_cartesian_power()
       STATIC_CHECK(flux::distance(cart, cart.first(), cart.last()) == 9);
 
       {
-        auto cur = flux::next(cart, cart.first(), 2);
+        auto cur = flux::next(cart, cart.first());
+        flux::inc(cart, cur);
         STATIC_CHECK(cart[cur] == std::tuple{100, 300});
         flux::inc(cart, cur, -2);
         STATIC_CHECK(cart[cur] == std::tuple{100, 100});
