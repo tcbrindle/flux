@@ -73,10 +73,11 @@ using tuple_repeated_t = TupleRepeated<T, RepeatCount>::type;
 
 template <std::size_t PowN, typename Base>
 struct cartesian_power_traits_base :
-        cartesian_traits_base<PowN, cartesian_power_traits_base<PowN, Base>, Base>
+        cartesian_default_read_traits_base<cartesian_traits_base<PowN, cartesian_power_traits_base<PowN, Base>, Base>>
 {
 private:
-    using traits_base = cartesian_traits_base<PowN, cartesian_power_traits_base<PowN, Base>, Base>;
+    using this_type = cartesian_power_traits_base<PowN, Base>;
+    using traits_base = cartesian_traits_base<PowN, this_type, Base>;
     friend traits_base;
 
     template <typename From, typename To>
@@ -86,16 +87,11 @@ private:
     using cursor_type = tuple_repeated_t<cursor_t<const_like_t<Self, Base>>, PowN>;
 
     template<std::size_t I, typename Self>
-    constexpr static auto&& get_base(Self& self) {
+    static constexpr auto&& get_base(Self& self) {
         return self.base_;
     }
 
 public:
-    using traits_base::read_at;
-    using traits_base::move_at;
-    using traits_base::read_at_unchecked;
-    using traits_base::move_at_unchecked;
-    using traits_base::for_each_while;
 
     template <typename Self>
     static constexpr auto first(Self& self) -> cursor_type<Self>

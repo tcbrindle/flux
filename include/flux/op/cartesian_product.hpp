@@ -51,8 +51,12 @@ template <typename... Bases>
 struct cartesian_product_traits_base
         : cartesian_traits_base<sizeof...(Bases), cartesian_product_traits_base<Bases...>, Bases...> {
 private:
-    using traits_base = cartesian_traits_base<sizeof...(Bases), cartesian_product_traits_base<Bases...>, Bases...>;
+    using this_type = cartesian_product_traits_base<Bases...>;
+    using traits_base = cartesian_traits_base<sizeof...(Bases), this_type, Bases...>;
     friend traits_base;
+
+    friend struct cartesian_default_read_traits_base<this_type>;
+
 
     template <typename From, typename To>
     using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
@@ -61,7 +65,7 @@ private:
     using cursor_type = std::tuple<cursor_t<const_like_t<Self, Bases>>...>;
 
     template<std::size_t I, typename Self>
-    constexpr static auto&& get_base(Self& self) {
+    static constexpr auto&& get_base(Self& self) {
         return std::get<I>(self.bases_);
     }
 
@@ -84,23 +88,16 @@ public:
     }
 };
 
+template <typename... Bases>
+struct cartesian_product_without_traits_base
+        : cartesian_default_read_traits_base<cartesian_product_traits_base<Bases...>> {
+};
+
 } // end namespace detail
 
 template <typename... Bases>
 struct sequence_traits<detail::cartesian_product_adaptor<Bases...>>
-        : detail::cartesian_product_traits_base<Bases...> {
-
-private:
-    using traits_base = detail::cartesian_product_traits_base<Bases...>;
-    friend traits_base;
-
-public:
-    using traits_base::read_at;
-    using traits_base::move_at;
-    using traits_base::read_at_unchecked;
-    using traits_base::move_at_unchecked;
-    using traits_base::for_each_while;
-
+        : detail::cartesian_product_without_traits_base<Bases...> {
     using value_type = std::tuple<value_t<Bases>...>;
 };
 

@@ -16,6 +16,7 @@ inline constexpr bool cartesian_product_is_bounded = bounded_sequence<B0>;
 template <std::size_t Arity, typename Derived, typename... Bases>
 struct cartesian_traits_base {
 private:
+
     template <typename From, typename To>
     using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
 
@@ -106,87 +107,12 @@ private:
     }
 
 
-    template <std::size_t I, typename Self, typename Function,
-            typename... PartialElements>
-    static constexpr void for_each_while_impl(Self& self,
-                                              bool& keep_going,
-                                              cursor_t<Self>& cur,
-                                              Function&& func,
-                                              PartialElements&&... partial_elements)
-    {
-        // We need to iterate right to left.
-        if constexpr (I == Arity - 1) {
-            std::get<I>(cur) = flux::for_each_while(get_base<I>(self),
-                [&](auto&& elem) {
-                    keep_going = std::invoke(func,
-                                             element_t<Self>(FLUX_FWD(partial_elements)..., FLUX_FWD(elem)));
-                    return keep_going;
-                });
-        } else {
-            std::get<I>(cur) = flux::for_each_while(get_base<I>(self),
-                [&](auto&& elem) {
-                    for_each_while_impl<I+1>(
-                            self, keep_going, cur,
-                            func, FLUX_FWD(partial_elements)..., FLUX_FWD(elem));
-                    return keep_going;
-                });
-        }
-    }
-
-    template <std::size_t I, typename Self, typename Fn>
-    static constexpr auto read1_(Fn fn, Self& self, cursor_t<Self> const& cur)
-    -> decltype(auto)
-    {
-        return fn(get_base<I>(self), std::get<I>(cur));
-    }
-
-    template <typename Fn, typename Self>
-    static constexpr auto read_(Fn fn, Self& self, cursor_t<Self> const& cur)
-    {
-        return [&]<std::size_t... N>(std::index_sequence<N...>) {
-            return std::tuple<decltype(read1_<N>(fn, self, cur))...>(read1_<N>(fn, self, cur)...);
-        }(std::make_index_sequence<Arity>{});
-    }
-
 protected:
+    static constexpr auto arity = Arity;
 
     template<std::size_t I, typename Self>
-    constexpr static auto&& get_base(Self& self) {
+    static constexpr auto&& get_base(Self& self) {
         return Derived::template get_base<I>(self);
-    }
-
-    template <typename Self>
-    static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
-    {
-        return read_(flux::read_at, self, cur);
-    }
-
-    template <typename Self>
-    static constexpr auto move_at(Self& self, cursor_t<Self> const& cur)
-    {
-        return read_(flux::move_at, self, cur);
-    }
-
-    template <typename Self>
-    static constexpr auto read_at_unchecked(Self& self, cursor_t<Self> const& cur)
-    {
-        return read_(flux::read_at_unchecked, self, cur);
-    }
-
-    template <typename Self>
-    static constexpr auto move_at_unchecked(Self& self, cursor_t<Self> const& cur)
-    {
-        return read_(flux::move_at_unchecked, self, cur);
-    }
-
-    template <typename Self, typename Function>
-    static constexpr auto for_each_while(Self& self, Function&& func)
-    -> cursor_t<Self>
-    {
-        bool keep_going = true;
-        cursor_t<Self> cur;
-        for_each_while_impl<0>(self, keep_going, cur, FLUX_FWD(func));
-        return cur;
     }
 
 public:
@@ -235,6 +161,97 @@ public:
                                         cursor_type<Self> const& to) -> distance_t
     {
         return distance_impl<Arity - 1>(self, from, to);
+    }
+
+};
+
+template<typename TraitsBase>
+struct cartesian_default_read_traits_base : TraitsBase {
+private:
+
+    template<std::size_t I, typename Self>
+    static constexpr auto&& get_base(Self& self) {
+        return TraitsBase::template get_base<I>(self);
+    }
+
+    template <std::size_t I, typename Self, typename Fn>
+    static constexpr auto read1_(Fn fn, Self& self, cursor_t<Self> const& cur)
+    -> decltype(auto)
+    {
+        return fn(get_base<I>(self), std::get<I>(cur));
+    }
+
+    template <typename Fn, typename Self>
+    static constexpr auto read_(Fn fn, Self& self, cursor_t<Self> const& cur)
+    {
+        return [&]<std::size_t... N>(std::index_sequence<N...>) {
+            return std::tuple<decltype(read1_<N>(fn, self, cur))...>(read1_<N>(fn, self, cur)...);
+        }(std::make_index_sequence<TraitsBase::arity>{});
+    }
+
+
+    template <std::size_t I, typename Self, typename Function,
+            typename... PartialElements>
+    static constexpr void for_each_while_impl(Self& self,
+                                              bool& keep_going,
+                                              cursor_t<Self>& cur,
+                                              Function&& func,
+                                              PartialElements&&... partial_elements)
+    {
+        // We need to iterate right to left.
+        if constexpr (I == TraitsBase::arity - 1) {
+            std::get<I>(cur) = flux::for_each_while(get_base<I>(self),
+                [&](auto&& elem) {
+                    keep_going = std::invoke(func,
+                                             element_t<Self>(FLUX_FWD(partial_elements)..., FLUX_FWD(elem)));
+                    return keep_going;
+                });
+        } else {
+            std::get<I>(cur) = flux::for_each_while(get_base<I>(self),
+                [&](auto&& elem) {
+                    for_each_while_impl<I+1>(
+                            self, keep_going, cur,
+                            func, FLUX_FWD(partial_elements)..., FLUX_FWD(elem));
+                    return keep_going;
+                });
+        }
+    }
+
+
+public:
+
+    template <typename Self>
+    static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
+    {
+        return read_(flux::read_at, self, cur);
+    }
+
+    template <typename Self>
+    static constexpr auto move_at(Self& self, cursor_t<Self> const& cur)
+    {
+        return read_(flux::move_at, self, cur);
+    }
+
+    template <typename Self>
+    static constexpr auto read_at_unchecked(Self& self, cursor_t<Self> const& cur)
+    {
+        return read_(flux::read_at_unchecked, self, cur);
+    }
+
+    template <typename Self>
+    static constexpr auto move_at_unchecked(Self& self, cursor_t<Self> const& cur)
+    {
+        return read_(flux::move_at_unchecked, self, cur);
+    }
+
+    template <typename Self, typename Function>
+    static constexpr auto for_each_while(Self& self, Function&& func)
+    -> cursor_t<Self>
+    {
+        bool keep_going = true;
+        cursor_t<Self> cur;
+        for_each_while_impl<0>(self, keep_going, cur, FLUX_FWD(func));
+        return cur;
     }
 
 };

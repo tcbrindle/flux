@@ -12,6 +12,11 @@ namespace flux {
 
 namespace detail {
 
+template <typename... Bases>
+struct cartesian_product_with_traits_base
+        : cartesian_product_traits_base<Bases...> {
+};
+
 template <typename Func, sequence... Bases>
 struct cartesian_product_with_adaptor
     : inline_sequence_base<cartesian_product_with_adaptor<Func, Bases...>> {
@@ -28,7 +33,7 @@ public:
           func_(FLUX_FWD(func))
     {}
 
-    struct flux_sequence_traits : detail::cartesian_product_traits_base<Bases...>
+    struct flux_sequence_traits : detail::cartesian_product_with_traits_base<Bases...>
     {
         template <typename Self>
         static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
