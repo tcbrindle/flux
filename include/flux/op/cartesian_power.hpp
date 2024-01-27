@@ -51,8 +51,6 @@ struct cartesian_power_fn {
     }
 };
 
-template <typename B0, typename...>
-inline constexpr bool cartesian_power_is_bounded = bounded_sequence<B0>;
 
 template <typename T, std::size_t RepeatCount>
 constexpr auto repeat_tuple(T value) {
