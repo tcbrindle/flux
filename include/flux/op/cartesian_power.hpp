@@ -84,7 +84,7 @@ private:
     using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
 
     template <typename Self>
-    using cursor_type = tuple_repeated_t<cursor_t<const_like_t<Self, Base>>, PowN>;
+    using cursor_type = std::array<cursor_t<const_like_t<Self, Base>>, PowN>;
 
     template<std::size_t I, typename Self>
     static constexpr auto&& get_base(Self& self) {
@@ -97,7 +97,8 @@ public:
     static constexpr auto first(Self& self) -> cursor_type<Self>
     {
       return []<std::size_t... Is>(auto&& arg, std::index_sequence<Is...>) {
-        return cursor_type<Self>((static_cast<void>(Is), flux::first(FLUX_FWD(arg)))...);
+          cursor_type<Self> cur = {(static_cast<void>(Is), flux::first(FLUX_FWD(arg)))...};
+          return cur;
       }(self.base_, std::make_index_sequence<PowN>{});
     }
 
