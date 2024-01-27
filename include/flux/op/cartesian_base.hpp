@@ -11,7 +11,7 @@
 namespace flux::detail {
 
 template <typename B0, typename...>
-inline constexpr bool cartesian_product_is_bounded = bounded_sequence<B0>;
+inline constexpr bool cartesian_is_bounded = bounded_sequence<B0>;
 
 template <std::size_t Arity, typename Derived, typename... Bases>
 struct cartesian_traits_base {
@@ -145,7 +145,7 @@ public:
     }
 
     template <typename Self>
-    requires cartesian_product_is_bounded<const_like_t<Self, Bases>...>
+    requires cartesian_is_bounded<const_like_t<Self, Bases>...>
     static constexpr auto last(Self& self) -> cursor_type<Self>
     {
         auto cur = first(self);
