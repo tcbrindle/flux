@@ -64,7 +64,7 @@ template <std::size_t PowN>
 struct cartesian_power_with_fn
 {
     template <typename Func, adaptable_sequence Seq>
-        requires (multipass_sequence<Seq>) &&
+        requires multipass_sequence<Seq> &&
         regular_invocable_repeated<Func&, element_t<Seq>, PowN>
     [[nodiscard]]
     constexpr auto operator()(Func func, Seq&& seq) const

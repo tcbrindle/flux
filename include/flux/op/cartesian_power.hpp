@@ -107,7 +107,7 @@ public:
     }
 
     template <typename Self>
-    requires (sized_sequence<const_like_t<Self, Base>>)
+    requires sized_sequence<const_like_t<Self, Base>>
     static constexpr auto size(Self& self) -> distance_t
     {
         return num::checked_pow(flux::size(self.base_), PowN);
