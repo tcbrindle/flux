@@ -13,7 +13,7 @@ namespace flux::detail {
 template <typename B0, typename...>
 inline constexpr bool cartesian_is_bounded = bounded_sequence<B0>;
 
-template <std::size_t Arity, typename Derived, typename... Bases>
+template <typename Derived, typename... Bases>
 struct cartesian_traits_base {
 private:
 
@@ -108,11 +108,14 @@ private:
 
 
 protected:
-    static constexpr auto arity = Arity;
 
     template<std::size_t I, typename Self>
     static constexpr auto&& get_base(Self& self) {
         return Derived::template get_base<I>(self);
+    }
+
+    static consteval auto get_arity() {
+        return Derived::get_arity();
     }
 
 public:
@@ -121,27 +124,27 @@ public:
     {
         return [&]<std::size_t... N>(std::index_sequence<N...>) {
             return (flux::is_last(get_base<N>(self), std::get<N>(cur)) || ...);
-        }(std::make_index_sequence<Arity>{});
+        }(std::make_index_sequence<get_arity()>{});
     }
 
     template <typename Self>
     requires (bidirectional_sequence<const_like_t<Self, Bases>> && ...) &&
     (bounded_sequence<const_like_t<Self, Bases>> && ...)
     static constexpr auto dec(Self& self, cursor_type<Self>& cur) -> cursor_type<Self>& {
-        return dec_impl<Arity - 1>(self, cur);
+        return dec_impl<get_arity() - 1>(self, cur);
     }
 
     template <typename Self>
     requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
     (sized_sequence<const_like_t<Self, Bases>> && ...)
     static constexpr auto inc(Self& self, cursor_type<Self>& cur, distance_t offset) -> cursor_type<Self>& {
-        return ra_inc_impl<Arity - 1>(self, cur, offset);
+        return ra_inc_impl<get_arity() - 1>(self, cur, offset);
     }
 
     template <typename Self>
     static constexpr auto inc(Self& self, cursor_type<Self>& cur) -> cursor_type<Self>&
     {
-        return inc_impl<Arity - 1>(self, cur);
+        return inc_impl<get_arity() - 1>(self, cur);
     }
 
     template <typename Self>
@@ -160,18 +163,19 @@ public:
                                         cursor_type<Self> const& from,
                                         cursor_type<Self> const& to) -> distance_t
     {
-        return distance_impl<Arity - 1>(self, from, to);
+        return distance_impl<get_arity() - 1>(self, from, to);
     }
 
 };
 
-template<typename TraitsBase>
-struct cartesian_default_read_traits_base : TraitsBase {
+template<typename CartesianTraits>
+struct cartesian_default_read_traits_base : CartesianTraits {
 private:
+    using traits_base = CartesianTraits::traits_base;
 
     template<std::size_t I, typename Self>
     static constexpr auto&& get_base(Self& self) {
-        return TraitsBase::template get_base<I>(self);
+        return traits_base::template get_base<I>(self);
     }
 
     template <std::size_t I, typename Self, typename Fn>
@@ -186,7 +190,7 @@ private:
     {
         return [&]<std::size_t... N>(std::index_sequence<N...>) {
             return std::tuple<decltype(read1_<N>(fn, self, cur))...>(read1_<N>(fn, self, cur)...);
-        }(std::make_index_sequence<TraitsBase::arity>{});
+        }(std::make_index_sequence<traits_base::get_arity()>{});
     }
 
 
@@ -199,7 +203,7 @@ private:
                                               PartialElements&&... partial_elements)
     {
         // We need to iterate right to left.
-        if constexpr (I == TraitsBase::arity - 1) {
+        if constexpr (I == traits_base::get_arity() - 1) {
             std::get<I>(cur) = flux::for_each_while(get_base<I>(self),
                 [&](auto&& elem) {
                     keep_going = std::invoke(func,

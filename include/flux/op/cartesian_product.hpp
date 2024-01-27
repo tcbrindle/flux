@@ -49,14 +49,8 @@ struct cartesian_product_fn {
 
 template <typename... Bases>
 struct cartesian_product_traits_base
-        : cartesian_traits_base<sizeof...(Bases), cartesian_product_traits_base<Bases...>, Bases...> {
+        : cartesian_traits_base<cartesian_product_traits_base<Bases...>, Bases...> {
 private:
-    using this_type = cartesian_product_traits_base<Bases...>;
-    using traits_base = cartesian_traits_base<sizeof...(Bases), this_type, Bases...>;
-    friend traits_base;
-
-    friend struct cartesian_default_read_traits_base<this_type>;
-
 
     template <typename From, typename To>
     using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
@@ -68,6 +62,16 @@ private:
     static constexpr auto&& get_base(Self& self) {
         return std::get<I>(self.bases_);
     }
+
+    static consteval auto get_arity() {
+        return sizeof...(Bases);
+    }
+
+    using this_type = cartesian_product_traits_base<Bases...>;
+
+protected:
+    using traits_base = cartesian_traits_base<this_type, Bases...>;
+    friend traits_base;
 
 public:
     template <typename Self>

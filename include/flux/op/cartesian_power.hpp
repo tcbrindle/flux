@@ -38,7 +38,7 @@ public:
 
 
 
-template<std::size_t RepeatCount>
+template<std::size_t PowN>
 struct cartesian_power_fn {
 
     template <adaptable_sequence Seq>
@@ -46,7 +46,7 @@ struct cartesian_power_fn {
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const
     {
-        return cartesian_power_adaptor<RepeatCount, std::decay_t<Seq>>(
+        return cartesian_power_adaptor<PowN, std::decay_t<Seq>>(
                     FLUX_FWD(seq));
     }
 };
@@ -70,12 +70,9 @@ using tuple_repeated_t = TupleRepeated<T, RepeatCount>::type;
 
 template <std::size_t PowN, typename Base>
 struct cartesian_power_traits_base :
-        cartesian_default_read_traits_base<cartesian_traits_base<PowN, cartesian_power_traits_base<PowN, Base>, Base>>
+        cartesian_traits_base<cartesian_power_traits_base<PowN, Base>, Base>
 {
 private:
-    using this_type = cartesian_power_traits_base<PowN, Base>;
-    using traits_base = cartesian_traits_base<PowN, this_type, Base>;
-    friend traits_base;
 
     template <typename From, typename To>
     using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
@@ -87,6 +84,16 @@ private:
     static constexpr auto&& get_base(Self& self) {
         return self.base_;
     }
+
+    static consteval auto get_arity() {
+        return PowN;
+    }
+
+    using this_type = cartesian_power_traits_base<PowN, Base>;
+
+protected:
+    using traits_base = cartesian_traits_base<this_type, Base>;
+    friend traits_base;
 
 public:
 
@@ -107,17 +114,22 @@ public:
     }
 };
 
+template <std::size_t PowN, typename Base>
+struct cartesian_power_without_traits_base
+        : cartesian_default_read_traits_base<cartesian_power_traits_base<PowN, Base>> {
+};
+
 } // end namespace detail
 
 template <std::size_t PowN, typename Base>
 struct sequence_traits<detail::cartesian_power_adaptor<PowN, Base>>
-    : detail::cartesian_power_traits_base<PowN, Base>
+    : detail::cartesian_power_without_traits_base<PowN, Base>
 {
     using value_type = detail::tuple_repeated_t<value_t<Base>, PowN>;
 };
 
-template<std::size_t RepeatCount>
-FLUX_EXPORT inline constexpr auto cartesian_power = detail::cartesian_power_fn<RepeatCount>{};
+template<std::size_t PowN>
+FLUX_EXPORT inline constexpr auto cartesian_power = detail::cartesian_power_fn<PowN>{};
 
 } // end namespace flux
 
