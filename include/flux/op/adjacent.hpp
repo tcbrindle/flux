@@ -176,19 +176,6 @@ public:
     };
 };
 
-template <typename Func, typename E, distance_t N>
-struct adjacent_invocable_helper {
-    template <std::size_t I>
-    using repeater = E;
-
-    static inline constexpr bool value = []<std::size_t... Is> (std::index_sequence<Is...>) consteval {
-        return std::regular_invocable<Func, repeater<Is>...>;
-    }(std::make_index_sequence<N>{});
-};
-
-template <typename Func, typename E, distance_t N>
-concept adjacent_invocable = adjacent_invocable_helper<Func, E, N>::value;
-
 template <typename Base, distance_t N, typename Func>
 struct adjacent_map_adaptor : inline_sequence_base<adjacent_map_adaptor<Base, N, Func>> {
 private:
@@ -207,7 +194,7 @@ public:
         template <typename Self>
         static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
             -> decltype(auto)
-            requires adjacent_invocable<decltype((self.func_)), element_t<decltype((self.base_))>, N>
+            requires repeated_invocable<decltype((self.func_)), element_t<decltype((self.base_))>, N>
         {
             return std::apply([&](auto const&... curs) {
                 return std::invoke(self.func_, flux::read_at(self.base_, curs)...);
@@ -231,7 +218,7 @@ template <distance_t N>
 struct adjacent_map_fn {
     template <adaptable_sequence Seq, typename Func>
         requires multipass_sequence<Seq> &&
-                 adjacent_invocable<Func, element_t<Seq>, N>
+            repeated_invocable<Func, element_t<Seq>, N>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Func func) const -> multipass_sequence auto
     {
