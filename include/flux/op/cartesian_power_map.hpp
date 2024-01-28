@@ -31,7 +31,7 @@ public:
         read_kind::map,
         Base
     >;
-    friend flux_sequence_traits;
+    friend flux_sequence_traits::impl;
 };
 
 template <std::size_t PowN>

@@ -32,7 +32,7 @@ public:
         read_kind::tuple,
         Bases...
     >;
-    friend flux_sequence_traits;
+    friend flux_sequence_traits::impl;
 
     constexpr explicit cartesian_product_adaptor(decays_to<Bases> auto&&... bases)
         : bases_(FLUX_FWD(bases)...)

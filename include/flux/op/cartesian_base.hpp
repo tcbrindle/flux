@@ -60,7 +60,7 @@ struct cartesian_traits_types<Arity, cartesian_kind::product, read_kind::tuple, 
 };
 
 template <std::size_t Arity, cartesian_kind CartesianKind, read_kind ReadKind, typename... Bases>
-struct cartesian_traits_base {
+struct cartesian_traits_base_impl {
 private:
 
     template<std::size_t I, typename Self>
@@ -202,10 +202,10 @@ private:
         }
     }
 
-public:
-
+protected:
     using types = cartesian_traits_types<Arity, CartesianKind, ReadKind, Bases...>;
-    using value_type = typename types::value_type;
+
+public:
 
     template <typename Self>
     requires (CartesianKind == cartesian_kind::product)
@@ -340,6 +340,18 @@ public:
         return cur;
     }
 
+};
+
+template <std::size_t Arity, cartesian_kind CartesianKind, read_kind ReadKind, typename... Bases>
+struct cartesian_traits_base : cartesian_traits_base_impl<Arity, CartesianKind, ReadKind, Bases...> {
+    using impl = cartesian_traits_base_impl<Arity, CartesianKind, ReadKind, Bases...>;
+};
+
+template <std::size_t Arity, cartesian_kind CartesianKind, typename... Bases>
+struct cartesian_traits_base<Arity, CartesianKind, read_kind::tuple, Bases...> : cartesian_traits_base_impl<Arity, CartesianKind, read_kind::tuple, Bases...> {
+    using impl = cartesian_traits_base_impl<Arity, CartesianKind, read_kind::tuple, Bases...>;
+
+    using value_type = typename impl::types::value_type;
 };
 
 }

@@ -36,7 +36,7 @@ public:
         read_kind::tuple,
         Base
     >;
-    friend flux_sequence_traits;
+    friend flux_sequence_traits::impl;
 };
 
 

@@ -31,7 +31,7 @@ public:
         read_kind::map,
         Bases...
     >;
-    friend flux_sequence_traits;
+    friend flux_sequence_traits::impl;
 };
 
 struct cartesian_product_map_fn
