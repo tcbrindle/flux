@@ -19,17 +19,6 @@ inline constexpr bool cartesian_is_bounded = bounded_sequence<B0>;
 template <typename From, typename To>
 using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
 
-template <typename T, std::size_t RepeatCount>
-struct tuple_repeated {
-    constexpr static auto repeat_tuple(T value) {
-        return [value]<std::size_t... Is>(std::index_sequence<Is...>) {
-            return std::tuple{(static_cast<void>(Is), value)...};
-        }(std::make_index_sequence<RepeatCount>{});
-    }
-
-    using type = decltype(repeat_tuple(std::declval<T>()));
-};
-
 template<typename... Ts>
 struct require_single_type {
 };
@@ -43,27 +32,36 @@ template<typename... Ts>
 using require_single_type_t = typename require_single_type<Ts...>::type;
 
 template <typename T, std::size_t RepeatCount>
+struct tuple_repeated {
+    constexpr static auto repeat_tuple(T value) {
+        return [value]<std::size_t... Is>(std::index_sequence<Is...>) {
+            return std::tuple{(static_cast<void>(Is), value)...};
+        }(std::make_index_sequence<RepeatCount>{});
+    }
+
+    using type = decltype(repeat_tuple(std::declval<T>()));
+};
+
+template <typename T, std::size_t RepeatCount>
 using tuple_repeated_t = tuple_repeated<T, RepeatCount>::type;
 
-template<std::size_t Arity, cartesian_kind CartesianKind, typename... Bases>
+template<std::size_t Arity, cartesian_kind CartesianKind, read_kind ReadKind, typename... Bases>
 struct cartesian_traits_types {
 };
 
 template<std::size_t Arity, typename Base>
-struct cartesian_traits_types<Arity, cartesian_kind::power, Base> {
+struct cartesian_traits_types<Arity, cartesian_kind::power, read_kind::tuple, Base> {
     using value_type = tuple_repeated_t<value_t<Base>, Arity>;
 };
 
 template<std::size_t Arity, typename... Bases>
-struct cartesian_traits_types<Arity, cartesian_kind::product, Bases...> {
+struct cartesian_traits_types<Arity, cartesian_kind::product, read_kind::tuple, Bases...> {
     using value_type = std::tuple<value_t<Bases>...>;
 };
 
 template <std::size_t Arity, cartesian_kind CartesianKind, read_kind ReadKind, typename... Bases>
 struct cartesian_traits_base {
 private:
-
-    using types = cartesian_traits_types<Arity, CartesianKind, Bases...>;
 
     template<std::size_t I, typename Self>
     requires (CartesianKind == cartesian_kind::power)
@@ -206,6 +204,7 @@ private:
 
 public:
 
+    using types = cartesian_traits_types<Arity, CartesianKind, ReadKind, Bases...>;
     using value_type = typename types::value_type;
 
     template <typename Self>
