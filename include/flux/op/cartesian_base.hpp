@@ -30,6 +30,18 @@ struct tuple_repeated {
     using type = decltype(repeat_tuple(std::declval<T>()));
 };
 
+template<typename... Ts>
+struct require_single_type {
+};
+
+template<typename T>
+struct require_single_type<T> {
+    using type = T;
+};
+
+template<typename... Ts>
+using require_single_type_t = typename require_single_type<Ts...>::type;
+
 template <typename T, std::size_t RepeatCount>
 using tuple_repeated_t = tuple_repeated<T, RepeatCount>::type;
 
@@ -39,17 +51,11 @@ struct cartesian_traits_types {
 
 template<std::size_t Arity, typename Base>
 struct cartesian_traits_types<Arity, cartesian_kind::power, Base> {
-    template <typename Self>
-    using cursor_type = std::array<cursor_t<const_like_t<Self, Base>>, Arity>;
-
     using value_type = tuple_repeated_t<value_t<Base>, Arity>;
 };
 
 template<std::size_t Arity, typename... Bases>
 struct cartesian_traits_types<Arity, cartesian_kind::product, Bases...> {
-    template <typename Self>
-    using cursor_type = std::tuple<cursor_t<const_like_t<Self, Bases>>...>;
-
     using value_type = std::tuple<value_t<Bases>...>;
 };
 
@@ -58,9 +64,6 @@ struct cartesian_traits_base {
 private:
 
     using types = cartesian_traits_types<Arity, CartesianKind, Bases...>;
-
-    template<typename Self>
-    using cursor_type = typename types::template cursor_type<Self>;
 
     template<std::size_t I, typename Self>
     requires (CartesianKind == cartesian_kind::power)
@@ -76,7 +79,7 @@ private:
 
 
     template <std::size_t I, typename Self>
-    static constexpr auto inc_impl(Self& self, cursor_type<Self>& cur) -> cursor_type<Self>&
+    static constexpr auto inc_impl(Self& self, cursor_t<Self>& cur) -> cursor_t<Self>&
     {
         flux::inc(get_base<I>(self), std::get<I>(cur));
 
@@ -92,7 +95,7 @@ private:
 
 
     template <std::size_t I, typename Self>
-    static constexpr auto dec_impl(Self& self, cursor_type<Self>& cur) -> cursor_type<Self>&
+    static constexpr auto dec_impl(Self& self, cursor_t<Self>& cur) -> cursor_t<Self>&
     {
         if (std::get<I>(cur) == flux::first(get_base<I>(self))) {
             std::get<I>(cur) = flux::last(get_base<I>(self));
@@ -107,8 +110,8 @@ private:
     }
 
     template <std::size_t I, typename Self>
-    static constexpr auto ra_inc_impl(Self& self, cursor_type<Self>& cur, distance_t offset)
-    -> cursor_type<Self>&
+    static constexpr auto ra_inc_impl(Self& self, cursor_t<Self>& cur, distance_t offset)
+    -> cursor_t<Self>&
     {
         if (offset == 0)
             return cur;
@@ -144,8 +147,8 @@ private:
 
     template <std::size_t I, typename Self>
     static constexpr auto distance_impl(Self& self,
-                                        cursor_type<Self> const& from,
-                                        cursor_type<Self> const& to) -> distance_t
+                                        cursor_t<Self> const& from,
+                                        cursor_t<Self> const& to) -> distance_t
     {
         if constexpr (I == 0) {
             return flux::distance(get_base<0>(self), std::get<0>(from), std::get<0>(to));
@@ -207,19 +210,19 @@ public:
 
     template <typename Self>
     requires (CartesianKind == cartesian_kind::product)
-    static constexpr auto first(Self& self) -> cursor_type<Self>
+    static constexpr auto first(Self& self)
     {
         return std::apply([](auto&&... args) {
-            return cursor_type<Self>(flux::first(FLUX_FWD(args))...);
+            return std::tuple(flux::first(FLUX_FWD(args))...);
         }, self.bases_);
     }
 
     template <typename Self>
     requires (CartesianKind == cartesian_kind::power)
-    static constexpr auto first(Self& self) -> cursor_type<Self>
+    static constexpr auto first(Self& self)
     {
         return []<std::size_t... Is>(auto&& arg, std::index_sequence<Is...>) {
-            cursor_type<Self> cur = {(static_cast<void>(Is), flux::first(FLUX_FWD(arg)))...};
+            std::array<cursor_t<require_single_type_t<Bases...>>, Arity> cur = {(static_cast<void>(Is), flux::first(arg))...};
             return cur;
         }(self.base_, std::make_index_sequence<Arity>{});
     }
@@ -243,7 +246,7 @@ public:
     }
 
     template <typename Self>
-    static constexpr auto is_last(Self& self, cursor_type<Self> const& cur) -> bool
+    static constexpr auto is_last(Self& self, cursor_t<Self> const& cur) -> bool
     {
         return [&]<std::size_t... N>(std::index_sequence<N...>) {
             return (flux::is_last(get_base<N>(self), std::get<N>(cur)) || ...);
@@ -253,26 +256,26 @@ public:
     template <typename Self>
     requires (bidirectional_sequence<const_like_t<Self, Bases>> && ...) &&
     (bounded_sequence<const_like_t<Self, Bases>> && ...)
-    static constexpr auto dec(Self& self, cursor_type<Self>& cur) -> cursor_type<Self>& {
+    static constexpr auto dec(Self& self, cursor_t<Self>& cur) -> cursor_t<Self>& {
         return dec_impl<Arity - 1>(self, cur);
     }
 
     template <typename Self>
     requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
     (sized_sequence<const_like_t<Self, Bases>> && ...)
-    static constexpr auto inc(Self& self, cursor_type<Self>& cur, distance_t offset) -> cursor_type<Self>& {
+    static constexpr auto inc(Self& self, cursor_t<Self>& cur, distance_t offset) -> cursor_t<Self>& {
         return ra_inc_impl<Arity - 1>(self, cur, offset);
     }
 
     template <typename Self>
-    static constexpr auto inc(Self& self, cursor_type<Self>& cur) -> cursor_type<Self>&
+    static constexpr auto inc(Self& self, cursor_t<Self>& cur) -> cursor_t<Self>&
     {
         return inc_impl<Arity - 1>(self, cur);
     }
 
     template <typename Self>
     requires cartesian_is_bounded<const_like_t<Self, Bases>...>
-    static constexpr auto last(Self& self) -> cursor_type<Self>
+    static constexpr auto last(Self& self) -> cursor_t<Self>
     {
         auto cur = first(self);
         std::get<0>(cur) = flux::last(get_base<0>(self));
@@ -283,8 +286,8 @@ public:
     requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
     (sized_sequence<const_like_t<Self, Bases>> && ...)
     static constexpr auto distance(Self& self,
-                                        cursor_type<Self> const& from,
-                                        cursor_type<Self> const& to) -> distance_t
+                                        cursor_t<Self> const& from,
+                                        cursor_t<Self> const& to) -> distance_t
     {
         return distance_impl<Arity - 1>(self, from, to);
     }
