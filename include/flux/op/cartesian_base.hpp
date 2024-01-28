@@ -78,7 +78,6 @@ private:
     template <std::size_t I, typename Self>
     static constexpr auto inc_impl(Self& self, cursor_type<Self>& cur) -> cursor_type<Self>&
     {
-
         flux::inc(get_base<I>(self), std::get<I>(cur));
 
         if constexpr (I > 0) {
