@@ -21,6 +21,8 @@ jobs:
         exclude:
           - compiler: GCC-13
             test_with: Module
+          - compiler: LLVM-Clang-16
+            test_with: Module
 
         include:
           - compiler: GCC-13
