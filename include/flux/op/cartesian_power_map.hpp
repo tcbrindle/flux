@@ -7,6 +7,7 @@
 #define FLUX_OP_CARTESIAN_POWER_MAP_HPP_INCLUDED
 
 #include <flux/op/cartesian_base.hpp>
+#include <flux/op/requirements.hpp>
 
 namespace flux {
 

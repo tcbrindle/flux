@@ -380,23 +380,6 @@ template <typename T>
 struct sequence_traits<T> : T::flux_sequence_traits {};
 
 
-namespace detail {
-
-template <typename Func, typename E, distance_t N>
-struct repeated_invocable_helper {
-    template <std::size_t I>
-    using repeater = E;
-
-    static inline constexpr bool value = []<std::size_t... Is> (std::index_sequence<Is...>) consteval {
-        return std::regular_invocable<Func, repeater<Is>...>;
-    }(std::make_index_sequence<N>{});
-};
-
-template <typename Func, typename E, distance_t N>
-concept repeated_invocable = repeated_invocable_helper<Func, E, N>::value;
-
-} // namespace detail
-
 } // namespace flux
 
 #endif // FLUX_CORE_CONCEPTS_HPP_INCLUDED
