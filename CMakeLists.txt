@@ -6,6 +6,8 @@ project(flux CXX)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
+set(CMAKE_CXX_EXTENSIONS Off)
+
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 add_library(flux INTERFACE)
