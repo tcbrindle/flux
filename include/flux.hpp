@@ -17,7 +17,7 @@
 #include <flux/op/cartesian_power.hpp>
 #include <flux/op/cartesian_power_map.hpp>
 #include <flux/op/cartesian_product.hpp>
-#include <flux/op/cartesian_product_with.hpp>
+#include <flux/op/cartesian_product_map.hpp>
 #include <flux/op/chain.hpp>
 #include <flux/op/chunk.hpp>
 #include <flux/op/chunk_by.hpp>
