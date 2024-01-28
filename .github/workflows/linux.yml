@@ -13,6 +13,7 @@ jobs:
       matrix:
         build_type: [Debug, Release]
         compiler: [GCC-11, GCC-12, GCC-13, Clang-17]
+        test_with: [Headers]
         include:
           - compiler: GCC-11
             cxx: g++-11
@@ -34,6 +35,20 @@ jobs:
             install: |
               brew install llvm@17 ninja binutils
               brew link --force binutils
+          - compiler: Clang-17
+            build_type: Debug
+            cxx: clang++
+            test_with: Module
+            install: |
+              brew install llvm@17 ninja binutils
+              brew link --force binutils
+          - compiler: Clang-17
+            build_type: Release
+            cxx: clang++
+            test_with: Module
+            install: |
+              brew install llvm@17 ninja binutils
+              brew link --force binutils
 
     steps:
     - uses: actions/checkout@master
@@ -51,6 +66,8 @@ jobs:
       run: |
         cmake -GNinja -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DCMAKE_CXX_COMPILER=${{matrix.cxx}} \
               -DFLUX_BUILD_BENCHMARKS=${{matrix.build_type == 'Release'}} \
+              -DFLUX_BUILD_MODULE=${{matrix.test_with == 'Module'}} \
+              -DFLUX_BUILD_TESTS_USING_MODULE=${{matrix.test_with == 'Module'}} \
               $GITHUB_WORKSPACE
 
     - name: Build

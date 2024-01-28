@@ -18,7 +18,7 @@ jobs:
         cxx: [g++-13,
               /usr/local/opt/llvm@16/bin/clang++,
               /usr/local/opt/llvm@17/bin/clang++]
-        module_tests: [Off]
+        test_with: [Headers]
 
         include:
           - cxx: g++-13
@@ -31,17 +31,17 @@ jobs:
           - cxx: /usr/local/opt/llvm@17/bin/clang++
             install: |
               brew install llvm@17 ninja
-            module_tests: Off
+            test_with: Headers
           - build_type: Debug
             cxx: /usr/local/opt/llvm@17/bin/clang++
             install: |
               brew install llvm@17 ninja
-            module_tests: On
+            test_with: Module
           - build_type: Release
             cxx: /usr/local/opt/llvm@17/bin/clang++
             install: |
               brew install llvm@17 ninja
-            module_tests: On
+            test_with: Module
 
     steps:
     - uses: actions/checkout@master
@@ -57,7 +57,7 @@ jobs:
         cmake -GNinja -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DCMAKE_CXX_COMPILER=${{matrix.cxx}} \
                -DFLUX_BUILD_BENCHMARKS=${{matrix.build_type == 'Release'}} \
                -DFLUX_BUILD_MODULE=${{matrix.cxx != 'g++-13'}} \
-               -DFLUX_BUILD_TESTS_USING_MODULE=${{matrix.module_tests}} \
+               -DFLUX_BUILD_TESTS_USING_MODULE=${{matrix.test_with == 'Module'}} \
                $GITHUB_WORKSPACE
 
     - name: Build
