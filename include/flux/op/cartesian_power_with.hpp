@@ -6,16 +6,11 @@
 #ifndef FLUX_OP_CARTESIAN_POWER_WITH_HPP_INCLUDED
 #define FLUX_OP_CARTESIAN_POWER_WITH_HPP_INCLUDED
 
-#include <flux/op/cartesian_power.hpp>
+#include <flux/op/cartesian_base.hpp>
 
 namespace flux {
 
 namespace detail {
-
-template <std::size_t PowN, typename Base>
-struct cartesian_power_with_traits_base
-        : cartesian_power_traits_base<PowN, Base> {
-};
 
 template <std::size_t PowN, typename Func, sequence Base>
 struct cartesian_power_with_adaptor
@@ -24,26 +19,19 @@ private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Func func_;
 
-    friend struct cartesian_power_traits_base<PowN, Base>;
-    friend struct sequence_traits<cartesian_power_with_adaptor>;
-
 public:
     constexpr explicit cartesian_power_with_adaptor(decays_to<Func> auto&& func, decays_to<Base> auto&& base)
         : base_(FLUX_FWD(base)),
           func_(FLUX_FWD(func))
     {}
 
-    struct flux_sequence_traits : detail::cartesian_power_with_traits_base<PowN, Base>
-    {
-        template <typename Self>
-        static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
-            -> decltype(auto)
-        {
-            return [&]<std::size_t... N>(std::index_sequence<N...>) -> decltype(auto) {
-                return std::invoke(self.func_, flux::read_at(self.base_, std::get<N>(cur))...);
-            }(std::make_index_sequence<PowN>{});
-        }
-    };
+    using flux_sequence_traits = cartesian_traits_base<
+        PowN,
+        cartesian_kind::power,
+        read_kind::map,
+        Base
+    >;
+    friend flux_sequence_traits;
 };
 
 

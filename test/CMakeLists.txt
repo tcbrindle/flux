@@ -26,6 +26,8 @@ add_executable(test-flux
     test_cache_last.cpp
     test_cartesian_product.cpp
     test_cartesian_product_with.cpp
+    test_cartesian_power.cpp
+    test_cartesian_power_with.cpp
     test_chain.cpp
     test_chunk.cpp
     test_chunk_by.cpp
@@ -52,8 +54,6 @@ add_executable(test-flux
     test_mask.cpp
     test_minmax.cpp
     test_output_to.cpp
-    test_cartesian_power.cpp
-    test_cartesian_power_with.cpp
     test_range_iface.cpp
     test_read_only.cpp
     test_reverse.cpp

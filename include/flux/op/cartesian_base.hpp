@@ -10,18 +10,70 @@
 
 namespace flux::detail {
 
+enum class cartesian_kind { product, power };
+enum class read_kind { tuple, map };
+
 template <typename B0, typename...>
 inline constexpr bool cartesian_is_bounded = bounded_sequence<B0>;
 
-template <typename Derived, typename... Bases>
+template <typename From, typename To>
+using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
+
+template <typename T, std::size_t RepeatCount>
+struct tuple_repeated {
+    constexpr static auto repeat_tuple(T value) {
+        return [value]<std::size_t... Is>(std::index_sequence<Is...>) {
+            return std::tuple{(static_cast<void>(Is), value)...};
+        }(std::make_index_sequence<RepeatCount>{});
+    }
+
+    using type = decltype(repeat_tuple(std::declval<T>()));
+};
+
+template <typename T, std::size_t RepeatCount>
+using tuple_repeated_t = tuple_repeated<T, RepeatCount>::type;
+
+template<std::size_t Arity, cartesian_kind CartesianKind, typename... Bases>
+struct cartesian_traits_types {
+};
+
+template<std::size_t Arity, typename Base>
+struct cartesian_traits_types<Arity, cartesian_kind::power, Base> {
+    template <typename Self>
+    using cursor_type = std::array<cursor_t<const_like_t<Self, Base>>, Arity>;
+
+    using value_type = tuple_repeated_t<value_t<Base>, Arity>;
+};
+
+template<std::size_t Arity, typename... Bases>
+struct cartesian_traits_types<Arity, cartesian_kind::product, Bases...> {
+    template <typename Self>
+    using cursor_type = std::tuple<cursor_t<const_like_t<Self, Bases>>...>;
+
+    using value_type = std::tuple<value_t<Bases>...>;
+};
+
+template <std::size_t Arity, cartesian_kind CartesianKind, read_kind ReadKind, typename... Bases>
 struct cartesian_traits_base {
 private:
 
-    template <typename From, typename To>
-    using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
+    using types = cartesian_traits_types<Arity, CartesianKind, Bases...>;
 
     template<typename Self>
-    using cursor_type = cursor_t<Self>;
+    using cursor_type = typename types::template cursor_type<Self>;
+
+    template<std::size_t I, typename Self>
+    requires (CartesianKind == cartesian_kind::power)
+    static constexpr auto&& get_base(Self& self) {
+        return self.base_;
+    }
+
+    template<std::size_t I, typename Self>
+    requires (CartesianKind == cartesian_kind::product)
+    static constexpr auto&& get_base(Self& self) {
+        return std::get<I>(self.bases_);
+    }
+
 
     template <std::size_t I, typename Self>
     static constexpr auto inc_impl(Self& self, cursor_type<Self>& cur) -> cursor_type<Self>&
@@ -106,45 +158,117 @@ private:
         }
     }
 
-
-protected:
-
-    template<std::size_t I, typename Self>
-    static constexpr auto&& get_base(Self& self) {
-        return Derived::template get_base<I>(self);
+    template <std::size_t I, typename Self, typename Fn>
+    static constexpr auto read1_(Fn fn, Self& self, cursor_t<Self> const& cur)
+    -> decltype(auto)
+    {
+        return fn(get_base<I>(self), std::get<I>(cur));
     }
 
-    static consteval auto get_arity() {
-        return Derived::get_arity();
+    template <typename Fn, typename Self>
+    requires (ReadKind == read_kind::tuple)
+    static constexpr auto read_(Fn& fn, Self& self, cursor_t<Self> const& cur)
+    -> decltype(auto)
+    {
+        return [&]<std::size_t... N>(std::index_sequence<N...>) {
+            return std::tuple<decltype(read1_<N>(fn, self, cur))...>(read1_<N>(fn, self, cur)...);
+        }(std::make_index_sequence<Arity>{});
+    }
+
+    template <std::size_t I, typename Self, typename Function,
+            typename... PartialElements>
+    static constexpr void for_each_while_impl(Self& self,
+                                              bool& keep_going,
+                                              cursor_t<Self>& cur,
+                                              Function&& func,
+                                              PartialElements&&... partial_elements)
+    {
+        // We need to iterate right to left.
+        if constexpr (I == Arity - 1) {
+            std::get<I>(cur) = flux::for_each_while(get_base<I>(self),
+                [&](auto&& elem) {
+                    keep_going = std::invoke(func,
+                                             element_t<Self>(FLUX_FWD(partial_elements)..., FLUX_FWD(elem)));
+                    return keep_going;
+                });
+        } else {
+            std::get<I>(cur) = flux::for_each_while(get_base<I>(self),
+                [&](auto&& elem) {
+                    for_each_while_impl<I+1>(
+                            self, keep_going, cur,
+                            func, FLUX_FWD(partial_elements)..., FLUX_FWD(elem));
+                    return keep_going;
+                });
+        }
     }
 
 public:
+
+    using value_type = typename types::value_type;
+
+    template <typename Self>
+    requires (CartesianKind == cartesian_kind::product)
+    static constexpr auto first(Self& self) -> cursor_type<Self>
+    {
+        return std::apply([](auto&&... args) {
+            return cursor_type<Self>(flux::first(FLUX_FWD(args))...);
+        }, self.bases_);
+    }
+
+    template <typename Self>
+    requires (CartesianKind == cartesian_kind::power)
+    static constexpr auto first(Self& self) -> cursor_type<Self>
+    {
+        return []<std::size_t... Is>(auto&& arg, std::index_sequence<Is...>) {
+            cursor_type<Self> cur = {(static_cast<void>(Is), flux::first(FLUX_FWD(arg)))...};
+            return cur;
+        }(self.base_, std::make_index_sequence<Arity>{});
+    }
+
+    template <typename Self>
+    requires (CartesianKind == cartesian_kind::product
+              && (sized_sequence<const_like_t<Self, Bases>> && ...))
+    static constexpr auto size(Self& self) -> distance_t
+    {
+        return std::apply([](auto&... base) {
+            return (flux::size(base) * ...);
+        }, self.bases_);
+    }
+
+    template <typename Self>
+    requires (CartesianKind == cartesian_kind::power
+              && (sized_sequence<const_like_t<Self, Bases>> && ...))
+    static constexpr auto size(Self& self) -> distance_t
+    {
+        return num::checked_pow(flux::size(self.base_), Arity);
+    }
+
     template <typename Self>
     static constexpr auto is_last(Self& self, cursor_type<Self> const& cur) -> bool
     {
         return [&]<std::size_t... N>(std::index_sequence<N...>) {
             return (flux::is_last(get_base<N>(self), std::get<N>(cur)) || ...);
-        }(std::make_index_sequence<get_arity()>{});
+        }(std::make_index_sequence<Arity>{});
     }
 
     template <typename Self>
     requires (bidirectional_sequence<const_like_t<Self, Bases>> && ...) &&
     (bounded_sequence<const_like_t<Self, Bases>> && ...)
     static constexpr auto dec(Self& self, cursor_type<Self>& cur) -> cursor_type<Self>& {
-        return dec_impl<get_arity() - 1>(self, cur);
+        return dec_impl<Arity - 1>(self, cur);
     }
 
     template <typename Self>
     requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
     (sized_sequence<const_like_t<Self, Bases>> && ...)
     static constexpr auto inc(Self& self, cursor_type<Self>& cur, distance_t offset) -> cursor_type<Self>& {
-        return ra_inc_impl<get_arity() - 1>(self, cur, offset);
+        return ra_inc_impl<Arity - 1>(self, cur, offset);
     }
 
     template <typename Self>
     static constexpr auto inc(Self& self, cursor_type<Self>& cur) -> cursor_type<Self>&
     {
-        return inc_impl<get_arity() - 1>(self, cur);
+        return inc_impl<Arity - 1>(self, cur);
     }
 
     template <typename Self>
@@ -163,92 +287,49 @@ public:
                                         cursor_type<Self> const& from,
                                         cursor_type<Self> const& to) -> distance_t
     {
-        return distance_impl<get_arity() - 1>(self, from, to);
+        return distance_impl<Arity - 1>(self, from, to);
     }
-
-};
-
-template<typename CartesianTraits>
-struct cartesian_default_read_traits_base : CartesianTraits {
-private:
-    using traits_base = CartesianTraits::traits_base;
-
-    template<std::size_t I, typename Self>
-    static constexpr auto&& get_base(Self& self) {
-        return traits_base::template get_base<I>(self);
-    }
-
-    template <std::size_t I, typename Self, typename Fn>
-    static constexpr auto read1_(Fn fn, Self& self, cursor_t<Self> const& cur)
-    -> decltype(auto)
-    {
-        return fn(get_base<I>(self), std::get<I>(cur));
-    }
-
-    template <typename Fn, typename Self>
-    static constexpr auto read_(Fn fn, Self& self, cursor_t<Self> const& cur)
-    {
-        return [&]<std::size_t... N>(std::index_sequence<N...>) {
-            return std::tuple<decltype(read1_<N>(fn, self, cur))...>(read1_<N>(fn, self, cur)...);
-        }(std::make_index_sequence<traits_base::get_arity()>{});
-    }
-
-
-    template <std::size_t I, typename Self, typename Function,
-            typename... PartialElements>
-    static constexpr void for_each_while_impl(Self& self,
-                                              bool& keep_going,
-                                              cursor_t<Self>& cur,
-                                              Function&& func,
-                                              PartialElements&&... partial_elements)
-    {
-        // We need to iterate right to left.
-        if constexpr (I == traits_base::get_arity() - 1) {
-            std::get<I>(cur) = flux::for_each_while(get_base<I>(self),
-                [&](auto&& elem) {
-                    keep_going = std::invoke(func,
-                                             element_t<Self>(FLUX_FWD(partial_elements)..., FLUX_FWD(elem)));
-                    return keep_going;
-                });
-        } else {
-            std::get<I>(cur) = flux::for_each_while(get_base<I>(self),
-                [&](auto&& elem) {
-                    for_each_while_impl<I+1>(
-                            self, keep_going, cur,
-                            func, FLUX_FWD(partial_elements)..., FLUX_FWD(elem));
-                    return keep_going;
-                });
-        }
-    }
-
-
-public:
 
     template <typename Self>
+    requires (ReadKind == read_kind::tuple)
     static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
     {
         return read_(flux::read_at, self, cur);
     }
 
     template <typename Self>
+    requires (ReadKind == read_kind::map)
+    static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
+    -> decltype(auto)
+    {
+        return [&]<std::size_t... N>(std::index_sequence<N...>) -> decltype(auto) {
+            return std::invoke(self.func_, flux::read_at(get_base<N>(self), std::get<N>(cur))...);
+        }(std::make_index_sequence<Arity>{});
+    }
+
+    template <typename Self>
+    requires (ReadKind == read_kind::tuple)
     static constexpr auto move_at(Self& self, cursor_t<Self> const& cur)
     {
         return read_(flux::move_at, self, cur);
     }
 
     template <typename Self>
+    requires (ReadKind == read_kind::tuple)
     static constexpr auto read_at_unchecked(Self& self, cursor_t<Self> const& cur)
     {
         return read_(flux::read_at_unchecked, self, cur);
     }
 
     template <typename Self>
+    requires (ReadKind == read_kind::tuple)
     static constexpr auto move_at_unchecked(Self& self, cursor_t<Self> const& cur)
     {
         return read_(flux::move_at_unchecked, self, cur);
     }
 
     template <typename Self, typename Function>
+    requires (ReadKind == read_kind::tuple)
     static constexpr auto for_each_while(Self& self, Function&& func)
     -> cursor_t<Self>
     {
@@ -259,7 +340,6 @@ public:
     }
 
 };
-
 
 }
 
