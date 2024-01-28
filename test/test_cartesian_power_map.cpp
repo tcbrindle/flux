@@ -9,12 +9,12 @@ namespace {
 
 constexpr auto sum = [](auto... args) { return (args + ...); };
 
-constexpr bool test_cartesian_power_with()
+constexpr bool test_cartesian_power_map()
 {
     {
         std::array arr1{100, 200};
 
-        auto cart = flux::cartesian_power_with<2>(sum, flux::ref(arr1));
+        auto cart = flux::cartesian_power_map<2>(sum, flux::ref(arr1));
         using C = decltype(cart);
 
         static_assert(flux::sequence<C>);
@@ -45,7 +45,7 @@ constexpr bool test_cartesian_power_with()
     {
         std::array arr1{1, 3};
 
-        auto cart = flux::cartesian_power_with<3>(sum, flux::ref(arr1));
+        auto cart = flux::cartesian_power_map<3>(sum, flux::ref(arr1));
         using C = decltype(cart);
 
         static_assert(flux::sequence<C>);
@@ -73,7 +73,7 @@ constexpr bool test_cartesian_power_with()
     // Product with a zero-sized sequence works and produces an empty sequence
     {
         auto emp = flux::empty<int>;
-        auto cart = flux::cartesian_power_with<5>(sum, emp);
+        auto cart = flux::cartesian_power_map<5>(sum, emp);
 
         static_assert(flux::bidirectional_sequence<decltype(cart)>);
 
@@ -89,7 +89,7 @@ constexpr bool test_cartesian_power_with()
         double vals[3][3] = {};
         auto get = [&vals](auto i, auto j) -> double& { return vals[i][j]; };
 
-        auto seq = flux::cartesian_power_with<2>(get, flux::iota(0, 3));
+        auto seq = flux::cartesian_power_map<2>(get, flux::iota(0, 3));
 
         static_assert(std::same_as<flux::element_t<decltype(seq)>, double&>);
 
@@ -104,11 +104,11 @@ constexpr bool test_cartesian_power_with()
 
     return true;
 }
-static_assert(test_cartesian_power_with());
+static_assert(test_cartesian_power_map());
 
-TEST_CASE("cartesian_power_with")
+TEST_CASE("cartesian_power_map")
 {
-    REQUIRE(test_cartesian_power_with());
+    REQUIRE(test_cartesian_power_map());
 }
 
 }
