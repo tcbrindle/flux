@@ -8,6 +8,7 @@
 #include <array>
 #include <algorithm>
 #include <numeric>
+#include <utility>
 
 #include "test_utils.hpp"
 

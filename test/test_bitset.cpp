@@ -6,6 +6,7 @@
 #include "catch.hpp"
 
 #include <array>
+#include <bitset>
 #include <iostream>
 #include <utility>
 
