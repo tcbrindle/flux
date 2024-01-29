@@ -14,19 +14,19 @@
 
 namespace {
 
-constexpr bool test_cartesian_power()
+constexpr bool test_cartesian_product_repeat()
 {
-    // cartesian_power<0> should be empty ( same as cartesian_product<>() )
+    // cartesian_product_repeat<0> should be empty ( same as cartesian_product<>() )
     {
-        auto cart = flux::cartesian_power<0>(std::array{100, 200, 300});
+        auto cart = flux::cartesian_product_repeat<0>(std::array{100, 200, 300});
         using C = decltype(cart);
         static_assert(std::is_same_v<flux::value_t<C>, std::tuple<>>);
 
         STATIC_CHECK(cart.is_empty());
     }
-    // cartesian_power<1> should be the same as cartesian_product<T>()
+    // cartesian_product_repeat<1> should be the same as cartesian_product<T>()
     {
-        auto cart = flux::cartesian_power<1>(std::array{100, 200, 300});
+        auto cart = flux::cartesian_product_repeat<1>(std::array{100, 200, 300});
 
         using C = decltype(cart);
 
@@ -82,7 +82,7 @@ constexpr bool test_cartesian_power()
 
     }
     {
-        auto cart = flux::cartesian_power<2>(std::array{100, 200, 300});
+        auto cart = flux::cartesian_product_repeat<2>(std::array{100, 200, 300});
 
         using C = decltype(cart);
 
@@ -148,7 +148,7 @@ constexpr bool test_cartesian_power()
     }
 
     {
-        auto prod = flux::cartesian_power<3>(std::array{'a', 'b', 'c', 'd'});
+        auto prod = flux::cartesian_product_repeat<3>(std::array{'a', 'b', 'c', 'd'});
         static_assert(prod.size() == 64);
 
         using C = decltype(prod);
@@ -259,11 +259,11 @@ constexpr bool test_cartesian_power()
     return true;
 }
 
-static_assert(test_cartesian_power());
+static_assert(test_cartesian_product_repeat());
 
 }
 
 TEST_CASE("cartesian power")
 {
-    REQUIRE(test_cartesian_power());
+    REQUIRE(test_cartesian_product_repeat());
 }

@@ -14,8 +14,8 @@
 #include <flux/op/begin_end.hpp>
 #include <flux/op/cache_last.hpp>
 #include <flux/op/cartesian_base.hpp>
-#include <flux/op/cartesian_power.hpp>
-#include <flux/op/cartesian_power_map.hpp>
+#include <flux/op/cartesian_product_repeat.hpp>
+#include <flux/op/cartesian_product_repeat_map.hpp>
 #include <flux/op/cartesian_product.hpp>
 #include <flux/op/cartesian_product_map.hpp>
 #include <flux/op/chain.hpp>

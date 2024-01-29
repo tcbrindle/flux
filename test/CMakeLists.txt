@@ -26,8 +26,8 @@ add_executable(test-flux
     test_cache_last.cpp
     test_cartesian_product.cpp
     test_cartesian_product_map.cpp
-    test_cartesian_power.cpp
-    test_cartesian_power_map.cpp
+    test_cartesian_product_repeat.cpp
+    test_cartesian_product_repeat_map.cpp
     test_chain.cpp
     test_chunk.cpp
     test_chunk_by.cpp
