@@ -16,9 +16,6 @@ enum class read_kind { tuple, map };
 template <typename B0, typename...>
 inline constexpr bool cartesian_is_bounded = bounded_sequence<B0>;
 
-template <typename From, typename To>
-using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
-
 template<typename... Ts>
 struct require_single_type {
 };
