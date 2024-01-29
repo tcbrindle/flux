@@ -11,6 +11,50 @@ constexpr auto sum = [](auto... args) { return (args + ...); };
 
 constexpr bool test_cartesian_power_map()
 {
+    // cartesian_power_map<0> should be empty ( same as cartesian_product<>() )
+    {
+        auto make_0_1_pair = [](){ return std::make_pair(0, 1); };
+        auto cart = flux::cartesian_power_map<0>(make_0_1_pair, std::array{100, 200, 300});
+        using C = decltype(cart);
+        static_assert(std::is_same_v<flux::value_t<C>, std::pair<int, int>>);
+
+        STATIC_CHECK(cart.is_empty());
+    }
+    // cartesian_power_map<1> should same as map<T, F>()
+    {
+        std::array arr1{100, 200};
+
+        constexpr auto square_individual = [](auto arg) { return arg * arg; };
+
+        auto cart = flux::cartesian_power_map<1>(square_individual, flux::ref(arr1));
+        using C = decltype(cart);
+
+        static_assert(flux::sequence<C>);
+        static_assert(flux::multipass_sequence<C>);
+        static_assert(flux::bounded_sequence<C>);
+        static_assert(flux::bidirectional_sequence<C>);
+        static_assert(flux::random_access_sequence<C>);
+        static_assert(flux::sized_sequence<C>);
+
+        STATIC_CHECK(flux::size(cart) == 2);
+
+        STATIC_CHECK(check_equal(cart, { 10'000, 40'000 }));
+
+        STATIC_CHECK(check_equal(flux::reverse(flux::ref(cart)),
+                                 { 40'000, 10'000 }));
+
+        // Random access checks
+        STATIC_CHECK(flux::distance(cart, cart.first(), cart.last()) == 2);
+
+        {
+            auto cur = flux::next(cart, cart.first(), 1);
+            STATIC_CHECK(cart[cur] == 40'000);
+            flux::inc(cart, cur, 0);
+            STATIC_CHECK(cart[cur] == 40'000);
+            flux::inc(cart, cur, -1);
+            STATIC_CHECK(cart[cur] == 10'000);
+        }
+    }
     {
         std::array arr1{100, 200};
 
