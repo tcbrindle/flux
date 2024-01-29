@@ -33,13 +33,13 @@ using require_single_type_t = typename require_single_type<Ts...>::type;
 
 template <typename T, std::size_t RepeatCount>
 struct tuple_repeated {
-    constexpr static auto repeat_tuple(T value) {
-        return [value]<std::size_t... Is>(std::index_sequence<Is...>) {
-            return std::tuple{(static_cast<void>(Is), value)...};
-        }(std::make_index_sequence<RepeatCount>{});
-    }
+    template <std::size_t I>
+    using repeater = T;
 
-    using type = decltype(repeat_tuple(std::declval<T>()));
+    template <std::size_t... Is>
+    static auto make_tuple(std::index_sequence<Is...>) -> std::tuple<repeater<Is>...>;    
+
+    using type = decltype(make_tuple(std::make_index_sequence<RepeatCount>{}));
 };
 
 template <typename T, std::size_t RepeatCount>
