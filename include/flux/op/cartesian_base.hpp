@@ -65,13 +65,13 @@ private:
 
     template<std::size_t I, typename Self>
     requires (CartesianKind == cartesian_kind::power)
-    static constexpr auto&& get_base(Self& self) {
+    static constexpr auto& get_base(Self& self) {
         return self.base_;
     }
 
     template<std::size_t I, typename Self>
     requires (CartesianKind == cartesian_kind::product)
-    static constexpr auto&& get_base(Self& self) {
+    static constexpr auto& get_base(Self& self) {
         return std::get<I>(self.bases_);
     }
 
