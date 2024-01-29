@@ -26,6 +26,10 @@ private:
     FLUX_NO_UNIQUE_ADDRESS std::tuple<Bases...> bases_;
 
 public:
+    constexpr explicit cartesian_product_adaptor(decays_to<Bases> auto&&... bases)
+        : bases_(FLUX_FWD(bases)...)
+    {}
+    
     using flux_sequence_traits = cartesian_traits_base<
         sizeof...(Bases),
         cartesian_kind::product,
@@ -33,12 +37,6 @@ public:
         Bases...
     >;
     friend flux_sequence_traits::impl;
-
-    constexpr explicit cartesian_product_adaptor(decays_to<Bases> auto&&... bases)
-        : bases_(FLUX_FWD(bases)...)
-    {}
-
-
 };
 
 struct cartesian_product_fn {
