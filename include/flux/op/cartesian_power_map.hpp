@@ -55,8 +55,10 @@ struct cartesian_power_map_fn
 
 } // namespace detail
 
-template <std::size_t PowN>
-FLUX_EXPORT inline constexpr auto cartesian_power_map = detail::cartesian_power_map_fn<PowN>{};
+FLUX_EXPORT
+template <distance_t N>
+    requires (N >= 0)
+inline constexpr auto cartesian_power_map = detail::cartesian_power_map_fn<N>{};
 
 } // namespace flux
 
