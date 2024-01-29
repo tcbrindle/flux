@@ -218,7 +218,7 @@ template <distance_t N>
 struct adjacent_map_fn {
     template <adaptable_sequence Seq, typename Func>
         requires multipass_sequence<Seq> &&
-            repeated_invocable<Func, element_t<Seq>, N>
+                 repeated_invocable<Func, element_t<Seq>, N>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Func func) const -> multipass_sequence auto
     {

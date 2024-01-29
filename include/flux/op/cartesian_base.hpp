@@ -62,14 +62,14 @@ private:
 
     template<std::size_t I, typename Self>
     static constexpr auto& get_base(Self& self)
-    requires (CartesianKind == cartesian_kind::power)
+        requires (CartesianKind == cartesian_kind::power)
     {
         return self.base_;
     }
 
     template<std::size_t I, typename Self>
     static constexpr auto& get_base(Self& self)
-    requires (CartesianKind == cartesian_kind::product)
+        requires (CartesianKind == cartesian_kind::product)
     {
         return std::get<I>(self.bases_);
     }
@@ -168,7 +168,7 @@ private:
     template <typename Fn, typename Self>
     static constexpr auto read_(Fn& fn, Self& self, cursor_t<Self> const& cur)
     -> decltype(auto)
-    requires (ReadKind == read_kind::tuple)
+        requires (ReadKind == read_kind::tuple)
     {
         return [&]<std::size_t... N>(std::index_sequence<N...>) {
             return std::tuple<decltype(read1_<N>(fn, self, cur))...>(read1_<N>(fn, self, cur)...);
@@ -209,7 +209,7 @@ public:
 
     template <typename Self>
     static constexpr auto first(Self& self)
-    requires (CartesianKind == cartesian_kind::product)
+        requires (CartesianKind == cartesian_kind::product)
     {
         return std::apply([](auto&&... args) {
             return std::tuple(flux::first(FLUX_FWD(args))...);
@@ -218,7 +218,7 @@ public:
 
     template <typename Self>
     static constexpr auto first(Self& self)
-    requires (CartesianKind == cartesian_kind::power)
+        requires (CartesianKind == cartesian_kind::power)
     {
         return []<std::size_t... Is>(auto&& arg, std::index_sequence<Is...>) {
             std::array<cursor_t<require_single_type_t<Bases...>>, Arity> cur = {(static_cast<void>(Is), flux::first(arg))...};
@@ -228,8 +228,8 @@ public:
 
     template <typename Self>
     static constexpr auto size(Self& self) -> distance_t
-    requires (CartesianKind == cartesian_kind::product
-              && (sized_sequence<Bases> && ...))
+        requires (CartesianKind == cartesian_kind::product
+                  && (sized_sequence<Bases> && ...))
     {
         return std::apply([](auto&... base) {
             return (flux::size(base) * ...);
@@ -238,8 +238,8 @@ public:
 
     template <typename Self>
     static constexpr auto size(Self& self) -> distance_t
-    requires (CartesianKind == cartesian_kind::power
-              && (sized_sequence<Bases> && ...))
+        requires (CartesianKind == cartesian_kind::power
+                  && (sized_sequence<Bases> && ...))
     {
         return num::checked_pow(flux::size(self.base_), Arity);
     }
@@ -254,16 +254,16 @@ public:
 
     template <typename Self>
     static constexpr auto dec(Self& self, cursor_t<Self>& cur) -> cursor_t<Self>&
-    requires ((bidirectional_sequence<Bases> && ...) &&
-              (bounded_sequence<Bases> && ...))
+        requires ((bidirectional_sequence<Bases> && ...) &&
+                  (bounded_sequence<Bases> && ...))
     {
         return dec_impl<Arity - 1>(self, cur);
     }
 
     template <typename Self>
     static constexpr auto inc(Self& self, cursor_t<Self>& cur, distance_t offset) -> cursor_t<Self>&
-    requires ((random_access_sequence<Bases> && ...) &&
-              (sized_sequence<Bases> && ...))
+        requires ((random_access_sequence<Bases> && ...) &&
+                  (sized_sequence<Bases> && ...))
     {
         return ra_inc_impl<Arity - 1>(self, cur, offset);
     }
@@ -276,7 +276,7 @@ public:
 
     template <typename Self>
     static constexpr auto last(Self& self) -> cursor_t<Self>
-    requires cartesian_is_bounded<Bases...>
+        requires cartesian_is_bounded<Bases...>
     {
         auto cur = first(self);
         std::get<0>(cur) = flux::last(get_base<0>(self));
@@ -287,15 +287,15 @@ public:
     static constexpr auto distance(Self& self,
                                         cursor_t<Self> const& from,
                                         cursor_t<Self> const& to) -> distance_t
-    requires ((random_access_sequence<Bases> && ...) &&
-              (sized_sequence<Bases> && ...))
+        requires ((random_access_sequence<Bases> && ...) &&
+                  (sized_sequence<Bases> && ...))
     {
         return distance_impl<Arity - 1>(self, from, to);
     }
 
     template <typename Self>
     static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
-    requires (ReadKind == read_kind::tuple)
+        requires (ReadKind == read_kind::tuple)
     {
         return read_(flux::read_at, self, cur);
     }
@@ -303,7 +303,7 @@ public:
     template <typename Self>
     static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
     -> decltype(auto)
-    requires (ReadKind == read_kind::map)
+        requires (ReadKind == read_kind::map)
     {
         return [&]<std::size_t... N>(std::index_sequence<N...>) -> decltype(auto) {
             return std::invoke(self.func_, flux::read_at(get_base<N>(self), std::get<N>(cur))...);
@@ -312,21 +312,21 @@ public:
 
     template <typename Self>
     static constexpr auto move_at(Self& self, cursor_t<Self> const& cur)
-    requires (ReadKind == read_kind::tuple)
+        requires (ReadKind == read_kind::tuple)
     {
         return read_(flux::move_at, self, cur);
     }
 
     template <typename Self>
     static constexpr auto read_at_unchecked(Self& self, cursor_t<Self> const& cur)
-    requires (ReadKind == read_kind::tuple)
+        requires (ReadKind == read_kind::tuple)
     {
         return read_(flux::read_at_unchecked, self, cur);
     }
 
     template <typename Self>
     static constexpr auto move_at_unchecked(Self& self, cursor_t<Self> const& cur)
-    requires (ReadKind == read_kind::tuple)
+        requires (ReadKind == read_kind::tuple)
     {
         return read_(flux::move_at_unchecked, self, cur);
     }
@@ -334,7 +334,7 @@ public:
     template <typename Self, typename Function>
     static constexpr auto for_each_while(Self& self, Function&& func)
     -> cursor_t<Self>
-    requires (ReadKind == read_kind::tuple)
+        requires (ReadKind == read_kind::tuple)
     {
         bool keep_going = true;
         cursor_t<Self> cur;
