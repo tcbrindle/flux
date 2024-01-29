@@ -10,6 +10,7 @@
 
 #include <flux/op/begin_end.hpp>
 #include <flux/op/reverse.hpp>
+#include <flux/op/requirements.hpp>
 #include <flux/op/zip.hpp>
 #include <flux/source/iota.hpp>
 
