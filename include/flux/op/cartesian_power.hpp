@@ -49,8 +49,12 @@ struct cartesian_power_fn {
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const
     {
-        return cartesian_power_adaptor<PowN, std::decay_t<Seq>>(
-                    FLUX_FWD(seq));
+        if constexpr(PowN == 0) {
+            return empty<std::tuple<>>;
+        } else {
+            return cartesian_power_adaptor<PowN, std::decay_t<Seq>>(
+                FLUX_FWD(seq));
+        }
     }
 };
 

@@ -44,8 +44,12 @@ struct cartesian_power_map_fn
     [[nodiscard]]
     constexpr auto operator()(Func func, Seq&& seq) const
     {
-        return cartesian_power_map_adaptor<PowN, Func, std::decay_t<Seq>>(
-                    std::move(func), FLUX_FWD(seq));
+        if constexpr(PowN == 0) {
+            return empty<std::invoke_result_t<Func>>;
+        } else {
+            return cartesian_power_map_adaptor<PowN, Func, std::decay_t<Seq>>(
+                std::move(func), FLUX_FWD(seq));
+        }
     }
 };
 
