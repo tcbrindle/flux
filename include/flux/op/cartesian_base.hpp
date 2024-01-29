@@ -254,14 +254,14 @@ public:
     }
 
     template <typename Self>
-    requires (bidirectional_sequence<const_like_t<Self, Bases>> && ...) &&
-    (bounded_sequence<const_like_t<Self, Bases>> && ...)
+    requires (bidirectional_sequence<Bases> && ...) &&
+    (bounded_sequence<Bases> && ...)
     static constexpr auto dec(Self& self, cursor_t<Self>& cur) -> cursor_t<Self>& {
         return dec_impl<Arity - 1>(self, cur);
     }
 
     template <typename Self>
-    requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
+    requires (random_access_sequence<Bases> && ...) &&
     (sized_sequence<Bases> && ...)
     static constexpr auto inc(Self& self, cursor_t<Self>& cur, distance_t offset) -> cursor_t<Self>& {
         return ra_inc_impl<Arity - 1>(self, cur, offset);
@@ -274,7 +274,7 @@ public:
     }
 
     template <typename Self>
-    requires cartesian_is_bounded<const_like_t<Self, Bases>...>
+    requires cartesian_is_bounded<Bases...>
     static constexpr auto last(Self& self) -> cursor_t<Self>
     {
         auto cur = first(self);
@@ -283,7 +283,7 @@ public:
     }
 
     template <typename Self>
-    requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
+    requires (random_access_sequence<Bases> && ...) &&
     (sized_sequence<Bases> && ...)
     static constexpr auto distance(Self& self,
                                         cursor_t<Self> const& from,
