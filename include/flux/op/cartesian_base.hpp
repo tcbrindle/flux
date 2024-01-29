@@ -220,10 +220,11 @@ public:
     static constexpr auto first(Self& self)
         requires (CartesianKind == cartesian_kind::power)
     {
-        return []<std::size_t... Is>(auto&& arg, std::index_sequence<Is...>) {
-            std::array<cursor_t<require_single_type_t<Bases...>>, Arity> cur = {(static_cast<void>(Is), flux::first(arg))...};
+        auto base_cur = flux::first(self.base_);
+        return [&base_cur]<std::size_t... Is>(std::index_sequence<Is...>) {
+            std::array<cursor_t<require_single_type_t<Bases...>>, Arity> cur = {(static_cast<void>(Is), base_cur)...};
             return cur;
-        }(self.base_, std::make_index_sequence<Arity>{});
+        }(std::make_index_sequence<Arity>{});
     }
 
     template <typename Self>
