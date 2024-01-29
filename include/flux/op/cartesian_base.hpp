@@ -229,7 +229,7 @@ public:
 
     template <typename Self>
     requires (CartesianKind == cartesian_kind::product
-              && (sized_sequence<const_like_t<Self, Bases>> && ...))
+              && (sized_sequence<Bases> && ...))
     static constexpr auto size(Self& self) -> distance_t
     {
         return std::apply([](auto&... base) {
@@ -239,7 +239,7 @@ public:
 
     template <typename Self>
     requires (CartesianKind == cartesian_kind::power
-              && (sized_sequence<const_like_t<Self, Bases>> && ...))
+              && (sized_sequence<Bases> && ...))
     static constexpr auto size(Self& self) -> distance_t
     {
         return num::checked_pow(flux::size(self.base_), Arity);
@@ -262,7 +262,7 @@ public:
 
     template <typename Self>
     requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
-    (sized_sequence<const_like_t<Self, Bases>> && ...)
+    (sized_sequence<Bases> && ...)
     static constexpr auto inc(Self& self, cursor_t<Self>& cur, distance_t offset) -> cursor_t<Self>& {
         return ra_inc_impl<Arity - 1>(self, cur, offset);
     }
@@ -284,7 +284,7 @@ public:
 
     template <typename Self>
     requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
-    (sized_sequence<const_like_t<Self, Bases>> && ...)
+    (sized_sequence<Bases> && ...)
     static constexpr auto distance(Self& self,
                                         cursor_t<Self> const& from,
                                         cursor_t<Self> const& to) -> distance_t
