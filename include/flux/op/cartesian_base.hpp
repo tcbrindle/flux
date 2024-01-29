@@ -111,8 +111,9 @@ private:
     static constexpr auto ra_inc_impl(Self& self, cursor_t<Self>& cur, distance_t offset)
     -> cursor_t<Self>&
     {
-        if (offset == 0)
+        if (offset == 0) {
             return cur;
+        }
 
         auto& base = get_base<I>(self);
         const auto this_index = flux::distance(base, flux::first(base), std::get<I>(cur));
