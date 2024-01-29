@@ -61,8 +61,9 @@ struct cartesian_power_fn {
 
 } // end namespace detail
 
+FLUX_EXPORT
 template<std::size_t PowN>
-FLUX_EXPORT inline constexpr auto cartesian_power = detail::cartesian_power_fn<PowN>{};
+inline constexpr auto cartesian_power = detail::cartesian_power_fn<PowN>{};
 
 } // end namespace flux
 
