@@ -9,6 +9,7 @@
 #include <array>
 #include <numeric>
 #include <ranges>
+#include <utility>
 
 #include "test_utils.hpp"
 

@@ -6,6 +6,7 @@
 #include "catch.hpp"
 
 #include <iostream>
+#include <utility>
 
 #include "test_utils.hpp"
 
