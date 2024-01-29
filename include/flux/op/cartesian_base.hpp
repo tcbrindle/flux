@@ -16,18 +16,6 @@ enum class read_kind { tuple, map };
 template <typename B0, typename...>
 inline constexpr bool cartesian_is_bounded = bounded_sequence<B0>;
 
-template<typename... Ts>
-struct require_single_type {
-};
-
-template<typename T>
-struct require_single_type<T> {
-    using type = T;
-};
-
-template<typename... Ts>
-using require_single_type_t = typename require_single_type<Ts...>::type;
-
 template <typename T, std::size_t RepeatCount>
 struct tuple_repeated {
     template <std::size_t I>
@@ -222,7 +210,8 @@ public:
     {
         auto base_cur = flux::first(self.base_);
         return [&base_cur]<std::size_t... Is>(std::index_sequence<Is...>) {
-            std::array<cursor_t<require_single_type_t<Bases...>>, Arity> cur = {(static_cast<void>(Is), base_cur)...};
+            static_assert(sizeof...(Bases) == 1);
+            std::array<cursor_t<Bases>..., Arity> cur = {(static_cast<void>(Is), base_cur)...};
             return cur;
         }(std::make_index_sequence<Arity>{});
     }
