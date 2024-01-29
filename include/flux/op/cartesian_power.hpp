@@ -5,8 +5,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_CARTESIAN_PRODUCT_REPEAT_HPP_INCLUDED
-#define FLUX_OP_CARTESIAN_PRODUCT_REPEAT_HPP_INCLUDED
+#ifndef FLUX_OP_CARTESIAN_POWER_HPP_INCLUDED
+#define FLUX_OP_CARTESIAN_POWER_HPP_INCLUDED
 
 #include <flux/core.hpp>
 #include <flux/core/numeric.hpp>
@@ -20,13 +20,13 @@ namespace flux {
 namespace detail {
 
 template <std::size_t PowN, sequence Base>
-struct cartesian_product_repeat_adaptor
-    : inline_sequence_base<cartesian_product_repeat_adaptor<PowN, Base>> {
+struct cartesian_power_adaptor
+    : inline_sequence_base<cartesian_power_adaptor<PowN, Base>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
 
 public:
-    constexpr explicit cartesian_product_repeat_adaptor(Base&& base)
+    constexpr explicit cartesian_power_adaptor(Base&& base)
         : base_(FLUX_FWD(base))
     {}
 
@@ -42,7 +42,7 @@ public:
 
 
 template<std::size_t PowN>
-struct cartesian_product_repeat_fn {
+struct cartesian_power_fn {
 
     template <adaptable_sequence Seq>
         requires multipass_sequence<Seq>
@@ -52,7 +52,7 @@ struct cartesian_product_repeat_fn {
         if constexpr(PowN == 0) {
             return empty<std::tuple<>>;
         } else {
-            return cartesian_product_repeat_adaptor<PowN, std::decay_t<Seq>>(
+            return cartesian_power_adaptor<PowN, std::decay_t<Seq>>(
                 FLUX_FWD(seq));
         }
     }
@@ -63,7 +63,7 @@ struct cartesian_product_repeat_fn {
 
 FLUX_EXPORT
 template<std::size_t PowN>
-inline constexpr auto cartesian_product_repeat = detail::cartesian_product_repeat_fn<PowN>{};
+inline constexpr auto cartesian_power = detail::cartesian_power_fn<PowN>{};
 
 } // end namespace flux
 
