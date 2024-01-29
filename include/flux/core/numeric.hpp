@@ -177,8 +177,8 @@ inline constexpr auto checked_pow =
                                    std::source_location loc = std::source_location::current())
                 -> T
 {
-    T res{base};
-    for(U i{1}; i < exponent; i++) {
+    T res{1};
+    for(U i{0}; i < exponent; i++) {
         res = checked_mul(res, base, loc);
     }
     return res;
