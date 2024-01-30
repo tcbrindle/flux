@@ -120,9 +120,56 @@ struct unpack_fn {
     }
 };
 
+struct flip_fn {
+    template <typename Fn>
+    struct flipped {
+        Fn fn;
+
+        template <typename T, typename U, typename... Args>
+            requires std::invocable<Fn&, U, T, Args...>
+        constexpr auto operator()(T&& t, U&& u, Args&&... args) &
+            -> decltype(auto)
+        {
+            return std::invoke(fn, FLUX_FWD(u), FLUX_FWD(t), FLUX_FWD(args)...);
+        }
+
+        template <typename T, typename U, typename... Args>
+            requires std::invocable<Fn const&, U, T, Args...>
+        constexpr auto operator()(T&& t, U&& u, Args&&... args) const&
+            -> decltype(auto)
+        {
+            return std::invoke(fn, FLUX_FWD(u), FLUX_FWD(t), FLUX_FWD(args)...);
+        }
+
+        template <typename T, typename U, typename... Args>
+            requires std::invocable<Fn, U, T, Args...>
+        constexpr auto operator()(T&& t, U&& u, Args&&... args) &&
+            -> decltype(auto)
+        {
+            return std::invoke(std::move(fn), FLUX_FWD(u), FLUX_FWD(t), FLUX_FWD(args)...);
+        }
+
+        template <typename T, typename U, typename... Args>
+            requires std::invocable<Fn const, U, T, Args...>
+        constexpr auto operator()(T&& t, U&& u, Args&&... args) const &&
+            -> decltype(auto)
+        {
+            return std::invoke(std::move(fn), FLUX_FWD(u), FLUX_FWD(t), FLUX_FWD(args)...);
+        }
+    };
+
+    template <typename Fn>
+    [[nodiscard]]
+    constexpr auto operator()(Fn func) const
+    {
+        return flipped<Fn>{std::move(func)};
+    }
+};
+
 } // namespace detail
 
 FLUX_EXPORT inline constexpr auto unpack = detail::unpack_fn{};
+FLUX_EXPORT inline constexpr auto flip = detail::flip_fn{};
 
 namespace pred {
 
