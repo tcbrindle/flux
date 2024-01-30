@@ -72,7 +72,11 @@ int main()
         auto bench = an::Bench().relative(true).minEpochIterations(10);
 
         test_sort("random doubles (std)", std::ranges::sort, vec, bench);
-        test_sort("random doubles (flux)", flux::sort, vec, bench);
+        // Use a custom comparator because we know we don't have NaNs
+        auto custom_sort = [](auto& arg) {
+            return flux::sort(arg, std::compare_weak_order_fallback);
+        };
+        test_sort("random doubles (flux)", custom_sort, vec, bench);
     }
 
     {
