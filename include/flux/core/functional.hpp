@@ -336,6 +336,7 @@ struct max_fn {
 } // namespace detail
 
 FLUX_EXPORT inline constexpr auto compare = std::compare_three_way{};
+FLUX_EXPORT inline constexpr auto reverse_compare = flip(compare);
 FLUX_EXPORT inline constexpr auto min = detail::min_fn{};
 FLUX_EXPORT inline constexpr auto max = detail::max_fn{};
 
