@@ -59,14 +59,13 @@ public:
                 return;
             }
 
-            if (std::invoke(self.cmp_, flux::read_at(self.base2_, cur.base2_cursor), 
-                                       flux::read_at(self.base1_, cur.base1_cursor)) < 0) {
+            auto r = std::invoke(self.cmp_, flux::read_at(self.base1_, cur.base1_cursor),
+                                            flux::read_at(self.base2_, cur.base2_cursor));
+
+            if (r == std::weak_ordering::greater) {
                 cur.active_ = cursor_type::second;
                 return;
-            }
-
-            if (not (std::invoke(self.cmp_, flux::read_at(self.base1_, cur.base1_cursor),
-                                           flux::read_at(self.base2_, cur.base2_cursor)) < 0)) {
+            } else if (r == std::weak_ordering::equivalent) {
                 flux::inc(self.base2_, cur.base2_cursor);
             }
 
@@ -188,13 +187,12 @@ public:
                     return;
                 }
 
-                if(std::invoke(self.cmp_, flux::read_at(self.base1_, cur.base1_cursor),
-                                          flux::read_at(self.base2_, cur.base2_cursor)) < 0) {
-                    return;
-                }
+                auto r = std::invoke(self.cmp_, flux::read_at(self.base1_, cur.base1_cursor),
+                                                flux::read_at(self.base2_, cur.base2_cursor));
 
-                if(not (std::invoke(self.cmp_, flux::read_at(self.base2_, cur.base2_cursor),
-                                              flux::read_at(self.base1_, cur.base1_cursor)) < 0)) {
+                if (r == std::weak_ordering::less) {
+                    return;
+                } else if (r == std::weak_ordering::equivalent) {
                     flux::inc(self.base1_, cur.base1_cursor);
                 }
 
@@ -294,19 +292,17 @@ public:
                     return;
                 }
 
-                if(std::invoke(self.cmp_, flux::read_at(self.base1_, cur.base1_cursor), 
-                                          flux::read_at(self.base2_, cur.base2_cursor)) < 0) {
+                auto r = std::invoke(self.cmp_, flux::read_at(self.base1_, cur.base1_cursor),
+                                                flux::read_at(self.base2_, cur.base2_cursor));
+
+                if (r == std::weak_ordering::less) {
                     cur.state_ = cursor_type::first;
                     return;
+                } else if (r == std::weak_ordering::greater) {
+                    cur.state_ = cursor_type::second;
+                    return;
                 } else {
-                    if(std::invoke(self.cmp_, flux::read_at(self.base2_, cur.base2_cursor), 
-                                              flux::read_at(self.base1_, cur.base1_cursor)) < 0) {
-                        cur.state_ = cursor_type::second;
-                        return;
-                    } else {
-                        flux::inc(self.base1_, cur.base1_cursor);
-                    }
-
+                    flux::inc(self.base1_, cur.base1_cursor);
                     flux::inc(self.base2_, cur.base2_cursor);
                 }
             }
@@ -436,16 +432,15 @@ public:
             while(not flux::is_last(self.base1_, cur.base1_cursor) && 
                   not flux::is_last(self.base2_, cur.base2_cursor))
             {
-                if(std::invoke(self.cmp_, flux::read_at(self.base1_, cur.base1_cursor), 
-                                          flux::read_at(self.base2_, cur.base2_cursor)) < 0) {
-                    flux::inc(self.base1_, cur.base1_cursor);
-                } else {
+                auto r = std::invoke(self.cmp_, flux::read_at(self.base1_, cur.base1_cursor),
+                                                flux::read_at(self.base2_, cur.base2_cursor));
 
-                    if(not (std::invoke(self.cmp_, flux::read_at(self.base2_, cur.base2_cursor),
-                                                  flux::read_at(self.base1_, cur.base1_cursor)) < 0)) {
-                        return;
-                    }
+                if (r == std::weak_ordering::less) {
+                    flux::inc(self.base1_, cur.base1_cursor);
+                } else if (r == std::weak_ordering::greater) {
                     flux::inc(self.base2_, cur.base2_cursor);
+                } else {
+                    return;
                 }
             }
         }
