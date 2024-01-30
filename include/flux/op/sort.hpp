@@ -18,10 +18,7 @@ struct sort_fn {
     constexpr auto operator()(Seq&& seq, Cmp cmp = {}) const
     {
         auto wrapper = flux::unchecked(flux::from_fwd_ref(FLUX_FWD(seq)));
-        auto comparator = [&cmp](auto&& lhs, auto&& rhs) {
-            return std::is_lt(std::invoke(cmp, FLUX_FWD(lhs), FLUX_FWD(rhs)));
-        };
-        detail::pdqsort(wrapper, comparator);
+        detail::pdqsort(wrapper, cmp);
     }
 };
 

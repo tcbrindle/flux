@@ -40,15 +40,10 @@ inline constexpr int pdqsort_cacheline_size = 64;
 template <typename T>
 inline constexpr bool is_default_compare_v = false;
 
-template <typename T>
-inline constexpr bool is_default_compare_v<std::less<T>> = true;
-template <typename T>
-inline constexpr bool is_default_compare_v<std::greater<T>> = true;
 template <>
-inline constexpr bool is_default_compare_v<std::ranges::less> = true;
+inline constexpr bool is_default_compare_v<std::compare_three_way> = true;
 template <>
-inline constexpr bool is_default_compare_v<std::ranges::greater> = true;
-
+inline constexpr bool is_default_compare_v<decltype(flux::cmp::reverse_compare)> = true;
 
 // Returns floor(log2(n)), assumes n > 0.
 template <class T>
@@ -619,10 +614,14 @@ constexpr void pdqsort(Seq& seq, Comp& comp)
          is_default_compare_v<std::remove_const_t<Comp>> &&
          std::is_arithmetic_v<value_t<Seq>>;
 
+    auto comp_wrapper = [&comp](auto&& lhs, auto&& rhs) -> bool {
+        return std::is_lt(std::invoke(comp, FLUX_FWD(lhs), FLUX_FWD(rhs)));
+    };
+
     detail::pdqsort_loop<Branchless>(seq,
                                      first(seq),
                                      last(seq),
-                                     comp,
+                                     comp_wrapper,
                                      detail::log2(size(seq)));
 }
 
