@@ -175,7 +175,6 @@ constexpr bool test_comparisons()
 
         STATIC_CHECK(cmp::min(t1, t2, flux::proj(cmp::compare, &Test::i)) == t1);
     }
-    }
 
     // max of two same-type non-const lvalue references is an lvalue
     {
@@ -222,6 +221,21 @@ constexpr bool test_comparisons()
         Test t2{1, 2.0};
 
         STATIC_CHECK(cmp::max(t1, t2, flux::proj(cmp::compare, &Test::i)) == t2);
+    }
+
+    // Reverse comparisons give the expected answer
+    {
+        int i = 1, j = 2;
+        int& min = cmp::min(i, j, cmp::reverse_compare);
+        int& max = cmp::max(i, j, cmp::reverse_compare);
+        STATIC_CHECK(&min == &j);
+        STATIC_CHECK(&max == &i);
+
+        Test t1{1, 3.0};
+        Test t2{1, 2.0};
+
+        STATIC_CHECK(&cmp::min(t1, t2, flux::proj(cmp::reverse_compare, &Test::i)) == &t1);
+        STATIC_CHECK(&cmp::max(t1, t2, flux::proj(cmp::reverse_compare, &Test::i)) == &t2);
     }
 
     return true;
