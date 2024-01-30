@@ -154,21 +154,12 @@ constexpr bool test_comparisons()
         STATIC_CHECK(cmp::min(i, i + 1) == 1);
     }
 
-    // mixed-type min is a prvalue
-    {
-        int const i = 10;
-        long const j = 5;
-        using M = decltype(cmp::min(i, j));
-        static_assert(std::same_as<M, long>);
-        STATIC_CHECK(cmp::min(i, j) == 5);
-    }
-
     // Custom comparators work okay with min()
     {
-        Test t1{1, 3.0};
-        Test t2{1, 2.0};
+        Test t1{3, 1.0};
+        Test t2{2, 1.0};
 
-        auto cmp_test = [](Test t1, Test t2) { return t1.d < t2.d; };
+        auto cmp_test = [](Test t1, Test t2) { return t1.i <=> t2.i; };
 
         STATIC_CHECK(cmp::min(t1, t2, cmp_test) == t2);
     }
@@ -182,7 +173,8 @@ constexpr bool test_comparisons()
         Test t1{1, 3.0};
         Test t2{1, 2.0};
 
-        STATIC_CHECK(cmp::min(t1, t2, flux::proj(std::less{}, &Test::i)) == t1);
+        STATIC_CHECK(cmp::min(t1, t2, flux::proj(cmp::compare, &Test::i)) == t1);
+    }
     }
 
     // max of two same-type non-const lvalue references is an lvalue
@@ -210,23 +202,14 @@ constexpr bool test_comparisons()
         STATIC_CHECK(cmp::max(i, i + 1) == 2);
     }
 
-    // mixed-type max is a prvalue
-    {
-        int const i = 10;
-        long const j = 5;
-        using M = decltype(cmp::max(i, j));
-        static_assert(std::same_as<M, long>);
-        STATIC_CHECK(cmp::max(i, j) == 10);
-    }
-
     // Custom comparators work okay with max()
     {
         Test t1{1, 3.0};
         Test t2{1, 2.0};
 
-        auto cmp_test = [](Test t1, Test t2) { return t1.d < t2.d; };
+        auto cmp_test = [](Test t1, Test t2) { return t1.i <=> t2.i; };
 
-        STATIC_CHECK(cmp::max(t1, t2, cmp_test) == t1);
+        STATIC_CHECK(cmp::max(t1, t2, cmp_test) == t2);
     }
 
     // If arguments are equal, max() returns the second
@@ -238,7 +221,7 @@ constexpr bool test_comparisons()
         Test t1{1, 3.0};
         Test t2{1, 2.0};
 
-        STATIC_CHECK(cmp::max(t1, t2, flux::proj(std::less{}, &Test::i)) == t2);
+        STATIC_CHECK(cmp::max(t1, t2, flux::proj(cmp::compare, &Test::i)) == t2);
     }
 
     return true;

@@ -21,6 +21,11 @@ FLUX_EXPORT
 template <typename From, typename To>
 concept decays_to = std::same_as<std::remove_cvref_t<From>, To>;
 
+FLUX_EXPORT
+template <typename T, typename U>
+concept same_decayed = std::same_as<std::remove_cvref_t<T>,
+                                    std::remove_cvref_t<U>>;
+
 namespace detail {
 
 struct copy_fn {

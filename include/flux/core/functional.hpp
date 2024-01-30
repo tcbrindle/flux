@@ -261,29 +261,34 @@ namespace cmp {
 namespace detail {
 
 struct min_fn {
-    template <typename T, typename U, typename Cmp = std::ranges::less>
-        requires std::strict_weak_order<Cmp&, T&, U&>
+    template <typename T, typename U, typename Cmp = std::compare_three_way>
+        requires same_decayed<T, U> &&
+                 std::common_reference_with<T, U> &&
+                 ordering_invocable<Cmp&, T&, U&, std::weak_ordering>
     [[nodiscard]]
-    constexpr auto operator()(T&& t, U&& u, Cmp cmp = Cmp{}) const
+    constexpr auto operator()(T&& a, U&& b, Cmp cmp = Cmp{}) const
         -> std::common_reference_t<T, U>
     {
-        return std::invoke(cmp, u, t) ? FLUX_FWD(u) : FLUX_FWD(t);
+        return std::invoke(cmp, b, a) < 0 ? FLUX_FWD(b) : FLUX_FWD(a);
     }
 };
 
 struct max_fn {
-    template <typename T, typename U, typename Cmp = std::ranges::less>
-        requires std::strict_weak_order<Cmp&, T&, U&>
+    template <typename T, typename U, typename Cmp = std::compare_three_way>
+        requires same_decayed<T, U> &&
+                 std::common_reference_with<T, U> &&
+                 ordering_invocable<Cmp&, T&, U&, std::weak_ordering>
     [[nodiscard]]
-    constexpr auto operator()(T&& t, U&& u, Cmp cmp = Cmp{}) const
+    constexpr auto operator()(T&& a, U&& b, Cmp cmp = Cmp{}) const
         -> std::common_reference_t<T, U>
     {
-        return !std::invoke(cmp, u, t) ? FLUX_FWD(u) : FLUX_FWD(t);
+        return !(std::invoke(cmp, b, a) < 0) ? FLUX_FWD(b) : FLUX_FWD(a);
     }
 };
 
 } // namespace detail
 
+FLUX_EXPORT inline constexpr auto compare = std::compare_three_way{};
 FLUX_EXPORT inline constexpr auto min = detail::min_fn{};
 FLUX_EXPORT inline constexpr auto max = detail::max_fn{};
 
