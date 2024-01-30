@@ -1119,7 +1119,7 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
 ^^^^^^^^^^^^^^^^^^
 
 ..  function::
-    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::less> \
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way> \
         requires strict_weak_order_for<Cmp, Seq1> && strict_weak_order_for<Cmp, Seq2> \
     auto set_difference(Seq1 seq1, Seq2 seq2, Cmp cmp = {}) -> sequence auto;
 
@@ -1131,7 +1131,7 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
 
     :param seq1: The first sorted sequence.
     :param seq2: The second sorted sequence.
-    :param cmp: A binary predicate that takes two elements as arguments and returns true if the first element is less than the second.
+    :param cmp: A binary comparator whose return type is convertible to :type:`std::weak_ordering`. Both sequences must be sorted with respect to this comparator.
 
     :returns: A sequence adaptor that yields those elements of `seq1` which do not also appear in `seq2`.
 
@@ -1179,7 +1179,7 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
 ^^^^^^^^^^^^^^^^^^^^
 
 ..  function::
-    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::less> \
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way> \
         requires strict_weak_order_for<Cmp, Seq1> && strict_weak_order_for<Cmp, Seq2> \
     auto set_intersection(Seq1 seq1, Seq2 seq2, Cmp cmp = {}) -> sequence auto;
 
@@ -1191,7 +1191,7 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
 
     :param seq1: The first sorted sequence.
     :param seq2: The second sorted sequence.
-    :param cmp: A binary predicate that takes two elements as arguments and returns true if the first element is less than the second.
+    :param cmp: A binary comparator whose return type is convertible to :type:`std::weak_ordering`. Both sequences must be sorted with respect to this comparator.
 
     :returns: A sequence adaptor that represents the set intersection of the two input sequences.
 
@@ -1239,7 +1239,7 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ..  function::
-    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::less> \
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way> \
         requires see_below \
     auto set_symmetric_difference(Seq1 seq1, Seq2 seq2, Cmp cmp = {}) -> sequence auto;
 
@@ -1264,6 +1264,8 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
 
     :param seq1: The first sequence to merge.
     :param seq2: The second sequence to merge.
+    :param cmp: A binary comparator whose return type is convertible to :type:`std::weak_ordering`. Both sequences must be sorted with respect to this comparator.
+
     :returns: A sequence adaptor that yields elements of `seq1` and `seq2` which do not appear in both sequences.
 
     :models:
@@ -1310,7 +1312,7 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
 ^^^^^^^^^^^^^
 
 ..  function::
-    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::less> \
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way> \
         requires see_below \
     auto set_union(Seq1 seq1, Seq2 seq2, Cmp cmp = {}) -> sequence auto;
 
@@ -1331,7 +1333,7 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
     
     :param seq1: The first sorted sequence to merge.
     :param seq2: The second sorted sequence to merge.
-    :param cmp: A binary predicate that takes two elements as arguments and returns true if the first element is less than the second.
+    :param cmp: A binary comparator whose return type is convertible to :type:`std::weak_ordering`. Both sequences must be sorted with respect to this comparator.
 
     :returns: A sequence adaptor that represents the set union of the two input sequences.
 
