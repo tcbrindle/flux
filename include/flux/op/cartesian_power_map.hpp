@@ -13,15 +13,15 @@ namespace flux {
 
 namespace detail {
 
-template <std::size_t PowN, typename Func, sequence Base>
+template <sequence Base, std::size_t PowN, typename Func>
 struct cartesian_power_map_adaptor
-    : inline_sequence_base<cartesian_power_map_adaptor<PowN, Func, Base>> {
+    : inline_sequence_base<cartesian_power_map_adaptor<Base, PowN, Func>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Func func_;
 
 public:
-    constexpr explicit cartesian_power_map_adaptor(decays_to<Func> auto&& func, decays_to<Base> auto&& base)
+    constexpr explicit cartesian_power_map_adaptor(decays_to<Base> auto&& base, decays_to<Func> auto&& func)
         : base_(FLUX_FWD(base)),
           func_(FLUX_FWD(func))
     {}
@@ -38,17 +38,17 @@ public:
 template <std::size_t PowN>
 struct cartesian_power_map_fn
 {
-    template <typename Func, adaptable_sequence Seq>
+    template <adaptable_sequence Seq, typename Func>
         requires multipass_sequence<Seq> &&
         detail::repeated_invocable<Func&, element_t<Seq>, PowN>
     [[nodiscard]]
-    constexpr auto operator()(Func func, Seq&& seq) const
+    constexpr auto operator()(Seq&& seq, Func func) const
     {
         if constexpr(PowN == 0) {
             return empty<std::invoke_result_t<Func>>;
         } else {
-            return cartesian_power_map_adaptor<PowN, Func, std::decay_t<Seq>>(
-                std::move(func), FLUX_FWD(seq));
+            return cartesian_power_map_adaptor<std::decay_t<Seq>, PowN, Func>(
+                FLUX_FWD(seq), std::move(func));
         }
     }
 };
