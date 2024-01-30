@@ -21,7 +21,7 @@ int main()
     };
 
     // Get a cursor to the maximum of the people vector, according to age
-    auto min_cur = flux::find_min(people, flux::proj(std::less{}, &Person::age));
+    auto min_cur = flux::find_min(people, flux::proj(flux::cmp::compare, &Person::age));
 
     // The youngest person is 29
     assert(flux::read_at(people, min_cur).age == 29);

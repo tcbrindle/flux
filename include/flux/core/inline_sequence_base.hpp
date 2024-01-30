@@ -408,17 +408,17 @@ public:
     [[nodiscard]]
     constexpr auto find_if_not(Pred pred);
 
-    template <typename Cmp = std::ranges::less>
+    template <typename Cmp = std::compare_three_way>
         requires strict_weak_order_for<Cmp, Derived>
     [[nodiscard]]
     constexpr auto find_max(Cmp cmp = Cmp{});
 
-    template <typename Cmp = std::ranges::less>
+    template <typename Cmp = std::compare_three_way>
         requires strict_weak_order_for<Cmp, Derived>
     [[nodiscard]]
     constexpr auto find_min(Cmp cmp = Cmp{});
 
-    template <typename Cmp = std::ranges::less>
+    template <typename Cmp = std::compare_three_way>
         requires strict_weak_order_for<Cmp, Derived>
     [[nodiscard]]
     constexpr auto find_minmax(Cmp cmp = Cmp{});
@@ -447,15 +447,15 @@ public:
         requires bounded_sequence<Derived> &&
                  detail::element_swappable_with<Derived, Derived>;
 
-    template <typename Cmp = std::ranges::less>
+    template <typename Cmp = std::compare_three_way>
         requires strict_weak_order_for<Cmp, Derived>
     constexpr auto max(Cmp cmp = Cmp{});
 
-    template <typename Cmp = std::ranges::less>
+    template <typename Cmp = std::compare_three_way>
         requires strict_weak_order_for<Cmp, Derived>
     constexpr auto min(Cmp cmp = Cmp{});
 
-    template <typename Cmp = std::ranges::less>
+    template <typename Cmp = std::compare_three_way>
         requires strict_weak_order_for<Cmp, Derived>
     constexpr auto minmax(Cmp cmp = Cmp{});
 
@@ -473,7 +473,7 @@ public:
         requires foldable<Derived, std::plus<>, value_t<Derived>> &&
                  std::default_initializable<value_t<Derived>>;
 
-    template <typename Cmp = std::ranges::less>
+    template <typename Cmp = std::compare_three_way>
         requires random_access_sequence<Derived> &&
                  bounded_sequence<Derived> &&
                  detail::element_swappable_with<Derived, Derived> &&

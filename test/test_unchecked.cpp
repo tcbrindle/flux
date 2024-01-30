@@ -44,7 +44,7 @@ constexpr bool test_unchecked()
         static_assert(std::same_as<element_t<S>, std::pair<int&, double&>>);
         static_assert(std::same_as<rvalue_element_t<S>, std::pair<int&&, double&&>>);
 
-        seq.sort(flux::proj(std::less<>{}, [](auto p) { return p.second; }));
+        seq.sort(flux::proj(std::weak_order, [](auto p) { return p.second; }));
 
         STATIC_CHECK(check_equal(doubles, {1.0, 2.0, 3.0}));
         STATIC_CHECK(check_equal(ints, {3, 4, 5, 2, 1}));

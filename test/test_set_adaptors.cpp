@@ -97,7 +97,7 @@ constexpr bool test_set_union()
 
     // custom compare
     {
-        auto union_seq = flux::set_union(std::array{4, 2, 0}, std::array{5, 3, 1}, std::ranges::greater{});
+        auto union_seq = flux::set_union(std::array{4, 2, 0}, std::array{5, 3, 1}, flux::cmp::reverse_compare);
 
         using T = decltype(union_seq);
         static_assert(flux::sequence<T>);
@@ -113,7 +113,7 @@ constexpr bool test_set_union()
         std::array<std::pair<int, char>, 3> arr2{{{1, 'x'}, {3, 'y'}, {5, 'z'}}};
 
         auto union_seq = flux::set_union(flux::ref(arr1), flux::ref(arr2), 
-                                         flux::proj(std::ranges::less{}, [] (auto v) { return v.first; }));
+                                         flux::proj(flux::cmp::compare, [] (auto v) { return v.first; }));
 
         using T = decltype(union_seq);
         static_assert(flux::sequence<T>);
@@ -137,18 +137,18 @@ constexpr bool test_set_union()
     // test with different (but compatible) types
     {
         std::array arr1{1, 2, 3, 4, 5};
-        std::array arr2{4.0, 5.0, 6.0};
+        std::array arr2{4L, 5L, 6L};
 
         auto union_seq = flux::set_union(arr1, arr2);
 
         using T = decltype(union_seq);
 
-        static_assert(std::same_as<flux::element_t<T>, double>);
-        static_assert(std::same_as<flux::value_t<T>, double>);
-        static_assert(std::same_as<flux::rvalue_element_t<T>, double>);
-        static_assert(std::same_as<flux::const_element_t<T>, double>);
+        static_assert(std::same_as<flux::element_t<T>, long>);
+        static_assert(std::same_as<flux::value_t<T>, long>);
+        static_assert(std::same_as<flux::rvalue_element_t<T>, long>);
+        static_assert(std::same_as<flux::const_element_t<T>, long>);
 
-        STATIC_CHECK(check_equal(union_seq, {1.0, 2.0, 3.0, 4.0, 5.0, 6.0}));
+        STATIC_CHECK(check_equal(union_seq, {1L, 2L, 3L, 4L, 5L, 6L}));
     }
 
     // test cursor iteration
@@ -253,7 +253,8 @@ constexpr bool test_set_difference()
 
     // custom compare
     {
-        auto diff_seq = flux::set_difference(std::array{5, 4, 3, 2, 1, 0}, std::array{4, 2, 0}, std::ranges::greater{});
+        auto diff_seq = flux::set_difference(std::array{5, 4, 3, 2, 1, 0}, std::array{4, 2, 0},
+                                             flux::cmp::reverse_compare);
 
         using T = decltype(diff_seq);
         static_assert(flux::sequence<T>);
@@ -269,7 +270,7 @@ constexpr bool test_set_difference()
         std::array<std::pair<int, char>, 3> arr2{{{1, 'x'}, {2, 'y'}, {5, 'z'}}};
 
         auto diff_seq = flux::set_difference(flux::ref(arr1), flux::ref(arr2), 
-                                             flux::proj(std::ranges::less{}, [] (auto v) { return v.first; }));
+                                             flux::proj(flux::cmp::compare, [] (auto v) { return v.first; }));
 
         using T = decltype(diff_seq);
         static_assert(flux::sequence<T>);
@@ -397,7 +398,8 @@ constexpr bool test_set_symmetric_difference()
 
     // custom compare
     {
-        auto diff_seq = flux::set_symmetric_difference(std::array{5, 4, 3, 2, 1, 0}, std::array{6, 4, 2, 0}, std::ranges::greater{});
+        auto diff_seq = flux::set_symmetric_difference(std::array{5, 4, 3, 2, 1, 0}, std::array{6, 4, 2, 0},
+                                                       flux::cmp::reverse_compare);
 
         using T = decltype(diff_seq);
         static_assert(flux::sequence<T>);
@@ -413,7 +415,7 @@ constexpr bool test_set_symmetric_difference()
         std::array<std::pair<int, char>, 3> arr2{{{1, 'x'}, {2, 'y'}, {5, 'z'}}};
 
         auto diff_seq = flux::set_symmetric_difference(flux::ref(arr1), flux::ref(arr2), 
-                                                       flux::proj(std::ranges::less{}, [] (auto v) { return v.first; }));
+                                                       flux::proj(flux::cmp::compare, [] (auto v) { return v.first; }));
 
         using T = decltype(diff_seq);
         static_assert(flux::sequence<T>);
@@ -436,7 +438,7 @@ constexpr bool test_set_symmetric_difference()
     // test different value types
     {
         std::array<int, 4> arr1{1, 2, 3, 4};
-        std::array<float, 3> arr2{2.0f, 3.0f, 5.0f};
+        std::array<long, 3> arr2{2L, 3L, 5L};
 
         auto diff_seq = flux::set_symmetric_difference(arr1, arr2);
 
@@ -446,12 +448,12 @@ constexpr bool test_set_symmetric_difference()
         static_assert(flux::multipass_sequence<Seq>);
         static_assert(not flux::sized_sequence<Seq>);
 
-        static_assert(std::same_as<flux::element_t<Seq>, float>);
-        static_assert(std::same_as<flux::value_t<Seq>, float>);
-        static_assert(std::same_as<flux::rvalue_element_t<Seq>, float>);
-        static_assert(std::same_as<flux::const_element_t<Seq>, float>);
+        static_assert(std::same_as<flux::element_t<Seq>, long>);
+        static_assert(std::same_as<flux::value_t<Seq>, long>);
+        static_assert(std::same_as<flux::rvalue_element_t<Seq>, long>);
+        static_assert(std::same_as<flux::const_element_t<Seq>, long>);
 
-        STATIC_CHECK(check_equal(diff_seq, {1.0f, 4.0f, 5.0f}));
+        STATIC_CHECK(check_equal(diff_seq, {1L, 4L, 5L}));
     }
 
     return true;
@@ -542,7 +544,8 @@ constexpr bool test_set_intersection()
 
     // custom compare
     {
-        auto inter_seq = flux::set_intersection(std::array{3, 2, 1, 0}, std::array{5, 3, 1}, std::ranges::greater{});
+        auto inter_seq = flux::set_intersection(std::array{3, 2, 1, 0}, std::array{5, 3, 1},
+                                                flux::cmp::reverse_compare);
 
         using T = decltype(inter_seq);
         static_assert(flux::sequence<T>);
@@ -558,7 +561,7 @@ constexpr bool test_set_intersection()
         std::array<std::pair<int, char>, 3> arr2{{{1, 'x'}, {2, 'y'}, {5, 'z'}}};
 
         auto inter_seq = flux::set_intersection(flux::ref(arr1), flux::ref(arr2), 
-                                             flux::proj(std::ranges::less{}, [] (auto v) { return v.first; }));
+                                             flux::proj(flux::cmp::compare, [] (auto v) { return v.first; }));
 
         using T = decltype(inter_seq);
         static_assert(flux::sequence<T>);

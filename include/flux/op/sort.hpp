@@ -11,14 +11,17 @@ namespace flux {
 namespace detail {
 
 struct sort_fn {
-    template <random_access_sequence Seq, typename Cmp = std::ranges::less>
+    template <random_access_sequence Seq, typename Cmp = std::compare_three_way>
         requires bounded_sequence<Seq> &&
                  element_swappable_with<Seq, Seq> &&
                  strict_weak_order_for<Cmp, Seq>
     constexpr auto operator()(Seq&& seq, Cmp cmp = {}) const
     {
         auto wrapper = flux::unchecked(flux::from_fwd_ref(FLUX_FWD(seq)));
-        detail::pdqsort(wrapper, cmp);
+        auto comparator = [&cmp](auto&& lhs, auto&& rhs) {
+            return std::is_lt(std::invoke(cmp, FLUX_FWD(lhs), FLUX_FWD(rhs)));
+        };
+        detail::pdqsort(wrapper, comparator);
     }
 };
 
