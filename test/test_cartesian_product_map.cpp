@@ -9,13 +9,13 @@ namespace {
 
 constexpr auto sum = [](auto... args) { return (args + ...); };
 
-constexpr bool test_cartesian_product_with()
+constexpr bool test_cartesian_product_map()
 {
     {
         std::array arr1{100, 200};
         std::array arr2{1, 2, 3, 4, 5};
 
-        auto cart = flux::cartesian_product_with(sum, flux::ref(arr1), flux::ref(arr2));
+        auto cart = flux::cartesian_product_map(sum, flux::ref(arr1), flux::ref(arr2));
         using C = decltype(cart);
 
         static_assert(flux::sequence<C>);
@@ -52,7 +52,7 @@ constexpr bool test_cartesian_product_with()
         std::array arr2{10, 20, 30};
         std::array arr3{1, 2, 3, 4};
 
-        auto cart = flux::cartesian_product_with(sum, flux::ref(arr1), flux::ref(arr2), flux::ref(arr3));
+        auto cart = flux::cartesian_product_map(sum, flux::ref(arr1), flux::ref(arr2), flux::ref(arr3));
         using C = decltype(cart);
 
         static_assert(flux::sequence<C>);
@@ -84,7 +84,7 @@ constexpr bool test_cartesian_product_with()
 
     {
         auto seq0 = single_pass_only(flux::from(std::array{100, 200}));
-        auto cart = flux::cartesian_product_with(sum, std::move(seq0), std::array{1, 2, 3});
+        auto cart = flux::cartesian_product_map(sum, std::move(seq0), std::array{1, 2, 3});
         using C = decltype(cart);
 
         static_assert(flux::sequence<C>);
@@ -100,7 +100,7 @@ constexpr bool test_cartesian_product_with()
         auto arr = std::array{1, 2, 3, 4, 5};
         auto emp = flux::empty<int>;
 
-        auto cart = flux::cartesian_product_with(sum, flux::ref(arr), std::move(emp));
+        auto cart = flux::cartesian_product_map(sum, flux::ref(arr), std::move(emp));
 
         static_assert(flux::bidirectional_sequence<decltype(cart)>);
 
@@ -116,7 +116,7 @@ constexpr bool test_cartesian_product_with()
         double vals[3][3] = {};
         auto get = [&vals](auto i, auto j) -> double& { return vals[i][j]; };
 
-        auto seq = flux::cartesian_product_with(get, flux::iota(0, 3), flux::iota(0, 3));
+        auto seq = flux::cartesian_product_map(get, flux::iota(0, 3), flux::iota(0, 3));
 
         static_assert(std::same_as<flux::element_t<decltype(seq)>, double&>);
 
@@ -131,11 +131,11 @@ constexpr bool test_cartesian_product_with()
 
     return true;
 }
-static_assert(test_cartesian_product_with());
+static_assert(test_cartesian_product_map());
 
-TEST_CASE("cartesian_product_with")
+TEST_CASE("cartesian_product_map")
 {
-    REQUIRE(test_cartesian_product_with());
+    REQUIRE(test_cartesian_product_map());
 }
 
 }
