@@ -26,7 +26,7 @@ private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
 
 public:
-    constexpr explicit cartesian_power_adaptor(Base&& base)
+    constexpr explicit cartesian_power_adaptor(decays_to<Base> auto&& base)
         : base_(FLUX_FWD(base))
     {}
 
