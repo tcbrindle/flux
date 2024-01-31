@@ -333,12 +333,62 @@ struct max_fn {
     }
 };
 
+struct partial_min_fn {
+    template <typename T, typename U>
+        requires same_decayed<T, U> &&
+                 std::common_reference_with<T, U> &&
+                 ordering_invocable<std::compare_three_way&, T&, U&>
+    [[nodiscard]]
+    constexpr auto operator()(T&& a, U&& b) const
+        -> std::common_reference_t<T, U>
+    {
+        return (b < a) ? FLUX_FWD(b) : FLUX_FWD(a);
+    }
+
+    template <typename T, typename U, typename Cmp>
+        requires same_decayed<T, U> &&
+                 std::common_reference_with<T, U> &&
+                 ordering_invocable<Cmp&, T&, U&>
+    [[nodiscard]]
+    constexpr auto operator()(T&& a, U&& b, Cmp cmp) const
+        -> std::common_reference_t<T, U>
+    {
+        return std::invoke(cmp, b, a) < 0 ? FLUX_FWD(b) : FLUX_FWD(a);
+    }
+};
+
+struct partial_max_fn {
+    template <typename T, typename U>
+        requires same_decayed<T, U> &&
+                 std::common_reference_with<T, U> &&
+                 ordering_invocable<std::compare_three_way&, T&, U&>
+    [[nodiscard]]
+    constexpr auto operator()(T&& a, U&& b) const
+        -> std::common_reference_t<T, U>
+    {
+        return !(b < a) ? FLUX_FWD(b) : FLUX_FWD(a);
+    }
+
+    template <typename T, typename U, typename Cmp>
+        requires same_decayed<T, U> &&
+                 std::common_reference_with<T, U> &&
+                 ordering_invocable<Cmp&, T&, U&>
+    [[nodiscard]]
+    constexpr auto operator()(T&& a, U&& b, Cmp cmp) const
+        -> std::common_reference_t<T, U>
+    {
+        return !(std::invoke(cmp, b, a) < 0) ? FLUX_FWD(b) : FLUX_FWD(a);
+    }
+};
+
 } // namespace detail
 
 FLUX_EXPORT inline constexpr auto compare = std::compare_three_way{};
 FLUX_EXPORT inline constexpr auto reverse_compare = flip(compare);
 FLUX_EXPORT inline constexpr auto min = detail::min_fn{};
 FLUX_EXPORT inline constexpr auto max = detail::max_fn{};
+FLUX_EXPORT inline constexpr auto partial_min = detail::partial_min_fn{};
+FLUX_EXPORT inline constexpr auto partial_max = detail::partial_max_fn{};
 
 } // namespace cmp
 

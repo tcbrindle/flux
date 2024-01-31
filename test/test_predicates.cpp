@@ -242,6 +242,61 @@ constexpr bool test_comparisons()
 }
 static_assert(test_comparisons());
 
+constexpr bool test_partial_min_max()
+{
+    namespace cmp = flux::cmp;
+
+    struct Test {
+        bool operator==(Test const&) const = default;
+        constexpr auto operator<=>(Test const&) const {
+            return std::partial_ordering::unordered;
+        }
+    };
+
+    // partial_min works just like min for sensible types
+    {
+        int i = 100, j = 10;
+        int& r = cmp::partial_min(i, j);
+
+        STATIC_CHECK(&r == &j);
+    }
+
+    // for partially ordered types, partial_min returns the first element
+    // if the arguments are unordered
+    {
+        Test const t1, t2;
+
+        cmp::compare(t1, t2);
+
+        Test const& r = cmp::partial_min(t1, t2);
+
+        STATIC_CHECK(&r == &t1);
+    }
+
+    // partial_max works just like min for sensible types
+    {
+        int i = 100, j = 10;
+        int& r = cmp::partial_max(i, j);
+
+        STATIC_CHECK(&r == &i);
+    }
+
+    // for partially ordered types, partial_max returns the second element
+    // if the arguments are unordered
+    {
+        Test const t1, t2;
+
+        cmp::compare(t1, t2);
+
+        Test const& r = cmp::partial_max(t1, t2);
+
+        STATIC_CHECK(&r == &t2);
+    }
+
+    return true;
+}
+static_assert(test_partial_min_max());
+
 }
 
 TEST_CASE("predicates")
@@ -253,5 +308,6 @@ TEST_CASE("predicates")
 TEST_CASE("comparators")
 {
     REQUIRE(test_comparisons());
+    REQUIRE(test_partial_min_max());
 }
 
