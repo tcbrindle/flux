@@ -505,8 +505,8 @@ concept set_op_compatible =
 struct set_union_fn {
     template <adaptable_sequence Seq1, adaptable_sequence Seq2, typename Cmp = std::compare_three_way>
         requires set_op_compatible<Seq1, Seq2> && 
-                 strict_weak_order_for<Cmp, Seq1> && 
-                 strict_weak_order_for<Cmp, Seq2> 
+                 weak_ordering_for<Cmp, Seq1> &&
+                 weak_ordering_for<Cmp, Seq2>
     [[nodiscard]]
     constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const
     {
@@ -516,8 +516,8 @@ struct set_union_fn {
 
 struct set_difference_fn {
     template <adaptable_sequence Seq1, adaptable_sequence Seq2, typename Cmp = std::compare_three_way>
-        requires strict_weak_order_for<Cmp, Seq1> && 
-                 strict_weak_order_for<Cmp, Seq2> 
+        requires weak_ordering_for<Cmp, Seq1> &&
+                 weak_ordering_for<Cmp, Seq2>
     [[nodiscard]]
     constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const
     {
@@ -528,8 +528,8 @@ struct set_difference_fn {
 struct set_symmetric_difference_fn {
     template <adaptable_sequence Seq1, adaptable_sequence Seq2, typename Cmp = std::compare_three_way>
         requires set_op_compatible<Seq1, Seq2> &&
-                 strict_weak_order_for<Cmp, Seq1> && 
-                 strict_weak_order_for<Cmp, Seq2> 
+                 weak_ordering_for<Cmp, Seq1> &&
+                 weak_ordering_for<Cmp, Seq2>
     [[nodiscard]]
     constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const
     {
@@ -539,8 +539,8 @@ struct set_symmetric_difference_fn {
 
 struct set_intersection_fn {
     template <adaptable_sequence Seq1, adaptable_sequence Seq2, typename Cmp = std::compare_three_way>
-        requires strict_weak_order_for<Cmp, Seq1> && 
-                 strict_weak_order_for<Cmp, Seq2> 
+        requires weak_ordering_for<Cmp, Seq1> &&
+                 weak_ordering_for<Cmp, Seq2>
     [[nodiscard]]
     constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const
     {

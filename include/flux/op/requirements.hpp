@@ -34,7 +34,7 @@ concept foldable =
 
 FLUX_EXPORT
 template <typename Fn, typename Seq1, typename Seq2 = Seq1>
-concept strict_weak_order_for =
+concept weak_ordering_for =
     sequence<Seq1> &&
     sequence<Seq2> &&
     ordering_invocable<Fn&, element_t<Seq1>, element_t<Seq2>, std::weak_ordering> &&

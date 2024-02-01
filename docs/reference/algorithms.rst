@@ -349,7 +349,7 @@ Algorithms
 ------------
 
 ..  function::
-    template <multipass_sequence Seq, strict_weak_order_for<Seq> Cmp = std::compare_three_way> \
+    template <multipass_sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way> \
     auto find_max(Seq&& seq, Cmp cmp = {}) -> cursor_t<Seq>;
 
     Returns a cursor to the maximum element of :var:`seq`, compared using :var:`cmp`.
@@ -380,7 +380,7 @@ Algorithms
 ------------
 
 ..  function::
-    template <multipass_sequence Seq, strict_weak_order_for<Seq> Cmp = std::compare_three_way> \
+    template <multipass_sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way> \
     auto find_min(Seq&& seq, Cmp cmp = {}) -> cursor_t<Seq>;
 
     Returns a cursor to the minimum element of :var:`seq`, compared using :var:`cmp`.
@@ -409,7 +409,7 @@ Algorithms
 ---------------
 
 ..  function::
-    template <multipass_sequence Seq, strict_weak_order_for<Seq> Cmp = std::compare_three_way> \
+    template <multipass_sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way> \
     auto find_minmax(Seq&& seq, Cmp cmp = {}) -> minmax_result<cursor_t<Seq>>;
 
     Returns a pair of cursors to the minimum and maximum elements of :var:`seq`, compared using :var:`cmp`.
@@ -489,14 +489,14 @@ Algorithms
 -------
 
 ..  function::
-    template <sequence Seq, strict_weak_order_for<Seq> Cmp = std::compare_three_way> \
+    template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way> \
     auto max(Seq&& seq, Cmp cmp = {}) -> optional<value_t<Seq>>;
 
 ``min``
 -------
 
 ..  function::
-    template <sequence Seq, strict_weak_order_for<Seq> Cmp = std::compare_three_way> \
+    template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way> \
         requires std::predicate<Cmp&, value_t<Seq>, element_t<Seq>> \
     auto min(Seq&& seq, Cmp cmp = {}) -> optional<value_t<Seq>>;
 
@@ -506,7 +506,7 @@ Algorithms
 ..  struct:: template <typename T> minmax_result;
 
 ..  function::
-    template <sequence Seq, strict_weak_order_for<Seq> Cmp = std::compare_three_way> \
+    template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way> \
         requires std::predicate<Cmp&, value_t<Seq>, element_t<Seq>> \
     auto minmax(Seq&& seq, Cmp cmp = {}) -> optional<minmax_result<Seq>>;
 

@@ -409,17 +409,17 @@ public:
     constexpr auto find_if_not(Pred pred);
 
     template <typename Cmp = std::compare_three_way>
-        requires strict_weak_order_for<Cmp, Derived>
+        requires weak_ordering_for<Cmp, Derived>
     [[nodiscard]]
     constexpr auto find_max(Cmp cmp = Cmp{});
 
     template <typename Cmp = std::compare_three_way>
-        requires strict_weak_order_for<Cmp, Derived>
+        requires weak_ordering_for<Cmp, Derived>
     [[nodiscard]]
     constexpr auto find_min(Cmp cmp = Cmp{});
 
     template <typename Cmp = std::compare_three_way>
-        requires strict_weak_order_for<Cmp, Derived>
+        requires weak_ordering_for<Cmp, Derived>
     [[nodiscard]]
     constexpr auto find_minmax(Cmp cmp = Cmp{});
 
@@ -448,15 +448,15 @@ public:
                  detail::element_swappable_with<Derived, Derived>;
 
     template <typename Cmp = std::compare_three_way>
-        requires strict_weak_order_for<Cmp, Derived>
+        requires weak_ordering_for<Cmp, Derived>
     constexpr auto max(Cmp cmp = Cmp{});
 
     template <typename Cmp = std::compare_three_way>
-        requires strict_weak_order_for<Cmp, Derived>
+        requires weak_ordering_for<Cmp, Derived>
     constexpr auto min(Cmp cmp = Cmp{});
 
     template <typename Cmp = std::compare_three_way>
-        requires strict_weak_order_for<Cmp, Derived>
+        requires weak_ordering_for<Cmp, Derived>
     constexpr auto minmax(Cmp cmp = Cmp{});
 
     template <typename Pred>
@@ -477,7 +477,7 @@ public:
         requires random_access_sequence<Derived> &&
                  bounded_sequence<Derived> &&
                  detail::element_swappable_with<Derived, Derived> &&
-                 strict_weak_order_for<Cmp, Derived>
+                 weak_ordering_for<Cmp, Derived>
     constexpr void sort(Cmp cmp = {});
 
     constexpr auto product()

@@ -1120,7 +1120,7 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
 
 ..  function::
     template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way> \
-        requires strict_weak_order_for<Cmp, Seq1> && strict_weak_order_for<Cmp, Seq2> \
+        requires weak_ordering_for<Cmp, Seq1> && weak_ordering_for<Cmp, Seq2> \
     auto set_difference(Seq1 seq1, Seq2 seq2, Cmp cmp = {}) -> sequence auto;
 
     Returns a sequence adaptor which yields the set difference of the two input sequences :var:`seq1` and :var:`seq2`, ordered by the given comparison function :var:`cmp`.
@@ -1180,7 +1180,7 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
 
 ..  function::
     template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way> \
-        requires strict_weak_order_for<Cmp, Seq1> && strict_weak_order_for<Cmp, Seq2> \
+        requires weak_ordering_for<Cmp, Seq1> && weak_ordering_for<Cmp, Seq2> \
     auto set_intersection(Seq1 seq1, Seq2 seq2, Cmp cmp = {}) -> sequence auto;
 
     Returns a sequence adaptor which yields the set intersection of the two input sequences :var:`seq1` and :var:`seq2`, ordered by the given comparison function :var:`cmp`.
@@ -1259,8 +1259,8 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
             std::common_reference_with<element_t<Seq1>, element_t<Seq2>> &&
             std::common_reference_with<rvalue_element_t<Seq1>, rvalue_element_t<Seq2>> &&
             requires { typename std::common_type_t<value_t<Seq1>, value_t<Seq2>>; } &&
-            strict_weak_order_for<Cmp, Seq1> &&
-            strict_weak_order_for<Cmp, Seq2>
+            weak_ordering_for<Cmp, Seq1> &&
+            weak_ordering_for<Cmp, Seq2>
 
     :param seq1: The first sequence to merge.
     :param seq2: The second sequence to merge.
@@ -1328,8 +1328,8 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
             std::common_reference_with<element_t<Seq1>, element_t<Seq2>> &&
             std::common_reference_with<rvalue_element_t<Seq1>, rvalue_element_t<Seq2>> &&
             requires { typename std::common_type_t<value_t<Seq1>, value_t<Seq2>>; } &&
-            strict_weak_order_for<Cmp, Seq1> &&
-            strict_weak_order_for<Cmp, Seq2>
+            weak_ordering_for<Cmp, Seq1> &&
+            weak_ordering_for<Cmp, Seq2>
     
     :param seq1: The first sorted sequence to merge.
     :param seq2: The second sorted sequence to merge.

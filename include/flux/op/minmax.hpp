@@ -23,7 +23,7 @@ struct minmax_result {
 namespace detail {
 
 struct min_op {
-    template <sequence Seq, strict_weak_order_for<Seq> Cmp = std::compare_three_way>
+    template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
         -> flux::optional<value_t<Seq>>
@@ -39,7 +39,7 @@ struct min_op {
 };
 
 struct max_op {
-    template <sequence Seq, strict_weak_order_for<Seq> Cmp = std::compare_three_way>
+    template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
         -> flux::optional<value_t<Seq>>
@@ -55,7 +55,7 @@ struct max_op {
 };
 
 struct minmax_op {
-    template <sequence Seq, strict_weak_order_for<Seq> Cmp = std::compare_three_way>
+    template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
         -> flux::optional<minmax_result<value_t<Seq>>>
@@ -93,7 +93,7 @@ FLUX_EXPORT inline constexpr auto minmax = detail::minmax_op{};
 
 template <typename Derived>
 template <typename Cmp>
-    requires strict_weak_order_for<Cmp, Derived>
+    requires weak_ordering_for<Cmp, Derived>
 constexpr auto inline_sequence_base<Derived>::max(Cmp cmp)
 {
     return flux::max(derived(), std::move(cmp));
@@ -101,7 +101,7 @@ constexpr auto inline_sequence_base<Derived>::max(Cmp cmp)
 
 template <typename Derived>
 template <typename Cmp>
-    requires strict_weak_order_for<Cmp, Derived>
+    requires weak_ordering_for<Cmp, Derived>
 constexpr auto inline_sequence_base<Derived>::min(Cmp cmp)
 {
     return flux::min(derived(), std::move(cmp));
@@ -109,7 +109,7 @@ constexpr auto inline_sequence_base<Derived>::min(Cmp cmp)
 
 template <typename Derived>
 template <typename Cmp>
-    requires strict_weak_order_for<Cmp, Derived>
+    requires weak_ordering_for<Cmp, Derived>
 constexpr auto inline_sequence_base<Derived>::minmax(Cmp cmp)
 {
     return flux::minmax(derived(), std::move(cmp));
