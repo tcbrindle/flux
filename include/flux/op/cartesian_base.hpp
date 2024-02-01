@@ -222,7 +222,9 @@ public:
                   && (sized_sequence<Bases> && ...))
     {
         return std::apply([](auto&... base) {
-            return (flux::size(base) * ...);
+            distance_t sz = 1;
+            ((sz = flux::num::checked_mul(sz, flux::size(base))), ...);
+            return sz;
         }, self.bases_);
     }
 

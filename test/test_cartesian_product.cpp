@@ -498,9 +498,22 @@ constexpr bool test_cartesian_product()
 }
 static_assert(test_cartesian_product());
 
+// https://github.com/tcbrindle/flux/issues/167
+void issue_167()
+{
+    // Check that overflowing size() is correctly caught
+    auto ints = flux::ints(0, std::numeric_limits<flux::distance_t>::max());
+
+    auto prod = flux::cartesian_product(ints, ints, ints);
+
+    REQUIRE_THROWS_AS(flux::size(prod), flux::unrecoverable_error);
+}
+
 }
 
 TEST_CASE("cartesian_product")
 {
     REQUIRE(test_cartesian_product());
+
+    issue_167();
 }
