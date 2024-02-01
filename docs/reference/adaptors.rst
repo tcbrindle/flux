@@ -212,6 +212,129 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
       * - :concept:`const_iterable_sequence`
         - :var:`Seq` is bounded and const-iterable (passthrough)
 
+``cartesian_power``
+^^^^^^^^^^^^^^^^^^^
+
+..  function::
+    template <distance_t N> \
+        requires (N >= 0) \
+    auto cartesian_power(multipass_sequence auto seq) -> multipass_sequence auto;
+
+    Returns a sequence object giving the :var:`N` th `Cartesian power <https://en.wikipedia.org/wiki/Cartesian_product#n-ary_Cartesian_power>`_ of the elements of :var:`seq`. It is equivalent to :var:`N` nested ``for`` loops each iterating over :var:`seq`.
+
+    The element type of the returned sequence is an :var:`N`-tuple of the elements of :var:`seq`. The number of elements is :math:`S^N`, where :math:`S` is :expr:`count(seq)`.
+
+    Equivalent to :expr:`cartesian_product(seq, seq, ...)`, but stores only a single copy of :var:`seq`.
+
+    :tparam N: The cartesian power
+
+    :param seq: A multipass sequence
+
+    :returns: A multipass sequence yielding :var:`N`-tuples of all combinations of elements of :var:`seq`
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/cartesian_power.cpp
+        :language: cpp
+        :dedent:
+        :lines: 15-25
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - Always
+      * - :concept:`bidirectional_sequence`
+        - :var:`seq` is bidirectional
+      * - :concept:`random_access_sequence`
+        - :var:`seq` is random-access
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`seq` is bounded
+      * - :concept:`sized_sequence`
+        - :var:`seq` is sized
+      * - :concept:`infinite_sequence`
+        - Never
+      * - :concept:`read_only_sequence`
+        - :var:`seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`seq` is const-iterable
+
+    :see also:
+
+        * `std::views::cartesian_product <https://en.cppreference.com/w/cpp/ranges/cartesian_product_view>`_ (C++23)
+        * :func:`cartesian_power_map`
+        * :func:`cartesian_product`
+
+
+``cartesian_power_map``
+^^^^^^^^^^^^^^^^^^^^^^^
+
+..  function::
+    template <distance_t N> \
+        requires (N >= 0) \
+    auto cartesian_power_map(multipass_sequence auto seq, auto func) -> multipass_sequence auto;
+
+    Returns a sequence adaptor which applies the :var:`N`-ary function :var:`func` to the :var:`N` th `Cartesian power <https://en.wikipedia.org/wiki/Cartesian_product#n-ary_Cartesian_power>`_ of the elements of :var:`seq`.
+
+    The total number of elements in the returned sequence is :math:`S^N`, where :math:`S` is :expr:`count(seq)`.
+
+    Equivalent to :expr:`cartesian_power<N>(seq, unpack(func))`, but avoids forming an intermediate tuple.
+
+    :tparam N: The cartesian power
+
+    :param seq: A multipass sequence
+
+    :param func: An :var:`N`-ary function callable with the cartesian product of the elements of :var:`seq`
+
+    :returns: A multipass sequence whose elements are the result of applying :var:`func` to :var:`N` elements of :var:`seq`
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/cartesian_power_map.cpp
+        :language: cpp
+        :dedent:
+        :lines: 17-25
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - Always
+      * - :concept:`bidirectional_sequence`
+        - :var:`seq` is bidirectional
+      * - :concept:`random_access_sequence`
+        - :var:`seq` is random-access
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`seq` is bounded
+      * - :concept:`sized_sequence`
+        - :var:`seq` is sized
+      * - :concept:`infinite_sequence`
+        - Never
+      * - :concept:`read_only_sequence`
+        - :var:`seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`seq` is const-iterable and :var:`func` is const-invocable
+
+    :see also:
+
+        * `std::views::cartesian_product <https://en.cppreference.com/w/cpp/ranges/cartesian_product_view>`_ (C++23)
+        * :func:`cartesian_power`
+        * :func:`cartesian_product_map`
+
 ``cartesian_product``
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -221,6 +344,13 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
     Returns an adaptor yielding the `cartesian_product <https://en.wikipedia.org/wiki/Cartesian_product>`_ of the input sequences.
 
     The element type of the returned sequence is a tuple of the element types of the input sequences.
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/cartesian_product.cpp
+        :language: cpp
+        :dedent:
+        :lines: 17-43
 
     :models:
 
@@ -249,6 +379,12 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
       * - :concept:`const_iterable_sequence`
         - All passed-in sequences are const-iterable
 
+    :see also:
+
+        * `std::views::cartesian_product <https://en.cppreference.com/w/cpp/ranges/cartesian_product_view>`_ (C++23)
+        * :func:`cartesian_power`
+        * :func:`cartesian_product_map`
+
 ``cartesian_product_map``
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -257,9 +393,16 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
     requires std::regular_invocable<Func&, element_t<Seq0>, element_t<Seqs>...> \
     auto cartesian_product_with(Func func, Seq0 seq0, Seqs... seqs) -> sequence auto;
 
-    Given ``N`` input sequences and an ``N``-ary function :var:`func`, applies :var:`func` to the cartesian product of the elements of the input sequences.
+    Given ``N`` sequences and an ``N``-ary function :var:`func`, applies :var:`func` to the cartesian product of the elements of the input sequences.
 
     Equivalent to :expr:`map(cartesian_product(seq0, seqs...), unpack(func))`, but avoids forming an intermediate tuple.
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/cartesian_product_map.cpp
+        :language: cpp
+        :dedent:
+        :lines: 17-29
 
     :models:
 
@@ -287,6 +430,12 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
         - All passed-in sequences are read-only
       * - :concept:`const_iterable_sequence`
         - All passed-in sequences are const-iterable and :var:`func` is const-invocable
+
+    :see also:
+
+        * `std::views::cartesian_product <https://en.cppreference.com/w/cpp/ranges/cartesian_product_view>`_ (C++23)
+        * :func:`cartesian_power_map`
+        * :func:`cartesian_product`
 
 ``chain``
 ^^^^^^^^^
