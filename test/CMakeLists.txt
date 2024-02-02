@@ -90,7 +90,7 @@ target_compile_definitions(test-flux PUBLIC
     FLUX_ERROR_ON_OVERFLOW
     FLUX_DISABLE_STATIC_BOUNDS_CHECKING
 )
-target_precompile_headers(test-flux PRIVATE "catch.hpp")
+#target_precompile_headers(test-flux PRIVATE "catch.hpp")
 
 if(FLUX_ENABLE_ASAN)
     target_compile_options(test-flux PRIVATE -fsanitize=address)
