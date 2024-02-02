@@ -11,7 +11,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-14
     strategy:
       matrix:
         compiler: [GCC-13, LLVM-Clang-16, LLVM-Clang-17]
@@ -31,11 +31,11 @@ jobs:
               brew update
               brew install gcc@13 ninja
           - compiler: LLVM-Clang-16
-            cxx: /usr/local/opt/llvm@16/bin/clang++
+            cxx: $(brew --prefix llvm@16)/bin/clang++
             install: |
               brew install llvm@16 ninja
           - compiler: LLVM-Clang-17
-            cxx: /usr/local/opt/llvm@17/bin/clang++
+            cxx: $(brew --prefix llvm@17)/bin/clang++
             install: |
               brew install llvm@17 ninja
 
