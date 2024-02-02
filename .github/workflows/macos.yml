@@ -42,6 +42,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@master
+    - uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '15.1'
 
     - name: Create Build Environment
       run: |
