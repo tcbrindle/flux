@@ -5128,8 +5128,10 @@ public:
         requires (CartesianKind == cartesian_kind::product
                   && (sized_sequence<Bases> && ...))
     {
-        return std::apply([](auto&... base) {
-            return (flux::size(base) * ...);
+        return std::apply([](auto& base0, auto&... bases) {
+            distance_t sz = flux::size(base0);
+            ((sz = num::checked_mul(sz, flux::size(bases))), ...);
+            return sz;
         }, self.bases_);
     }
 
