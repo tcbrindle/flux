@@ -44,6 +44,8 @@ template <>
 inline constexpr bool is_default_compare_v<std::compare_three_way> = true;
 template <>
 inline constexpr bool is_default_compare_v<decltype(flux::cmp::reverse_compare)> = true;
+template <>
+inline constexpr bool is_default_compare_v<decltype(flux::cmp::compare_floating_point_unchecked)> = true;
 
 // Returns floor(log2(n)), assumes n > 0.
 template <class T>

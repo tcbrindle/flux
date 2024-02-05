@@ -307,6 +307,18 @@ namespace cmp {
 
 namespace detail {
 
+struct compare_floating_point_unchecked_fn {
+    template <std::floating_point T>
+    [[nodiscard]]
+    constexpr auto operator()(T a, T b) const noexcept
+        -> std::weak_ordering
+    {
+        return a < b ? std::weak_ordering::less
+             : a > b ? std::weak_ordering::greater
+                     : std::weak_ordering::equivalent;
+    }
+};
+
 struct min_fn {
     template <typename T, typename U, typename Cmp = std::compare_three_way>
         requires same_decayed<T, U> &&
@@ -385,6 +397,8 @@ struct partial_max_fn {
 
 FLUX_EXPORT inline constexpr auto compare = std::compare_three_way{};
 FLUX_EXPORT inline constexpr auto reverse_compare = flip(compare);
+FLUX_EXPORT inline constexpr auto compare_floating_point_unchecked
+    = detail::compare_floating_point_unchecked_fn{};
 FLUX_EXPORT inline constexpr auto min = detail::min_fn{};
 FLUX_EXPORT inline constexpr auto max = detail::max_fn{};
 FLUX_EXPORT inline constexpr auto partial_min = detail::partial_min_fn{};
