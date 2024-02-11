@@ -29,7 +29,7 @@ constexpr auto result = flux::ints()                        // 0,1,2,3,...
 static_assert(result == 12);
 ```
 
-Try it [on Compiler Explorer](https://flux.godbolt.org/z/K86EsGMcT)!
+Try it [on Compiler Explorer](https://flux.godbolt.org/z/KKcEbYnTx)!
 
 ## Getting Started ##
 
