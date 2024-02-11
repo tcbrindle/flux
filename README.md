@@ -10,21 +10,21 @@
 Flux is a C++20 library for *sequence-orientated programming*, similar in spirit to C++20 ranges, Python itertools, Rust iterators and others.
 
 Flux offers:
+
 * A large selection of [algorithms](https://tristanbrindle.com/flux/reference/algorithms.html) and [sequence adaptors](https://tristanbrindle.com/flux/reference/adaptors.html) for creating powerful and efficient data pipelines
 * Much improved safety compared with standard library iterators and ranges
 * Improved ease of use in common cases, particularly for defining your own sequences and adaptors
 * Improved run-time efficiency for some common operations
 * Compatibility with existing standard library types and concepts
 
-
 ## A Quick Example ##
 
 ```cpp
-constexpr auto result = flux::ints()
-                         .filter(flux::pred::even)
-                         .map([](int i) { return i * 2; })
-                         .take(5)
-                         .sum();
+constexpr auto result = flux::ints()                        // 0,1,2,3,...
+                         .filter(flux::pred::even)          // 0,2,4,6,...
+                         .map([](int i) { return i * 2; })  // 0,4,8,12,...
+                         .take(3)                           // 0,4,8
+                         .sum();                            // 12
 
 static_assert(result == 12);
 ```
@@ -83,17 +83,16 @@ Flux requires a recent compiler with good support for the C++20 standard. It is 
 
 AppleClang is currently not usable due to missing C++20 support.
 
-
 ## The Flux difference ##
 
 Flux provides a broadly equivalent feature set to C++20 Ranges, but uses a slightly different iteration model based around *cursors* rather than *iterators*. Flux cursors are a generalisation of array *indices*, whereas STL iterators are a generalisation of array *pointers*.
 
 A Flux `sequence` provides four basis operations:
 
- * `flux::first(seq)` returns an object called a *cursor*, which represents a position in a sequence. For a sequence with N elements there are N+1 possible cursor positions, including the past-the-end (terminal) position.
- * `flux::is_last(seq, cursor)` returns a boolean value indicating whether the cursor is in the terminal position
- * `flux::inc(seq, cursor)` increments the given cursor, so that it points to the next element in the sequence
- * `flux::read_at(seq, cursor)` returns the sequence element at the given cursor position
+* `flux::first(seq)` returns an object called a *cursor*, which represents a position in a sequence. For a sequence with N elements there are N+1 possible cursor positions, including the past-the-end (terminal) position.
+* `flux::is_last(seq, cursor)` returns a boolean value indicating whether the cursor is in the terminal position
+* `flux::inc(seq, cursor)` increments the given cursor, so that it points to the next element in the sequence
+* `flux::read_at(seq, cursor)` returns the sequence element at the given cursor position
 
 These basis operations are equivalent to the basis operations on STL iterators (`begin()`, `iter == end()`, `++iter` and `*iter` respectively). The crucial difference is that in the Flux model, you need to **provide both the sequence and the cursor** to each function call, whereas in the STL model the iterator must know how to increment and dereference itself.
 
@@ -101,17 +100,17 @@ These basis operations are equivalent to the basis operations on STL iterators (
 
 This seemingly small change has some far-reaching consequences. In particular:
 
- * Because we have access to the sequence object during increment and dereference operations, we can provide **inexpensive universal bounds checking** for sequences (with a clearly marked opt-out where needed)
- * Because we need the sequence object in order to do anything useful with a cursor, **dangling cursors are not possible by design**: if the sequence object is no longer around, the cursor can't be used
- * Because a cursor only represents a position in a sequence (like an integer index for an array), cursor **invalidation is much less likely** when modifying the underlying sequence -- and if the element at the given position no longer exists, this will be caught by the bounds check at the next attempted read.
- * Because element access requires the original sequence, we don't need to make a distinction between mutable `iterator`s and `const_iterator`s -- the same cursor type is used for both const and non-const access, making cursors and sequences **considerably simpler to implement** than STL iterators and ranges.
+* Because we have access to the sequence object during increment and dereference operations, we can provide **inexpensive universal bounds checking** for sequences (with a clearly marked opt-out where needed)
+* Because we need the sequence object in order to do anything useful with a cursor, **dangling cursors are not possible by design**: if the sequence object is no longer around, the cursor can't be used
+* Because a cursor only represents a position in a sequence (like an integer index for an array), cursor **invalidation is much less likely** when modifying the underlying sequence -- and if the element at the given position no longer exists, this will be caught by the bounds check at the next attempted read.
+* Because element access requires the original sequence, we don't need to make a distinction between mutable `iterator`s and `const_iterator`s -- the same cursor type is used for both const and non-const access, making cursors and sequences **considerably simpler to implement** than STL iterators and ranges.
 
 Like STL input ranges, basic Flux sequences are assumed to be single-pass by default. Flux also provides various far more powerful sequences, closely modeled on their STL counterparts:
 
- * `multipass_sequence`s allow multiple cursors to iterate over the sequence independently, potentially passing over each position multiple times
- * `bidirectional_sequence`s are multipass sequences whose cursors can be decremented as well as incremented
- * `random_access_sequence`s are bidirectional sequences whose cursors can be incremented or decremented an arbitrary number of places in constant time
- * `contiguous_sequence`s are random-access sequences which are backed by a contiguous, in-memory array
+* `multipass_sequence`s allow multiple cursors to iterate over the sequence independently, potentially passing over each position multiple times
+* `bidirectional_sequence`s are multipass sequences whose cursors can be decremented as well as incremented
+* `random_access_sequence`s are bidirectional sequences whose cursors can be incremented or decremented an arbitrary number of places in constant time
+* `contiguous_sequence`s are random-access sequences which are backed by a contiguous, in-memory array
 
 The close correspondence between Flux's sequence concepts and their ranges counterparts means that we can easily bridge the gap between the two libraries. In particular, we provide STL-compatible iterators to ensure that **every Flux sequence is also a C++20 range**, meaning they can be used with existing STL algorithms (and with range-for loops!) just like any other range.
 
