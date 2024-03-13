@@ -49,7 +49,7 @@ public:
     {
         cursor_type out{flux::first(self.base_), };
 
-        for (auto i : flux::iota(std::size_t{1}, std::size_t{N})) {
+        FLUX_FOR(auto i, flux::iota(std::size_t{1}, std::size_t{N})) {
             out.arr[i] = out.arr[i - 1];
             if (!flux::is_last(self.base_, out.arr[i])) {
                 flux::inc(self.base_, out.arr[i]);
@@ -76,7 +76,7 @@ public:
         cursor_type out{};
         out.arr.back() = flux::last(self.base_);
         auto const first = flux::first(self.base_);
-        for (auto i : flux::iota(std::size_t{0}, std::size_t{N}-1).reverse()) {
+        FLUX_FOR(auto i, flux::iota(std::size_t{0}, std::size_t{N}-1).reverse()) {
             out.arr[i] = out.arr[i + 1];
             if (out.arr[i] != first) {
                 flux::dec(self.base_, out.arr[i]);
