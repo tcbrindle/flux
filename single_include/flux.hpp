@@ -5177,9 +5177,20 @@ public:
     static constexpr auto last(Self& self) -> cursor_t<Self>
         requires cartesian_is_bounded<Bases...>
     {
-        auto cur = first(self);
-        std::get<0>(cur) = flux::last(get_base<0>(self));
-        return cur;
+        if constexpr (CartesianKind == cartesian_kind::product) {
+            auto cur = first(self);
+            bool any_is_empty = std::apply([](auto& /*ignored*/, auto&... bases) {
+                    return (flux::is_empty(bases) || ...);
+                }, self.bases_);
+            if (!any_is_empty) {
+                std::get<0>(cur) = flux::last(get_base<0>(self));
+            }
+            return cur;
+        } else {
+            auto cur = first(self);
+            std::get<0>(cur) = flux::last(get_base<0>(self));
+            return cur;
+        }
     }
 
     template <typename Self>
