@@ -261,9 +261,24 @@ constexpr bool test_cartesian_power()
 
 static_assert(test_cartesian_power());
 
+// https://github.com/tcbrindle/flux/issues/177
+constexpr bool issue_177()
+{
+    auto seq = flux::cartesian_power<3>(flux::empty<int>);
+
+    STATIC_CHECK(seq.is_empty());
+    STATIC_CHECK(seq.size() == 0);
+    STATIC_CHECK(seq.is_last(seq.first()));
+    STATIC_CHECK(seq.first() == seq.last());
+
+    return true;
+}
+static_assert(issue_177());
+
 }
 
 TEST_CASE("cartesian power")
 {
     REQUIRE(test_cartesian_power());
+    REQUIRE(issue_177());
 }

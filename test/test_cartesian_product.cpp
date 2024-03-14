@@ -509,6 +509,20 @@ void issue_167()
     REQUIRE_THROWS_AS(flux::size(prod), flux::unrecoverable_error);
 }
 
+// https://github.com/tcbrindle/flux/issues/177
+constexpr bool issue_177()
+{
+    auto seq = flux::cartesian_product(std::array{1, 2, 3}, flux::empty<int>);
+
+    STATIC_CHECK(seq.is_empty());
+    STATIC_CHECK(seq.size() == 0);
+    STATIC_CHECK(seq.is_last(seq.first()));
+    STATIC_CHECK(seq.first() == seq.last());
+
+    return true;
+}
+static_assert(issue_177());
+
 }
 
 TEST_CASE("cartesian_product")
@@ -516,4 +530,5 @@ TEST_CASE("cartesian_product")
     REQUIRE(test_cartesian_product());
 
     issue_167();
+    REQUIRE(issue_177());
 }
