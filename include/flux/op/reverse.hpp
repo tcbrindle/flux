@@ -128,11 +128,12 @@ public:
             while (cur != end) {
                 flux::dec(self.base_, cur);
                 if (!std::invoke(pred, flux::read_at(self.base_, cur))) {
+                    flux::inc(self.base_, cur);
                     break;
                 }
             }
 
-            return cursor_type(flux::inc(self.base_, cur));
+            return cursor_type(cur);
         }
     };
 };
