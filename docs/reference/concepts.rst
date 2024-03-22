@@ -348,3 +348,88 @@ Concepts
 
 ..  concept::
     template <typename Seq, typename T> writable_sequence_of
+
+    A sequence :var:`Seq` models :expr:`writable_sequence_t<Seq, T>` for a type :var:`T` if :expr:`element_t<Seq>` is assignable from an object of type :var:`T`.
+
+    The :concept:`writable_sequence_of` concept is defined as::
+
+        template <typename Seq, typename T>
+        concept writable_sequence_of =
+            sequence<Seq> &&
+            requires (element_t<Seq> e, T&& item) {
+                { e = std::forward<T>(item) } -> std::same_as<element_t<Seq>&>;
+            };
+
+``element_swappable_with``
+--------------------------
+
+..  concept::
+    template <typename Seq1, typename Seq2> element_swappable_with
+
+    A pair of sequences :var:`Seq1` and :var:`Seq2` model :concept:`element_swappable_with` if their respective elements can be swapped, that is, we can assign to an element of :var:`Seq1` from an rvalue element of :var:`Seq2` and vice-versa.
+
+    Formally, the :concept:`element_swappable_with` concept is defined as::
+
+        template <typename Seq1, typename Seq2>
+        concept element_swappable_with =
+            std::constructible_from<value_t<Seq1>, rvalue_element_t<Seq1>> &&
+            std::constructible_from<value_t<Seq2>, rvalue_element_t<Seq2>> &&
+            writable_sequence_of<Seq1, rvalue_element_t<Seq2>> &&
+            writable_sequence_of<Seq1, value_t<Seq2>&&> &&
+            writable_sequence_of<Seq2, rvalue_element_t<Seq1>> &&
+            writable_sequence_of<Seq2, value_t<Seq1>&&>;
+
+
+``ordering_invocable``
+----------------------
+
+..  concept::
+    template <typename Fn, typename T, typename U, typename Cat = std::partial_ordering> \
+    ordering_invocable
+
+    The concept :concept:`ordering_invocable` signifies that the binary invocable :var:`Fn` return a value of one of the standard comparison categories, convertible to :var:`Cat`, for all combinations of arguments of types :var:`T` and :var:`U`
+
+    Semantic requirements:
+
+    * Let :expr:`r1 = fn(a, b)` and :expr:`r2 = fn(b, c)`. If :expr:`r1 == r2` and :expr:`r1 != std::partial_ordering::unordered`, then :expr:`fn(a, c) == r1`.
+    * :expr:`fn(a, b) == std::partial_ordering::less` if and only if :expr:`fn(b, a) == std::partial_ordering::greater`
+
+    The :concept:`ordering_invocable` concept is defined as::
+
+        template <typename Fn, typename T, typename U, typename Cat>
+        concept ordering_invocable_ = // exposition-only
+            std::regular_invocable<Fn, T, U> &&
+            std::same_as<
+                std::common_comparison_category_t<std::decay_t<std::invoke_result_t<Fn, T, U>>>,
+                                                  Cat>,
+                Cat>;
+
+        template <typename Fn, typename T, typename U, typename Cat = std::partial_ordering>
+        concept ordering_invocable =
+            ordering_invocable_<Fn, T, U, Cat> &&
+            ordering_invocable_<Fn, U, T, Cat> &&
+            ordering_invocable_<Fn, T, T, Cat> &&
+            ordering_invocable_<Fn, U, U, Cat>;
+
+
+``weak_ordering_for``
+----------------------------
+
+..  concept::
+    template <typename Fn, typename Seq1, typename Seq2 = Seq1> \
+    weak_ordering_for
+
+    Signifies that a binary callable :var:`Fn` forms a strict weak order over the elements of sequences :var:`Seq1` and :var:`Seq2`.
+
+    It is defined as::
+
+        template <typename Fn, typename Seq1, typename Seq2 = Seq1>
+        concept weak_ordering_for =
+            sequence<Seq1> &&
+            sequence<Seq2> &&
+            ordering_invocable<Fn&, element_t<Seq1>, element_t<Seq2>, std::weak_ordering> &&
+            ordering_invocable<Fn&, value_t<Seq1>&, element_t<Seq2>, std::weak_ordering> &&
+            ordering_invocable<Fn&, element_t<Seq1>, value_t<Seq2>&, std::weak_ordering> &&
+            ordering_invocable<Fn&, value_t<Seq1>&, value_t<Seq2>&, std::weak_ordering> &&
+            ordering_invocable<Fn&, common_element_t<Seq1>, common_element_t<Seq2>, std::weak_ordering>;
+

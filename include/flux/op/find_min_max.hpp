@@ -15,14 +15,14 @@ namespace detail {
 
 struct find_min_fn {
     template <multipass_sequence Seq,
-              strict_weak_order_for<Seq> Cmp = std::ranges::less>
+              weak_ordering_for<Seq> Cmp = std::compare_three_way>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Cmp cmp = {}) const -> cursor_t<Seq>
     {
         auto min = first(seq);
         if (!is_last(seq, min)) {
             for (auto cur = next(seq, min); !is_last(seq, cur); inc(seq, cur)) {
-                if (std::invoke(cmp, read_at(seq, cur), read_at(seq, min))) {
+                if (std::invoke(cmp, read_at(seq, cur), read_at(seq, min)) < 0) {
                     min = cur;
                 }
             }
@@ -34,14 +34,14 @@ struct find_min_fn {
 
 struct find_max_fn {
     template <multipass_sequence Seq,
-              strict_weak_order_for<Seq> Cmp = std::ranges::less>
+              weak_ordering_for<Seq> Cmp = std::compare_three_way>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Cmp cmp = {}) const -> cursor_t<Seq>
     {
         auto max = first(seq);
         if (!is_last(seq, max)) {
             for (auto cur = next(seq, max); !is_last(seq, cur); inc(seq, cur)) {
-                if (!std::invoke(cmp, read_at(seq, cur), read_at(seq, max))) {
+                if (!(std::invoke(cmp, read_at(seq, cur), read_at(seq, max)) < 0)) {
                     max = cur;
                 }
             }
@@ -53,7 +53,7 @@ struct find_max_fn {
 
 struct find_minmax_fn {
     template <multipass_sequence Seq,
-              strict_weak_order_for<Seq> Cmp = std::ranges::less>
+              weak_ordering_for<Seq> Cmp = std::compare_three_way>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Cmp cmp = {}) const
         -> minmax_result<cursor_t<Seq>>
@@ -64,10 +64,10 @@ struct find_minmax_fn {
             for (auto cur = next(seq, min); !is_last(seq, cur); inc(seq, cur)) {
                 auto&& elem = read_at(seq, cur);
 
-                if (std::invoke(cmp, elem, read_at(seq, min))) {
+                if (std::invoke(cmp, elem, read_at(seq, min)) < 0) {
                     min = cur;
                 }
-                if (!std::invoke(cmp, elem, read_at(seq, max))) {
+                if (!(std::invoke(cmp, elem, read_at(seq, max)) < 0)) {
                     max = cur;
                 }
             }
@@ -85,7 +85,7 @@ FLUX_EXPORT inline constexpr auto find_minmax = detail::find_minmax_fn{};
 
 template <typename D>
 template <typename Cmp>
-    requires strict_weak_order_for<Cmp, D>
+    requires weak_ordering_for<Cmp, D>
 constexpr auto inline_sequence_base<D>::find_min(Cmp cmp)
 {
     return flux::find_min(derived(), std::move(cmp));
@@ -93,7 +93,7 @@ constexpr auto inline_sequence_base<D>::find_min(Cmp cmp)
 
 template <typename D>
 template <typename Cmp>
-    requires strict_weak_order_for<Cmp, D>
+    requires weak_ordering_for<Cmp, D>
 constexpr auto inline_sequence_base<D>::find_max(Cmp cmp)
 {
     return flux::find_max(derived(), std::move(cmp));
@@ -101,7 +101,7 @@ constexpr auto inline_sequence_base<D>::find_max(Cmp cmp)
 
 template <typename D>
 template <typename Cmp>
-    requires strict_weak_order_for<Cmp, D>
+    requires weak_ordering_for<Cmp, D>
 constexpr auto inline_sequence_base<D>::find_minmax(Cmp cmp)
 {
     return flux::find_minmax(derived(), std::move(cmp));

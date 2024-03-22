@@ -23,13 +23,13 @@ struct minmax_result {
 namespace detail {
 
 struct min_op {
-    template <sequence Seq, strict_weak_order_for<Seq> Cmp = std::ranges::less>
+    template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
         -> flux::optional<value_t<Seq>>
     {
         return flux::fold_first(FLUX_FWD(seq), [&](auto min, auto&& elem) -> value_t<Seq> {
-            if (std::invoke(cmp, elem, min)) {
+            if (std::invoke(cmp, elem, min) < 0) {
                 return value_t<Seq>(FLUX_FWD(elem));
             } else {
                 return min;
@@ -39,13 +39,13 @@ struct min_op {
 };
 
 struct max_op {
-    template <sequence Seq, strict_weak_order_for<Seq> Cmp = std::ranges::less>
+    template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
         -> flux::optional<value_t<Seq>>
     {
         return flux::fold_first(FLUX_FWD(seq), [&](auto max, auto&& elem) -> value_t<Seq> {
-            if (!std::invoke(cmp, elem, max)) {
+            if (!(std::invoke(cmp, elem, max) < 0)) {
                 return value_t<Seq>(FLUX_FWD(elem));
             } else {
                 return max;
@@ -55,7 +55,7 @@ struct max_op {
 };
 
 struct minmax_op {
-    template <sequence Seq, strict_weak_order_for<Seq> Cmp = std::ranges::less>
+    template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
         -> flux::optional<minmax_result<value_t<Seq>>>
@@ -71,10 +71,10 @@ struct minmax_op {
                    value_t<Seq>(flux::read_at(seq, cur))};
 
         auto fold_fn = [&](R mm, auto&& elem) -> R {
-            if (std::invoke(cmp, elem, mm.min)) {
+            if (std::invoke(cmp, elem, mm.min) < 0) {
                 mm.min = value_t<Seq>(elem);
             }
-            if (!std::invoke(cmp, elem, mm.max)) {
+            if (!(std::invoke(cmp, elem, mm.max) < 0)) {
                 mm.max = value_t<Seq>(FLUX_FWD(elem));
             }
             return mm;
@@ -93,7 +93,7 @@ FLUX_EXPORT inline constexpr auto minmax = detail::minmax_op{};
 
 template <typename Derived>
 template <typename Cmp>
-    requires strict_weak_order_for<Cmp, Derived>
+    requires weak_ordering_for<Cmp, Derived>
 constexpr auto inline_sequence_base<Derived>::max(Cmp cmp)
 {
     return flux::max(derived(), std::move(cmp));
@@ -101,7 +101,7 @@ constexpr auto inline_sequence_base<Derived>::max(Cmp cmp)
 
 template <typename Derived>
 template <typename Cmp>
-    requires strict_weak_order_for<Cmp, Derived>
+    requires weak_ordering_for<Cmp, Derived>
 constexpr auto inline_sequence_base<Derived>::min(Cmp cmp)
 {
     return flux::min(derived(), std::move(cmp));
@@ -109,7 +109,7 @@ constexpr auto inline_sequence_base<Derived>::min(Cmp cmp)
 
 template <typename Derived>
 template <typename Cmp>
-    requires strict_weak_order_for<Cmp, Derived>
+    requires weak_ordering_for<Cmp, Derived>
 constexpr auto inline_sequence_base<Derived>::minmax(Cmp cmp)
 {
     return flux::minmax(derived(), std::move(cmp));
