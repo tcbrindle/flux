@@ -57,9 +57,9 @@ constexpr bool test_zip_map()
             int n = 0;
             FLUX_FOR(auto p, zipped) {
                 auto res = p;
-                auto originalArr1 = n;
-                auto originalArr2 = 100.0 * n;
-                STATIC_CHECK(res == originalArr1 + originalArr2);
+                auto original_arr1_value = n;
+                auto original_arr2_value = 100.0 * n;
+                STATIC_CHECK(res == original_arr1_value + original_arr2_value);
                 ++n;
             }
         }
@@ -106,9 +106,9 @@ constexpr bool test_zip_map()
             int n = 1;
             FLUX_FOR(auto p, zipped) {
                 auto res = p;
-                auto originalArr1 = n;
-                auto originalArr2 = 100 * n;
-                STATIC_CHECK(res == originalArr1 + originalArr2);
+                auto original_arr1_value = n;
+                auto original_arr2_value = 100 * n;
+                STATIC_CHECK(res == original_arr1_value + original_arr2_value);
                 ++n;
             }
         }
