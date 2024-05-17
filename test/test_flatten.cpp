@@ -249,7 +249,7 @@ constexpr
 #endif
 bool issue_150()
 {
-    const std::vector<std::string> vec{"a", "b", "c"};
+    const std::vector<std::string_view> vec{"a", "b", "c"};
 
     auto str = flux::ref(vec).flatten().to<std::string>();
 
