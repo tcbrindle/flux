@@ -7,6 +7,7 @@
 
 #include <array>
 #include <list>
+#include <optional>
 
 #include "test_utils.hpp"
 

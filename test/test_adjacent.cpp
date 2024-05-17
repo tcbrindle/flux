@@ -6,6 +6,7 @@
 #include "catch.hpp"
 
 #include <array>
+#include <tuple>
 
 #include "test_utils.hpp"
 
