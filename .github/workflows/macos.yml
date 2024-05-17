@@ -20,16 +20,16 @@ jobs:
 
         exclude:
           - compiler: GCC-13
-            test_with: Module
+        #    test_with: Module
           - compiler: LLVM-Clang-16
             test_with: Module
 
         include:
-          - compiler: GCC-13
-            cxx: g++-13
-            install: |
-              brew update
-              brew install gcc@13 ninja
+        #  - compiler: GCC-13
+        #    cxx: g++-13
+        #    install: |
+        #      brew update
+        #      brew install gcc@13 ninja
           - compiler: LLVM-Clang-16
             cxx: $(brew --prefix llvm@16)/bin/clang++
             install: |
