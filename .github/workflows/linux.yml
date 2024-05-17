@@ -40,7 +40,7 @@ jobs:
               brew install gcc@13 ninja binutils
               brew link --force binutils
           - compiler: Clang-17
-            cxx: clang++
+            cxx: $(brew --prefix llvm@17)/bin/clang++
             install: |
               brew install llvm@17 ninja binutils
               brew link --force binutils
