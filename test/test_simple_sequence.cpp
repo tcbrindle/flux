@@ -5,6 +5,7 @@
 #include "catch.hpp"
 
 #include <array>
+#include <optional>
 
 #include "test_utils.hpp"
 

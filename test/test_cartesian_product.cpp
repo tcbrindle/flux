@@ -10,6 +10,7 @@
 #include <array>
 #include <iostream>
 #include <string_view>
+#include <tuple>
 
 #include "test_utils.hpp"
 

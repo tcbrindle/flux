@@ -5,6 +5,7 @@
 
 #include "catch.hpp"
 
+#include <optional> // std::nullopt
 #include <utility> // std::as_const
 
 #include "test_utils.hpp"
