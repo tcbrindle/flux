@@ -3928,6 +3928,8 @@ inline constexpr auto empty = detail::empty_sequence<T>{};
 #endif // FLUX_SOURCE_EMPTY_HPP_INCLUDED
 
 
+#include <algorithm> // for std::min({ilist...})
+
 namespace flux {
 
 namespace detail {
