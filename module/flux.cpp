@@ -1,6 +1,7 @@
 
 module;
 
+#include <algorithm>
 #include <array>
 #include <bitset>
 #include <compare>
