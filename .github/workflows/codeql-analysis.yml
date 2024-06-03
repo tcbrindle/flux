@@ -37,7 +37,7 @@ jobs:
         # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
         include:
           - install: |
-              brew install gcc@14 ninja binutils
+              brew install gcc@13 ninja binutils
               brew link --force binutils
 
     steps:
@@ -78,7 +78,7 @@ jobs:
         ${{matrix.install}}
         cmake -E make_directory ${{runner.workspace}}/build
         cd ${{runner.workspace}}/build
-        cmake ${GITHUB_WORKSPACE} -GNinja -DCMAKE_CXX_COMPILER=g++-14
+        cmake ${GITHUB_WORKSPACE} -GNinja -DCMAKE_CXX_COMPILER=g++-13
         cmake --build .
       
 
