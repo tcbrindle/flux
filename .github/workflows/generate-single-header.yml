@@ -24,11 +24,11 @@ jobs:
 
       - name: Build
         run: |
-          brew install gcc@13 binutils
+          brew install gcc@14 binutils
           brew link --force binutils
           cmake -E make_directory ${{runner.workspace}}/build
           cd ${{runner.workspace}}/build
-          cmake ${GITHUB_WORKSPACE} -DCMAKE_CXX_COMPILER=g++-13 -DFLUX_BUILD_TOOLS=On
+          cmake ${GITHUB_WORKSPACE} -DCMAKE_CXX_COMPILER=g++-14 -DFLUX_BUILD_TOOLS=On
           cmake --build . --target make_single_header
 
       - name: Run
