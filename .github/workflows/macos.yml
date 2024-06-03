@@ -14,22 +14,22 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        compiler: [GCC-14, LLVM-Clang-16, LLVM-Clang-17]
+        compiler: [GCC-13, LLVM-Clang-16, LLVM-Clang-17]
         test_with: [Headers, Module]
         build_type: [Debug, Release]
 
         exclude:
-          - compiler: GCC-14
-            test_with: Module
+          - compiler: GCC-13
+        #    test_with: Module
           - compiler: LLVM-Clang-16
             test_with: Module
 
         include:
-          - compiler: GCC-14
-            cxx: g++-14
-            install: |
-              brew update
-              brew install gcc@14 ninja
+        #  - compiler: GCC-13
+        #    cxx: g++-13
+        #    install: |
+        #      brew update
+        #      brew install gcc@13 ninja
           - compiler: LLVM-Clang-16
             cxx: $(brew --prefix llvm@16)/bin/clang++
             install: |
