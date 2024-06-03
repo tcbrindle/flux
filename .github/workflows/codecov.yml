@@ -39,7 +39,9 @@ jobs:
         lcov --remove coverage.info '*/test/*' --output-file coverage.info
 
     - name: Upload coverage report
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         files: ${{runner.workspace}}/build/test/CMakeFiles/test-flux.dir/coverage.info
+        token: ${{secrets.CODECOV_TOKEN}}
+        verbose: true
 
