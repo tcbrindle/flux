@@ -17,10 +17,3 @@ target_sources(flux-mod PUBLIC
 target_link_libraries(flux-mod PRIVATE flux)
 target_compile_features(flux-mod PUBLIC $<IF:$<CXX_COMPILER_ID:MSVC>,cxx_std_23,cxx_std_20>)
 set_target_properties(flux-mod PROPERTIES CXX_EXTENSIONS Off)
-
-# Squish MSVC warning when building the module, hopefully we're not actually doing anything wrong
-if(MSVC)
-    target_compile_options(flux-mod PRIVATE
-        /wd5244 # '#include <flux.hpp>' in the purview of module 'flux' appears erroneous
-    )
-endif()
