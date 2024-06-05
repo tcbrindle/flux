@@ -70,6 +70,7 @@ add_executable(test-flux
     test_unchecked.cpp
     test_write_to.cpp
     test_zip.cpp
+    test_zip_map.cpp
     test_zip_algorithms.cpp
 
     test_array_ptr.cpp
