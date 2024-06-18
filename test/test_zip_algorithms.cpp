@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <array>
 #include <string_view>
+#include <tuple>
 
 #include "test_utils.hpp"
 

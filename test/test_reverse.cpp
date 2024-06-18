@@ -126,6 +126,19 @@ constexpr bool issue_143()
 }
 static_assert(issue_143());
 
+// Regression test for #182
+// https://github.com/tcbrindle/flux/issues/182
+constexpr bool issue_182()
+{
+    auto seq = flux::iota(1,4)
+                   .drop(2)
+                   .reverse().drop(5).reverse()
+                   .filter([](int i) { return i&1; })
+                   .chunk(4);
+
+    return seq.is_empty();
+}
+static_assert(issue_182());
 
 }
 
@@ -135,6 +148,12 @@ TEST_CASE("reverse")
     REQUIRE(result);
 
     result = issue_52();
+    REQUIRE(result);
+
+    result = issue_143();
+    REQUIRE(result);
+
+    result = issue_182();
     REQUIRE(result);
 
     {

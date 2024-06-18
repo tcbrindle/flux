@@ -88,8 +88,8 @@ struct indexed_bounds_check_fn {
                 }
             }
 #endif
-            assert_fn{}(idx >= T{0}, "index cannot be negative", std::move(loc));
-            assert_fn{}(idx < limit, "out-of-bounds sequence access", std::move(loc));
+            assert_fn{}(idx >= T{0}, "index cannot be negative", loc);
+            assert_fn{}(idx < limit, "out-of-bounds sequence access", loc);
         }
     }
 };

@@ -21,12 +21,22 @@ struct for_each_while_fn {
         if constexpr (requires { traits_t<Seq>::for_each_while(seq, std::move(pred)); }) {
             return traits_t<Seq>::for_each_while(seq, std::move(pred));
         } else {
-            auto cur = first(seq);
-            while (!is_last(seq, cur)) {
-                if (!std::invoke(pred, read_at(seq, cur))) { break; }
-                inc(seq, cur);
+            if constexpr (multipass_sequence<Seq> && bounded_sequence<Seq>) {
+                auto cur = first(seq);
+                auto end = last(seq);
+                while (cur != end) {
+                    if (!std::invoke(pred, read_at(seq, cur))) { break; }
+                    inc(seq, cur);
+                }
+                return cur;
+            } else {
+                auto cur = first(seq);
+                while (!is_last(seq, cur)) {
+                    if (!std::invoke(pred, read_at(seq, cur))) { break; }
+                    inc(seq, cur);
+                }
+                return cur;
             }
-            return cur;
         }
     }
 };

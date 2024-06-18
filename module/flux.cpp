@@ -1,6 +1,7 @@
 
 module;
 
+#include <algorithm>
 #include <array>
 #include <bitset>
 #include <compare>
@@ -32,4 +33,26 @@ export module flux;
 
 #define FLUX_MODULE_INTERFACE
 
+// Silence Clang and MSVC warnings about #include inside a module's purview
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 5244)
+#endif
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#if __has_warning("-Winclude-angled-in-module-purview")
+#pragma clang diagnostic ignored "-Winclude-angled-in-module-purview"
+#endif
+#endif
+
 #include <flux.hpp>
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
