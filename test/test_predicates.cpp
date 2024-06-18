@@ -242,16 +242,16 @@ constexpr bool test_comparisons()
 }
 static_assert(test_comparisons());
 
+struct Test {
+    bool operator==(Test const&) const = default;
+    constexpr auto operator<=>(Test const&) const {
+        return std::partial_ordering::unordered;
+    }
+};
+
 constexpr bool test_partial_min_max()
 {
     namespace cmp = flux::cmp;
-
-    struct Test {
-        bool operator==(Test const&) const = default;
-        constexpr auto operator<=>(Test const&) const {
-            return std::partial_ordering::unordered;
-        }
-    };
 
     // partial_min works just like min for sensible types
     {
