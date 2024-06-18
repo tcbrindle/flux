@@ -266,8 +266,6 @@ constexpr bool test_partial_min_max()
     {
         Test const t1, t2;
 
-        cmp::compare(t1, t2);
-
         Test const& r = cmp::partial_min(t1, t2);
 
         STATIC_CHECK(&r == &t1);
@@ -285,8 +283,6 @@ constexpr bool test_partial_min_max()
     // if the arguments are unordered
     {
         Test const t1, t2;
-
-        cmp::compare(t1, t2);
 
         Test const& r = cmp::partial_max(t1, t2);
 
