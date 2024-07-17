@@ -814,6 +814,93 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
       * - :concept:`const_iterable_sequence`
         - :var:`Seq` is const-iterable and :var:`Pred` is const-invocable
 
+``filter_deref``
+^^^^^^^^^^^^^^^^
+
+..  function::
+    template <sequence Seq> \
+        requires optional_like<element_t<Seq>> \
+    auto filter_deref(Seq seq) -> sequence auto;
+
+    Given a sequence of "optional-like" elements (e.g. :type:`std::optional`, :type:`flux::optional`, :expr:`T*` etc...), filters out those elements which return :texpr:`false` after conversion to :texpr:`bool`, and performs a dereference of the remaining elements.
+
+    Equivalent to :expr:`filter_map(seq, std::identity{})`.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`Seq` is multipass
+      * - :concept:`bidirectional_sequence`
+        - :var:`Seq` is bidirectional
+      * - :concept:`random_access_sequence`
+        - Never
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`Seq` is bounded
+      * - :concept:`sized_sequence`
+        - Never
+      * - :concept:`infinite_sequence`
+        - :var:`Seq` is infinite
+      * - :concept:`read_only_sequence`
+        - :var:`Seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`Seq` is const-iterable and :var:`Func` is const-invocable
+
+    :see also:
+
+        * :func:`flux::filter_map`
+
+``filter_map``
+^^^^^^^^^^^^^^
+
+..  function::
+    template <sequence Seq, typename Func> \
+        requires std::invocable<Func&, element_t<Seq>> && \
+                 optional_like<std::invoke_result_t<Func&, element_t<Seq>>> \
+    auto filter_map(Seq seq, Func func) -> sequence auto;
+
+    Performs both filtering and mapping using a single function.
+    Given a unary function :var:`func` returning an "optional-like" type, the returned adaptor filters out those elements for which :var:`func` returns a "disengaged" optional (that is, those which return :texpr:`false` after conversion to :texpr:`bool`). It then dereferences the remaining elements using :expr:`operator*`.
+    Equivalent to::
+
+        map(seq, func)
+        .filter([](auto&& arg) { return static_cast<bool>(arg) })
+        .map([](auto&& arg) -> decltype(auto) { return *std::forward(arg); });
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`Seq` is multipass
+      * - :concept:`bidirectional_sequence`
+        - :var:`Seq` is bidirectional
+      * - :concept:`random_access_sequence`
+        - Never
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`Seq` is bounded
+      * - :concept:`sized_sequence`
+        - Never
+      * - :concept:`infinite_sequence`
+        - :var:`Seq` is infinite
+      * - :concept:`read_only_sequence`
+        - :var:`Seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`Seq` is const-iterable and :var:`Func` is const-invocable
+
 ``flatten``
 ^^^^^^^^^^^
 
