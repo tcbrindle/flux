@@ -998,6 +998,18 @@ template <typename T>
     requires detail::has_nested_sequence_traits<T>
 struct sequence_traits<T> : T::flux_sequence_traits {};
 
+namespace detail {
+
+template <typename O>
+concept optional_like =
+    std::default_initializable<O> &&
+    std::movable<O> &&
+    requires (O& o) {
+        { static_cast<bool>(o) };
+        { *o } -> flux::detail::can_reference;
+    };
+
+}
 
 } // namespace flux
 
@@ -2740,6 +2752,15 @@ public:
     [[nodiscard]]
     constexpr auto filter(Pred pred) &&;
 
+    template <typename Func>
+        requires std::invocable<Func&, element_t<Derived>> &&
+                 detail::optional_like<std::invoke_result_t<Func&, element_t<Derived>>>
+    [[nodiscard]]
+    constexpr auto filter_map(Func func) &&;
+
+    [[nodiscard]]
+    constexpr auto filter_deref() && requires detail::optional_like<value_t<Derived>>;
+
     [[nodiscard]]
     constexpr auto flatten() && requires sequence<element_t<Derived>>;
 
@@ -2990,15 +3011,6 @@ template <typename D>
 struct simple_sequence_base : inline_sequence_base<D> {};
 
 namespace detail {
-
-template <typename O>
-concept optional_like =
-    std::default_initializable<O> &&
-    std::movable<O> &&
-    requires (O& o) {
-        { static_cast<bool>(o) };
-        { *o } -> flux::detail::can_reference;
-    };
 
 template <typename S>
 concept simple_sequence =
@@ -8335,6 +8347,174 @@ constexpr auto inline_sequence_base<D>::filter(Pred pred) &&
 
 
 
+// Copyright (c) 2024 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_OP_FILTER_MAP_HPP_INCLUDED
+#define FLUX_OP_FILTER_MAP_HPP_INCLUDED
+
+
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_OP_MAP_HPP_INCLUDED
+#define FLUX_OP_MAP_HPP_INCLUDED
+
+
+
+
+namespace flux {
+
+namespace detail {
+
+template <sequence Base, typename Func>
+    requires std::is_object_v<Func> &&
+             std::regular_invocable<Func&, element_t<Base>>
+struct map_adaptor : inline_sequence_base<map_adaptor<Base, Func>>
+{
+private:
+    FLUX_NO_UNIQUE_ADDRESS Base base_;
+    FLUX_NO_UNIQUE_ADDRESS Func func_;
+
+    friend struct sequence_traits<map_adaptor>;
+
+public:
+    constexpr map_adaptor(decays_to<Base> auto&& base, decays_to<Func> auto&& func)
+        : base_(FLUX_FWD(base)),
+          func_(FLUX_FWD(func))
+    {}
+
+    constexpr auto base() & -> Base& { return base_; }
+    constexpr auto base() const& -> Base const& { return base_; }
+    constexpr auto base() && -> Base&& { return std::move(base_); }
+    constexpr auto base() const&& -> Base const&& { return std::move(base_); }
+
+    struct flux_sequence_traits  : detail::passthrough_traits_base<Base>
+    {
+        using value_type = std::remove_cvref_t<std::invoke_result_t<Func&, element_t<Base>>>;
+
+        static constexpr bool disable_multipass = !multipass_sequence<Base>;
+        static constexpr bool is_infinite = infinite_sequence<Base>;
+
+        template <typename Self>
+        static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
+            -> decltype(std::invoke(self.func_, flux::read_at(self.base_, cur)))
+        {
+            return std::invoke(self.func_, flux::read_at(self.base_, cur));
+        }
+
+        template <typename Self>
+        static constexpr auto read_at_unchecked(Self& self, cursor_t<Self> const& cur)
+            -> decltype(std::invoke(self.func_, flux::read_at_unchecked(self.base_, cur)))
+        {
+            return std::invoke(self.func_, flux::read_at_unchecked(self.base_, cur));
+        }
+
+        static constexpr auto for_each_while(auto& self, auto&& pred)
+        {
+            return flux::for_each_while(self.base_, [&](auto&& elem) {
+                return std::invoke(pred, std::invoke(self.func_, FLUX_FWD(elem)));
+            });
+        }
+
+        static void move_at() = delete; // Use the base version of move_at
+        static void data() = delete; // we're not a contiguous sequence
+    };
+};
+
+struct map_fn {
+    template <adaptable_sequence Seq, typename Func>
+        requires std::regular_invocable<Func&, element_t<Seq>>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq, Func func) const
+    {
+        return map_adaptor<std::decay_t<Seq>, Func>(FLUX_FWD(seq), std::move(func));
+    }
+};
+
+} // namespace detail
+
+FLUX_EXPORT inline constexpr auto map = detail::map_fn{};
+
+template <typename Derived>
+template <typename Func>
+    requires std::invocable<Func&, element_t<Derived>>
+constexpr auto inline_sequence_base<Derived>::map(Func func) &&
+{
+    return detail::map_adaptor<Derived, Func>(std::move(derived()), std::move(func));
+}
+
+} // namespace flux
+
+#endif
+
+
+namespace flux {
+
+namespace detail {
+
+struct filter_map_fn {
+    // If dereffing the optional would give us an rvalue reference,
+    // prevent a probable dangling reference by returning by value instead
+    template <typename T>
+    using strip_rvalue_ref_t = std::conditional_t<
+        std::is_rvalue_reference_v<T>, std::remove_reference_t<T>, T>;
+
+    template <adaptable_sequence Seq, typename Func>
+        requires (std::invocable<Func&, element_t<Seq>> &&
+                  optional_like<std::remove_cvref_t<std::invoke_result_t<Func&, element_t<Seq>>>>)
+    constexpr auto operator()(Seq&& seq, Func func) const
+    {
+        return flux::map(FLUX_FWD(seq), std::move(func))
+            .filter([](auto&& opt) { return static_cast<bool>(opt); })
+            .map([](auto&& opt) -> strip_rvalue_ref_t<decltype(*FLUX_FWD(opt))> {
+                return *FLUX_FWD(opt);
+            });
+    }
+};
+
+} // namespace detail
+
+FLUX_EXPORT inline constexpr auto filter_map = detail::filter_map_fn{};
+
+template <typename D>
+template <typename Func>
+requires std::invocable<Func&, element_t<D>> &&
+         detail::optional_like<std::invoke_result_t<Func&, element_t<D>>>
+constexpr auto inline_sequence_base<D>::filter_map(Func func) &&
+{
+    return flux::filter_map(derived(), std::move(func));
+}
+
+namespace detail
+{
+
+struct filter_deref_fn {
+    template <adaptable_sequence Seq>
+        requires optional_like<value_t<Seq>>
+    constexpr auto operator()(Seq&& seq) const
+    {
+        return filter_map(FLUX_FWD(seq), [](auto&& opt) -> decltype(auto) { return FLUX_FWD(opt); });
+    }
+};
+
+} // namespace detail
+
+FLUX_EXPORT inline constexpr auto filter_deref = detail::filter_deref_fn{};
+
+template <typename D>
+constexpr auto inline_sequence_base<D>::filter_deref() && requires detail::optional_like<value_t<D>>
+{
+    return flux::filter_deref(derived());
+}
+} // namespace flux
+
+#endif
+
+
 
 // Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
@@ -9000,101 +9180,6 @@ constexpr auto inline_sequence_base<D>::inplace_reverse()
 
 #endif // FLUX_OP_INPLACE_REVERSE_HPP_INCLUDED
 
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_MAP_HPP_INCLUDED
-#define FLUX_OP_MAP_HPP_INCLUDED
-
-
-
-
-namespace flux {
-
-namespace detail {
-
-template <sequence Base, typename Func>
-    requires std::is_object_v<Func> &&
-             std::regular_invocable<Func&, element_t<Base>>
-struct map_adaptor : inline_sequence_base<map_adaptor<Base, Func>>
-{
-private:
-    FLUX_NO_UNIQUE_ADDRESS Base base_;
-    FLUX_NO_UNIQUE_ADDRESS Func func_;
-
-    friend struct sequence_traits<map_adaptor>;
-
-public:
-    constexpr map_adaptor(decays_to<Base> auto&& base, decays_to<Func> auto&& func)
-        : base_(FLUX_FWD(base)),
-          func_(FLUX_FWD(func))
-    {}
-
-    constexpr auto base() & -> Base& { return base_; }
-    constexpr auto base() const& -> Base const& { return base_; }
-    constexpr auto base() && -> Base&& { return std::move(base_); }
-    constexpr auto base() const&& -> Base const&& { return std::move(base_); }
-
-    struct flux_sequence_traits  : detail::passthrough_traits_base<Base>
-    {
-        using value_type = std::remove_cvref_t<std::invoke_result_t<Func&, element_t<Base>>>;
-
-        static constexpr bool disable_multipass = !multipass_sequence<Base>;
-        static constexpr bool is_infinite = infinite_sequence<Base>;
-
-        template <typename Self>
-        static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
-            -> decltype(std::invoke(self.func_, flux::read_at(self.base_, cur)))
-        {
-            return std::invoke(self.func_, flux::read_at(self.base_, cur));
-        }
-
-        template <typename Self>
-        static constexpr auto read_at_unchecked(Self& self, cursor_t<Self> const& cur)
-            -> decltype(std::invoke(self.func_, flux::read_at_unchecked(self.base_, cur)))
-        {
-            return std::invoke(self.func_, flux::read_at_unchecked(self.base_, cur));
-        }
-
-        static constexpr auto for_each_while(auto& self, auto&& pred)
-        {
-            return flux::for_each_while(self.base_, [&](auto&& elem) {
-                return std::invoke(pred, std::invoke(self.func_, FLUX_FWD(elem)));
-            });
-        }
-
-        static void move_at() = delete; // Use the base version of move_at
-        static void data() = delete; // we're not a contiguous sequence
-    };
-};
-
-struct map_fn {
-    template <adaptable_sequence Seq, typename Func>
-        requires std::regular_invocable<Func&, element_t<Seq>>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Func func) const
-    {
-        return map_adaptor<std::decay_t<Seq>, Func>(FLUX_FWD(seq), std::move(func));
-    }
-};
-
-} // namespace detail
-
-FLUX_EXPORT inline constexpr auto map = detail::map_fn{};
-
-template <typename Derived>
-template <typename Func>
-    requires std::invocable<Func&, element_t<Derived>>
-constexpr auto inline_sequence_base<Derived>::map(Func func) &&
-{
-    return detail::map_adaptor<Derived, Func>(std::move(derived()), std::move(func));
-}
-
-} // namespace flux
-
-#endif
 
 
 // Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
