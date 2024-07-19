@@ -271,6 +271,15 @@ public:
     [[nodiscard]]
     constexpr auto filter(Pred pred) &&;
 
+    template <typename Func>
+        requires std::invocable<Func&, element_t<Derived>> &&
+                 detail::optional_like<std::invoke_result_t<Func&, element_t<Derived>>>
+    [[nodiscard]]
+    constexpr auto filter_map(Func func) &&;
+
+    [[nodiscard]]
+    constexpr auto filter_deref() && requires detail::optional_like<value_t<Derived>>;
+
     [[nodiscard]]
     constexpr auto flatten() && requires sequence<element_t<Derived>>;
 

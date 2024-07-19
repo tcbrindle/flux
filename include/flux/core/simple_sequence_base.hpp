@@ -16,15 +16,6 @@ struct simple_sequence_base : inline_sequence_base<D> {};
 
 namespace detail {
 
-template <typename O>
-concept optional_like =
-    std::default_initializable<O> &&
-    std::movable<O> &&
-    requires (O& o) {
-        { static_cast<bool>(o) };
-        { *o } -> flux::detail::can_reference;
-    };
-
 template <typename S>
 concept simple_sequence =
     std::derived_from<S, simple_sequence_base<S>> &&
