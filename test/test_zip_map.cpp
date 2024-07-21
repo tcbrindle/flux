@@ -153,6 +153,112 @@ constexpr bool test_zip_map()
         STATIC_CHECK(flux::is_last(zipped, flux::last(zipped)));
         STATIC_CHECK(flux::equal(flux::empty<int>, zipped));
     }
+    {
+        auto zipped = flux::zip_map(
+            [](int const& first, int const& second) -> int const& {
+                return first > second ? first : second;
+            },
+            std::array{0, 1, 2, 3, 4},
+            std::array{0, 1, 2, 3, 4}
+        );
+
+        using Z = decltype(zipped);
+
+        static_assert(flux::sequence<Z>);
+        static_assert(flux::bidirectional_sequence<Z>);
+        static_assert(flux::random_access_sequence<Z>);
+        static_assert(flux::sized_sequence<Z>);
+        static_assert(flux::bounded_sequence<Z>);
+
+        static_assert(flux::sequence<Z const>);
+        static_assert(flux::bidirectional_sequence<Z const>);
+        static_assert(flux::random_access_sequence<Z const>);
+        static_assert(flux::sized_sequence<Z const>);
+        static_assert(flux::bounded_sequence<Z const>);
+
+        static_assert(std::same_as<flux::element_t<Z>, int const&>);
+        static_assert(std::same_as<flux::value_t<Z>, int>);
+        static_assert(std::same_as<flux::rvalue_element_t<Z>, int const&&>);
+
+        static_assert(std::same_as<flux::element_t<Z const>, int const&>);
+        static_assert(std::same_as<flux::value_t<Z const>, int>);
+        static_assert(std::same_as<flux::rvalue_element_t<Z const>, int const&&>);
+
+
+        STATIC_CHECK(flux::size(zipped) == 5);
+        STATIC_CHECK(flux::is_last(zipped, flux::last(zipped)));
+    }
+    {
+        std::array<int, 0> arr1 = {};
+
+        auto zipped = flux::zip_map(
+            [](int first) {
+                return first * 2;
+            },
+            flux::mut_ref(arr1)
+        );
+
+        using Z = decltype(zipped);
+
+        static_assert(flux::sequence<Z>);
+        static_assert(flux::bidirectional_sequence<Z>);
+        static_assert(flux::random_access_sequence<Z>);
+        static_assert(flux::sized_sequence<Z>);
+        static_assert(flux::bounded_sequence<Z>);
+
+        static_assert(flux::sequence<Z const>);
+        static_assert(flux::bidirectional_sequence<Z const>);
+        static_assert(flux::random_access_sequence<Z const>);
+        static_assert(flux::sized_sequence<Z const>);
+        static_assert(flux::bounded_sequence<Z const>);
+
+        static_assert(std::same_as<flux::element_t<Z>, int>);
+        static_assert(std::same_as<flux::value_t<Z>, int>);
+        static_assert(std::same_as<flux::rvalue_element_t<Z>, int>);
+
+        static_assert(std::same_as<flux::element_t<Z const>, int>);
+        static_assert(std::same_as<flux::value_t<Z const>, int>);
+        static_assert(std::same_as<flux::rvalue_element_t<Z const>, int>);
+
+
+        STATIC_CHECK(flux::size(zipped) == 0);
+        STATIC_CHECK(flux::is_last(zipped, flux::last(zipped)));
+        STATIC_CHECK(flux::equal(flux::empty<int>, zipped));
+    }
+    {
+        auto zipped = flux::zip_map(
+            []() -> int {
+                return 3;
+            }
+        );
+
+        using Z = decltype(zipped);
+
+        static_assert(flux::sequence<Z>);
+        static_assert(flux::bidirectional_sequence<Z>);
+        static_assert(flux::random_access_sequence<Z>);
+        static_assert(flux::sized_sequence<Z>);
+        static_assert(flux::bounded_sequence<Z>);
+
+        static_assert(flux::sequence<Z const>);
+        static_assert(flux::bidirectional_sequence<Z const>);
+        static_assert(flux::random_access_sequence<Z const>);
+        static_assert(flux::sized_sequence<Z const>);
+        static_assert(flux::bounded_sequence<Z const>);
+
+        static_assert(std::same_as<flux::element_t<Z>, int&>);
+        static_assert(std::same_as<flux::value_t<Z>, int>);
+        static_assert(std::same_as<flux::rvalue_element_t<Z>, int&&>);
+
+        static_assert(std::same_as<flux::element_t<Z const>, int&>);
+        static_assert(std::same_as<flux::value_t<Z const>, int>);
+        static_assert(std::same_as<flux::rvalue_element_t<Z const>, int&&>);
+
+
+        STATIC_CHECK(flux::size(zipped) == 0);
+        STATIC_CHECK(flux::is_last(zipped, flux::last(zipped)));
+        STATIC_CHECK(flux::equal(flux::empty<int>, zipped));
+    }
 
 
     return true;

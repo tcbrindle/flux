@@ -253,9 +253,9 @@ private:
     template <typename From, typename To>
     using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
 
-    static constexpr auto read_(auto fn, auto& self, auto const& cur)
+    static constexpr decltype(auto) read_(auto fn, auto& self, auto const& cur)
     {
-        return [&]<std::size_t... I>(std::index_sequence<I...>) {
+        return [&]<std::size_t... I>(std::index_sequence<I...>) -> decltype(auto) {
             return std::invoke(self.func_,
                 base::template read1_<I>(fn, self, cur)...
             );
@@ -263,18 +263,18 @@ private:
     }
 
 public:
-    using value_type = std::invoke_result_t<Func, element_t<Bases>...>;
+    using value_type = std::remove_cvref_t<std::invoke_result_t<Func&, element_t<Bases>...>>;
 
     template <typename Self>
         requires (sequence<const_like_t<Self, Bases>> && ...)
-    static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
+    static constexpr decltype(auto) read_at(Self& self, cursor_t<Self> const& cur)
     {
         return read_(flux::read_at, self, cur);
     }
 
     template <typename Self>
         requires (sequence<const_like_t<Self, Bases>> && ...)
-    static constexpr auto read_at_unchecked(Self& self, cursor_t<Self> const& cur)
+    static constexpr decltype(auto) read_at_unchecked(Self& self, cursor_t<Self> const& cur)
     {
         return read_(flux::read_at_unchecked, self, cur);
     }
