@@ -163,7 +163,7 @@ template <typename Func, sequence... Bases>
 struct zip_map_adaptor : inline_sequence_base<zip_map_adaptor<Func, Bases...>> {
 private:
     pair_or_tuple_t<Bases...> bases_;
-    Func func_;
+    FLUX_NO_UNIQUE_ADDRESS Func func_;
 
     friend struct sequence_traits<zip_map_adaptor>;
     friend struct zip_traits_base<Bases...>;
@@ -176,7 +176,7 @@ public:
 
 struct zip_map_fn {
     template <typename Func, adaptable_sequence... Seqs>
-        requires std::is_invocable_v<Func, element_t<Seqs>...>
+        requires std::is_invocable_v<Func&, element_t<Seqs>...>
     [[nodiscard]]
     constexpr auto operator()(Func func, Seqs&&... seqs) const
     {
