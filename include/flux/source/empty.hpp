@@ -13,7 +13,6 @@ namespace flux {
 namespace detail {
 
 template <typename T>
-    requires std::is_object_v<T>
 struct empty_sequence : inline_sequence_base<empty_sequence<T>> {
     struct flux_sequence_traits {
     private:
@@ -45,7 +44,7 @@ struct empty_sequence : inline_sequence_base<empty_sequence<T>> {
         }
 
         static constexpr auto size(empty_sequence) -> std::ptrdiff_t { return 0; }
-        static constexpr auto data(empty_sequence) -> T* { return nullptr; }
+        static constexpr auto data(empty_sequence) -> std::add_pointer_t<T> requires std::is_object_v<T> { return nullptr; }
 
         [[noreturn]]
         static constexpr auto read_at(empty_sequence, cursor_type) -> T&
@@ -59,7 +58,6 @@ struct empty_sequence : inline_sequence_base<empty_sequence<T>> {
 
 FLUX_EXPORT
 template <typename T>
-    requires std::is_object_v<T>
 inline constexpr auto empty = detail::empty_sequence<T>{};
 
 } // namespace flux
