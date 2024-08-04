@@ -44,7 +44,6 @@ constexpr bool test_zip_map()
         static_assert(std::same_as<flux::value_t<Z>, int>);
         static_assert(std::same_as<flux::rvalue_element_t<Z>, int>);
 
-        // Believe it or not these are correct -- we've zipped two ref adaptors
         static_assert(std::same_as<flux::element_t<Z const>, int>);
         static_assert(std::same_as<flux::value_t<Z const>, int>);
         static_assert(std::same_as<flux::rvalue_element_t<Z const>, int>);
@@ -97,7 +96,6 @@ constexpr bool test_zip_map()
         static_assert(std::same_as<flux::value_t<Z>, int>);
         static_assert(std::same_as<flux::rvalue_element_t<Z>, int>);
 
-        // Believe it or not these are correct -- we've zipped two ref adaptors
         static_assert(std::same_as<flux::element_t<Z const>, int>);
         static_assert(std::same_as<flux::value_t<Z const>, int>);
         static_assert(std::same_as<flux::rvalue_element_t<Z const>, int>);
@@ -143,7 +141,6 @@ constexpr bool test_zip_map()
         static_assert(std::same_as<flux::value_t<Z>, int>);
         static_assert(std::same_as<flux::rvalue_element_t<Z>, int>);
 
-        // Believe it or not these are correct -- we've zipped two ref adaptors
         static_assert(std::same_as<flux::element_t<Z const>, int>);
         static_assert(std::same_as<flux::value_t<Z const>, int>);
         static_assert(std::same_as<flux::rvalue_element_t<Z const>, int>);
