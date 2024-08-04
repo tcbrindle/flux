@@ -9,6 +9,8 @@
 #include <flux/core.hpp>
 #include <flux/source/empty.hpp>
 
+#include <algorithm> // for std::min({ilist...})
+
 namespace flux {
 
 namespace detail {

@@ -32,6 +32,7 @@
 #include <flux/op/equal.hpp>
 #include <flux/op/fill.hpp>
 #include <flux/op/filter.hpp>
+#include <flux/op/filter_map.hpp>
 #include <flux/op/find.hpp>
 #include <flux/op/find_min_max.hpp>
 #include <flux/op/flatten.hpp>

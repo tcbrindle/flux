@@ -379,6 +379,18 @@ template <typename T>
     requires detail::has_nested_sequence_traits<T>
 struct sequence_traits<T> : T::flux_sequence_traits {};
 
+namespace detail {
+
+template <typename O>
+concept optional_like =
+    std::default_initializable<O> &&
+    std::movable<O> &&
+    requires (O& o) {
+        { static_cast<bool>(o) };
+        { *o } -> flux::detail::can_reference;
+    };
+
+}
 
 } // namespace flux
 

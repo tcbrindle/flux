@@ -43,6 +43,7 @@ add_executable(test-flux
     test_equal.cpp
     test_fill.cpp
     test_filter.cpp
+    test_filter_map.cpp
     test_find.cpp
     test_find_min_max.cpp
     test_flatten.cpp
@@ -113,13 +114,6 @@ if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.28.0")
 
         target_compile_definitions(test-flux PRIVATE -DUSE_MODULES)
         set_target_properties(test-flux PROPERTIES CXX_SCAN_FOR_MODULES On)
-
-        # Squish MSVC warning when building the module, hopefully we're not actually doing anything wrong
-        if(MSVC)
-            target_compile_options(test-flux PRIVATE
-                    /wd5244 # '#include <flux.hpp>' in the purview of module 'flux' appears erroneous
-            )
-        endif()
     endif()
 endif()
 
