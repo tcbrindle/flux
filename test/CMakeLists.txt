@@ -1,13 +1,13 @@
 
 include(FetchContent)
 
-FetchContent_Declare(Catch2
-    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-    GIT_TAG f981c9cbcac07a2690e5a86767eba490b5465463 # v3.5.1
+FetchContent_Declare(doctest
+    GIT_REPOSITORY https://github.com/doctest/doctest.git
+    GIT_TAG ae7a13539fb71f270b87eb2e874fbac80bc8dda2 # v2.4.11
     FIND_PACKAGE_ARGS
 )
 
-FetchContent_MakeAvailable(Catch2)
+FetchContent_MakeAvailable(doctest)
 
 add_executable(test-flux
 
@@ -86,13 +86,14 @@ add_executable(test-flux
     test_single.cpp
     test_unfold.cpp
 )
-target_link_libraries(test-flux flux-internal Catch2::Catch2WithMain)
+target_link_libraries(test-flux flux-internal doctest::doctest_with_main)
 target_compile_definitions(test-flux PUBLIC
     FLUX_UNWIND_ON_ERROR
     FLUX_ERROR_ON_OVERFLOW
     FLUX_DISABLE_STATIC_BOUNDS_CHECKING
+    DOCTEST_CONFIG_VOID_CAST_EXPRESSIONS
 )
-target_precompile_headers(test-flux PRIVATE "catch.hpp")
+target_precompile_headers(test-flux PRIVATE <doctest/doctest.h>)
 
 if(FLUX_ENABLE_ASAN)
     target_compile_options(test-flux PRIVATE -fsanitize=address)
@@ -125,6 +126,6 @@ if(FLUX_BUILD_MODULE)
                           CXX_SCAN_FOR_MODULES On)
 endif()
 
-list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
-include(Catch)
-catch_discover_tests(test-flux)
+list(APPEND CMAKE_MODULE_PATH ${doctest_SOURCE_DIR}/scripts/cmake)
+include(doctest)
+doctest_discover_tests(test-flux)

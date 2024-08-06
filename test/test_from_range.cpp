@@ -3,8 +3,6 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include "catch.hpp"
-
 #include <array>
 #include <forward_list>
 #include <list>
@@ -56,52 +54,52 @@ TEST_CASE("from range")
 {
     REQUIRE(test_from_range());
 
-    SECTION("bounds checking") {
+    SUBCASE("bounds checking") {
         std::vector<int> vec{0, 1, 2, 3, 4};
 
         auto seq = flux::from_range(vec);
 
-        SECTION("Can read in-bounds")
+        SUBCASE("Can read in-bounds")
         {
             auto cur = seq.first();
             REQUIRE(seq[cur] == 0);
             REQUIRE(seq.move_at(cur) == 0);
         }
 
-        SECTION("Can advance within bounds")
+        SUBCASE("Can advance within bounds")
         {
             auto cur = seq.first();
             for (; !seq.is_last(cur); seq.inc(cur)) {}
             REQUIRE(seq.is_last(cur));
         }
 
-        SECTION("Reading past the end is an error")
+        SUBCASE("Reading past the end is an error")
         {
             auto cur = seq.last();
             REQUIRE_THROWS_AS(seq[cur], flux::unrecoverable_error);
             REQUIRE_THROWS_AS(seq.move_at(cur), flux::unrecoverable_error);
         }
 
-        SECTION("Advancing past the end is an error")
+        SUBCASE("Advancing past the end is an error")
         {
             auto cur = seq.last();
             REQUIRE_THROWS_AS(seq.next(cur), flux::unrecoverable_error);
         }
 
-        SECTION("Can decrement within bounds")
+        SUBCASE("Can decrement within bounds")
         {
             auto cur = seq.last();
             while(seq.dec(cur) != seq.first()) {}
             REQUIRE(cur == seq.first());
         }
 
-        SECTION("Decrementing before the start is an error")
+        SUBCASE("Decrementing before the start is an error")
         {
             auto cur = seq.first();
             REQUIRE_THROWS_AS(seq.dec(cur), flux::unrecoverable_error);
         }
 
-        SECTION("Random-access movements are bounds-checked")
+        SUBCASE("Random-access movements are bounds-checked")
         {
             auto cur = seq.first();
             REQUIRE_THROWS_AS(seq.inc(cur, 100), flux::unrecoverable_error);
@@ -110,10 +108,10 @@ TEST_CASE("from range")
         }
     }
 
-    SECTION("...with std::list...") {
+    SUBCASE("...with std::list...") {
         std::list<int> list{1, 2, 3, 4, 5};
 
-        SECTION("non-const argument, non-const seq, non-const from_range")
+        SUBCASE("non-const argument, non-const seq, non-const from_range")
         {
             auto seq = flux::from_range(list);
 
@@ -133,7 +131,7 @@ TEST_CASE("from range")
             REQUIRE(check_equal(seq, {1, 2, 3, 4, 5}));
         }
 
-        SECTION("non-const argument, const seq, non-const from_range")
+        SUBCASE("non-const argument, const seq, non-const from_range")
         {
             auto const seq = flux::from_range(list);
 
@@ -153,7 +151,7 @@ TEST_CASE("from range")
             REQUIRE(check_equal(seq, {1, 2, 3, 4, 5}));
         }
 
-        SECTION("const argument, non-const seq, non-const from_range")
+        SUBCASE("const argument, non-const seq, non-const from_range")
         {
             auto seq = flux::from_range(std::as_const(list));
 
@@ -173,7 +171,7 @@ TEST_CASE("from range")
             REQUIRE(check_equal(seq, {1, 2, 3, 4, 5}));
         }
 
-        SECTION("const argument, const seq, non-const from_range")
+        SUBCASE("const argument, const seq, non-const from_range")
         {
             auto const seq = flux::from_range(std::as_const(list));
 
@@ -194,7 +192,7 @@ TEST_CASE("from range")
         }
 
 #ifndef RVALUE_VIEWS_NOT_SUPPORTED
-        SECTION("prvalue argument, non-const seq, non-const from_range")
+        SUBCASE("prvalue argument, non-const seq, non-const from_range")
         {
             auto seq = flux::from_range(flux::copy(list));
 
@@ -217,7 +215,7 @@ TEST_CASE("from range")
         }
 #endif
 
-        SECTION("non-const argument, non-const seq, from_crange")
+        SUBCASE("non-const argument, non-const seq, from_crange")
         {
             auto seq = flux::from_crange(list);
 
@@ -237,7 +235,7 @@ TEST_CASE("from range")
             REQUIRE(check_equal(seq, {1, 2, 3, 4, 5}));
         }
 
-        SECTION("non-const argument, const seq, from_crange")
+        SUBCASE("non-const argument, const seq, from_crange")
         {
             auto const seq = flux::from_crange(list);
 
@@ -257,7 +255,7 @@ TEST_CASE("from range")
             REQUIRE(check_equal(seq, {1, 2, 3, 4, 5}));
         }
 
-        SECTION("const argument, non-const seq, from_crange")
+        SUBCASE("const argument, non-const seq, from_crange")
         {
             auto seq = flux::from_crange(std::as_const(list));
 
@@ -277,7 +275,7 @@ TEST_CASE("from range")
             REQUIRE(check_equal(seq, {1, 2, 3, 4, 5}));
         }
 
-        SECTION("const argument, const seq, from_crange")
+        SUBCASE("const argument, const seq, from_crange")
         {
             auto const seq = flux::from_crange(std::as_const(list));
 
@@ -298,7 +296,7 @@ TEST_CASE("from range")
         }
 
 #ifndef RVALUE_VIEWS_NOT_SUPPORTED
-        SECTION("prvalue argument, non-const seq, from_crange")
+        SUBCASE("prvalue argument, non-const seq, from_crange")
         {
             auto seq = flux::from_crange(flux::copy(list));
 
@@ -318,7 +316,7 @@ TEST_CASE("from range")
             REQUIRE(check_equal(seq, {1, 2, 3, 4, 5}));
         }
 
-        SECTION("prvalue argument, const seq, from_crange")
+        SUBCASE("prvalue argument, const seq, from_crange")
         {
             auto const seq = flux::from_crange(flux::copy(list));
 
@@ -340,10 +338,10 @@ TEST_CASE("from range")
 #endif
     }
 
-    SECTION("...with std::forward_list...") {
+    SUBCASE("...with std::forward_list...") {
         std::forward_list<int> list{1, 2, 3, 4, 5};
 
-        SECTION("non-const argument, non-const seq, non-const from_range")
+        SUBCASE("non-const argument, non-const seq, non-const from_range")
         {
             auto seq = flux::from_range(list);
 
@@ -363,7 +361,7 @@ TEST_CASE("from range")
             REQUIRE(check_equal(seq, {1, 2, 3, 4, 5}));
         }
 
-        SECTION("non-const argument, const seq, non-const from_range")
+        SUBCASE("non-const argument, const seq, non-const from_range")
         {
             auto const seq = flux::from_range(list);
 
@@ -383,7 +381,7 @@ TEST_CASE("from range")
             REQUIRE(check_equal(seq, {1, 2, 3, 4, 5}));
         }
 
-        SECTION("const argument, non-const seq, non-const from_range")
+        SUBCASE("const argument, non-const seq, non-const from_range")
         {
             auto seq = flux::from_range(std::as_const(list));
 
@@ -403,7 +401,7 @@ TEST_CASE("from range")
             REQUIRE(check_equal(seq, {1, 2, 3, 4, 5}));
         }
 
-        SECTION("const argument, const seq, non-const from_range")
+        SUBCASE("const argument, const seq, non-const from_range")
         {
             auto const seq = flux::from_range(std::as_const(list));
 
@@ -424,7 +422,7 @@ TEST_CASE("from range")
         }
 
 #ifndef RVALUE_VIEWS_NOT_SUPPORTED
-        SECTION("prvalue argument, non-const seq, non-const from_range")
+        SUBCASE("prvalue argument, non-const seq, non-const from_range")
         {
             auto seq = flux::from_range(flux::copy(list));
 
@@ -447,7 +445,7 @@ TEST_CASE("from range")
         }
 #endif
 
-        SECTION("non-const argument, non-const seq, from_crange")
+        SUBCASE("non-const argument, non-const seq, from_crange")
         {
             auto seq = flux::from_crange(list);
 
@@ -467,7 +465,7 @@ TEST_CASE("from range")
             REQUIRE(check_equal(seq, {1, 2, 3, 4, 5}));
         }
 
-        SECTION("non-const argument, const seq, from_crange")
+        SUBCASE("non-const argument, const seq, from_crange")
         {
             auto const seq = flux::from_crange(list);
 
@@ -487,7 +485,7 @@ TEST_CASE("from range")
             REQUIRE(check_equal(seq, {1, 2, 3, 4, 5}));
         }
 
-        SECTION("const argument, non-const seq, from_crange")
+        SUBCASE("const argument, non-const seq, from_crange")
         {
             auto seq = flux::from_crange(std::as_const(list));
 
@@ -507,7 +505,7 @@ TEST_CASE("from range")
             REQUIRE(check_equal(seq, {1, 2, 3, 4, 5}));
         }
 
-        SECTION("const argument, const seq, from_crange")
+        SUBCASE("const argument, const seq, from_crange")
         {
             auto const seq = flux::from_crange(std::as_const(list));
 
@@ -528,7 +526,7 @@ TEST_CASE("from range")
         }
 
 #ifndef RVALUE_VIEWS_NOT_SUPPORTED
-        SECTION("prvalue argument, non-const seq, from_crange")
+        SUBCASE("prvalue argument, non-const seq, from_crange")
         {
             auto seq = flux::from_crange(flux::copy(list));
 
@@ -548,7 +546,7 @@ TEST_CASE("from range")
             REQUIRE(check_equal(seq, {1, 2, 3, 4, 5}));
         }
 
-        SECTION("prvalue argument, const seq, from_crange")
+        SUBCASE("prvalue argument, const seq, from_crange")
         {
             auto const seq = flux::from_crange(flux::copy(list));
 
@@ -570,7 +568,7 @@ TEST_CASE("from range")
 #endif
     }
 
-    SECTION("with input range") {
+    SUBCASE("with input range") {
 
         std::istringstream iss("1 2 3 4 5");
         auto view = std::ranges::basic_istream_view<int, char>(iss);

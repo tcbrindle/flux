@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <doctest/doctest.h>
+
 #ifndef USE_MODULES
 #include <flux.hpp>
 #else

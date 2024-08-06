@@ -3,8 +3,6 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include "catch.hpp"
-
 #include <array>
 #include <algorithm>
 #include <numeric>
@@ -462,7 +460,7 @@ TEST_CASE("array_ptr")
     REQUIRE(test_array_ptr_sequence_impl());
     REQUIRE(test_make_array_ptr());
 
-    SECTION("bounds checking") {
+    SUBCASE("bounds checking") {
         int arr[] = {0, 1, 2};
         auto ptr = flux::array_ptr(arr);
 
