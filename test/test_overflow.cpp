@@ -5,6 +5,7 @@
 
 #include <doctest/doctest.h>
 
+#include <cstdint>
 #include <limits>
 
 #ifdef USE_MODULES

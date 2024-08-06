@@ -10,6 +10,7 @@
 #include <ranges>
 #include <sstream>
 #include <utility>
+#include <vector>
 
 #include "test_utils.hpp"
 

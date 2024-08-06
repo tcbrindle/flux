@@ -4,6 +4,9 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <array>
+#include <string>
+#include <string_view>
+#include <vector>
 
 #include "test_utils.hpp"
 

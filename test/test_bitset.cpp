@@ -7,6 +7,7 @@
 #include <bitset>
 #include <iostream>
 #include <utility>
+#include <vector>
 
 #include "test_utils.hpp"
 

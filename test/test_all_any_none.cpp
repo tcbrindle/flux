@@ -6,6 +6,8 @@
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <initializer_list>
+#include <vector>
 
 #ifdef USE_MODULES
 import flux;

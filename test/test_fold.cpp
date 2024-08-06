@@ -5,6 +5,7 @@
 
 #include <array>
 #include <chrono>
+#include <vector>
 
 #include "test_utils.hpp"
 

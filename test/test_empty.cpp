@@ -5,6 +5,8 @@
 
 #include <doctest/doctest.h>
 
+#include <concepts>
+
 #ifdef USE_MODULES
 import flux;
 #else
