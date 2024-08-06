@@ -16,12 +16,6 @@ namespace flux {
 
 namespace detail {
 
-template <typename Cmp>
-concept is_comparison_category =
-    std::same_as<Cmp, std::strong_ordering> ||
-    std::same_as<Cmp, std::weak_ordering> ||
-    std::same_as<Cmp, std::partial_ordering>;
-
 struct compare_fn {
 private:
     template <typename Seq1, typename Seq2, typename Cmp>
@@ -47,14 +41,11 @@ private:
     }
 
 public:
-    template <sequence Seq1, sequence Seq2,
-        typename Cmp = std::compare_three_way>
-        requires std::invocable<Cmp &, element_t<Seq1>, element_t<Seq2>> &&
-        is_comparison_category<std::decay_t<
-            std::invoke_result_t<Cmp &, element_t<Seq1>, element_t<Seq2>>>>
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way>
+        requires ordering_invocable<Cmp&, element_t<Seq1>, element_t<Seq2>>
     constexpr auto operator()(Seq1 &&seq1, Seq2 &&seq2, Cmp cmp = {}) const
         -> std::decay_t<
-            std::invoke_result_t<Cmp &, element_t<Seq1>, element_t<Seq2>>>
+            std::invoke_result_t<Cmp&, element_t<Seq1>, element_t<Seq2>>>
     {
         constexpr bool can_memcmp = 
             std::same_as<Cmp, std::compare_three_way> &&
