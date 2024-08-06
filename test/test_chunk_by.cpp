@@ -14,8 +14,6 @@
 //  http://www.boost.org/LICENSE_1_0.txt)
 
 
-#include "catch.hpp"
-
 #include <array>
 #include <iostream>
 

@@ -1,6 +1,4 @@
 
-#include "catch.hpp"
-
 #include <array>
 #include <algorithm>
 

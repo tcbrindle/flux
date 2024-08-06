@@ -3,7 +3,7 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include "catch.hpp"
+#include <doctest/doctest.h>
 
 #include <sstream>
 #include <vector>
@@ -16,7 +16,7 @@ import flux;
 
 TEST_CASE("write to")
 {
-    SECTION("Basic write_to")
+    SUBCASE("Basic write_to")
     {
         std::vector vec{1, 2, 3, 4, 5};
 
@@ -27,7 +27,7 @@ TEST_CASE("write to")
         REQUIRE(oss.str() == "[1, 2, 3, 4, 5]");
     }
 
-    SECTION("Nested sequences")
+    SUBCASE("Nested sequences")
     {
         std::vector<std::vector<std::vector<int>>> vec{
             { {1, 2}, {3, 4} },
@@ -42,7 +42,7 @@ TEST_CASE("write to")
         REQUIRE(oss.str() == "[[[1, 2], [3, 4]], [[5, 6], [7, 8]], [[9, 10], [11, 12]]]");
     }
 
-    SECTION("Reading and writing streams")
+    SUBCASE("Reading and writing streams")
     {
         std::istringstream iss("1 2 3 4 5");
         std::ostringstream oss;
