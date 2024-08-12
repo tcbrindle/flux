@@ -47,6 +47,7 @@ add_executable(test-flux
     test_find.cpp
     test_find_min_max.cpp
     test_flatten.cpp
+    test_flatten_with.cpp
     test_for_each.cpp
     test_fold.cpp
     test_front_back.cpp

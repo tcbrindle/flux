@@ -283,6 +283,20 @@ public:
     [[nodiscard]]
     constexpr auto flatten() && requires sequence<element_t<Derived>>;
 
+    template <adaptable_sequence Pattern>
+        requires sequence<element_t<Derived>> &&
+                 multipass_sequence<Pattern> &&
+                 detail::flatten_with_compatible<element_t<Derived>, Pattern>
+    [[nodiscard]]
+    constexpr auto flatten_with(Pattern&& pattern) &&;
+
+
+    template <typename Value>
+        requires sequence<element_t<Derived>> &&
+                 std::constructible_from<value_t<element_t<Derived>>, Value&&>
+    [[nodiscard]]
+    constexpr auto flatten_with(Value value) &&;
+
     template <typename Func>
         requires std::invocable<Func&, element_t<Derived>>
     [[nodiscard]]
