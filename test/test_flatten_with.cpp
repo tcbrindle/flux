@@ -60,8 +60,7 @@ constexpr bool test_flatten_with_single_pass()
     // flatten_with with an empty pattern is the same as flatten()
     {
         std::array<std::string_view, 3> arr{"111", "222", "333"};
-        auto seq = flux::flatten_with(single_pass_only(std::move(arr)),
-                                      flux::empty<char const&>);
+        auto seq = flux::flatten_with(single_pass_only(std::move(arr)), ""sv);
 
         using S = decltype(seq);
         static_assert(flux::sequence<S>);
