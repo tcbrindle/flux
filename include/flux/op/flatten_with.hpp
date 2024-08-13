@@ -56,6 +56,13 @@ public:
             std::common_reference_t<rvalue_element_t<InnerSeq>, rvalue_element_t<Pattern>>;
 
         struct cursor_type {
+            constexpr explicit cursor_type(cursor_t<Base>&& outer_cur)
+                : outer_cur(std::move(outer_cur))
+            {}
+
+            cursor_type(cursor_type&&) = default;
+            cursor_type& operator=(cursor_type&&) = default;
+
             cursor_t<Base> outer_cur;
             std::variant<cursor_t<Pattern>, cursor_t<InnerSeq>> inner_cur{};
         };
@@ -91,7 +98,7 @@ public:
 
         static constexpr auto first(self_t& self) -> cursor_type
         {
-            cursor_type cur{.outer_cur = flux::first(self.base_)};
+            cursor_type cur(flux::first(self.base_));
             if (!flux::is_last(self.base_, cur.outer_cur)) {
                 self.inner_.emplace(flux::read_at(self.base_, cur.outer_cur));
                 variant_emplace<1>(cur.inner_cur, flux::first(*self.inner_));
@@ -215,7 +222,7 @@ public:
         }
 
     public:
-        using value_type = value_t<InnerSeq>;
+        using value_type = std::common_type_t<value_t<InnerSeq>, value_t<Pattern>>;
 
         template <typename Self>
             requires can_flatten<Self>
