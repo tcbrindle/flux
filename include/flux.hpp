@@ -36,6 +36,7 @@
 #include <flux/op/find.hpp>
 #include <flux/op/find_min_max.hpp>
 #include <flux/op/flatten.hpp>
+#include <flux/op/flatten_with.hpp>
 #include <flux/op/fold.hpp>
 #include <flux/op/for_each.hpp>
 #include <flux/op/for_each_while.hpp>
