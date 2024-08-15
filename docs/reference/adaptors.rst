@@ -938,6 +938,57 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
       * - :concept:`const_iterable_sequence`
         - :var:`Seq` and :expr:`element_t<Seq>` are both const-iterable multipass sequences, and :expr:`element_t<Seq>` is a reference type
 
+``flatten_with``
+^^^^^^^^^^^^^^^^
+
+..  function::
+    template <sequence Seq> \
+        requires sequence<element_t<Seq>> \
+    auto flatten_with(Seq seq, value_t<element_t<Seq>> value) -> sequence auto;
+
+..  function::
+    template <sequence Seq, multipass_sequence Pattern> \
+        requires see_below \
+    auto flatten_with(Seq seq, Pattern pattern) -> sequence auto;
+
+    Works like :func:`flatten()`, but inserts :var:`value` (for the first overload) or all the elements of :var:`pattern` (for the second overload) between the elements of :var:`seq`.
+
+    :requires:
+
+    For the second overload, let :expr:`element_t<Seq>` be :type:`InnerSeq`. Then the expression in the requires clause is equivalent to::
+
+        sequence<InnerSeq> &&
+        std::common_reference_with<element_t<InnerSeq>, element_t<Pattern>> &&
+        std::common_reference_with<rvalue_element_t<InnerSeq>, rvalue_element_t<Pattern>> &&
+        std::common_with<value_t<InnerSeq>, value_t<Pattern>>;
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`Seq` is multipass, :expr:`element_t<Seq>` is multipass and :expr:`element_t<Seq>` is a reference type
+      * - :concept:`bidirectional_sequence`
+        - :var:`Seq` is bidirectional, :expr:`element_t<Seq>` is bidirectional and bounded, :expr:`Pattern` is bidirectional and bounded, and :expr:`element_t<Seq>` is a reference type
+      * - :concept:`random_access_sequence`
+        - Never
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`Seq` is bounded
+      * - :concept:`sized_sequence`
+        - Never
+      * - :concept:`infinite_sequence`
+        - Never
+      * - :concept:`read_only_sequence`
+        - :var:`Seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`Seq`, :expr:`element_t<Seq>` and :var:`Pattern` are all const-iterable multipass sequences, and :expr:`element_t<Seq>` is a reference type
+
 ``map``
 ^^^^^^^
 
@@ -1875,6 +1926,49 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
     Returns a sequence adaptor which iterates over the input sequences in lock-step. Iteration is complete when any of the input sequences is exhausted.
 
     The element type of the returned sequence is a :expr:`std::tuple` of the element types of the input sequences, or a :expr:`std::pair` for two inputs.
+
+    Iteration of the resulting adaptor is complete when any of the input sequences is exhausted.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - All inputs are multipass
+      * - :concept:`bidirectional_sequence`
+        - All inputs are bidirectional
+      * - :concept:`random_access_sequence`
+        - :var:`seq` is random-access
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - All inputs are bounded
+      * - :concept:`sized_sequence`
+        - All inputs are sized
+      * - :concept:`infinite_sequence`
+        - All inputs are infinite
+      * - :concept:`read_only_sequence`
+        - All inputs are read-only
+      * - :concept:`const_iterable_sequence`
+        - All inputs are const-iterable
+
+``zip_map``
+^^^^^^^^^^^
+
+..  function::
+    template <typename Func, sequence... Seqs> \
+        requires std::regular_invocable<Func&, element_t<Seqs>...> \
+    auto zip_map(Func func, Seqs... seqs) -> sequence auto;
+
+    Given ``N`` input sequences and an ``N``-ary function :var:`func`, returns a sequence adaptor which iterates over the input sequences in lock-step and yields the result of invoking :var:`func` with the sequence elements.
+
+    Iteration of the resulting adaptor is complete when any of the input sequences is exhausted.
+
+    Equivalent to :expr:`zip(seqs...).map(unpack(func))`, but avoids forming an intermediate tuple.
 
     :models:
 
