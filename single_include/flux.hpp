@@ -57,9 +57,9 @@
 #include <version>
 
 #define FLUX_VERSION_MAJOR 0
-#define FLUX_VERSION_MINOR 0
+#define FLUX_VERSION_MINOR 4
 #define FLUX_VERSION_PATCH 0
-#define FLUX_VERSION_DEVEL 1 // 0 => Release, 1 => development post Major.Minor.Patch
+#define FLUX_VERSION_DEVEL 0 // 0 => Release, 1 => development post Major.Minor.Patch
 
 #define FLUX_VERSION \
     (FLUX_VERSION_MAJOR * 100'000 \
