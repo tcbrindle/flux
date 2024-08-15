@@ -15,7 +15,6 @@ add_executable(test-flux
     test_overflow.cpp
     test_optional.cpp
     test_predicates.cpp
-    test_simple_sequence.cpp
     test_apply.cpp
 
     test_adjacent.cpp

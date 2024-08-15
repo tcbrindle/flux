@@ -11,16 +11,6 @@
 
 namespace {
 
-struct Tester : flux::simple_sequence_base<Tester> {
-
-    int i = 0;
-
-    constexpr auto maybe_next() -> std::optional<int>
-    {
-        return {i++};
-    }
-};
-
 constexpr bool test_take()
 {
     {
@@ -54,19 +44,6 @@ constexpr bool test_take()
         static_assert(flux::sized_sequence<T const>);
 
         STATIC_CHECK(taken.size() == 3);
-        STATIC_CHECK(check_equal(taken, {0, 1, 2}));
-    }
-
-    {
-        auto taken = Tester{}.take(3);
-
-        using T = decltype(taken);
-        static_assert(flux::sequence<T>);
-        static_assert(not flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
-
-        static_assert(not flux::sequence<T const>);
-
         STATIC_CHECK(check_equal(taken, {0, 1, 2}));
     }
 
