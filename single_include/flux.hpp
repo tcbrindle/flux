@@ -56,6 +56,17 @@
 
 #include <version>
 
+#define FLUX_VERSION_MAJOR 0
+#define FLUX_VERSION_MINOR 0
+#define FLUX_VERSION_PATCH 0
+#define FLUX_VERSION_DEVEL 1 // 0 => Release, 1 => development post Major.Minor.Patch
+
+#define FLUX_VERSION \
+    (FLUX_VERSION_MAJOR * 100'000 \
+    + FLUX_VERSION_MINOR * 1'000  \
+    + FLUX_VERSION_PATCH * 10   \
+    + FLUX_VERSION_DEVEL)
+
 #define FLUX_FWD(x) static_cast<decltype(x)&&>(x)
 
 #define FLUX_DECLVAL(...)  ((static_cast<__VA_ARGS__(*)()noexcept>(nullptr))())
