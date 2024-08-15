@@ -178,7 +178,7 @@ public:
 
 struct zip_map_fn {
     template <typename Func, adaptable_sequence... Seqs>
-        requires std::is_invocable_v<Func&, element_t<Seqs>...>
+        requires std::regular_invocable<Func&, element_t<Seqs>...>
     [[nodiscard]]
     constexpr auto operator()(Func func, Seqs&&... seqs) const
     {
