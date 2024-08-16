@@ -12,6 +12,7 @@ jobs:
     strategy:
       matrix:
         sanitizer: [ubsan, asan]
+        build_type: [Debug, Release]
         include:
           - cxx: g++-14
             install: |
