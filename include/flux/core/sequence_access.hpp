@@ -135,37 +135,15 @@ struct usize_fn {
     }
 };
 
-template <typename Seq>
-concept has_custom_move_at =
-    sequence<Seq> &&
-    requires (Seq& seq, cursor_t<Seq> const& cur) {
-        { traits_t<Seq>::move_at(seq, cur) };
-    };
-
 struct move_at_fn {
     template <sequence Seq>
     [[nodiscard]]
     constexpr auto operator()(Seq& seq, cursor_t<Seq> const& cur) const
         -> rvalue_element_t<Seq>
     {
-        if constexpr (has_custom_move_at<Seq>) {
-            return traits_t<Seq>::move_at(seq, cur);
-        } else {
-            if constexpr (std::is_lvalue_reference_v<element_t<Seq>>) {
-                return std::move(read_at_fn{}(seq, cur));
-            } else {
-                return read_at_fn{}(seq, cur);
-            }
-        }
+        return traits_t<Seq>::move_at(seq, cur);
     }
 };
-
-template <typename Seq>
-concept has_custom_read_at_unchecked =
-    sequence<Seq> &&
-    requires (Seq& seq, cursor_t<Seq> const& cur) {
-        { traits_t<Seq>::read_at_unchecked(seq, cur) } -> std::same_as<element_t<Seq>>;
-    };
 
 struct read_at_unchecked_fn {
     template <sequence Seq>
@@ -173,19 +151,8 @@ struct read_at_unchecked_fn {
     constexpr auto operator()(Seq& seq, cursor_t<Seq> const& cur) const
         -> element_t<Seq>
     {
-        if constexpr (has_custom_read_at_unchecked<Seq>) {
-            return traits_t<Seq>::read_at_unchecked(seq, cur);
-        } else {
-            return read_at_fn{}(seq, cur);
-        }
+        return traits_t<Seq>::read_at_unchecked(seq, cur);
     }
-};
-
-template <typename Seq>
-concept has_custom_move_at_unchecked =
-    sequence<Seq> &&
-    requires (Seq& seq, cursor_t<Seq> const& cur) {
-        { traits_t<Seq>::move_at_unchecked(seq, cur) } -> std::same_as<rvalue_element_t<Seq>>;
 };
 
 struct move_at_unchecked_fn {
@@ -194,15 +161,7 @@ struct move_at_unchecked_fn {
     constexpr auto operator()(Seq& seq, cursor_t<Seq> const& cur) const
         -> rvalue_element_t<Seq>
     {
-        if constexpr (has_custom_move_at_unchecked<Seq>) {
-            return traits_t<Seq>::move_at_unchecked(seq, cur);
-        } else if constexpr (has_custom_move_at<Seq>) {
-            return move_at_fn{}(seq, cur);
-        } else if constexpr (std::is_lvalue_reference_v<element_t<Seq>>){
-            return std::move(read_at_unchecked_fn{}(seq, cur));
-        } else {
-            return read_at_unchecked_fn{}(seq, cur);
-        }
+        return traits_t<Seq>::move_at_unchecked(seq, cur);
     }
 };
 

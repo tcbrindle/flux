@@ -81,24 +81,6 @@ template <has_element_type T>
              requires { typename T::value_type; }
 struct value_type<T> { using type = typename T::value_type; };
 
-template <has_element_type T>
-struct rvalue_element_type {
-    using type = std::conditional_t<std::is_lvalue_reference_v<element_t<T>>,
-                                    std::add_rvalue_reference_t<std::remove_reference_t<element_t<T>>>,
-                                    element_t<T>>;
-};
-
-template <typename Seq>
-concept has_move_at = requires (Seq& seq, cursor_t<Seq> const& cur) {
-   { traits_t<Seq>::move_at(seq, cur) };
-};
-
-template <has_element_type T>
-    requires has_move_at<T>
-struct rvalue_element_type<T> {
-    using type = decltype(traits_t<T>::move_at(FLUX_DECLVAL(T&), FLUX_DECLVAL(cursor_t<T> const&)));
-};
-
 } // namespace detail
 
 FLUX_EXPORT
@@ -113,7 +95,7 @@ using index_t = flux::config::int_type;
 
 FLUX_EXPORT
 template <typename Seq>
-using rvalue_element_t = typename detail::rvalue_element_type<Seq>::type;
+using rvalue_element_t = decltype(detail::traits_t<Seq>::move_at(FLUX_DECLVAL(Seq&), FLUX_DECLVAL(cursor_t<Seq> const&)));
 
 FLUX_EXPORT
 template <typename Seq>
