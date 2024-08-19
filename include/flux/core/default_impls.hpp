@@ -6,6 +6,7 @@
 #ifndef FLUX_CORE_DEFAULT_IMPLS_HPP_INCLUDED
 #define FLUX_CORE_DEFAULT_IMPLS_HPP_INCLUDED
 
+#include <flux/core/numeric.hpp>
 #include <flux/core/sequence_access.hpp>
 
 #include <functional>

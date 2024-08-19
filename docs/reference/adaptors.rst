@@ -1406,8 +1406,8 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
 ^^^^^^^^^^^^^^^^^^
 
 ..  function::
-    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::less> \
-        requires strict_weak_order_for<Cmp, Seq1> && strict_weak_order_for<Cmp, Seq2> \
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way> \
+        requires weak_ordering_for<Cmp, Seq1> && weak_ordering_for<Cmp, Seq2> \
     auto set_difference(Seq1 seq1, Seq2 seq2, Cmp cmp = {}) -> sequence auto;
 
     Returns a sequence adaptor which yields the set difference of the two input sequences :var:`seq1` and :var:`seq2`, ordered by the given comparison function :var:`cmp`.
@@ -1418,7 +1418,7 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
 
     :param seq1: The first sorted sequence.
     :param seq2: The second sorted sequence.
-    :param cmp: A binary predicate that takes two elements as arguments and returns true if the first element is less than the second.
+    :param cmp: A binary comparator whose return type is convertible to :type:`std::weak_ordering`. Both sequences must be sorted with respect to this comparator.
 
     :returns: A sequence adaptor that yields those elements of `seq1` which do not also appear in `seq2`.
 
@@ -1466,8 +1466,8 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
 ^^^^^^^^^^^^^^^^^^^^
 
 ..  function::
-    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::less> \
-        requires strict_weak_order_for<Cmp, Seq1> && strict_weak_order_for<Cmp, Seq2> \
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way> \
+        requires weak_ordering_for<Cmp, Seq1> && weak_ordering_for<Cmp, Seq2> \
     auto set_intersection(Seq1 seq1, Seq2 seq2, Cmp cmp = {}) -> sequence auto;
 
     Returns a sequence adaptor which yields the set intersection of the two input sequences :var:`seq1` and :var:`seq2`, ordered by the given comparison function :var:`cmp`.
@@ -1478,7 +1478,7 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
 
     :param seq1: The first sorted sequence.
     :param seq2: The second sorted sequence.
-    :param cmp: A binary predicate that takes two elements as arguments and returns true if the first element is less than the second.
+    :param cmp: A binary comparator whose return type is convertible to :type:`std::weak_ordering`. Both sequences must be sorted with respect to this comparator.
 
     :returns: A sequence adaptor that represents the set intersection of the two input sequences.
 
@@ -1526,7 +1526,7 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ..  function::
-    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::less> \
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way> \
         requires see_below \
     auto set_symmetric_difference(Seq1 seq1, Seq2 seq2, Cmp cmp = {}) -> sequence auto;
 
@@ -1546,11 +1546,13 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
             std::common_reference_with<element_t<Seq1>, element_t<Seq2>> &&
             std::common_reference_with<rvalue_element_t<Seq1>, rvalue_element_t<Seq2>> &&
             requires { typename std::common_type_t<value_t<Seq1>, value_t<Seq2>>; } &&
-            strict_weak_order_for<Cmp, Seq1> &&
-            strict_weak_order_for<Cmp, Seq2>
+            weak_ordering_for<Cmp, Seq1> &&
+            weak_ordering_for<Cmp, Seq2>
 
     :param seq1: The first sequence to merge.
     :param seq2: The second sequence to merge.
+    :param cmp: A binary comparator whose return type is convertible to :type:`std::weak_ordering`. Both sequences must be sorted with respect to this comparator.
+
     :returns: A sequence adaptor that yields elements of `seq1` and `seq2` which do not appear in both sequences.
 
     :models:
@@ -1597,7 +1599,7 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
 ^^^^^^^^^^^^^
 
 ..  function::
-    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::less> \
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way> \
         requires see_below \
     auto set_union(Seq1 seq1, Seq2 seq2, Cmp cmp = {}) -> sequence auto;
 
@@ -1613,12 +1615,12 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
             std::common_reference_with<element_t<Seq1>, element_t<Seq2>> &&
             std::common_reference_with<rvalue_element_t<Seq1>, rvalue_element_t<Seq2>> &&
             requires { typename std::common_type_t<value_t<Seq1>, value_t<Seq2>>; } &&
-            strict_weak_order_for<Cmp, Seq1> &&
-            strict_weak_order_for<Cmp, Seq2>
+            weak_ordering_for<Cmp, Seq1> &&
+            weak_ordering_for<Cmp, Seq2>
     
     :param seq1: The first sorted sequence to merge.
     :param seq2: The second sorted sequence to merge.
-    :param cmp: A binary predicate that takes two elements as arguments and returns true if the first element is less than the second.
+    :param cmp: A binary comparator whose return type is convertible to :type:`std::weak_ordering`. Both sequences must be sorted with respect to this comparator.
 
     :returns: A sequence adaptor that represents the set union of the two input sequences.
 

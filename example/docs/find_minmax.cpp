@@ -22,7 +22,7 @@ int main()
 
     // find_minmax() returns a pair of cursors which we can destructure
     // Here we'll get the min and max of the people vector, according to age
-    auto [min, max] = flux::find_minmax(people, flux::proj(std::less{}, &Person::age));
+    auto [min, max] = flux::find_minmax(people, flux::proj(flux::cmp::compare, &Person::age));
 
     // The "minimum" is Chris. Dani is the same age, but Chris appears earlier
     // in the sequence

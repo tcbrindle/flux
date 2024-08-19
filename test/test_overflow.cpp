@@ -11,6 +11,7 @@
 #ifdef USE_MODULES
 import flux;
 #else
+#include <flux/core/numeric.hpp>
 #include <flux/core/utils.hpp>
 #endif
 
