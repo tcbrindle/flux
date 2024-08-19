@@ -3,8 +3,6 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include "catch.hpp"
-
 #include <vector>
 
 #include "test_utils.hpp"
@@ -16,42 +14,42 @@ TEST_CASE("C array bounds checking")
 
         auto seq = flux::ref(arr);
 
-        SECTION("Can read from in-bounds indices")
+        SUBCASE("Can read from in-bounds indices")
         {
             auto cur = seq.first();
             REQUIRE(seq[cur] == 0);
             REQUIRE(seq.move_at(cur) == 0);
         }
 
-        SECTION("Can advance within bounds")
+        SUBCASE("Can advance within bounds")
         {
             auto cur = seq.first();
             for (; !seq.is_last(cur); seq.inc(cur)) {}
             REQUIRE(seq.is_last(cur));
         }
 
-        SECTION("Reading past the end is an error")
+        SUBCASE("Reading past the end is an error")
         {
             auto cur = seq.last();
             REQUIRE_THROWS_AS(seq[cur], flux::unrecoverable_error);
             REQUIRE_THROWS_AS(seq.move_at(cur), flux::unrecoverable_error);
         }
 
-        SECTION("Reading before the start is an error")
+        SUBCASE("Reading before the start is an error")
         {
             auto cur = seq.first() - 1;
             REQUIRE_THROWS_AS(seq[cur], flux::unrecoverable_error);
             REQUIRE_THROWS_AS(seq.move_at(cur), flux::unrecoverable_error);
         }
 
-        SECTION("Can decrement within bounds")
+        SUBCASE("Can decrement within bounds")
         {
             auto cur = seq.last();
             while(seq.dec(cur) != seq.first()) {}
             REQUIRE(cur == seq.first());
         }
 
-        SECTION("Random reads are an error")
+        SUBCASE("Random reads are an error")
         {
             REQUIRE_THROWS_AS(seq[100], flux::unrecoverable_error);
             REQUIRE_THROWS_AS(seq.move_at(100), flux::unrecoverable_error);
@@ -59,7 +57,7 @@ TEST_CASE("C array bounds checking")
             REQUIRE_THROWS_AS(seq.move_at(-100), flux::unrecoverable_error);
         }
 
-        SECTION("Views are bounds checked as well")
+        SUBCASE("Views are bounds checked as well")
         {
             auto first = seq.begin();
             auto last = seq.end();
@@ -76,42 +74,42 @@ TEST_CASE("vector bounds checking")
 
     auto seq = flux::ref(vec);
 
-    SECTION("Can read from in-bounds indices")
+    SUBCASE("Can read from in-bounds indices")
     {
         auto cur = seq.first();
         REQUIRE(seq[cur] == 0);
         REQUIRE(seq.move_at(cur) == 0);
     }
 
-    SECTION("Can advance within bounds")
+    SUBCASE("Can advance within bounds")
     {
         auto cur = seq.first();
         for (; !seq.is_last(cur); seq.inc(cur)) {}
         REQUIRE(seq.is_last(cur));
     }
 
-    SECTION("Reading past the end is an error")
+    SUBCASE("Reading past the end is an error")
     {
         auto cur = seq.last();
         REQUIRE_THROWS_AS(seq[cur], flux::unrecoverable_error);
         REQUIRE_THROWS_AS(seq.move_at(cur), flux::unrecoverable_error);
     }
 
-    SECTION("Reading before the start is an error")
+    SUBCASE("Reading before the start is an error")
     {
         auto cur = seq.first() - 1;
         REQUIRE_THROWS_AS(seq[cur], flux::unrecoverable_error);
         REQUIRE_THROWS_AS(seq.move_at(cur), flux::unrecoverable_error);
     }
 
-    SECTION("Can decrement within bounds")
+    SUBCASE("Can decrement within bounds")
     {
         auto cur = seq.last();
         while(seq.dec(cur) != seq.first()) {}
         REQUIRE(cur == seq.first());
     }
 
-    SECTION("Random reads are an error")
+    SUBCASE("Random reads are an error")
     {
         REQUIRE_THROWS_AS(seq[100], flux::unrecoverable_error);
         REQUIRE_THROWS_AS(seq.move_at(100), flux::unrecoverable_error);
@@ -119,7 +117,7 @@ TEST_CASE("vector bounds checking")
         REQUIRE_THROWS_AS(seq.move_at(-100), flux::unrecoverable_error);
     }
 
-    SECTION("Storage invalidation is okay")
+    SUBCASE("Storage invalidation is okay")
     {
         auto vec2 = vec;
         auto cur = flux::next(vec2, flux::first(vec2), 2);
@@ -133,7 +131,7 @@ TEST_CASE("vector bounds checking")
         REQUIRE_THROWS_AS(flux::read_at(vec2, cur), flux::unrecoverable_error);
     }
 
-    SECTION("Range interface is bounds checked as well")
+    SUBCASE("Range interface is bounds checked as well")
     {
         auto first = seq.begin();
         auto last = seq.end();

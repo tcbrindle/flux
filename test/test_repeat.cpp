@@ -3,8 +3,6 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include "catch.hpp"
-
 #include <array>
 #include <limits>
 #include <string_view>
@@ -257,13 +255,13 @@ TEST_CASE("repeat")
     res = test_repeat_bounded();
     REQUIRE(res);
 
-    SECTION("negative argument to bounded repeat() is caught")
+    SUBCASE("negative argument to bounded repeat() is caught")
     {
         REQUIRE_THROWS_AS(flux::repeat(3, -100),
                           flux::unrecoverable_error);
     }
 
-    SECTION("Unrepresentable distance is caught debug mode")
+    SUBCASE("Unrepresentable distance is caught debug mode")
     {
         if constexpr (flux::config::enable_debug_asserts) {
             auto seq = flux::repeat(3);

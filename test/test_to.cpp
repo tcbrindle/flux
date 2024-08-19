@@ -3,8 +3,6 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include "catch.hpp"
-
 #include <algorithm>
 #include <array>
 #include <list>
@@ -69,9 +67,9 @@ test_vector(flux::from_sequence_t, Seq&&, A const&) -> test_vector<flux::value_t
 
 TEST_CASE("to")
 {
-    SECTION("...with explicit value type")
+    SUBCASE("...with explicit value type")
     {
-        SECTION("vector->vector construction")
+        SUBCASE("vector->vector construction")
         {
             std::vector<int> vec1{1, 2, 3, 4, 5};
             auto vec2 = flux::to<std::vector<int>>(vec1);
@@ -79,7 +77,7 @@ TEST_CASE("to")
             CHECK(vec1 == vec2);
         }
 
-        SECTION("vector->vector construction with allocator")
+        SUBCASE("vector->vector construction with allocator")
         {
             std::vector<int> vec1{1, 2, 3, 4, 5};
             auto vec2 = flux::to<std::vector<int, my_allocator<int>>>(vec1, my_allocator<int>{});
@@ -87,7 +85,7 @@ TEST_CASE("to")
             CHECK(std::ranges::equal(vec1, vec2));
         }
 
-        SECTION("zipped sequence to map")
+        SUBCASE("zipped sequence to map")
         {
             auto zipped = flux::zip(std::array{1, 2, 3},
                                    std::vector<std::string>{"1", "2", "3"});
@@ -101,7 +99,7 @@ TEST_CASE("to")
             CHECK(map == reqd);
         }
 
-        SECTION("from_sequence construction")
+        SUBCASE("from_sequence construction")
         {
             std::vector<int> vec1{1, 2, 3, 4, 5};
 
@@ -110,7 +108,7 @@ TEST_CASE("to")
             CHECK(std::ranges::equal(vec1, vec2));
         }
 
-        SECTION("from_sequence construction with allocator")
+        SUBCASE("from_sequence construction with allocator")
         {
             std::vector<int> vec1{1, 2, 3, 4, 5};
 
@@ -119,7 +117,7 @@ TEST_CASE("to")
             CHECK(std::ranges::equal(vec1, vec2));
         }
 
-        SECTION("view construction")
+        SUBCASE("view construction")
         {
             auto seq = flux::filter(std::vector{1, 2, 3, 4, 5},
                                   [](int i) { return i % 2 != 0; });
@@ -129,7 +127,7 @@ TEST_CASE("to")
             CHECK(check_equal(vec2, {1, 3, 5}));
         }
 
-        SECTION("view construction with allocator")
+        SUBCASE("view construction with allocator")
         {
             auto seq = flux::filter(std::vector{1, 2, 3, 4, 5},
                                   [](int i) { return i % 2 != 0; });
@@ -139,23 +137,23 @@ TEST_CASE("to")
             CHECK(check_equal(vec2, {1, 3, 5}));
         }
 
-        SECTION("insert construction")
+        SUBCASE("insert construction")
         {
-            SECTION("...to vector")
+            SUBCASE("...to vector")
             {
                 std::vector<int> vec1{1, 2, 3, 4, 5};
                 auto vec2 = single_pass_only(flux::ref(vec1)).to<std::vector<int>>();
                 CHECK(vec1 == vec2);
             }
 
-            SECTION("...to list")
+            SUBCASE("...to list")
             {
                 std::istringstream iss{"1 2 3 4 5"};
                 auto list = flux::from_istream<int>(iss).to<std::list<int>>();
                 CHECK(check_equal(flux::from_range(list), {1, 2, 3, 4, 5}));
             }
 
-            SECTION("...to set")
+            SUBCASE("...to set")
             {
                 std::istringstream iss{"5 4 3 2 1"};
                 auto set = flux::from_istream<int>(iss).to<std::set<int>>();
@@ -163,25 +161,25 @@ TEST_CASE("to")
             }
         }
 
-        SECTION("insert construction with allocator")
+        SUBCASE("insert construction with allocator")
         {
             using A = my_allocator<int>;
 
-            SECTION("...to vector")
+            SUBCASE("...to vector")
             {
                 std::vector<int> vec1{1, 2, 3, 4, 5};
                 auto vec2 = single_pass_only(flux::ref(vec1)).to<std::vector<int, A>>(A{});
                 CHECK(std::ranges::equal(vec1, vec2));
             }
 
-            SECTION("...to list")
+            SUBCASE("...to list")
             {
                 std::istringstream iss{"1 2 3 4 5"};
                 auto list = flux::from_istream<int>(iss).to<std::list<int, A>>(A{});
                 CHECK(check_equal(flux::from_range(list), {1, 2, 3, 4, 5}));
             }
 
-            SECTION("...to set")
+            SUBCASE("...to set")
             {
                 std::istringstream iss{"5 4 3 2 1"};
                 auto set = flux::from_istream<int>(iss)
@@ -190,7 +188,7 @@ TEST_CASE("to")
             }
         }
 
-        SECTION("recursive to() calls")
+        SUBCASE("recursive to() calls")
         {
             std::string const str = "The quick brown fox";
             auto vec = flux::split(flux::ref(str), ' ').to<std::vector<std::string>>();
@@ -198,7 +196,7 @@ TEST_CASE("to")
             CHECK(check_equal(vec, {"The", "quick", "brown", "fox"}));
         }
 
-        SECTION("recursive to() calls with allocator")
+        SUBCASE("recursive to() calls with allocator")
         {
             using Alloc = my_allocator<std::string>;
 
@@ -211,7 +209,7 @@ TEST_CASE("to")
             CHECK(check_equal(vec, {"The", "quick", "brown", "fox"}));
         }
 
-        SECTION("from set_union adaptor")
+        SUBCASE("from set_union adaptor")
         {
             auto union_seq = flux::set_union(std::array{1,2,3}, std::array{4,5});
             auto vec = flux::to<std::vector<int>>(union_seq);
@@ -220,9 +218,9 @@ TEST_CASE("to")
         }
     }
 
-    SECTION("...using CTAD")
+    SUBCASE("...using CTAD")
     {
-        SECTION("vector->vector construction")
+        SUBCASE("vector->vector construction")
         {
             std::vector<int> vec1{1, 2, 3, 4, 5};
             auto vec2 = flux::to<std::vector>(vec1);
@@ -234,7 +232,7 @@ TEST_CASE("to")
             CHECK(vec1 == vec2);
         }
 
-        SECTION("vector->vector construction with allocator")
+        SUBCASE("vector->vector construction with allocator")
         {
             std::vector<int> vec1{1, 2, 3, 4, 5};
             auto vec2 = flux::to<std::vector>(vec1, my_allocator<int>{});
@@ -246,7 +244,7 @@ TEST_CASE("to")
             CHECK(std::ranges::equal(vec1, vec2));
         }
 
-        SECTION("zipped sequence to map")
+        SUBCASE("zipped sequence to map")
         {
             auto zipped = flux::zip(std::array{1, 2, 3},
                                    std::vector<std::string>{"1", "2", "3"});
@@ -265,7 +263,7 @@ TEST_CASE("to")
             CHECK(map == reqd);
         }
 
-        SECTION("from_sequence construction")
+        SUBCASE("from_sequence construction")
         {
             std::vector<int> vec1{1, 2, 3, 4, 5};
 
@@ -277,7 +275,7 @@ TEST_CASE("to")
             CHECK(std::ranges::equal(vec1, vec2));
         }
 
-        SECTION("from_sequence construction with allocator")
+        SUBCASE("from_sequence construction with allocator")
         {
             std::vector<int> vec1{1, 2, 3, 4, 5};
 
@@ -290,7 +288,7 @@ TEST_CASE("to")
             CHECK(std::ranges::equal(vec1, vec2));
         }
 
-        SECTION("view construction")
+        SUBCASE("view construction")
         {
             auto seq = flux::filter(std::vector{1, 2, 3, 4, 5},
                                     [](int i) { return i % 2 != 0; });
@@ -303,7 +301,7 @@ TEST_CASE("to")
             CHECK(check_equal(vec2, {1, 3, 5}));
         }
 
-        SECTION("view construction with allocator")
+        SUBCASE("view construction with allocator")
         {
             auto seq = flux::filter(std::vector{1, 2, 3, 4, 5},
                                     [](int i) { return i % 2 != 0; });
@@ -317,9 +315,9 @@ TEST_CASE("to")
             CHECK(check_equal(vec2, {1, 3, 5}));
         }
 
-        SECTION("insert construction")
+        SUBCASE("insert construction")
         {
-            SECTION("...to vector")
+            SUBCASE("...to vector")
             {
                 std::vector<int> vec1{1, 2, 3, 4, 5};
                 auto vec2 = single_pass_only(flux::ref(vec1)).to<std::vector>();
@@ -328,7 +326,7 @@ TEST_CASE("to")
                 CHECK(vec1 == vec2);
             }
 
-            SECTION("...to list")
+            SUBCASE("...to list")
             {
                 std::istringstream iss{"1 2 3 4 5"};
                 auto list = flux::from_istream<int>(iss).to<std::list>();
@@ -337,7 +335,7 @@ TEST_CASE("to")
                 CHECK(check_equal(flux::from_range(list), {1, 2, 3, 4, 5}));
             }
 
-            SECTION("...to set")
+            SUBCASE("...to set")
             {
                 std::istringstream iss{"5 4 3 2 1"};
                 auto set = flux::from_istream<int>(iss).to<std::set>();

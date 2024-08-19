@@ -3,8 +3,6 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include "catch.hpp"
-
 #include <algorithm>
 #include <coroutine>
 #include <memory>
@@ -61,7 +59,7 @@ auto move_only() ->  generator<std::unique_ptr<int>&&>
 
 TEST_CASE("generator")
 {
-    SECTION("basic generator tests")
+    SUBCASE("basic generator tests")
     {
         auto ints = ::ints();
 
@@ -79,7 +77,7 @@ TEST_CASE("generator")
         CHECK(check_equal(std::move(ints).take(5), {0, 1, 2, 3, 4}));
     }
 
-    SECTION("Generator with move-only element")
+    SUBCASE("Generator with move-only element")
     {
         auto gen = ::move_only();
 
@@ -96,7 +94,7 @@ TEST_CASE("generator")
         CHECK(i == 5);
     }
 
-    SECTION("ranges integration")
+    SUBCASE("ranges integration")
     {
         auto view = ints();
 
@@ -113,14 +111,14 @@ TEST_CASE("generator")
                                  std::views::iota(0, 5)));
     }
 
-    SECTION("fibonacci sequence")
+    SUBCASE("fibonacci sequence")
     {
         auto seq = fib(0, 1).take(10);
 
         CHECK(check_equal(seq, {0, 1, 1, 2, 3, 5, 8, 13, 21, 34}));
     }
 
-    SECTION("Pythagorean triples")
+    SUBCASE("Pythagorean triples")
     {
         auto triples = pythagorean_triples().take(5);
 

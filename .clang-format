@@ -1,0 +1,22 @@
+---
+BasedOnStyle: WebKit
+AlignAfterOpenBracket: Align
+AlignEscapedNewlines: Left
+#AllowBreakBeforeNoexceptSpecifier: OnlyWithParen
+AllowShortCaseLabelsOnASingleLine: true
+AlwaysBreakTemplateDeclarations: Yes
+AttributeMacros:
+  - FLUX_NO_UNIQUE_ADDRESS
+BreakBeforeConceptDeclarations: Always
+BreakConstructorInitializers: BeforeColon
+ColumnLimit: 100
+Cpp11BracedListStyle: true
+FixNamespaceComments: true
+ForEachMacros:
+  - FLUX_FOR
+IndentPPDirectives: AfterHash
+InsertBraces: true
+NamespaceIndentation: None
+PackConstructorInitializers: CurrentLine
+SortIncludes: Never
+TabWidth: 4

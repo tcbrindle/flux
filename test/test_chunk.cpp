@@ -3,8 +3,6 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include "catch.hpp"
-
 #include <array>
 #include <limits>
 #include <list>
@@ -476,7 +474,7 @@ TEST_CASE("chunk")
     res = test_chunk_bidir();
     REQUIRE(res);
 
-    SECTION("...with istream sequence")
+    SUBCASE("...with istream sequence")
     {
         std::istringstream iss("1 2 3 4 5");
         std::ostringstream out;
@@ -488,7 +486,7 @@ TEST_CASE("chunk")
         REQUIRE(out.str() == "[[1, 2], [3, 4], [5]]");
     }
 
-    SECTION("...with bidir only sequence")
+    SUBCASE("...with bidir only sequence")
     {
         std::list<int> list{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
