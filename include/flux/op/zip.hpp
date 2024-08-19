@@ -247,7 +247,8 @@ public:
 };
 
 template <typename Func, typename... Bases>
-struct sequence_traits<detail::zip_map_adaptor<Func, Bases...>> : zip_traits_base<Bases...>
+struct sequence_traits<detail::zip_map_adaptor<Func, Bases...>>
+    : zip_traits_base<Bases...>, default_sequence_traits
 {
 private:
     using base = zip_traits_base<Bases...>;
@@ -280,6 +281,9 @@ public:
     {
         return read_(flux::read_at_unchecked, self, cur);
     }
+
+    using default_sequence_traits::move_at;
+    using default_sequence_traits::move_at_unchecked;
 };
 
 FLUX_EXPORT inline constexpr auto zip = detail::zip_fn{};

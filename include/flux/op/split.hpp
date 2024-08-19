@@ -34,7 +34,7 @@ public:
           splitter_(FLUX_FWD(splitter))
     {}
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
     private:
         struct cursor_type {
             cursor_t<Base> cur{};

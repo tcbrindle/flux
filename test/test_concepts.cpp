@@ -49,7 +49,7 @@ struct cant_instantiate {
 };
 
 template <typename T>
-struct dummy_impl {
+struct dummy_impl : flux::default_sequence_traits {
     static int first(T&);
     static bool is_last(T&, int);
     static int& inc(T&, int&);
@@ -58,7 +58,7 @@ struct dummy_impl {
 
 template <typename Elem>
 struct minimal_seq_of {
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : flux::default_sequence_traits {
         static int first(minimal_seq_of);
         static bool is_last(minimal_seq_of, int);
         static int& inc(minimal_seq_of, int&);
@@ -68,7 +68,7 @@ struct minimal_seq_of {
 
 template <typename Idx>
 struct minimal_with_idx {
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : flux::default_sequence_traits {
         static Idx first(minimal_with_idx);
         static bool is_last(minimal_with_idx, Idx const&);
         static Idx& inc(minimal_with_idx, Idx&);
@@ -194,7 +194,7 @@ static_assert(flux::sequence<Derived2>);
 // Adaptable sequence tests
 namespace {
     struct movable_seq {
-        struct flux_sequence_traits {
+        struct flux_sequence_traits : flux::default_sequence_traits {
             static int first(movable_seq);
             static bool is_last(movable_seq, int);
             static int& inc(movable_seq, int&);
@@ -207,7 +207,7 @@ namespace {
         move_only_seq(move_only_seq&&) = default;
         move_only_seq& operator=(move_only_seq&&) = default;
 
-        struct flux_sequence_traits {
+        struct flux_sequence_traits : flux::default_sequence_traits {
             static int first(move_only_seq const&);
             static bool is_last(move_only_seq const&, int);
             static int& inc(move_only_seq const&, int&);
@@ -220,7 +220,7 @@ namespace {
         unmovable_seq(unmovable_seq&&) = delete;
         unmovable_seq& operator=(unmovable_seq&&) = delete;
 
-        struct flux_sequence_traits {
+        struct flux_sequence_traits : flux::default_sequence_traits {
             static int first(unmovable_seq const&);
             static bool is_last(unmovable_seq const&, int);
             static int& inc(unmovable_seq const&, int&);
@@ -252,7 +252,7 @@ namespace {
 // const_iterable_sequence tests
 namespace {
     struct const_iter {
-        struct flux_sequence_traits {
+        struct flux_sequence_traits : flux::default_sequence_traits {
             static int first(const_iter const&);
             static bool is_last(const_iter const&, int);
             static void inc(const_iter const&, int&);
@@ -265,7 +265,7 @@ namespace {
 
     // read_at(S const&) is not defined
     struct not_const_iter1 {
-        struct flux_sequence_traits {
+        struct flux_sequence_traits : flux::default_sequence_traits {
             static int first(not_const_iter1 const&);
             static bool is_last(not_const_iter1 const&, int);
             static void inc(not_const_iter1 const&, int&);
@@ -276,7 +276,7 @@ namespace {
 
     // read_at(S) and read_at(S const) yield different types
     struct not_const_iter2 {
-        struct flux_sequence_traits {
+        struct flux_sequence_traits : flux::default_sequence_traits {
             static int first(not_const_iter2 const&);
             static bool is_last(not_const_iter2 const&, int);
             static void inc(not_const_iter2 const&, int&);
@@ -289,7 +289,7 @@ namespace {
 
     // read_at(S const) weakens const qualification
     struct not_const_iter3 {
-        struct flux_sequence_traits {
+        struct flux_sequence_traits : flux::default_sequence_traits {
             static int first(not_const_iter3 const&);
             static bool is_last(not_const_iter3 const&, int);
             static void inc(not_const_iter3 const&, int&);
@@ -302,7 +302,7 @@ namespace {
 
     // S is bounded but S const is not
     struct not_const_iter4 {
-        struct flux_sequence_traits {
+        struct flux_sequence_traits : flux::default_sequence_traits {
             static int first(not_const_iter4 const&);
             static bool is_last(not_const_iter4 const&, int);
             static void inc(not_const_iter4 const&, int&);
@@ -316,7 +316,7 @@ namespace {
 
     // S const is sized but S is not
     struct not_const_iter5 {
-        struct flux_sequence_traits {
+        struct flux_sequence_traits : flux::default_sequence_traits {
             static int first(not_const_iter5 const&);
             static bool is_last(not_const_iter5 const&, int);
             static void inc(not_const_iter5 const&, int&);

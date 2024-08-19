@@ -22,7 +22,7 @@ namespace flux {
 namespace detail {
 
 template <typename Base, distance_t N>
-struct adjacent_sequence_traits_base {
+struct adjacent_sequence_traits_base : default_sequence_traits {
 protected:
     struct cursor_type {
         std::array<cursor_t<Base>, N> arr{};

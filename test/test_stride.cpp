@@ -20,7 +20,7 @@ struct NotBidir : flux::inline_sequence_base<NotBidir<Base>> {
     constexpr Base& base() & { return base_; }
     constexpr Base const& base() const& { return base_; }
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : flux::default_sequence_traits {
         static constexpr auto first(auto& self) { return flux::first(self.base_); }
 
         static constexpr bool is_last(auto& self, auto const& cur) {

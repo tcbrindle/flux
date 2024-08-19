@@ -13,7 +13,7 @@
 namespace flux {
 
 template <std::size_t N>
-struct sequence_traits<std::bitset<N>> {
+struct sequence_traits<std::bitset<N>> : default_sequence_traits {
 
     using value_type = bool;
 

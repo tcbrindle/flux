@@ -46,6 +46,9 @@ FLUX_EXPORT
 template <typename T>
 struct sequence_traits;
 
+FLUX_EXPORT
+struct default_sequence_traits;
+
 namespace detail {
 
 template <typename T>
@@ -136,7 +139,7 @@ template <typename T>
 concept can_reference = requires { typename with_ref<T>; };
 
 template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
-concept sequence_concept =
+concept sequence_requirements =
     requires (Seq& seq) {
         { Traits::first(seq) } -> cursor;
     } &&
@@ -146,6 +149,17 @@ concept sequence_concept =
     } &&
     requires (Seq& seq, cursor_t<Seq>& cur) {
         { Traits::inc(seq, cur) };
+    };
+
+// clang-format off
+
+template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+concept sequence_concept =
+    sequence_requirements<Seq> &&
+    requires (Seq& seq, cursor_t<Seq> const& cur) {
+        { Traits::read_at_unchecked(seq, cur) } -> std::same_as<element_t<Seq>>;
+        { Traits::move_at(seq, cur) } -> can_reference;
+        { Traits::move_at_unchecked(seq, cur) } -> std::same_as<rvalue_element_t<Seq>>;
     } &&
 #ifdef FLUX_HAVE_CPP23_TUPLE_COMMON_REF
     std::common_reference_with<element_t<Seq>&&, value_t<Seq>&> &&
@@ -180,8 +194,7 @@ concept multipass_sequence =
 namespace detail {
 
 template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
-concept bidirectional_sequence_concept =
-    multipass_sequence<Seq> &&
+concept bidirectional_sequence_requirements =
     requires (Seq& seq, cursor_t<Seq>& cur) {
         { Traits::dec(seq, cur) };
     };
@@ -190,13 +203,13 @@ concept bidirectional_sequence_concept =
 
 FLUX_EXPORT
 template <typename Seq>
-concept bidirectional_sequence = detail::bidirectional_sequence_concept<Seq>;
+concept bidirectional_sequence = multipass_sequence<Seq> && detail::bidirectional_sequence_requirements<Seq>;
 
 namespace detail {
 
 template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
-concept random_access_sequence_concept =
-    bidirectional_sequence<Seq> && ordered_cursor<cursor_t<Seq>> &&
+concept random_access_sequence_requirements =
+    ordered_cursor<cursor_t<Seq>> &&
     requires (Seq& seq, cursor_t<Seq>& cur, distance_t offset) {
         { Traits::inc(seq, cur, offset) };
     } &&
@@ -208,13 +221,14 @@ concept random_access_sequence_concept =
 
 FLUX_EXPORT
 template <typename Seq>
-concept random_access_sequence = detail::random_access_sequence_concept<Seq>;
+concept random_access_sequence =
+    bidirectional_sequence<Seq> &&
+    detail::random_access_sequence_requirements<Seq>;
 
 namespace detail {
 
 template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
-concept bounded_sequence_concept =
-    sequence<Seq> &&
+concept bounded_sequence_requirements =
     requires (Seq& seq) {
         { Traits::last(seq) } -> std::same_as<cursor_t<Seq>>;
     };
@@ -223,14 +237,12 @@ concept bounded_sequence_concept =
 
 FLUX_EXPORT
 template <typename Seq>
-concept bounded_sequence = detail::bounded_sequence_concept<Seq>;
+concept bounded_sequence = sequence<Seq> && detail::bounded_sequence_requirements<Seq>;
 
 namespace detail {
 
 template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
-concept contiguous_sequence_concept =
-    random_access_sequence<Seq> &&
-    bounded_sequence<Seq> &&
+concept contiguous_sequence_requirements =
     std::is_lvalue_reference_v<element_t<Seq>> &&
     std::same_as<value_t<Seq>, std::remove_cvref_t<element_t<Seq>>> &&
     requires (Seq& seq) {
@@ -241,7 +253,10 @@ concept contiguous_sequence_concept =
 
 FLUX_EXPORT
 template <typename Seq>
-concept contiguous_sequence = detail::contiguous_sequence_concept<Seq>;
+concept contiguous_sequence =
+    random_access_sequence<Seq> &&
+    bounded_sequence<Seq> &&
+    detail::contiguous_sequence_requirements<Seq>;
 
 namespace detail {
 
@@ -366,6 +381,42 @@ concept derived_from_inline_sequence_base = requires(T t) {
 /*
  * Default sequence_traits implementation
  */
+
+struct default_sequence_traits {
+
+    template <typename Self>
+        requires detail::sequence_requirements<Self>
+    static constexpr auto read_at_unchecked(Self& self, cursor_t<Self> const& cur)
+        -> decltype(detail::traits_t<Self>::read_at(self, cur))
+    {
+        return detail::traits_t<Self>::read_at(self, cur);
+    }
+
+    template <typename Self>
+        requires detail::sequence_requirements<Self>
+    static constexpr auto move_at(Self& self, cursor_t<Self> const& cur)
+        -> std::conditional_t<std::is_lvalue_reference_v<element_t<Self>>,
+                              std::add_rvalue_reference_t<std::remove_reference_t<element_t<Self>>>,
+                              element_t<Self>>
+    {
+        using Traits = detail::traits_t<Self>;
+        if constexpr (std::is_lvalue_reference_v<element_t<Self>>) {
+            return std::move(Traits::read_at(self, cur));
+        } else {
+            return Traits::read_at(self, cur);
+        }
+    }
+
+    template <typename Self>
+        requires detail::sequence_requirements<Self>
+    static constexpr auto move_at_unchecked(Self& self, cursor_t<Self> const& cur)
+        -> decltype(detail::traits_t<Self>::move_at(self, cur))
+    {
+        return detail::traits_t<Self>::move_at(self, cur);
+    }
+
+};
+
 namespace detail {
 
 template <typename T>

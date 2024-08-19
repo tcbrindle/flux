@@ -45,7 +45,7 @@ struct from_istream_fn {
 } // namespace detail
 
 template <typename T, typename CharT, typename Traits>
-struct sequence_traits<detail::istream_adaptor<T, CharT, Traits>>
+struct sequence_traits<detail::istream_adaptor<T, CharT, Traits>> : default_sequence_traits
 {
 private:
     struct cursor_type {

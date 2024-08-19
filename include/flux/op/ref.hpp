@@ -15,7 +15,7 @@ namespace flux {
 namespace detail {
 
 template <typename Base>
-struct passthrough_traits_base {
+struct passthrough_traits_base : default_sequence_traits {
 
     static constexpr auto first(auto& self)
         -> decltype(flux::first(self.base()))

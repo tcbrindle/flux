@@ -14,7 +14,7 @@ namespace detail {
 
 template <typename T>
 struct empty_sequence : inline_sequence_base<empty_sequence<T>> {
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
     private:
         struct cursor_type {
             friend auto operator==(cursor_type, cursor_type) -> bool = default;

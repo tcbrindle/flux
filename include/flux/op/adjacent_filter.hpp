@@ -59,6 +59,18 @@ public:
             return flux::read_at_unchecked(self.base_, cur.base_cur);
         }
 
+        static constexpr auto move_at(auto& self, cursor_type const& cur)
+            -> decltype(flux::move_at(self.base_, cur.base_cur))
+        {
+            return flux::move_at(self.base_, cur.base_cur);
+        }
+
+        static constexpr auto move_at_unchecked(auto& self, cursor_type const& cur)
+            -> decltype(flux::move_at_unchecked(self.base_, cur.base_cur))
+        {
+            return flux::move_at_unchecked(self.base_, cur.base_cur);
+        }
+
         static constexpr auto inc(auto& self, cursor_type& cur) -> void
         {
             auto temp = cur.base_cur;
