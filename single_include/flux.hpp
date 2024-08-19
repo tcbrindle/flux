@@ -30,6 +30,10 @@
 #ifndef FLUX_CORE_UTILS_HPP_INCLUDED
 #define FLUX_CORE_UTILS_HPP_INCLUDED
 
+#include <compare>
+#include <concepts>
+#include <type_traits>
+
 
 // Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
@@ -336,243 +340,6 @@ FLUX_EXPORT inline constexpr auto indexed_bounds_check = detail::indexed_bounds_
 #endif // FLUX_CORE_ASSERT_HPP_INCLUDED
 
 
-#include <concepts>
-#include <cstdio>
-#include <exception>
-#include <source_location>
-#include <stdexcept>
-#include <type_traits>
-
-
-// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_CORE_NUMERIC_HPP_INCLUDED
-#define FLUX_CORE_NUMERIC_HPP_INCLUDED
-
-
-
-#include <limits>
-
-namespace flux::num {
-
-FLUX_EXPORT
-inline constexpr auto wrapping_add = []<std::signed_integral T>(T lhs, T rhs) -> T
-{
-    using U = std::make_unsigned_t<T>;
-    return static_cast<T>(static_cast<U>(lhs) + static_cast<U>(rhs));
-};
-
-FLUX_EXPORT
-inline constexpr auto wrapping_sub = []<std::signed_integral T>(T lhs, T rhs) -> T
-{
-    using U = std::make_unsigned_t<T>;
-    return static_cast<T>(static_cast<U>(lhs) - static_cast<U>(rhs));
-};
-
-FLUX_EXPORT
-inline constexpr auto wrapping_mul = []<std::signed_integral T>(T lhs, T rhs) -> T
-{
-    using U = std::make_unsigned_t<T>;
-    return static_cast<T>(static_cast<U>(lhs) * static_cast<U>(rhs));
-};
-
-namespace detail {
-
-#if defined(__has_builtin)
-#  if __has_builtin(__builtin_add_overflow) && \
-      __has_builtin(__builtin_sub_overflow) && \
-      __has_builtin(__builtin_mul_overflow)
-#    define FLUX_HAVE_BUILTIN_OVERFLOW_OPS 1
-#  endif
-#endif
-
-#ifdef FLUX_HAVE_BUILTIN_OVERFLOW_OPS
-    inline constexpr bool use_builtin_overflow_ops = true;
-#else
-    inline constexpr bool use_builtin_overflow_ops = false;
-#endif
-
-#undef FLUX_HAVE_BUILTIN_OVERFLOW_OPS
-
-}
-
-FLUX_EXPORT
-template <std::signed_integral T>
-struct overflow_result {
-    T value;
-    bool overflowed;
-};
-
-FLUX_EXPORT
-inline constexpr auto overflowing_add = []<std::signed_integral T>(T lhs, T rhs)
-    -> overflow_result<T>
-{
-    if constexpr (detail::use_builtin_overflow_ops) {
-        bool overflowed = __builtin_add_overflow(lhs, rhs, &lhs);
-        return {lhs, overflowed};
-    } else {
-        T value = wrapping_add(lhs, rhs);
-        bool overflowed = ((lhs < T{}) == (rhs < T{})) && ((lhs < T{}) != (value < T{}));
-        return {value, overflowed};
-    }
-};
-
-FLUX_EXPORT
-inline constexpr auto overflowing_sub = []<std::signed_integral T>(T lhs, T rhs)
-    -> overflow_result<T>
-{
-    if constexpr (detail::use_builtin_overflow_ops) {
-        bool overflowed = __builtin_sub_overflow(lhs, rhs, &lhs);
-        return {lhs, overflowed};
-    } else {
-        T value = wrapping_sub(lhs, rhs);
-        bool overflowed = (lhs >= T{} && rhs < T{} && value < T{}) ||
-                         (lhs < T{} && rhs > T{} && value > T{});
-        return {value, overflowed};
-    }
-};
-
-FLUX_EXPORT
-inline constexpr auto overflowing_mul = []<std::signed_integral T>(T lhs, T rhs)
-    -> overflow_result<T>
-{
-    if constexpr (detail::use_builtin_overflow_ops) {
-        bool overflowed = __builtin_mul_overflow(lhs, rhs, &lhs);
-        return {lhs, overflowed};
-    } else {
-        T value =  wrapping_mul(lhs, rhs);
-        return {value, lhs != 0 && value/lhs != rhs};
-    }
-};
-
-FLUX_EXPORT
-inline constexpr auto checked_add =
-    []<std::signed_integral T>(T lhs, T rhs,
-                               std::source_location loc = std::source_location::current())
-    -> T
-{
-    if (std::is_constant_evaluated()) {
-        return lhs + rhs;
-    } else {
-        if constexpr (config::on_overflow == overflow_policy::ignore) {
-            return lhs + rhs;
-        } else if constexpr (config::on_overflow == overflow_policy::wrap) {
-            return wrapping_add(lhs, rhs);
-        } else {
-            auto res = overflowing_add(lhs, rhs);
-            if (res.overflowed) {
-                runtime_error("signed overflow in addition", loc);
-            }
-            return res.value;
-        }
-    }
-};
-
-FLUX_EXPORT
-inline constexpr auto checked_sub =
-    []<std::signed_integral T>(T lhs, T rhs,
-                               std::source_location loc = std::source_location::current())
-    -> T
-{
-  if (std::is_constant_evaluated()) {
-      return lhs - rhs;
-  } else {
-      if constexpr (config::on_overflow == overflow_policy::ignore) {
-          return lhs - rhs;
-      } else if constexpr (config::on_overflow == overflow_policy::wrap) {
-          return wrapping_sub(lhs, rhs);
-      } else {
-          auto res = overflowing_sub(lhs, rhs);
-          if (res.overflowed) {
-              runtime_error("signed overflow in subtraction", loc);
-          }
-          return res.value;
-      }
-  }
-};
-
-FLUX_EXPORT
-inline constexpr auto checked_mul =
-    []<std::signed_integral T>(T lhs, T rhs,
-                               std::source_location loc = std::source_location::current())
-    -> T
-{
-  if (std::is_constant_evaluated()) {
-      return lhs * rhs;
-  } else {
-      if constexpr (config::on_overflow == overflow_policy::ignore) {
-          return lhs * rhs;
-      } else if constexpr (config::on_overflow == overflow_policy::wrap) {
-          return wrapping_mul(lhs, rhs);
-      } else {
-          auto res = overflowing_mul(lhs, rhs);
-          if (res.overflowed) {
-              runtime_error("signed overflow in multiplication", loc);
-          }
-          return res.value;
-      }
-  }
-};
-
-FLUX_EXPORT
-inline constexpr auto checked_pow =
-        []<std::signed_integral T, std::unsigned_integral U>(T base, U exponent,
-                                   std::source_location loc = std::source_location::current())
-                -> T
-{
-    T res{1};
-    for(U i{0}; i < exponent; i++) {
-        res = checked_mul(res, base, loc);
-    }
-    return res;
-};
-
-
-inline constexpr auto checked_div =
-    []<std::signed_integral T>(T lhs, T rhs,
-                               std::source_location loc = std::source_location::current())
-    -> T
-{
-    if (std::is_constant_evaluated()) {
-        return lhs / rhs;
-    } else {
-        if constexpr (config::on_divide_by_zero == divide_by_zero_policy::ignore) {
-            return lhs / rhs;
-        } else {
-            if (rhs == 0) {
-                runtime_error("divide by zero", loc);
-            }
-            return lhs / rhs;
-        }
-    }
-};
-
-inline constexpr auto checked_mod =
-    []<std::signed_integral T>(T lhs, T rhs,
-                               std::source_location loc = std::source_location::current())
-    -> T
-{
-    if (std::is_constant_evaluated()) {
-        return lhs % rhs;
-    } else {
-        if constexpr (config::on_divide_by_zero == divide_by_zero_policy::ignore) {
-            return lhs % rhs;
-        } else {
-            if (rhs == 0) {
-                runtime_error("divide by zero", loc);
-            }
-            return lhs % rhs;
-        }
-    }
-};
-
-} // namespace flux::num
-
-#endif
-
-
 namespace flux {
 
 /*
@@ -581,6 +348,11 @@ namespace flux {
 FLUX_EXPORT
 template <typename From, typename To>
 concept decays_to = std::same_as<std::remove_cvref_t<From>, To>;
+
+FLUX_EXPORT
+template <typename T, typename U>
+concept same_decayed = std::same_as<std::remove_cvref_t<T>,
+                                    std::remove_cvref_t<U>>;
 
 namespace detail {
 
@@ -631,7 +403,23 @@ namespace detail {
 template <typename T, typename... U>
 concept any_of = (std::same_as<T, U> || ...);
 
+template <typename T, typename Cat>
+concept compares_as = std::same_as<std::common_comparison_category_t<T, Cat>, Cat>;
+
+template <typename Fn, typename T, typename U, typename Cat>
+concept ordering_invocable_ =
+    std::regular_invocable<Fn, T, U> &&
+    compares_as<std::decay_t<std::invoke_result_t<Fn, T, U>>, Cat>;
+
 } // namespace detail
+
+FLUX_EXPORT
+template <typename Fn, typename T, typename U, typename Cat = std::partial_ordering>
+concept ordering_invocable =
+    detail::ordering_invocable_<Fn, T, U, Cat> &&
+    detail::ordering_invocable_<Fn, U, T, Cat> &&
+    detail::ordering_invocable_<Fn, T, T, Cat> &&
+    detail::ordering_invocable_<Fn, U, U, Cat>;
 
 } // namespace flux
 
@@ -1033,6 +821,235 @@ concept optional_like =
 
 #ifndef FLUX_CORE_DEFAULT_IMPLS_HPP_INCLUDED
 #define FLUX_CORE_DEFAULT_IMPLS_HPP_INCLUDED
+
+
+// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_CORE_NUMERIC_HPP_INCLUDED
+#define FLUX_CORE_NUMERIC_HPP_INCLUDED
+
+
+
+#include <limits>
+
+namespace flux::num {
+
+FLUX_EXPORT
+inline constexpr auto wrapping_add = []<std::signed_integral T>(T lhs, T rhs) -> T
+{
+    using U = std::make_unsigned_t<T>;
+    return static_cast<T>(static_cast<U>(lhs) + static_cast<U>(rhs));
+};
+
+FLUX_EXPORT
+inline constexpr auto wrapping_sub = []<std::signed_integral T>(T lhs, T rhs) -> T
+{
+    using U = std::make_unsigned_t<T>;
+    return static_cast<T>(static_cast<U>(lhs) - static_cast<U>(rhs));
+};
+
+FLUX_EXPORT
+inline constexpr auto wrapping_mul = []<std::signed_integral T>(T lhs, T rhs) -> T
+{
+    using U = std::make_unsigned_t<T>;
+    return static_cast<T>(static_cast<U>(lhs) * static_cast<U>(rhs));
+};
+
+namespace detail {
+
+#if defined(__has_builtin)
+#  if __has_builtin(__builtin_add_overflow) && \
+      __has_builtin(__builtin_sub_overflow) && \
+      __has_builtin(__builtin_mul_overflow)
+#    define FLUX_HAVE_BUILTIN_OVERFLOW_OPS 1
+#  endif
+#endif
+
+#ifdef FLUX_HAVE_BUILTIN_OVERFLOW_OPS
+    inline constexpr bool use_builtin_overflow_ops = true;
+#else
+    inline constexpr bool use_builtin_overflow_ops = false;
+#endif
+
+#undef FLUX_HAVE_BUILTIN_OVERFLOW_OPS
+
+}
+
+FLUX_EXPORT
+template <std::signed_integral T>
+struct overflow_result {
+    T value;
+    bool overflowed;
+};
+
+FLUX_EXPORT
+inline constexpr auto overflowing_add = []<std::signed_integral T>(T lhs, T rhs)
+    -> overflow_result<T>
+{
+    if constexpr (detail::use_builtin_overflow_ops) {
+        bool overflowed = __builtin_add_overflow(lhs, rhs, &lhs);
+        return {lhs, overflowed};
+    } else {
+        T value = wrapping_add(lhs, rhs);
+        bool overflowed = ((lhs < T{}) == (rhs < T{})) && ((lhs < T{}) != (value < T{}));
+        return {value, overflowed};
+    }
+};
+
+FLUX_EXPORT
+inline constexpr auto overflowing_sub = []<std::signed_integral T>(T lhs, T rhs)
+    -> overflow_result<T>
+{
+    if constexpr (detail::use_builtin_overflow_ops) {
+        bool overflowed = __builtin_sub_overflow(lhs, rhs, &lhs);
+        return {lhs, overflowed};
+    } else {
+        T value = wrapping_sub(lhs, rhs);
+        bool overflowed = (lhs >= T{} && rhs < T{} && value < T{}) ||
+                         (lhs < T{} && rhs > T{} && value > T{});
+        return {value, overflowed};
+    }
+};
+
+FLUX_EXPORT
+inline constexpr auto overflowing_mul = []<std::signed_integral T>(T lhs, T rhs)
+    -> overflow_result<T>
+{
+    if constexpr (detail::use_builtin_overflow_ops) {
+        bool overflowed = __builtin_mul_overflow(lhs, rhs, &lhs);
+        return {lhs, overflowed};
+    } else {
+        T value =  wrapping_mul(lhs, rhs);
+        return {value, lhs != 0 && value/lhs != rhs};
+    }
+};
+
+FLUX_EXPORT
+inline constexpr auto checked_add =
+    []<std::signed_integral T>(T lhs, T rhs,
+                               std::source_location loc = std::source_location::current())
+    -> T
+{
+    if (std::is_constant_evaluated()) {
+        return lhs + rhs;
+    } else {
+        if constexpr (config::on_overflow == overflow_policy::ignore) {
+            return lhs + rhs;
+        } else if constexpr (config::on_overflow == overflow_policy::wrap) {
+            return wrapping_add(lhs, rhs);
+        } else {
+            auto res = overflowing_add(lhs, rhs);
+            if (res.overflowed) {
+                runtime_error("signed overflow in addition", loc);
+            }
+            return res.value;
+        }
+    }
+};
+
+FLUX_EXPORT
+inline constexpr auto checked_sub =
+    []<std::signed_integral T>(T lhs, T rhs,
+                               std::source_location loc = std::source_location::current())
+    -> T
+{
+  if (std::is_constant_evaluated()) {
+      return lhs - rhs;
+  } else {
+      if constexpr (config::on_overflow == overflow_policy::ignore) {
+          return lhs - rhs;
+      } else if constexpr (config::on_overflow == overflow_policy::wrap) {
+          return wrapping_sub(lhs, rhs);
+      } else {
+          auto res = overflowing_sub(lhs, rhs);
+          if (res.overflowed) {
+              runtime_error("signed overflow in subtraction", loc);
+          }
+          return res.value;
+      }
+  }
+};
+
+FLUX_EXPORT
+inline constexpr auto checked_mul =
+    []<std::signed_integral T>(T lhs, T rhs,
+                               std::source_location loc = std::source_location::current())
+    -> T
+{
+  if (std::is_constant_evaluated()) {
+      return lhs * rhs;
+  } else {
+      if constexpr (config::on_overflow == overflow_policy::ignore) {
+          return lhs * rhs;
+      } else if constexpr (config::on_overflow == overflow_policy::wrap) {
+          return wrapping_mul(lhs, rhs);
+      } else {
+          auto res = overflowing_mul(lhs, rhs);
+          if (res.overflowed) {
+              runtime_error("signed overflow in multiplication", loc);
+          }
+          return res.value;
+      }
+  }
+};
+
+FLUX_EXPORT
+inline constexpr auto checked_pow =
+        []<std::signed_integral T, std::unsigned_integral U>(T base, U exponent,
+                                   std::source_location loc = std::source_location::current())
+                -> T
+{
+    T res{1};
+    for(U i{0}; i < exponent; i++) {
+        res = checked_mul(res, base, loc);
+    }
+    return res;
+};
+
+
+inline constexpr auto checked_div =
+    []<std::signed_integral T>(T lhs, T rhs,
+                               std::source_location loc = std::source_location::current())
+    -> T
+{
+    if (std::is_constant_evaluated()) {
+        return lhs / rhs;
+    } else {
+        if constexpr (config::on_divide_by_zero == divide_by_zero_policy::ignore) {
+            return lhs / rhs;
+        } else {
+            if (rhs == 0) {
+                runtime_error("divide by zero", loc);
+            }
+            return lhs / rhs;
+        }
+    }
+};
+
+inline constexpr auto checked_mod =
+    []<std::signed_integral T>(T lhs, T rhs,
+                               std::source_location loc = std::source_location::current())
+    -> T
+{
+    if (std::is_constant_evaluated()) {
+        return lhs % rhs;
+    } else {
+        if constexpr (config::on_divide_by_zero == divide_by_zero_policy::ignore) {
+            return lhs % rhs;
+        } else {
+            if (rhs == 0) {
+                runtime_error("divide by zero", loc);
+            }
+            return lhs % rhs;
+        }
+    }
+};
+
+} // namespace flux::num
+
+#endif
 
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
@@ -2252,9 +2269,56 @@ struct unpack_fn {
     }
 };
 
+struct flip_fn {
+    template <typename Fn>
+    struct flipped {
+        Fn fn;
+
+        template <typename T, typename U, typename... Args>
+            requires std::invocable<Fn&, U, T, Args...>
+        constexpr auto operator()(T&& t, U&& u, Args&&... args) &
+            -> decltype(auto)
+        {
+            return std::invoke(fn, FLUX_FWD(u), FLUX_FWD(t), FLUX_FWD(args)...);
+        }
+
+        template <typename T, typename U, typename... Args>
+            requires std::invocable<Fn const&, U, T, Args...>
+        constexpr auto operator()(T&& t, U&& u, Args&&... args) const&
+            -> decltype(auto)
+        {
+            return std::invoke(fn, FLUX_FWD(u), FLUX_FWD(t), FLUX_FWD(args)...);
+        }
+
+        template <typename T, typename U, typename... Args>
+            requires std::invocable<Fn, U, T, Args...>
+        constexpr auto operator()(T&& t, U&& u, Args&&... args) &&
+            -> decltype(auto)
+        {
+            return std::invoke(std::move(fn), FLUX_FWD(u), FLUX_FWD(t), FLUX_FWD(args)...);
+        }
+
+        template <typename T, typename U, typename... Args>
+            requires std::invocable<Fn const, U, T, Args...>
+        constexpr auto operator()(T&& t, U&& u, Args&&... args) const &&
+            -> decltype(auto)
+        {
+            return std::invoke(std::move(fn), FLUX_FWD(u), FLUX_FWD(t), FLUX_FWD(args)...);
+        }
+    };
+
+    template <typename Fn>
+    [[nodiscard]]
+    constexpr auto operator()(Fn func) const
+    {
+        return flipped<Fn>{std::move(func)};
+    }
+};
+
 } // namespace detail
 
 FLUX_EXPORT inline constexpr auto unpack = detail::unpack_fn{};
+FLUX_EXPORT inline constexpr auto flip = detail::flip_fn{};
 
 namespace pred {
 
@@ -2392,32 +2456,102 @@ namespace cmp {
 
 namespace detail {
 
-struct min_fn {
-    template <typename T, typename U, typename Cmp = std::ranges::less>
-        requires std::strict_weak_order<Cmp&, T&, U&>
+struct compare_floating_point_unchecked_fn {
+    template <std::floating_point T>
     [[nodiscard]]
-    constexpr auto operator()(T&& t, U&& u, Cmp cmp = Cmp{}) const
+    constexpr auto operator()(T a, T b) const noexcept
+        -> std::weak_ordering
+    {
+        return a < b ? std::weak_ordering::less
+             : a > b ? std::weak_ordering::greater
+                     : std::weak_ordering::equivalent;
+    }
+};
+
+struct min_fn {
+    template <typename T, typename U, typename Cmp = std::compare_three_way>
+        requires same_decayed<T, U> &&
+                 std::common_reference_with<T, U> &&
+                 ordering_invocable<Cmp&, T&, U&, std::weak_ordering>
+    [[nodiscard]]
+    constexpr auto operator()(T&& a, U&& b, Cmp cmp = Cmp{}) const
         -> std::common_reference_t<T, U>
     {
-        return std::invoke(cmp, u, t) ? FLUX_FWD(u) : FLUX_FWD(t);
+        return std::invoke(cmp, b, a) < 0 ? FLUX_FWD(b) : FLUX_FWD(a);
     }
 };
 
 struct max_fn {
-    template <typename T, typename U, typename Cmp = std::ranges::less>
-        requires std::strict_weak_order<Cmp&, T&, U&>
+    template <typename T, typename U, typename Cmp = std::compare_three_way>
+        requires same_decayed<T, U> &&
+                 std::common_reference_with<T, U> &&
+                 ordering_invocable<Cmp&, T&, U&, std::weak_ordering>
     [[nodiscard]]
-    constexpr auto operator()(T&& t, U&& u, Cmp cmp = Cmp{}) const
+    constexpr auto operator()(T&& a, U&& b, Cmp cmp = Cmp{}) const
         -> std::common_reference_t<T, U>
     {
-        return !std::invoke(cmp, u, t) ? FLUX_FWD(u) : FLUX_FWD(t);
+        return !(std::invoke(cmp, b, a) < 0) ? FLUX_FWD(b) : FLUX_FWD(a);
+    }
+};
+
+struct partial_min_fn {
+    template <typename T, typename U>
+        requires same_decayed<T, U> &&
+                 std::common_reference_with<T, U> &&
+                 ordering_invocable<std::compare_three_way&, T&, U&>
+    [[nodiscard]]
+    constexpr auto operator()(T&& a, U&& b) const
+        -> std::common_reference_t<T, U>
+    {
+        return (b < a) ? FLUX_FWD(b) : FLUX_FWD(a);
+    }
+
+    template <typename T, typename U, typename Cmp>
+        requires same_decayed<T, U> &&
+                 std::common_reference_with<T, U> &&
+                 ordering_invocable<Cmp&, T&, U&>
+    [[nodiscard]]
+    constexpr auto operator()(T&& a, U&& b, Cmp cmp) const
+        -> std::common_reference_t<T, U>
+    {
+        return std::invoke(cmp, b, a) < 0 ? FLUX_FWD(b) : FLUX_FWD(a);
+    }
+};
+
+struct partial_max_fn {
+    template <typename T, typename U>
+        requires same_decayed<T, U> &&
+                 std::common_reference_with<T, U> &&
+                 ordering_invocable<std::compare_three_way&, T&, U&>
+    [[nodiscard]]
+    constexpr auto operator()(T&& a, U&& b) const
+        -> std::common_reference_t<T, U>
+    {
+        return !(b < a) ? FLUX_FWD(b) : FLUX_FWD(a);
+    }
+
+    template <typename T, typename U, typename Cmp>
+        requires same_decayed<T, U> &&
+                 std::common_reference_with<T, U> &&
+                 ordering_invocable<Cmp&, T&, U&>
+    [[nodiscard]]
+    constexpr auto operator()(T&& a, U&& b, Cmp cmp) const
+        -> std::common_reference_t<T, U>
+    {
+        return !(std::invoke(cmp, b, a) < 0) ? FLUX_FWD(b) : FLUX_FWD(a);
     }
 };
 
 } // namespace detail
 
+FLUX_EXPORT inline constexpr auto compare = std::compare_three_way{};
+FLUX_EXPORT inline constexpr auto reverse_compare = flip(compare);
+FLUX_EXPORT inline constexpr auto compare_floating_point_unchecked
+    = detail::compare_floating_point_unchecked_fn{};
 FLUX_EXPORT inline constexpr auto min = detail::min_fn{};
 FLUX_EXPORT inline constexpr auto max = detail::max_fn{};
+FLUX_EXPORT inline constexpr auto partial_min = detail::partial_min_fn{};
+FLUX_EXPORT inline constexpr auto partial_max = detail::partial_max_fn{};
 
 } // namespace cmp
 
@@ -2494,14 +2628,14 @@ concept foldable =
 
 FLUX_EXPORT
 template <typename Fn, typename Seq1, typename Seq2 = Seq1>
-concept strict_weak_order_for =
+concept weak_ordering_for =
     sequence<Seq1> &&
     sequence<Seq2> &&
-    std::strict_weak_order<Fn&, element_t<Seq1>, element_t<Seq2>> &&
-    std::strict_weak_order<Fn&, value_t<Seq1>&, element_t<Seq2>> &&
-    std::strict_weak_order<Fn&, element_t<Seq1>, value_t<Seq2>&> &&
-    std::strict_weak_order<Fn&, value_t<Seq1>&, value_t<Seq2>&> &&
-    std::strict_weak_order<Fn&, common_element_t<Seq1>, common_element_t<Seq2>>;
+    ordering_invocable<Fn&, element_t<Seq1>, element_t<Seq2>, std::weak_ordering> &&
+    ordering_invocable<Fn&, value_t<Seq1>&, element_t<Seq2>, std::weak_ordering> &&
+    ordering_invocable<Fn&, element_t<Seq1>, value_t<Seq2>&, std::weak_ordering> &&
+    ordering_invocable<Fn&, value_t<Seq1>&, value_t<Seq2>&, std::weak_ordering> &&
+    ordering_invocable<Fn&, common_element_t<Seq1>, common_element_t<Seq2>, std::weak_ordering>;
 
 } // namespace flux
 
@@ -2929,18 +3063,18 @@ public:
     [[nodiscard]]
     constexpr auto find_if_not(Pred pred);
 
-    template <typename Cmp = std::ranges::less>
-        requires strict_weak_order_for<Cmp, Derived>
+    template <typename Cmp = std::compare_three_way>
+        requires weak_ordering_for<Cmp, Derived>
     [[nodiscard]]
     constexpr auto find_max(Cmp cmp = Cmp{});
 
-    template <typename Cmp = std::ranges::less>
-        requires strict_weak_order_for<Cmp, Derived>
+    template <typename Cmp = std::compare_three_way>
+        requires weak_ordering_for<Cmp, Derived>
     [[nodiscard]]
     constexpr auto find_min(Cmp cmp = Cmp{});
 
-    template <typename Cmp = std::ranges::less>
-        requires strict_weak_order_for<Cmp, Derived>
+    template <typename Cmp = std::compare_three_way>
+        requires weak_ordering_for<Cmp, Derived>
     [[nodiscard]]
     constexpr auto find_minmax(Cmp cmp = Cmp{});
 
@@ -2968,16 +3102,16 @@ public:
         requires bounded_sequence<Derived> &&
                  detail::element_swappable_with<Derived, Derived>;
 
-    template <typename Cmp = std::ranges::less>
-        requires strict_weak_order_for<Cmp, Derived>
+    template <typename Cmp = std::compare_three_way>
+        requires weak_ordering_for<Cmp, Derived>
     constexpr auto max(Cmp cmp = Cmp{});
 
-    template <typename Cmp = std::ranges::less>
-        requires strict_weak_order_for<Cmp, Derived>
+    template <typename Cmp = std::compare_three_way>
+        requires weak_ordering_for<Cmp, Derived>
     constexpr auto min(Cmp cmp = Cmp{});
 
-    template <typename Cmp = std::ranges::less>
-        requires strict_weak_order_for<Cmp, Derived>
+    template <typename Cmp = std::compare_three_way>
+        requires weak_ordering_for<Cmp, Derived>
     constexpr auto minmax(Cmp cmp = Cmp{});
 
     template <typename Pred>
@@ -2994,11 +3128,11 @@ public:
         requires foldable<Derived, std::plus<>, value_t<Derived>> &&
                  std::default_initializable<value_t<Derived>>;
 
-    template <typename Cmp = std::ranges::less>
+    template <typename Cmp = std::compare_three_way>
         requires random_access_sequence<Derived> &&
                  bounded_sequence<Derived> &&
                  detail::element_swappable_with<Derived, Derived> &&
-                 strict_weak_order_for<Cmp, Derived>
+                 weak_ordering_for<Cmp, Derived>
     constexpr void sort(Cmp cmp = {});
 
     constexpr auto product()
@@ -7017,12 +7151,6 @@ namespace flux {
 
 namespace detail {
 
-template <typename Cmp>
-concept is_comparison_category =
-    std::same_as<Cmp, std::strong_ordering> ||
-    std::same_as<Cmp, std::weak_ordering> ||
-    std::same_as<Cmp, std::partial_ordering>;
-
 struct compare_fn {
 private:
     template <typename Seq1, typename Seq2, typename Cmp>
@@ -7048,14 +7176,11 @@ private:
     }
 
 public:
-    template <sequence Seq1, sequence Seq2,
-        typename Cmp = std::compare_three_way>
-        requires std::invocable<Cmp &, element_t<Seq1>, element_t<Seq2>> &&
-        is_comparison_category<std::decay_t<
-            std::invoke_result_t<Cmp &, element_t<Seq1>, element_t<Seq2>>>>
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way>
+        requires ordering_invocable<Cmp&, element_t<Seq1>, element_t<Seq2>>
     constexpr auto operator()(Seq1 &&seq1, Seq2 &&seq2, Cmp cmp = {}) const
         -> std::decay_t<
-            std::invoke_result_t<Cmp &, element_t<Seq1>, element_t<Seq2>>>
+            std::invoke_result_t<Cmp&, element_t<Seq1>, element_t<Seq2>>>
     {
         constexpr bool can_memcmp = 
             std::same_as<Cmp, std::compare_three_way> &&
@@ -8706,13 +8831,13 @@ struct minmax_result {
 namespace detail {
 
 struct min_op {
-    template <sequence Seq, strict_weak_order_for<Seq> Cmp = std::ranges::less>
+    template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
         -> flux::optional<value_t<Seq>>
     {
         return flux::fold_first(FLUX_FWD(seq), [&](auto min, auto&& elem) -> value_t<Seq> {
-            if (std::invoke(cmp, elem, min)) {
+            if (std::invoke(cmp, elem, min) < 0) {
                 return value_t<Seq>(FLUX_FWD(elem));
             } else {
                 return min;
@@ -8722,13 +8847,13 @@ struct min_op {
 };
 
 struct max_op {
-    template <sequence Seq, strict_weak_order_for<Seq> Cmp = std::ranges::less>
+    template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
         -> flux::optional<value_t<Seq>>
     {
         return flux::fold_first(FLUX_FWD(seq), [&](auto max, auto&& elem) -> value_t<Seq> {
-            if (!std::invoke(cmp, elem, max)) {
+            if (!(std::invoke(cmp, elem, max) < 0)) {
                 return value_t<Seq>(FLUX_FWD(elem));
             } else {
                 return max;
@@ -8738,7 +8863,7 @@ struct max_op {
 };
 
 struct minmax_op {
-    template <sequence Seq, strict_weak_order_for<Seq> Cmp = std::ranges::less>
+    template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
         -> flux::optional<minmax_result<value_t<Seq>>>
@@ -8754,10 +8879,10 @@ struct minmax_op {
                    value_t<Seq>(flux::read_at(seq, cur))};
 
         auto fold_fn = [&](R mm, auto&& elem) -> R {
-            if (std::invoke(cmp, elem, mm.min)) {
+            if (std::invoke(cmp, elem, mm.min) < 0) {
                 mm.min = value_t<Seq>(elem);
             }
-            if (!std::invoke(cmp, elem, mm.max)) {
+            if (!(std::invoke(cmp, elem, mm.max) < 0)) {
                 mm.max = value_t<Seq>(FLUX_FWD(elem));
             }
             return mm;
@@ -8776,7 +8901,7 @@ FLUX_EXPORT inline constexpr auto minmax = detail::minmax_op{};
 
 template <typename Derived>
 template <typename Cmp>
-    requires strict_weak_order_for<Cmp, Derived>
+    requires weak_ordering_for<Cmp, Derived>
 constexpr auto inline_sequence_base<Derived>::max(Cmp cmp)
 {
     return flux::max(derived(), std::move(cmp));
@@ -8784,7 +8909,7 @@ constexpr auto inline_sequence_base<Derived>::max(Cmp cmp)
 
 template <typename Derived>
 template <typename Cmp>
-    requires strict_weak_order_for<Cmp, Derived>
+    requires weak_ordering_for<Cmp, Derived>
 constexpr auto inline_sequence_base<Derived>::min(Cmp cmp)
 {
     return flux::min(derived(), std::move(cmp));
@@ -8792,7 +8917,7 @@ constexpr auto inline_sequence_base<Derived>::min(Cmp cmp)
 
 template <typename Derived>
 template <typename Cmp>
-    requires strict_weak_order_for<Cmp, Derived>
+    requires weak_ordering_for<Cmp, Derived>
 constexpr auto inline_sequence_base<Derived>::minmax(Cmp cmp)
 {
     return flux::minmax(derived(), std::move(cmp));
@@ -8809,14 +8934,14 @@ namespace detail {
 
 struct find_min_fn {
     template <multipass_sequence Seq,
-              strict_weak_order_for<Seq> Cmp = std::ranges::less>
+              weak_ordering_for<Seq> Cmp = std::compare_three_way>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Cmp cmp = {}) const -> cursor_t<Seq>
     {
         auto min = first(seq);
         if (!is_last(seq, min)) {
             for (auto cur = next(seq, min); !is_last(seq, cur); inc(seq, cur)) {
-                if (std::invoke(cmp, read_at(seq, cur), read_at(seq, min))) {
+                if (std::invoke(cmp, read_at(seq, cur), read_at(seq, min)) < 0) {
                     min = cur;
                 }
             }
@@ -8828,14 +8953,14 @@ struct find_min_fn {
 
 struct find_max_fn {
     template <multipass_sequence Seq,
-              strict_weak_order_for<Seq> Cmp = std::ranges::less>
+              weak_ordering_for<Seq> Cmp = std::compare_three_way>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Cmp cmp = {}) const -> cursor_t<Seq>
     {
         auto max = first(seq);
         if (!is_last(seq, max)) {
             for (auto cur = next(seq, max); !is_last(seq, cur); inc(seq, cur)) {
-                if (!std::invoke(cmp, read_at(seq, cur), read_at(seq, max))) {
+                if (!(std::invoke(cmp, read_at(seq, cur), read_at(seq, max)) < 0)) {
                     max = cur;
                 }
             }
@@ -8847,7 +8972,7 @@ struct find_max_fn {
 
 struct find_minmax_fn {
     template <multipass_sequence Seq,
-              strict_weak_order_for<Seq> Cmp = std::ranges::less>
+              weak_ordering_for<Seq> Cmp = std::compare_three_way>
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, Cmp cmp = {}) const
         -> minmax_result<cursor_t<Seq>>
@@ -8858,10 +8983,10 @@ struct find_minmax_fn {
             for (auto cur = next(seq, min); !is_last(seq, cur); inc(seq, cur)) {
                 auto&& elem = read_at(seq, cur);
 
-                if (std::invoke(cmp, elem, read_at(seq, min))) {
+                if (std::invoke(cmp, elem, read_at(seq, min)) < 0) {
                     min = cur;
                 }
-                if (!std::invoke(cmp, elem, read_at(seq, max))) {
+                if (!(std::invoke(cmp, elem, read_at(seq, max)) < 0)) {
                     max = cur;
                 }
             }
@@ -8879,7 +9004,7 @@ FLUX_EXPORT inline constexpr auto find_minmax = detail::find_minmax_fn{};
 
 template <typename D>
 template <typename Cmp>
-    requires strict_weak_order_for<Cmp, D>
+    requires weak_ordering_for<Cmp, D>
 constexpr auto inline_sequence_base<D>::find_min(Cmp cmp)
 {
     return flux::find_min(derived(), std::move(cmp));
@@ -8887,7 +9012,7 @@ constexpr auto inline_sequence_base<D>::find_min(Cmp cmp)
 
 template <typename D>
 template <typename Cmp>
-    requires strict_weak_order_for<Cmp, D>
+    requires weak_ordering_for<Cmp, D>
 constexpr auto inline_sequence_base<D>::find_max(Cmp cmp)
 {
     return flux::find_max(derived(), std::move(cmp));
@@ -8895,7 +9020,7 @@ constexpr auto inline_sequence_base<D>::find_max(Cmp cmp)
 
 template <typename D>
 template <typename Cmp>
-    requires strict_weak_order_for<Cmp, D>
+    requires weak_ordering_for<Cmp, D>
 constexpr auto inline_sequence_base<D>::find_minmax(Cmp cmp)
 {
     return flux::find_minmax(derived(), std::move(cmp));
@@ -10405,14 +10530,13 @@ public:
                 return;
             }
 
-            if (std::invoke(self.cmp_, flux::read_at(self.base2_, cur.base2_cursor), 
-                                       flux::read_at(self.base1_, cur.base1_cursor))) {
+            auto r = std::invoke(self.cmp_, flux::read_at(self.base1_, cur.base1_cursor),
+                                            flux::read_at(self.base2_, cur.base2_cursor));
+
+            if (r == std::weak_ordering::greater) {
                 cur.active_ = cursor_type::second;
                 return;
-            }
-
-            if (not std::invoke(self.cmp_, flux::read_at(self.base1_, cur.base1_cursor), 
-                                           flux::read_at(self.base2_, cur.base2_cursor))) {
+            } else if (r == std::weak_ordering::equivalent) {
                 flux::inc(self.base2_, cur.base2_cursor);
             }
 
@@ -10534,13 +10658,12 @@ public:
                     return;
                 }
 
-                if(std::invoke(self.cmp_, flux::read_at(self.base1_, cur.base1_cursor), 
-                                          flux::read_at(self.base2_, cur.base2_cursor))) {
-                    return;
-                }
+                auto r = std::invoke(self.cmp_, flux::read_at(self.base1_, cur.base1_cursor),
+                                                flux::read_at(self.base2_, cur.base2_cursor));
 
-                if(not std::invoke(self.cmp_, flux::read_at(self.base2_, cur.base2_cursor), 
-                                              flux::read_at(self.base1_, cur.base1_cursor))) {
+                if (r == std::weak_ordering::less) {
+                    return;
+                } else if (r == std::weak_ordering::equivalent) {
                     flux::inc(self.base1_, cur.base1_cursor);
                 }
 
@@ -10640,19 +10763,17 @@ public:
                     return;
                 }
 
-                if(std::invoke(self.cmp_, flux::read_at(self.base1_, cur.base1_cursor), 
-                                          flux::read_at(self.base2_, cur.base2_cursor))) {
+                auto r = std::invoke(self.cmp_, flux::read_at(self.base1_, cur.base1_cursor),
+                                                flux::read_at(self.base2_, cur.base2_cursor));
+
+                if (r == std::weak_ordering::less) {
                     cur.state_ = cursor_type::first;
                     return;
+                } else if (r == std::weak_ordering::greater) {
+                    cur.state_ = cursor_type::second;
+                    return;
                 } else {
-                    if(std::invoke(self.cmp_, flux::read_at(self.base2_, cur.base2_cursor), 
-                                              flux::read_at(self.base1_, cur.base1_cursor))) {
-                        cur.state_ = cursor_type::second;
-                        return;
-                    } else {
-                        flux::inc(self.base1_, cur.base1_cursor);
-                    }
-
+                    flux::inc(self.base1_, cur.base1_cursor);
                     flux::inc(self.base2_, cur.base2_cursor);
                 }
             }
@@ -10782,16 +10903,15 @@ public:
             while(not flux::is_last(self.base1_, cur.base1_cursor) && 
                   not flux::is_last(self.base2_, cur.base2_cursor))
             {
-                if(std::invoke(self.cmp_, flux::read_at(self.base1_, cur.base1_cursor), 
-                                          flux::read_at(self.base2_, cur.base2_cursor))) {
-                    flux::inc(self.base1_, cur.base1_cursor);
-                } else {
+                auto r = std::invoke(self.cmp_, flux::read_at(self.base1_, cur.base1_cursor),
+                                                flux::read_at(self.base2_, cur.base2_cursor));
 
-                    if(not std::invoke(self.cmp_, flux::read_at(self.base2_, cur.base2_cursor), 
-                                                  flux::read_at(self.base1_, cur.base1_cursor))) {
-                        return;
-                    }
+                if (r == std::weak_ordering::less) {
+                    flux::inc(self.base1_, cur.base1_cursor);
+                } else if (r == std::weak_ordering::greater) {
                     flux::inc(self.base2_, cur.base2_cursor);
+                } else {
+                    return;
                 }
             }
         }
@@ -10854,10 +10974,10 @@ concept set_op_compatible =
     requires { typename std::common_type_t<value_t<T1>, value_t<T2>>; };
 
 struct set_union_fn {
-    template <adaptable_sequence Seq1, adaptable_sequence Seq2, typename Cmp = std::ranges::less>
+    template <adaptable_sequence Seq1, adaptable_sequence Seq2, typename Cmp = std::compare_three_way>
         requires set_op_compatible<Seq1, Seq2> && 
-                 strict_weak_order_for<Cmp, Seq1> && 
-                 strict_weak_order_for<Cmp, Seq2> 
+                 weak_ordering_for<Cmp, Seq1> &&
+                 weak_ordering_for<Cmp, Seq2>
     [[nodiscard]]
     constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const
     {
@@ -10866,9 +10986,9 @@ struct set_union_fn {
 };
 
 struct set_difference_fn {
-    template <adaptable_sequence Seq1, adaptable_sequence Seq2, typename Cmp = std::ranges::less>
-        requires strict_weak_order_for<Cmp, Seq1> && 
-                 strict_weak_order_for<Cmp, Seq2> 
+    template <adaptable_sequence Seq1, adaptable_sequence Seq2, typename Cmp = std::compare_three_way>
+        requires weak_ordering_for<Cmp, Seq1> &&
+                 weak_ordering_for<Cmp, Seq2>
     [[nodiscard]]
     constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const
     {
@@ -10877,10 +10997,10 @@ struct set_difference_fn {
 };
 
 struct set_symmetric_difference_fn {
-    template <adaptable_sequence Seq1, adaptable_sequence Seq2, typename Cmp = std::ranges::less>
+    template <adaptable_sequence Seq1, adaptable_sequence Seq2, typename Cmp = std::compare_three_way>
         requires set_op_compatible<Seq1, Seq2> &&
-                 strict_weak_order_for<Cmp, Seq1> && 
-                 strict_weak_order_for<Cmp, Seq2> 
+                 weak_ordering_for<Cmp, Seq1> &&
+                 weak_ordering_for<Cmp, Seq2>
     [[nodiscard]]
     constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const
     {
@@ -10889,9 +11009,9 @@ struct set_symmetric_difference_fn {
 };
 
 struct set_intersection_fn {
-    template <adaptable_sequence Seq1, adaptable_sequence Seq2, typename Cmp = std::ranges::less>
-        requires strict_weak_order_for<Cmp, Seq1> && 
-                 strict_weak_order_for<Cmp, Seq2> 
+    template <adaptable_sequence Seq1, adaptable_sequence Seq2, typename Cmp = std::compare_three_way>
+        requires weak_ordering_for<Cmp, Seq1> &&
+                 weak_ordering_for<Cmp, Seq2>
     [[nodiscard]]
     constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const
     {
@@ -11260,15 +11380,12 @@ inline constexpr int pdqsort_cacheline_size = 64;
 template <typename T>
 inline constexpr bool is_default_compare_v = false;
 
-template <typename T>
-inline constexpr bool is_default_compare_v<std::less<T>> = true;
-template <typename T>
-inline constexpr bool is_default_compare_v<std::greater<T>> = true;
 template <>
-inline constexpr bool is_default_compare_v<std::ranges::less> = true;
+inline constexpr bool is_default_compare_v<std::compare_three_way> = true;
 template <>
-inline constexpr bool is_default_compare_v<std::ranges::greater> = true;
-
+inline constexpr bool is_default_compare_v<decltype(flux::cmp::reverse_compare)> = true;
+template <>
+inline constexpr bool is_default_compare_v<decltype(flux::cmp::compare_floating_point_unchecked)> = true;
 
 // Returns floor(log2(n)), assumes n > 0.
 template <class T>
@@ -11839,10 +11956,14 @@ constexpr void pdqsort(Seq& seq, Comp& comp)
          is_default_compare_v<std::remove_const_t<Comp>> &&
          std::is_arithmetic_v<value_t<Seq>>;
 
+    auto comp_wrapper = [&comp](auto&& lhs, auto&& rhs) -> bool {
+        return std::is_lt(std::invoke(comp, FLUX_FWD(lhs), FLUX_FWD(rhs)));
+    };
+
     detail::pdqsort_loop<Branchless>(seq,
                                      first(seq),
                                      last(seq),
-                                     comp,
+                                     comp_wrapper,
                                      detail::log2(size(seq)));
 }
 
@@ -11923,10 +12044,10 @@ namespace flux {
 namespace detail {
 
 struct sort_fn {
-    template <random_access_sequence Seq, typename Cmp = std::ranges::less>
+    template <random_access_sequence Seq, typename Cmp = std::compare_three_way>
         requires bounded_sequence<Seq> &&
                  element_swappable_with<Seq, Seq> &&
-                 strict_weak_order_for<Cmp, Seq>
+                 weak_ordering_for<Cmp, Seq>
     constexpr auto operator()(Seq&& seq, Cmp cmp = {}) const
     {
         auto wrapper = flux::unchecked(flux::from_fwd_ref(FLUX_FWD(seq)));
@@ -11943,7 +12064,7 @@ template <typename Cmp>
     requires random_access_sequence<D> &&
              bounded_sequence<D> &&
              detail::element_swappable_with<D, D> &&
-             strict_weak_order_for<Cmp, D>
+             weak_ordering_for<Cmp, D>
 constexpr void inline_sequence_base<D>::sort(Cmp cmp)
 {
     return flux::sort(derived(), std::ref(cmp));
