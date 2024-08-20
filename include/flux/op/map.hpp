@@ -63,7 +63,6 @@ public:
             });
         }
 
-        using default_sequence_traits::read_at_unchecked;
         using default_sequence_traits::move_at;
         using default_sequence_traits::move_at_unchecked;
 
