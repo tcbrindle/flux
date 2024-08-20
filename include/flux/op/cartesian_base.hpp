@@ -328,11 +328,7 @@ public:
         -> decltype(auto)
         requires (ReadKind == read_kind::map)
     {
-        if constexpr (std::is_lvalue_reference_v<decltype(read_at(self, cur))>) {
-            return std::move(read_at(self, cur));
-        } else {
-            return read_at(self, cur);
-        }
+        return default_sequence_traits::move_at(self, cur);
     }
 
     template <typename Self>
@@ -340,11 +336,7 @@ public:
         -> decltype(auto)
         requires (ReadKind == read_kind::map)
     {
-        if constexpr (std::is_lvalue_reference_v<decltype(read_at_unchecked(self, cur))>) {
-            return std::move(read_at_unchecked(self, cur));
-        } else {
-            return read_at_unchecked(self, cur);
-        }
+        return default_sequence_traits::move_at_unchecked(self, cur);
     }
 
     template <typename Self>
