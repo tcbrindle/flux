@@ -16,6 +16,8 @@
 #include <tuple>
 #include <type_traits>
 
+// clang-format off
+
 #if defined(__cpp_lib_ranges_zip) && (__cpp_lib_ranges_zip >= 202110L)
 #define FLUX_HAVE_CPP23_TUPLE_COMMON_REF
 #endif
@@ -77,11 +79,6 @@ template <has_element_type T>
     requires requires { typename traits_t<T>::value_type; }
 struct value_type<T> { using type = typename traits_t<T>::value_type; };
 
-template <has_element_type T>
-    requires requires { traits_t<T>::using_primary_template; } &&
-             requires { typename T::value_type; }
-struct value_type<T> { using type = typename T::value_type; };
-
 } // namespace detail
 
 FLUX_EXPORT
@@ -133,8 +130,6 @@ concept sequence_requirements =
     requires (Seq& seq, cursor_t<Seq>& cur) {
         { Traits::inc(seq, cur) };
     };
-
-// clang-format off
 
 template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
 concept sequence_concept =
