@@ -379,6 +379,20 @@ public:
         return cur;
     }
 
+    template <typename Self, typename Function>
+    static constexpr auto for_each_while(Self& self, Function&& func) -> cursor_t<Self>
+        requires (ReadKind == read_kind::map)
+    {
+        auto cur = first(self);
+        while (!is_last(self, cur)) {
+            if (!std::invoke(func, read_at(self, cur))) {
+                break;
+            }
+            inc(self, cur);
+        }
+        return cur;
+    }
+
 };
 
 template <std::size_t Arity, cartesian_kind CartesianKind, read_kind ReadKind, typename... Bases>

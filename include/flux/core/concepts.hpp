@@ -11,6 +11,7 @@
 #include <compare>
 #include <concepts>
 #include <cstdint>
+#include <functional>
 #include <initializer_list>
 #include <tuple>
 #include <type_traits>
@@ -142,6 +143,9 @@ concept sequence_concept =
         { Traits::read_at_unchecked(seq, cur) } -> std::same_as<element_t<Seq>>;
         { Traits::move_at(seq, cur) } -> can_reference;
         { Traits::move_at_unchecked(seq, cur) } -> std::same_as<rvalue_element_t<Seq>>;
+    } &&
+    requires (Seq& seq, bool (*pred)(element_t<Seq>)) {
+        { Traits::for_each_while(seq, pred) } -> std::same_as<cursor_t<Seq>>;
     } &&
 #ifdef FLUX_HAVE_CPP23_TUPLE_COMMON_REF
     std::common_reference_with<element_t<Seq>&&, value_t<Seq>&> &&
@@ -401,6 +405,32 @@ struct default_sequence_traits {
     {
         using Traits = detail::traits_t<Self>;
         return Traits::distance(self, Traits::first(self), Traits::last(self));
+    }
+
+    template <typename Self, typename Pred>
+        requires detail::sequence_requirements<Self>
+    static constexpr auto for_each_while(Self& self, Pred&& pred) -> cursor_t<Self>
+    {
+        using Traits = detail::traits_t<Self>;
+
+        auto cur = Traits::first(self);
+        if constexpr (bounded_sequence<Self> && regular_cursor<cursor_t<Self>>) {
+            auto const last = Traits::last(self);
+            while (cur != last) {
+                if (!std::invoke(pred, Traits::read_at(self, cur))) {
+                    break;
+                }
+                Traits::inc(self, cur);
+            }
+        } else {
+            while (!Traits::is_last(self, cur)) {
+                if (!std::invoke(pred, Traits::read_at(self, cur))) {
+                    break;
+                }
+                Traits::inc(self, cur);
+            }
+        }
+        return cur;
     }
 
 };

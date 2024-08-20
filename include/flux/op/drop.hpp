@@ -54,7 +54,7 @@ public:
             return flux::data(self.base()) + (cmp::min)(self.count_, flux::size(self.base_));
         }
 
-        void for_each_while(...) = delete;
+        using default_sequence_traits::for_each_while;
     };
 };
 

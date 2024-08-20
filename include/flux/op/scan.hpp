@@ -146,6 +146,8 @@ public:
                 return std::invoke(pred, std::as_const(self.accum_));
             }));
         }
+
+        using default_sequence_traits::for_each_while; // when Mode == exclusive
     };
 };
 
