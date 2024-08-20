@@ -18,6 +18,11 @@
 
 // clang-format off
 
+// Workaround GCC11/12 ICE in sequence concept definition below
+#if defined(__GNUC__) && !defined(__clang__) && (__GNUC__ < 13)
+#define FLUX_COMPILER_IS_GCC12
+#endif
+
 #if defined(__cpp_lib_ranges_zip) && (__cpp_lib_ranges_zip >= 202110L)
 #define FLUX_HAVE_CPP23_TUPLE_COMMON_REF
 #endif
@@ -139,9 +144,11 @@ concept sequence_concept =
         { Traits::move_at(seq, cur) } -> can_reference;
         { Traits::move_at_unchecked(seq, cur) } -> std::same_as<rvalue_element_t<Seq>>;
     } &&
+#ifndef FLUX_COMPILER_IS_GCC12
     requires (Seq& seq, bool (*pred)(element_t<Seq>)) {
         { Traits::for_each_while(seq, pred) } -> std::same_as<cursor_t<Seq>>;
     } &&
+#endif
 #ifdef FLUX_HAVE_CPP23_TUPLE_COMMON_REF
     std::common_reference_with<element_t<Seq>&&, value_t<Seq>&> &&
     std::common_reference_with<rvalue_element_t<Seq>&&, value_t<Seq> const&> &&
