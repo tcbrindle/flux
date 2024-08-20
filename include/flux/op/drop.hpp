@@ -54,7 +54,10 @@ public:
             return flux::data(self.base()) + (cmp::min)(self.count_, flux::size(self.base_));
         }
 
-        using default_sequence_traits::for_each_while;
+        static constexpr auto for_each_while(auto& self, auto&& pred) -> cursor_t<Base>
+        {
+            return default_sequence_traits::for_each_while(self, FLUX_FWD(pred));
+        }
     };
 };
 
