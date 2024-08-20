@@ -383,14 +383,7 @@ public:
     static constexpr auto for_each_while(Self& self, Function&& func) -> cursor_t<Self>
         requires (ReadKind == read_kind::map)
     {
-        auto cur = first(self);
-        while (!is_last(self, cur)) {
-            if (!std::invoke(func, read_at(self, cur))) {
-                break;
-            }
-            inc(self, cur);
-        }
-        return cur;
+        return default_sequence_traits::for_each_while(self, FLUX_FWD(func));
     }
 
 };
