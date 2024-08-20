@@ -117,12 +117,7 @@ struct size_fn {
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const -> distance_t
     {
-        if constexpr (requires { traits_t<Seq>::size(seq); }) {
-            return traits_t<Seq>::size(seq);
-        } else {
-            static_assert(bounded_sequence<Seq> && random_access_sequence<Seq>);
-            return distance_fn{}(seq, first_fn{}(seq), last_fn{}(seq));
-        }
+        return traits_t<Seq>::size(seq);
     }
 };
 

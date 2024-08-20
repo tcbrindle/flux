@@ -243,19 +243,16 @@ concept contiguous_sequence =
 namespace detail {
 
 template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
-concept sized_sequence_concept =
-    sequence<Seq> &&
-    (requires (Seq& seq) {
+concept sized_sequence_requirements =
+    requires (Seq& seq) {
         { Traits::size(seq) } -> std::convertible_to<distance_t>;
-    } || (
-        random_access_sequence<Seq> && bounded_sequence<Seq>
-    ));
+    };
 
 } // namespace detail
 
 FLUX_EXPORT
 template <typename Seq>
-concept sized_sequence = detail::sized_sequence_concept<Seq>;
+concept sized_sequence = sequence<Seq> && detail::sized_sequence_requirements<Seq>;
 
 FLUX_EXPORT
 template <typename Seq, typename T>
@@ -395,6 +392,15 @@ struct default_sequence_traits {
         -> decltype(detail::traits_t<Self>::move_at(self, cur))
     {
         return detail::traits_t<Self>::move_at(self, cur);
+    }
+
+    template <typename Self>
+        requires detail::random_access_sequence_requirements<Self> &&
+                 detail::bounded_sequence_requirements<Self>
+    static constexpr auto size(Self& self) -> distance_t
+    {
+        using Traits = detail::traits_t<Self>;
+        return Traits::distance(self, Traits::first(self), Traits::last(self));
     }
 
 };

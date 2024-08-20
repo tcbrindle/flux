@@ -31,7 +31,7 @@ using pair_or_tuple_t = typename pair_or_tuple<Ts...>::type;
 }
 
 template <typename... Bases>
-struct zip_traits_base {
+struct zip_traits_base : default_sequence_traits {
 private:
     template <typename From, typename To>
     using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
@@ -247,8 +247,7 @@ public:
 };
 
 template <typename Func, typename... Bases>
-struct sequence_traits<detail::zip_map_adaptor<Func, Bases...>>
-    : zip_traits_base<Bases...>, default_sequence_traits
+struct sequence_traits<detail::zip_map_adaptor<Func, Bases...>> : zip_traits_base<Bases...>
 {
 private:
     using base = zip_traits_base<Bases...>;

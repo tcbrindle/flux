@@ -21,9 +21,8 @@ constexpr bool test_cache_last()
         static_assert(flux::sequence<C>);
         static_assert(flux::random_access_sequence<C>);
         static_assert(flux::bounded_sequence<C>);
-        static_assert(flux::sized_sequence<C>); // because RA and bounded
 
-        STATIC_CHECK(cached.size() == 5);
+        STATIC_CHECK(cached.count() == 5);
 
         static_assert(std::ranges::common_range<C>);
     }
