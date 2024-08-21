@@ -11,11 +11,15 @@ jobs:
     runs-on: windows-2022
     strategy:
       matrix:
-        platform: [Win32, x64]
+        platform: [x86, x64]
         build_type: [Debug, Release]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@master
+    - uses: seanmiddleditch/gha-setup-ninja@master
+    - uses: TheMrMilchmann/setup-msvc-dev@v3
+      with:
+        arch: ${{matrix.platform}}
 
     - name: Create Build Environment
       run: cmake -E make_directory ${{runner.workspace}}/build
@@ -25,10 +29,9 @@ jobs:
       shell: bash
       working-directory: ${{runner.workspace}}/build
       run: |
-        cmake -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
+        cmake -G Ninja \
+              -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
               -DFLUX_BUILD_BENCHMARKS=${{matrix.build_type == 'Release'}} \
-              -DFLUX_BUILD_MODULE=On \
-              -A ${{matrix.platform}} \
               $GITHUB_WORKSPACE
 
     - name: Build

@@ -3,15 +3,11 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include "catch.hpp"
-
-#include <flux.hpp>
-
-#include "test_utils.hpp"
-
 #include <array>
 #include <numeric>
 #include <sstream>
+
+#include "test_utils.hpp"
 
 namespace {
 
@@ -218,7 +214,7 @@ TEST_CASE("scan")
     res = test_prescan();
     REQUIRE(res);
 
-    SECTION("inclusive scan with stringstream")
+    SUBCASE("inclusive scan with stringstream")
     {
         std::istringstream iss("1 2 3 4 5");
 
@@ -232,7 +228,7 @@ TEST_CASE("scan")
         REQUIRE(check_equal(seq, {101, 103, 106, 110, 115}));
     }
 
-    SECTION("prescan with stringstream")
+    SUBCASE("prescan with stringstream")
     {
         std::istringstream iss("1 2 3 4 5");
 
@@ -247,7 +243,7 @@ TEST_CASE("scan")
         REQUIRE(check_equal(seq, {100, 101, 103, 106, 110, 115}));
     }
 
-    SECTION("scan_first with stringstream")
+    SUBCASE("scan_first with stringstream")
     {
         std::istringstream iss("1 2 3 4 5");
 

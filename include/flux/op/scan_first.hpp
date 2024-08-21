@@ -28,7 +28,7 @@ public:
           func_(std::move(func))
     {}
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
     private:
         struct cursor_type {
             cursor_type(cursor_type&&) = default;

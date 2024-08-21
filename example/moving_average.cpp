@@ -25,7 +25,7 @@ struct sliding_window_t
     }
 
     int average() const {
-        return sum / window.size();
+        return sum / static_cast<int>(window.size());
     }
 
     std::size_t size;

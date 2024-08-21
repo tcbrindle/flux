@@ -10,6 +10,7 @@
 #include <flux/core/utils.hpp>
 
 #include <climits>
+#include <cstdint>
 #include <limits>
 
 namespace flux::num {
@@ -526,6 +527,18 @@ struct checked_shr_fn {
         }
         return unchecked_shr_fn{}(lhs, rhs);
     }
+};
+
+inline constexpr auto checked_pow =
+    []<std::signed_integral T, std::unsigned_integral U>(T base, U exponent,
+                                                         std::source_location loc = std::source_location::current())
+    -> T
+{
+    T res{1};
+    for(U i{0}; i < exponent; i++) {
+        res = checked_mul_fn{}(res, base, loc);
+    }
+    return res;
 };
 
 template <overflow_policy>

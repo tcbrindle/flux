@@ -2,15 +2,13 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include "catch.hpp"
-
-#include <flux.hpp>
-
-#include "test_utils.hpp"
-
 #include <array>
 #include <sstream>
+#include <string>
+#include <string_view>
 #include <vector>
+
+#include "test_utils.hpp"
 
 constexpr const auto& test_str1 = "Line1\nLine2\nLine3";
 

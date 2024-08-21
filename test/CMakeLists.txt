@@ -1,9 +1,15 @@
 
-add_library(catch-main catch_main.cpp)
-target_compile_features(catch-main PUBLIC cxx_std_20)
-target_compile_definitions(catch-main PUBLIC -DCATCH_CONFIG_NO_POSIX_SIGNALS)
+include(FetchContent)
 
-add_executable(test-libflux
+FetchContent_Declare(doctest
+    GIT_REPOSITORY https://github.com/doctest/doctest.git
+    GIT_TAG ae7a13539fb71f270b87eb2e874fbac80bc8dda2 # v2.4.11
+    FIND_PACKAGE_ARGS
+)
+
+FetchContent_MakeAvailable(doctest)
+
+add_executable(test-flux
 
     num/test_concepts.cpp
     num/test_casts.cpp
@@ -16,7 +22,6 @@ add_executable(test-libflux
     test_concepts.cpp
     test_optional.cpp
     test_predicates.cpp
-    test_simple_sequence.cpp
     test_apply.cpp
 
     test_adjacent.cpp
@@ -25,8 +30,10 @@ add_executable(test-libflux
     test_all_any_none.cpp
     test_bounds_checked.cpp
     test_cache_last.cpp
+    test_cartesian_power.cpp
+    test_cartesian_power_map.cpp
     test_cartesian_product.cpp
-    test_cartesian_product_with.cpp
+    test_cartesian_product_map.cpp
     test_chain.cpp
     test_chunk.cpp
     test_chunk_by.cpp
@@ -42,9 +49,11 @@ add_executable(test-libflux
     test_equal.cpp
     test_fill.cpp
     test_filter.cpp
+    test_filter_map.cpp
     test_find.cpp
     test_find_min_max.cpp
     test_flatten.cpp
+    test_flatten_with.cpp
     test_for_each.cpp
     test_fold.cpp
     test_front_back.cpp
@@ -69,6 +78,7 @@ add_executable(test-libflux
     test_unchecked.cpp
     test_write_to.cpp
     test_zip.cpp
+    test_zip_map.cpp
     test_zip_algorithms.cpp
 
     test_array_ptr.cpp
@@ -83,45 +93,48 @@ add_executable(test-libflux
     test_single.cpp
     test_unfold.cpp
 )
-target_link_libraries(test-libflux flux catch-main)
-target_compile_definitions(test-libflux PUBLIC
+
+target_link_libraries(test-flux flux-internal doctest::doctest_with_main)
+target_compile_definitions(test-flux PUBLIC
     FLUX_UNWIND_ON_ERROR
     FLUX_ERROR_ON_OVERFLOW
     FLUX_ERROR_ON_DIVIDE_BY_ZERO
+    FLUX_DISABLE_STATIC_BOUNDS_CHECKING
+    DOCTEST_CONFIG_VOID_CAST_EXPRESSIONS
 )
+target_precompile_headers(test-flux PRIVATE <doctest/doctest.h>)
 
-if(${FLUX_ENABLE_ASAN})
-    target_compile_options(test-libflux PRIVATE -fsanitize=address)
-    target_link_options(test-libflux PRIVATE -fsanitize=address)
+if(FLUX_ENABLE_ASAN)
+    target_compile_options(test-flux PRIVATE -fsanitize=address)
+    target_link_options(test-flux PRIVATE -fsanitize=address)
 endif()
 
-if(${FLUX_ENABLE_UBSAN})
-    target_compile_options(test-libflux PRIVATE -fsanitize=undefined)
-    target_link_options(test-libflux PRIVATE -fsanitize=undefined)
+if(FLUX_ENABLE_UBSAN)
+    target_compile_options(test-flux PRIVATE -fsanitize=undefined)
+    target_link_options(test-flux PRIVATE -fsanitize=undefined)
 endif()
 
-if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")
-    target_precompile_headers(test-libflux PRIVATE "catch.hpp")
+if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.28.0")
+    if (FLUX_BUILD_TESTS_USING_MODULE)
+        target_sources(test-flux PUBLIC
+            FILE_SET CXX_MODULES
+            BASE_DIRS ${PROJECT_SOURCE_DIR}/module
+            FILES ${PROJECT_SOURCE_DIR}/module/flux.cpp
+        )
+
+        target_compile_definitions(test-flux PRIVATE -DUSE_MODULES)
+        set_target_properties(test-flux PROPERTIES CXX_SCAN_FOR_MODULES On)
+    endif()
 endif()
 
-if(CMAKE_COMPILER_IS_GNUCXX)
-    target_compile_options(test-libflux PRIVATE -Wall -Wextra -pedantic
-        -fno-omit-frame-pointer
-        -ftemplate-backtrace-limit=0
-        -fconcepts-diagnostics-depth=2)
-endif()
-
-if(MSVC)
-    target_compile_options(test-libflux PRIVATE /W4
-        /wd4459 # local variable name hides global variable
-        /wd4702 # unreachable code
-    )
-endif()
-
-if(${FLUX_BUILD_MODULE})
+if(FLUX_BUILD_MODULE)
     add_executable(test-module-import test_module_import.cpp)
     target_link_libraries(test-module-import PUBLIC flux-mod)
+    set_target_properties(test-module-import PROPERTIES
+                          CXX_EXTENSIONS Off
+                          CXX_SCAN_FOR_MODULES On)
 endif()
 
-include(Catch)
-catch_discover_tests(test-libflux)
+list(APPEND CMAKE_MODULE_PATH ${doctest_SOURCE_DIR}/scripts/cmake)
+include(doctest)
+doctest_discover_tests(test-flux)

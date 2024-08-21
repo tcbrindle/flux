@@ -63,7 +63,9 @@ public:
             });
         }
 
-        static void move_at() = delete; // Use the base version of move_at
+        using default_sequence_traits::move_at;
+        using default_sequence_traits::move_at_unchecked;
+
         static void data() = delete; // we're not a contiguous sequence
     };
 };

@@ -3,11 +3,16 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include "catch.hpp"
-
-#include <flux.hpp>
+#include <optional> // std::nullopt
+#include <utility> // std::as_const
 
 #include "test_utils.hpp"
+
+// Silence warnings about unneeded comparison functions: in fact they are
+// needed during concept checks
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wunneeded-internal-declaration"
+#endif
 
 namespace {
 
@@ -125,6 +130,24 @@ struct MoveOnly {
     MoveOnly() = default;
     MoveOnly(MoveOnly&&) = default;
     MoveOnly& operator=(MoveOnly&&) = default;
+};
+
+struct NotCopyAssignable {
+    int i;
+
+    constexpr explicit NotCopyAssignable(int i ) : i{i} {}
+    NotCopyAssignable(NotCopyAssignable const&) = default;
+    NotCopyAssignable(NotCopyAssignable&&) = default;
+    NotCopyAssignable& operator=(NotCopyAssignable const&) = delete; // Note
+    NotCopyAssignable& operator=(NotCopyAssignable&&) = default;
+};
+
+struct NotMoveAssignable {
+    int i;
+
+    constexpr explicit NotMoveAssignable(int i) : i{i} {}
+    NotMoveAssignable(NotMoveAssignable&&) = default;
+    NotMoveAssignable& operator=(NotMoveAssignable&&) = delete; // Note
 };
 
 struct TraceMove {
@@ -515,6 +538,20 @@ constexpr bool test_optional_copy_assign()
         STATIC_CHECK(&*o == &j);
     }
 
+    // Test optional<NotCopyAssignable> can actually be copy-assigned
+    {
+        static_assert(std::copy_constructible<NotCopyAssignable>);
+        static_assert(not std::copyable<NotCopyAssignable>);
+        static_assert(std::copyable<flux::optional<NotCopyAssignable>>);
+
+        auto opt1 = flux::optional(NotCopyAssignable(1));
+        auto opt2 = flux::optional(NotCopyAssignable(2));
+
+        opt1 = opt2;
+
+        STATIC_CHECK(opt1->i == 2);
+    }
+
     return true;
 }
 static_assert(test_optional_copy_assign());
@@ -622,6 +659,20 @@ constexpr bool test_optional_move_assign()
 
         STATIC_CHECK(src->moved_from);
         STATIC_CHECK(not dest->moved_from);
+    }
+
+    // Test optional<NotMoveAssignable> can actually be move-assigned
+    {
+        static_assert(std::move_constructible<NotMoveAssignable>);
+        static_assert(not std::copyable<NotMoveAssignable>);
+        static_assert(std::movable<flux::optional<NotMoveAssignable>>);
+
+        auto opt1 = flux::optional(NotCopyAssignable(1));
+        auto opt2 = flux::optional(NotCopyAssignable(2));
+
+        opt1 = std::move(opt2);
+
+        STATIC_CHECK(opt1->i == 2);
     }
 
     return true;
@@ -1125,7 +1176,6 @@ constexpr bool test_optional_map()
         auto return_ref = [](int& i) -> int& { return i; };
 
         flux::optional<int> o{3};
-        flux::optional<int> empty;
 
         STATIC_CHECK(o.map(return_ref).value() == 3);
     }

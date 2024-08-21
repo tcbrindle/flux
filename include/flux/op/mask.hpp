@@ -25,7 +25,7 @@ public:
           mask_(FLUX_FWD(mask))
     {}
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
     private:
         struct cursor_type {
             cursor_t<Base> base_cur;
@@ -103,7 +103,7 @@ public:
 
         template <typename Self>
             requires maybe_const_iterable<Self>
-        static constexpr auto move_at(auto& self, cursor_type const& cur) -> decltype(auto)
+        static constexpr auto move_at(Self& self, cursor_type const& cur) -> decltype(auto)
         {
             return flux::move_at(self.base_, cur.base_cur);
         }

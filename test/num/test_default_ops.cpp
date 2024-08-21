@@ -12,10 +12,6 @@
  */
 
 
-#include "../catch.hpp"
-
-#include <flux/core/numeric.hpp>
-
 #include "../test_utils.hpp"
 
 namespace {

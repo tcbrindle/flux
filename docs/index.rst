@@ -3,10 +3,10 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Flux's documentation!
-================================
+Flux Documentation
+==================
 
-    Things of this world are in so constant a flux, that nothing remains long in the same state.
+    Things of this World are in so constant a Flux, that nothing remains long in the same State.
       -- John Locke (1632-1704), English philosopher
 
 

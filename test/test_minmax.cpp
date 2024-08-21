@@ -3,10 +3,6 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include "catch.hpp"
-
-#include <flux.hpp>
-
 #include <array>
 
 #include "test_utils.hpp"
@@ -37,13 +33,13 @@ constexpr bool test_min()
     // Can use custom comparator and projection
     {
         IntPair arr[] = { {1, 2}, {3, 4}, {5, 6}};
-        STATIC_CHECK(flux::min(arr, flux::proj(std::greater<>{}, &IntPair::a)).value() == IntPair{5, 6});
+        STATIC_CHECK(flux::min(arr, flux::proj(flux::cmp::reverse_compare, &IntPair::a)).value() == IntPair{5, 6});
     }
 
     // If several elements are equally minimal, returns the first
     {
         IntPair arr[] = { {1, 2}, {1, 3}, {1, 4}};
-        STATIC_CHECK(flux::min(arr, flux::proj(std::ranges::less{}, &IntPair::a))->b == 2);
+        STATIC_CHECK(flux::min(arr, flux::proj(flux::cmp::compare, &IntPair::a))->b == 2);
     }
 
     return true;
@@ -68,13 +64,13 @@ constexpr bool test_max()
     // Can use custom comparator and projection
     {
         IntPair arr[] = { {1, 2}, {3, 4}, {5, 6}};
-        STATIC_CHECK(flux::max(arr, flux::proj(std::greater<>{}, &IntPair::a)).value() == IntPair{1, 2});
+        STATIC_CHECK(flux::max(arr, flux::proj(flux::cmp::reverse_compare, &IntPair::a)).value() == IntPair{1, 2});
     }
 
     // If several elements are equally maximal, returns the last
     {
         IntPair arr[] = { {1, 2}, {1, 3}, {1, 4}};
-        STATIC_CHECK(flux::max(arr, flux::proj(std::ranges::less{}, &IntPair::a))->b == 4);
+        STATIC_CHECK(flux::max(arr, flux::proj(flux::cmp::compare, &IntPair::a))->b == 4);
     }
 
     return true;
@@ -95,7 +91,7 @@ constexpr bool test_minmax()
         STATIC_CHECK(result.min == 1);
         STATIC_CHECK(result.max == 5);
 
-        result = flux::from(std::array{5, 4, 3, 2, 1}).minmax(std::greater{}).value();
+        result = flux::from(std::array{5, 4, 3, 2, 1}).minmax(flux::cmp::reverse_compare).value();
         STATIC_CHECK(result.min == 5);
         STATIC_CHECK(result.max == 1);
     }
@@ -103,7 +99,7 @@ constexpr bool test_minmax()
     // Can use custom comparator and projection
     {
         IntPair arr[] = { {1, 2}, {3, 4}, {5, 6}};
-        auto result = flux::minmax(arr, flux::proj(std::greater<>{}, &IntPair::a)).value();
+        auto result = flux::minmax(arr, flux::proj(flux::cmp::reverse_compare, &IntPair::a)).value();
         STATIC_CHECK(result.min == IntPair{5, 6});
         STATIC_CHECK(result.max == IntPair{1, 2});
     }
@@ -111,7 +107,7 @@ constexpr bool test_minmax()
     // If several elements are equally minimal/maximal, returns the first/last resp.
     {
         IntPair arr[] = { {1, 2}, {1, 3}, {1, 4}};
-        auto result = flux::minmax(arr, flux::proj(std::ranges::less{}, &IntPair::a)).value();
+        auto result = flux::minmax(arr, flux::proj(flux::cmp::compare, &IntPair::a)).value();
         STATIC_CHECK(result.min == IntPair{1, 2});
         STATIC_CHECK(result.max == IntPair{1, 4});
     }

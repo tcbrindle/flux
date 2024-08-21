@@ -3,14 +3,9 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include "catch.hpp"
-
-#include <flux/op/output_to.hpp>
-#include <flux/op/take.hpp>
-#include <flux/source/istream.hpp>
-#include <flux/source/istreambuf.hpp>
-
+#include <algorithm>
 #include <array>
+#include <iterator>
 #include <list>
 #include <sstream>
 #include <vector>
@@ -42,7 +37,7 @@ TEST_CASE("output to")
     bool result = test_output_to();
     REQUIRE(result);
 
-    SECTION("...with contiguous iterators")
+    SUBCASE("...with contiguous iterators")
     {
         std::vector<int> const in{1, 2, 3, 4, 5};
         std::vector<int> out(5);
@@ -53,7 +48,7 @@ TEST_CASE("output to")
         REQUIRE(iter == out.cend());
     }
 
-    SECTION("...with back_inserter")
+    SUBCASE("...with back_inserter")
     {
         std::vector<int> const in{1, 2, 3, 4, 5};
         std::list<int> out;
@@ -63,7 +58,7 @@ TEST_CASE("output to")
         REQUIRE(std::ranges::equal(in, out));
     }
 
-    SECTION("...with iostreams")
+    SUBCASE("...with iostreams")
     {
         std::istringstream iss("1 2 3");
         std::ostringstream oss;
@@ -73,7 +68,7 @@ TEST_CASE("output to")
         REQUIRE(oss.str() == "123");
     }
 
-    SECTION("...with streambufs")
+    SUBCASE("...with streambufs")
     {
         std::istringstream iss(" hello world!! ");
         std::ostringstream oss;
@@ -83,7 +78,7 @@ TEST_CASE("output to")
         REQUIRE(oss.str() == " hello world!! ");
     }
     
-    SECTION("...with empty input sequences")
+    SUBCASE("...with empty input sequences")
     {
         std::vector<int> const in;
         std::vector<int> out;

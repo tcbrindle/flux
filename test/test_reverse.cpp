@@ -3,14 +3,10 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include "catch.hpp"
-
-#include <flux.hpp>
-
-#include "test_utils.hpp"
-
 #include <array>
 #include <list>
+
+#include "test_utils.hpp"
 
 namespace {
 
@@ -106,6 +102,42 @@ constexpr bool issue_52()
 }
 static_assert(issue_52());
 
+// Regression test for #143
+// https://github.com/tcbrindle/flux/issues/143
+constexpr bool issue_143()
+{
+    struct Int {
+        int i;
+        constexpr int get() { return i; } // not const
+    };
+
+    std::array<Int, 3> arr{Int{1}, {2}, {3}};
+
+    int sum = 0;
+    for (int i : flux::map(arr, &Int::get).reverse()) {
+        sum += i;
+    }
+
+    STATIC_CHECK(sum == 6);
+
+    return true;
+}
+static_assert(issue_143());
+
+// Regression test for #182
+// https://github.com/tcbrindle/flux/issues/182
+constexpr bool issue_182()
+{
+    auto seq = flux::iota(1,4)
+                   .drop(2)
+                   .reverse().drop(5).reverse()
+                   .filter([](int i) { return i&1; })
+                   .chunk(4);
+
+    return seq.is_empty();
+}
+static_assert(issue_182());
+
 }
 
 TEST_CASE("reverse")
@@ -114,6 +146,12 @@ TEST_CASE("reverse")
     REQUIRE(result);
 
     result = issue_52();
+    REQUIRE(result);
+
+    result = issue_143();
+    REQUIRE(result);
+
+    result = issue_182();
     REQUIRE(result);
 
     {

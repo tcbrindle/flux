@@ -13,7 +13,7 @@
 namespace flux {
 
 template <std::size_t N>
-struct sequence_traits<std::bitset<N>> {
+struct sequence_traits<std::bitset<N>> : default_sequence_traits {
 
     using value_type = bool;
 
@@ -52,7 +52,7 @@ struct sequence_traits<std::bitset<N>> {
     static constexpr auto inc(self_t const&, std::size_t& idx, std::ptrdiff_t off)
         -> std::size_t&
     {
-        return idx += off;
+        return idx += static_cast<std::size_t>(off);
     }
 
     static constexpr auto distance(self_t const&, std::size_t from, std::size_t to)
@@ -63,7 +63,7 @@ struct sequence_traits<std::bitset<N>> {
 
     static constexpr auto last(self_t const&) -> std::size_t { return N; }
 
-    static constexpr auto size(self_t const&) -> std::size_t { return N; }
+    static constexpr auto size(self_t const&) -> std::ptrdiff_t { return N; }
 
 };
 

@@ -26,7 +26,7 @@ public:
           win_sz_(win_sz)
     {}
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
     private:
         struct cursor_type {
             cursor_t<Base> from;

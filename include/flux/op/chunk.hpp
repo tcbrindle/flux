@@ -33,7 +33,7 @@ public:
     chunk_adaptor(chunk_adaptor&&) = default;
     chunk_adaptor& operator=(chunk_adaptor&&) = default;
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
     private:
         struct outer_cursor {
             outer_cursor(outer_cursor&&) = default;
@@ -61,7 +61,7 @@ public:
             value_type(value_type&&) = default;
             value_type& operator=(value_type&&) = default;
 
-            struct flux_sequence_traits {
+            struct flux_sequence_traits : default_sequence_traits {
             private:
                 struct inner_cursor {
                     inner_cursor(inner_cursor&&) = default;
@@ -146,7 +146,7 @@ public:
           chunk_sz_(chunk_sz)
     {}
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
         static inline constexpr bool is_infinite = infinite_sequence<Base>;
 
         static constexpr auto first(auto& self) -> cursor_t<Base>
@@ -198,7 +198,7 @@ public:
           chunk_sz_(chunk_sz)
     {}
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
     private:
         struct cursor_type {
             cursor_t<Base> cur{};

@@ -3,13 +3,9 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include "catch.hpp"
-
-#include <flux.hpp>
+#include <array>
 
 #include "test_utils.hpp"
-
-#include <array>
 
 namespace {
 
@@ -77,7 +73,9 @@ constexpr bool test_compare()
     // empty sequences are equal
     {
         // ...but still require the element types to be comparable
-        static_assert(not std::invocable<flux::detail::compare_fn, flux::detail::empty_sequence<int>, flux::detail::empty_sequence<std::nullptr_t>>);
+        static_assert(not std::invocable<decltype(flux::compare),
+                                         decltype(flux::empty<int>),
+                                         decltype(flux::empty<std::nullptr_t>)>);
 
         auto r = flux::compare(flux::empty<int>, flux::empty<int>);
         static_assert(std::same_as<decltype(r), std::strong_ordering>);

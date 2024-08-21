@@ -12,14 +12,15 @@ jobs:
     strategy:
       matrix:
         sanitizer: [ubsan, asan]
+        build_type: [Debug, Release]
         include:
-          - cxx: g++-13
+          - cxx: g++-14
             install: |
-              brew install gcc@13 ninja binutils
+              brew install gcc@14 ninja binutils
               brew link --force binutils
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@master
 
       - name: Set up Homebrew
         uses: Homebrew/actions/setup-homebrew@master
@@ -35,7 +36,7 @@ jobs:
           cmake -GNinja \
                 -DFLUX_ENABLE_ASAN=${{matrix.sanitizer == 'asan'}} \
                 -DFLUX_ENABLE_UBSAN=${{matrix.sanitizer == 'ubsan'}} \
-                -DCMAKE_CXX_COMPILER=g++-13 \
+                -DCMAKE_CXX_COMPILER=g++-14 \
                 $GITHUB_WORKSPACE
 
       - name: Build

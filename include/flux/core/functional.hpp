@@ -6,7 +6,7 @@
 #ifndef FLUX_CORE_FUNCTIONAL_HPP_INCLUDED
 #define FLUX_CORE_FUNCTIONAL_HPP_INCLUDED
 
-#include <flux/core/macros.hpp>
+#include <flux/macros.hpp>
 
 #include <functional>
 #include <type_traits>
@@ -120,9 +120,56 @@ struct unpack_fn {
     }
 };
 
+struct flip_fn {
+    template <typename Fn>
+    struct flipped {
+        Fn fn;
+
+        template <typename T, typename U, typename... Args>
+            requires std::invocable<Fn&, U, T, Args...>
+        constexpr auto operator()(T&& t, U&& u, Args&&... args) &
+            -> decltype(auto)
+        {
+            return std::invoke(fn, FLUX_FWD(u), FLUX_FWD(t), FLUX_FWD(args)...);
+        }
+
+        template <typename T, typename U, typename... Args>
+            requires std::invocable<Fn const&, U, T, Args...>
+        constexpr auto operator()(T&& t, U&& u, Args&&... args) const&
+            -> decltype(auto)
+        {
+            return std::invoke(fn, FLUX_FWD(u), FLUX_FWD(t), FLUX_FWD(args)...);
+        }
+
+        template <typename T, typename U, typename... Args>
+            requires std::invocable<Fn, U, T, Args...>
+        constexpr auto operator()(T&& t, U&& u, Args&&... args) &&
+            -> decltype(auto)
+        {
+            return std::invoke(std::move(fn), FLUX_FWD(u), FLUX_FWD(t), FLUX_FWD(args)...);
+        }
+
+        template <typename T, typename U, typename... Args>
+            requires std::invocable<Fn const, U, T, Args...>
+        constexpr auto operator()(T&& t, U&& u, Args&&... args) const &&
+            -> decltype(auto)
+        {
+            return std::invoke(std::move(fn), FLUX_FWD(u), FLUX_FWD(t), FLUX_FWD(args)...);
+        }
+    };
+
+    template <typename Fn>
+    [[nodiscard]]
+    constexpr auto operator()(Fn func) const
+    {
+        return flipped<Fn>{std::move(func)};
+    }
+};
+
 } // namespace detail
 
 FLUX_EXPORT inline constexpr auto unpack = detail::unpack_fn{};
+FLUX_EXPORT inline constexpr auto flip = detail::flip_fn{};
 
 namespace pred {
 
@@ -174,18 +221,21 @@ FLUX_EXPORT inline constexpr auto either = [](auto&& p, auto&& or_) {
 
 namespace detail {
 
+FLUX_EXPORT
 template <typename P>
 constexpr auto operator!(detail::predicate<P> pred)
 {
     return not_(std::move(pred));
 }
 
+FLUX_EXPORT
 template <typename L, typename R>
 constexpr auto operator&&(detail::predicate<L> lhs, detail::predicate<R> rhs)
 {
     return both(std::move(lhs), std::move(rhs));
 }
 
+FLUX_EXPORT
 template <typename L, typename R>
 constexpr auto operator||(detail::predicate<L> lhs, detail::predicate<R> rhs)
 {
@@ -257,32 +307,102 @@ namespace cmp {
 
 namespace detail {
 
-struct min_fn {
-    template <typename T, typename U, typename Cmp = std::ranges::less>
-        requires std::strict_weak_order<Cmp&, T&, U&>
+struct compare_floating_point_unchecked_fn {
+    template <std::floating_point T>
     [[nodiscard]]
-    constexpr auto operator()(T&& t, U&& u, Cmp cmp = Cmp{}) const
+    constexpr auto operator()(T a, T b) const noexcept
+        -> std::weak_ordering
+    {
+        return a < b ? std::weak_ordering::less
+             : a > b ? std::weak_ordering::greater
+                     : std::weak_ordering::equivalent;
+    }
+};
+
+struct min_fn {
+    template <typename T, typename U, typename Cmp = std::compare_three_way>
+        requires same_decayed<T, U> &&
+                 std::common_reference_with<T, U> &&
+                 ordering_invocable<Cmp&, T&, U&, std::weak_ordering>
+    [[nodiscard]]
+    constexpr auto operator()(T&& a, U&& b, Cmp cmp = Cmp{}) const
         -> std::common_reference_t<T, U>
     {
-        return std::invoke(cmp, u, t) ? FLUX_FWD(u) : FLUX_FWD(t);
+        return std::invoke(cmp, b, a) < 0 ? FLUX_FWD(b) : FLUX_FWD(a);
     }
 };
 
 struct max_fn {
-    template <typename T, typename U, typename Cmp = std::ranges::less>
-        requires std::strict_weak_order<Cmp&, T&, U&>
+    template <typename T, typename U, typename Cmp = std::compare_three_way>
+        requires same_decayed<T, U> &&
+                 std::common_reference_with<T, U> &&
+                 ordering_invocable<Cmp&, T&, U&, std::weak_ordering>
     [[nodiscard]]
-    constexpr auto operator()(T&& t, U&& u, Cmp cmp = Cmp{}) const
+    constexpr auto operator()(T&& a, U&& b, Cmp cmp = Cmp{}) const
         -> std::common_reference_t<T, U>
     {
-        return !std::invoke(cmp, u, t) ? FLUX_FWD(u) : FLUX_FWD(t);
+        return !(std::invoke(cmp, b, a) < 0) ? FLUX_FWD(b) : FLUX_FWD(a);
+    }
+};
+
+struct partial_min_fn {
+    template <typename T, typename U>
+        requires same_decayed<T, U> &&
+                 std::common_reference_with<T, U> &&
+                 ordering_invocable<std::compare_three_way&, T&, U&>
+    [[nodiscard]]
+    constexpr auto operator()(T&& a, U&& b) const
+        -> std::common_reference_t<T, U>
+    {
+        return (b < a) ? FLUX_FWD(b) : FLUX_FWD(a);
+    }
+
+    template <typename T, typename U, typename Cmp>
+        requires same_decayed<T, U> &&
+                 std::common_reference_with<T, U> &&
+                 ordering_invocable<Cmp&, T&, U&>
+    [[nodiscard]]
+    constexpr auto operator()(T&& a, U&& b, Cmp cmp) const
+        -> std::common_reference_t<T, U>
+    {
+        return std::invoke(cmp, b, a) < 0 ? FLUX_FWD(b) : FLUX_FWD(a);
+    }
+};
+
+struct partial_max_fn {
+    template <typename T, typename U>
+        requires same_decayed<T, U> &&
+                 std::common_reference_with<T, U> &&
+                 ordering_invocable<std::compare_three_way&, T&, U&>
+    [[nodiscard]]
+    constexpr auto operator()(T&& a, U&& b) const
+        -> std::common_reference_t<T, U>
+    {
+        return !(b < a) ? FLUX_FWD(b) : FLUX_FWD(a);
+    }
+
+    template <typename T, typename U, typename Cmp>
+        requires same_decayed<T, U> &&
+                 std::common_reference_with<T, U> &&
+                 ordering_invocable<Cmp&, T&, U&>
+    [[nodiscard]]
+    constexpr auto operator()(T&& a, U&& b, Cmp cmp) const
+        -> std::common_reference_t<T, U>
+    {
+        return !(std::invoke(cmp, b, a) < 0) ? FLUX_FWD(b) : FLUX_FWD(a);
     }
 };
 
 } // namespace detail
 
+FLUX_EXPORT inline constexpr auto compare = std::compare_three_way{};
+FLUX_EXPORT inline constexpr auto reverse_compare = flip(compare);
+FLUX_EXPORT inline constexpr auto compare_floating_point_unchecked
+    = detail::compare_floating_point_unchecked_fn{};
 FLUX_EXPORT inline constexpr auto min = detail::min_fn{};
 FLUX_EXPORT inline constexpr auto max = detail::max_fn{};
+FLUX_EXPORT inline constexpr auto partial_min = detail::partial_min_fn{};
+FLUX_EXPORT inline constexpr auto partial_max = detail::partial_max_fn{};
 
 } // namespace cmp
 

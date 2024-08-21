@@ -3,14 +3,12 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include "catch.hpp"
-
-#include <flux.hpp>
-
-#include "test_utils.hpp"
-
+#include <algorithm>
 #include <array>
 #include <string_view>
+#include <tuple>
+
+#include "test_utils.hpp"
 
 namespace {
 
@@ -37,7 +35,7 @@ constexpr bool test_zip_for_each()
         static_assert(std::same_as<counter, decltype(c)>);
 
         STATIC_CHECK(c.int_sum == 1 + 2 + 3);
-        STATIC_CHECK(c.double_sum = 100.0 + 200.0 + 300.0);
+        STATIC_CHECK(c.double_sum == 100.0 + 200.0 + 300.0);
     }
 
     // zip_for_each with no sequences never calls the fn
@@ -131,7 +129,7 @@ constexpr bool test_zip_find_if()
         auto [cur1, cur2] = flux::zip_find_if(std::not_equal_to{}, arr1, arr2);
 
         STATIC_CHECK(*iter1 == arr1[cur1]);
-        STATIC_CHECK(*iter2 == arr2[cur2]);
+        STATIC_CHECK(*iter2 == arr2[size_t(cur2)]);
 
     }
 

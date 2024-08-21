@@ -29,7 +29,7 @@ public:
           cmp_(cmp)
     {}
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
     private:
 
         struct cursor_type {
@@ -59,14 +59,13 @@ public:
                 return;
             }
 
-            if (std::invoke(self.cmp_, flux::read_at(self.base2_, cur.base2_cursor), 
-                                       flux::read_at(self.base1_, cur.base1_cursor))) {
+            auto r = std::invoke(self.cmp_, flux::read_at(self.base1_, cur.base1_cursor),
+                                            flux::read_at(self.base2_, cur.base2_cursor));
+
+            if (r == std::weak_ordering::greater) {
                 cur.active_ = cursor_type::second;
                 return;
-            }
-
-            if (not std::invoke(self.cmp_, flux::read_at(self.base1_, cur.base1_cursor), 
-                                           flux::read_at(self.base2_, cur.base2_cursor))) {
+            } else if (r == std::weak_ordering::equivalent) {
                 flux::inc(self.base2_, cur.base2_cursor);
             }
 
@@ -163,7 +162,7 @@ public:
           cmp_(cmp)
     {}
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
     private:
 
         struct cursor_type {
@@ -188,13 +187,12 @@ public:
                     return;
                 }
 
-                if(std::invoke(self.cmp_, flux::read_at(self.base1_, cur.base1_cursor), 
-                                          flux::read_at(self.base2_, cur.base2_cursor))) {
-                    return;
-                }
+                auto r = std::invoke(self.cmp_, flux::read_at(self.base1_, cur.base1_cursor),
+                                                flux::read_at(self.base2_, cur.base2_cursor));
 
-                if(not std::invoke(self.cmp_, flux::read_at(self.base2_, cur.base2_cursor), 
-                                              flux::read_at(self.base1_, cur.base1_cursor))) {
+                if (r == std::weak_ordering::less) {
+                    return;
+                } else if (r == std::weak_ordering::equivalent) {
                     flux::inc(self.base1_, cur.base1_cursor);
                 }
 
@@ -267,7 +265,7 @@ public:
           cmp_(cmp)
     {}
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
     private:
 
         struct cursor_type {
@@ -294,19 +292,17 @@ public:
                     return;
                 }
 
-                if(std::invoke(self.cmp_, flux::read_at(self.base1_, cur.base1_cursor), 
-                                          flux::read_at(self.base2_, cur.base2_cursor))) {
+                auto r = std::invoke(self.cmp_, flux::read_at(self.base1_, cur.base1_cursor),
+                                                flux::read_at(self.base2_, cur.base2_cursor));
+
+                if (r == std::weak_ordering::less) {
                     cur.state_ = cursor_type::first;
                     return;
+                } else if (r == std::weak_ordering::greater) {
+                    cur.state_ = cursor_type::second;
+                    return;
                 } else {
-                    if(std::invoke(self.cmp_, flux::read_at(self.base2_, cur.base2_cursor), 
-                                              flux::read_at(self.base1_, cur.base1_cursor))) {
-                        cur.state_ = cursor_type::second;
-                        return;
-                    } else {
-                        flux::inc(self.base1_, cur.base1_cursor);
-                    }
-
+                    flux::inc(self.base1_, cur.base1_cursor);
                     flux::inc(self.base2_, cur.base2_cursor);
                 }
             }
@@ -414,7 +410,7 @@ public:
           cmp_(cmp)
     {}
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
     private:
 
         struct cursor_type {
@@ -436,16 +432,15 @@ public:
             while(not flux::is_last(self.base1_, cur.base1_cursor) && 
                   not flux::is_last(self.base2_, cur.base2_cursor))
             {
-                if(std::invoke(self.cmp_, flux::read_at(self.base1_, cur.base1_cursor), 
-                                          flux::read_at(self.base2_, cur.base2_cursor))) {
-                    flux::inc(self.base1_, cur.base1_cursor);
-                } else {
+                auto r = std::invoke(self.cmp_, flux::read_at(self.base1_, cur.base1_cursor),
+                                                flux::read_at(self.base2_, cur.base2_cursor));
 
-                    if(not std::invoke(self.cmp_, flux::read_at(self.base2_, cur.base2_cursor), 
-                                                  flux::read_at(self.base1_, cur.base1_cursor))) {
-                        return;
-                    }
+                if (r == std::weak_ordering::less) {
+                    flux::inc(self.base1_, cur.base1_cursor);
+                } else if (r == std::weak_ordering::greater) {
                     flux::inc(self.base2_, cur.base2_cursor);
+                } else {
+                    return;
                 }
             }
         }
@@ -508,10 +503,10 @@ concept set_op_compatible =
     requires { typename std::common_type_t<value_t<T1>, value_t<T2>>; };
 
 struct set_union_fn {
-    template <adaptable_sequence Seq1, adaptable_sequence Seq2, typename Cmp = std::ranges::less>
+    template <adaptable_sequence Seq1, adaptable_sequence Seq2, typename Cmp = std::compare_three_way>
         requires set_op_compatible<Seq1, Seq2> && 
-                 strict_weak_order_for<Cmp, Seq1> && 
-                 strict_weak_order_for<Cmp, Seq2> 
+                 weak_ordering_for<Cmp, Seq1> &&
+                 weak_ordering_for<Cmp, Seq2>
     [[nodiscard]]
     constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const
     {
@@ -520,9 +515,9 @@ struct set_union_fn {
 };
 
 struct set_difference_fn {
-    template <adaptable_sequence Seq1, adaptable_sequence Seq2, typename Cmp = std::ranges::less>
-        requires strict_weak_order_for<Cmp, Seq1> && 
-                 strict_weak_order_for<Cmp, Seq2> 
+    template <adaptable_sequence Seq1, adaptable_sequence Seq2, typename Cmp = std::compare_three_way>
+        requires weak_ordering_for<Cmp, Seq1> &&
+                 weak_ordering_for<Cmp, Seq2>
     [[nodiscard]]
     constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const
     {
@@ -531,10 +526,10 @@ struct set_difference_fn {
 };
 
 struct set_symmetric_difference_fn {
-    template <adaptable_sequence Seq1, adaptable_sequence Seq2, typename Cmp = std::ranges::less>
+    template <adaptable_sequence Seq1, adaptable_sequence Seq2, typename Cmp = std::compare_three_way>
         requires set_op_compatible<Seq1, Seq2> &&
-                 strict_weak_order_for<Cmp, Seq1> && 
-                 strict_weak_order_for<Cmp, Seq2> 
+                 weak_ordering_for<Cmp, Seq1> &&
+                 weak_ordering_for<Cmp, Seq2>
     [[nodiscard]]
     constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const
     {
@@ -543,9 +538,9 @@ struct set_symmetric_difference_fn {
 };
 
 struct set_intersection_fn {
-    template <adaptable_sequence Seq1, adaptable_sequence Seq2, typename Cmp = std::ranges::less>
-        requires strict_weak_order_for<Cmp, Seq1> && 
-                 strict_weak_order_for<Cmp, Seq2> 
+    template <adaptable_sequence Seq1, adaptable_sequence Seq2, typename Cmp = std::compare_three_way>
+        requires weak_ordering_for<Cmp, Seq1> &&
+                 weak_ordering_for<Cmp, Seq2>
     [[nodiscard]]
     constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const
     {

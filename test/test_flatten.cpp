@@ -3,13 +3,13 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include "catch.hpp"
-
-#include <flux.hpp>
+#include <array>
+#include <string>
+#include <string_view>
+#include <vector>
 
 #include "test_utils.hpp"
 
-#include <array>
 
 #if defined(_GLIBCXX_RELEASE)
 #  if _GLIBCXX_RELEASE < 12
@@ -135,6 +135,18 @@ constexpr bool test_flatten_single_pass()
     }
 #endif // NO_CONSTEXPR_VECTOR
 
+    // Test awkward single-pass flatten with a non-assignable inner sequence
+    {
+        int k = 0;
+        auto seq = flux::ints(0, 2)
+                    .map([&k](auto i) {
+                           return flux::ints(0, 2).map([i, &k](auto j) { return i + j + k; });
+                       })
+                    .flatten();
+
+        STATIC_CHECK(check_equal(seq, {0, 1, 1, 2}));
+    }
+
     return true;
 }
 static_assert(test_flatten_single_pass());
@@ -215,9 +227,38 @@ constexpr bool test_flatten_multipass()
     }
 #endif // NO_CONSTEXPR_VECTOR
 
+    // Iterating to the end gives last()
+    {
+        std::array<std::string_view, 3> arr{"a", "b", "c"};
+
+        auto seq = flux::flatten(arr);
+
+        auto cur = seq.first();
+        while (!seq.is_last(cur)) {
+            seq.inc(cur);
+        }
+
+        STATIC_CHECK(cur == seq.last());
+    }
+
     return true;
 }
 static_assert(test_flatten_multipass());
+
+#ifndef NO_CONSTEXPR_VECTOR
+constexpr
+#endif
+bool issue_150()
+{
+    const std::vector<std::string_view> vec{"a", "b", "c"};
+
+    auto str = flux::ref(vec).flatten().to<std::string>();
+
+    return str == "abc";
+}
+#ifndef NO_CONSTEXPR_VECTOR
+static_assert(issue_150());
+#endif
 
 }
 
@@ -228,4 +269,7 @@ TEST_CASE("flatten")
 
     bool mp = test_flatten_multipass();
     REQUIRE(mp);
+
+    bool res = issue_150();
+    REQUIRE(res);
 }

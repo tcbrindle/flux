@@ -6,7 +6,7 @@
 
 #include <flux.hpp>
 
-#include <cassert>
+#include "assert.hpp"
 #include <vector>
 
 int main()

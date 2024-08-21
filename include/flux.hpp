@@ -13,8 +13,11 @@
 #include <flux/op/all_any_none.hpp>
 #include <flux/op/begin_end.hpp>
 #include <flux/op/cache_last.hpp>
+#include <flux/op/cartesian_base.hpp>
+#include <flux/op/cartesian_power.hpp>
+#include <flux/op/cartesian_power_map.hpp>
 #include <flux/op/cartesian_product.hpp>
-#include <flux/op/cartesian_product_with.hpp>
+#include <flux/op/cartesian_product_map.hpp>
 #include <flux/op/chain.hpp>
 #include <flux/op/chunk.hpp>
 #include <flux/op/chunk_by.hpp>
@@ -29,9 +32,11 @@
 #include <flux/op/equal.hpp>
 #include <flux/op/fill.hpp>
 #include <flux/op/filter.hpp>
+#include <flux/op/filter_map.hpp>
 #include <flux/op/find.hpp>
 #include <flux/op/find_min_max.hpp>
 #include <flux/op/flatten.hpp>
+#include <flux/op/flatten_with.hpp>
 #include <flux/op/fold.hpp>
 #include <flux/op/for_each.hpp>
 #include <flux/op/for_each_while.hpp>
@@ -63,6 +68,7 @@
 #include <flux/op/zip_algorithms.hpp>
 
 #include <flux/source/array_ptr.hpp>
+#include <flux/source/bitset.hpp>
 #include <flux/source/empty.hpp>
 #include <flux/source/generator.hpp>
 #include <flux/source/getlines.hpp>

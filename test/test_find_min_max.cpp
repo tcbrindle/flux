@@ -3,10 +3,6 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include "catch.hpp"
-
-#include <flux.hpp>
-
 #include <array>
 
 #include "test_utils.hpp"
@@ -42,7 +38,7 @@ constexpr bool test_find_min()
     {
         IntPair arr[] = { {1, 2}, {3, 4}, {5, 6}};
 
-        auto cur = flux::find_min(arr, flux::proj(std::greater{}, &IntPair::a));
+        auto cur = flux::find_min(arr, flux::proj(flux::cmp::reverse_compare, &IntPair::a));
 
         STATIC_CHECK(not flux::is_last(arr, cur));
         STATIC_CHECK(flux::read_at(arr, cur) == IntPair{5, 6});
@@ -53,7 +49,7 @@ constexpr bool test_find_min()
     {
         IntPair arr[] = { {1, 2}, {1, 3}, {1, 4}};
 
-        auto cur = flux::find_min(arr, flux::proj(std::less{}, &IntPair::a));
+        auto cur = flux::find_min(arr, flux::proj(flux::cmp::compare, &IntPair::a));
 
         STATIC_CHECK(not flux::is_last(arr, cur));
         STATIC_CHECK(flux::read_at(arr, cur).b == 2);
@@ -84,7 +80,7 @@ constexpr bool test_find_max()
     {
         IntPair arr[] = { {1, 2}, {3, 4}, {5, 6}};
 
-        auto cur = flux::find_max(arr, flux::proj(std::greater{}, &IntPair::a));
+        auto cur = flux::find_max(arr, flux::proj(flux::cmp::reverse_compare, &IntPair::a));
 
         STATIC_CHECK(flux::read_at(arr, cur) == IntPair{1, 2});
     }
@@ -93,7 +89,7 @@ constexpr bool test_find_max()
     {
         IntPair arr[] = { {1, 2}, {1, 3}, {1, 4}};
 
-        auto cur = flux::find_max(arr, flux::proj(std::less{}, &IntPair::b));
+        auto cur = flux::find_max(arr, flux::proj(flux::cmp::compare, &IntPair::b));
 
         STATIC_CHECK(flux::read_at(arr, cur).b == 4);
     }
@@ -126,7 +122,7 @@ constexpr bool test_find_minmax()
     {
         IntPair arr[] = { {1, 2}, {3, 4}, {5, 6}};
 
-        auto result = flux::find_minmax(arr, flux::proj(std::greater<>{}, &IntPair::a));
+        auto result = flux::find_minmax(arr, flux::proj(flux::cmp::reverse_compare, &IntPair::a));
 
 
         STATIC_CHECK(flux::read_at(arr, result.min) == IntPair{5, 6});
@@ -136,7 +132,7 @@ constexpr bool test_find_minmax()
     // If several elements are equally minimal/maximal, returns the first/last resp.
     {
         IntPair arr[] = { {1, 2}, {1, 3}, {1, 4}};
-        auto [min, max] = flux::find_minmax(arr, flux::proj(std::ranges::less{}, &IntPair::a));
+        auto [min, max] = flux::find_minmax(arr, flux::proj(flux::cmp::compare, &IntPair::a));
 
         STATIC_CHECK(flux::read_at(arr, min) == IntPair{1, 2});
         STATIC_CHECK(flux::read_at(arr, max) == IntPair{1, 4});

@@ -49,7 +49,7 @@ struct iota_traits {
 };
 
 template <incrementable T, iota_traits Traits>
-struct iota_sequence_traits {
+struct iota_sequence_traits : default_sequence_traits {
     using cursor_type = T;
 
     static constexpr bool is_infinite = !Traits.has_end;

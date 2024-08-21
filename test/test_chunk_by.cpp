@@ -14,14 +14,10 @@
 //  http://www.boost.org/LICENSE_1_0.txt)
 
 
-#include "catch.hpp"
-
-#include <flux.hpp>
-
-#include "test_utils.hpp"
-
 #include <array>
 #include <iostream>
+
+#include "test_utils.hpp"
 
 namespace {
 

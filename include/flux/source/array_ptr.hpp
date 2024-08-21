@@ -8,6 +8,8 @@
 
 #include <flux/core.hpp>
 
+#include <flux/op/ref.hpp>
+
 namespace flux {
 
 namespace detail {
@@ -55,6 +57,15 @@ public:
           sz_(flux::size(seq))
     {}
 
+    template <typename Seq>
+        requires (contiguous_sequence<Seq> &&
+                  sized_sequence<Seq> &&
+                  detail::non_slicing_ptr_convertible<std::remove_reference_t<element_t<Seq>>, T>)
+    constexpr array_ptr(detail::ref_adaptor<Seq> ref)
+        : data_(flux::data(ref)),
+          sz_(flux::size(ref))
+    {}
+
     array_ptr(array_ptr&&) = default;
     array_ptr& operator=(array_ptr&&) = default;
     ~array_ptr() = default;
@@ -67,7 +78,7 @@ public:
         return std::ranges::equal_to{}(lhs.data_, rhs.data_) && lhs.sz_ == rhs.sz_;
     }
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
 
         static constexpr auto first(array_ptr const&) -> index_t { return 0; }
 
@@ -84,8 +95,7 @@ public:
 
         static constexpr auto read_at(array_ptr const& self, index_t idx) -> T&
         {
-            bounds_check(idx >= 0);
-            bounds_check(idx < self.sz_);
+            indexed_bounds_check(idx, self.sz_);
             return self.data_[idx];
         }
 
@@ -139,6 +149,9 @@ public:
 
 template <contiguous_sequence Seq>
 array_ptr(Seq&) -> array_ptr<std::remove_reference_t<element_t<Seq>>>;
+
+template <contiguous_sequence Seq>
+array_ptr(detail::ref_adaptor<Seq>) -> array_ptr<std::remove_reference_t<element_t<Seq>>>;
 
 namespace detail {
 

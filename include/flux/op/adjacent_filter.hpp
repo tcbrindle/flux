@@ -25,7 +25,7 @@ public:
           pred_(std::move(pred))
     {}
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
     private:
         struct cursor_type {
             cursor_t<Base> base_cur;
@@ -57,6 +57,18 @@ public:
             -> decltype(flux::read_at_unchecked(self.base_, cur.base_cur))
         {
             return flux::read_at_unchecked(self.base_, cur.base_cur);
+        }
+
+        static constexpr auto move_at(auto& self, cursor_type const& cur)
+            -> decltype(flux::move_at(self.base_, cur.base_cur))
+        {
+            return flux::move_at(self.base_, cur.base_cur);
+        }
+
+        static constexpr auto move_at_unchecked(auto& self, cursor_type const& cur)
+            -> decltype(flux::move_at_unchecked(self.base_, cur.base_cur))
+        {
+            return flux::move_at_unchecked(self.base_, cur.base_cur);
         }
 
         static constexpr auto inc(auto& self, cursor_type& cur) -> void

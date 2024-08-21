@@ -9,7 +9,11 @@
 #include <flux/op/for_each.hpp>
 #include <flux/op/filter.hpp>
 
+#if __cpp_lib_ranges_cartesian_product >= 202207L
+#include <ranges>
+#else
 #include "ranges_cartesian_product.hpp"
+#endif
 
 #include <ranges>
 #include <algorithm>

@@ -7,9 +7,16 @@
 
 #pragma once
 
-#include <flux/core.hpp>
-#include <flux/op/from.hpp>
-#include <flux/op/ref.hpp>
+#include <doctest/doctest.h>
+
+#include <stdexcept>
+
+#ifndef USE_MODULES
+#include <flux.hpp>
+#else
+#include <flux/macros.hpp>
+import flux;
+#endif
 
 #define STATIC_CHECK(...) if (!(__VA_ARGS__)) throw std::runtime_error("Test assertion failed")
 
@@ -81,7 +88,7 @@ public:
 }
 
 template <typename Base>
-struct flux::sequence_traits<single_pass_only<Base>>
+struct flux::sequence_traits<single_pass_only<Base>> : flux::default_sequence_traits
 {
     using self_t = single_pass_only<Base>;
     using cursor_t = typename single_pass_only<Base>::cursor_type;

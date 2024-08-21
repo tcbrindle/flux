@@ -1,13 +1,7 @@
 
-#include "catch.hpp"
-
-#include <flux/op/equal.hpp>
-#include <flux/op/take_while.hpp>
-#include <flux/source/empty.hpp>
+#include <array>
 
 #include "test_utils.hpp"
-
-#include <array>
 
 namespace {
 
@@ -71,7 +65,7 @@ constexpr bool test_equal()
 
     // Custom comparator
     {
-        S arr1[] = {1, 2, 3, 4, 5};
+        S arr1[] = {{1}, {2}, {3}, {4}, {5}};
         T arr2[] = {1, 2, 3, 4, 5};
 
         STATIC_CHECK(flux::equal(arr1, arr2, [](S const& s, T const& t) {
@@ -81,7 +75,7 @@ constexpr bool test_equal()
 
     // Test with projections
     {
-        S arr1[] = {1, 2, 3, 4, 5};
+        S arr1[] = {{1}, {2}, {3}, {4}, {5}};
         T arr2[] = {1, 2, 3, 4, 5};
 
         STATIC_CHECK(flux::equal(arr1, arr2, flux::proj2(std::equal_to<>{}, &S::i, &T::get)));

@@ -29,8 +29,8 @@ constexpr auto max_weeks_in_month = 6;
 constexpr auto col_sep = "  ";
 constexpr auto row_sep = ' ';
 
-// Workaround: libc++16 does not support C++20 chrono::time_point::operator++
-#if defined _LIBCPP_VERSION and _LIBCPP_VERSION < 170000
+// Workaround: libc++18 does not support C++20 chrono::time_point::operator++
+#if defined _LIBCPP_VERSION and _LIBCPP_VERSION < 190000
 namespace std::chrono {
     sys_days& operator++(sys_days& d) {
         return d += days{1};
@@ -96,7 +96,8 @@ auto to_week_lines = [](flux::sequence auto&& month) {
     auto week_lines = FLUX_FWD(month)
                         .chunk_by(week_num)
                         .map(week_to_string);
-    std::vector<std::string> pad_lines(max_weeks_in_month - flux::count(week_lines), std::string(week_str_size, ' '));
+    std::vector<std::string> pad_lines(size_t(max_weeks_in_month - flux::count(week_lines)),
+                                       std::string(week_str_size, ' '));
     return flux::chain(flux::single(std::move(month_str)), 
                        std::move(week_lines), 
                        std::move(pad_lines),
@@ -113,13 +114,14 @@ auto append_column = [](std::vector<std::string>&& months_per_line, flux::sequen
 // Out: std::vector<std::string> (months organized in columns)
 auto to_columns = [](flux::sequence auto&& month_chunk) {
     auto n_rows = month_chunk.front()->count();
-    return FLUX_FWD(month_chunk).fold(append_column, std::vector<std::string>(n_rows, col_sep));
+    return FLUX_FWD(month_chunk).fold(append_column,
+                                      std::vector<std::string>(size_t(n_rows), col_sep));
 };
 
 const auto current_year = ymd{floor<days>(system_clock::now())}.year();
 
 struct app_args_t {
-    unsigned per_line = 3;
+    int per_line = 3;
     ymd from = current_year / January / 1d;
     ymd to = from + years{1};
 };
@@ -146,7 +148,8 @@ app_args_t parse_args(int argc, char** argv) {
 
     auto to_pair = [](const auto& s) {
         auto pos = flux::find(flux::ref(s), '=');
-        return std::pair{s.substr(0, pos), s.substr(std::min(flux::count(s), pos + 1))};
+        return std::pair{s.substr(0, size_t(pos)),
+                         s.substr(size_t(std::min(flux::count(s), pos + 1)))};
     };
 
     for (const auto& [key, val] : flux::ref(args).map(to_pair)) {

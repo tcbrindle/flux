@@ -37,7 +37,7 @@ public:
           data_{count}
     {}
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
     private:
         using self_t = repeat_sequence;
 
@@ -72,7 +72,7 @@ public:
 
         static constexpr auto inc(self_t const&, std::size_t& cur, distance_t offset) -> void
         {
-            cur += offset;
+            cur += static_cast<std::size_t>(offset);
         }
 
         static constexpr auto distance(self_t const&, std::size_t from, std::size_t to) -> distance_t
@@ -110,7 +110,7 @@ public:
         static constexpr auto size(self_t const& self) -> distance_t
             requires (!IsInfinite)
         {
-            return self.data_.count;
+            return num::checked_cast<distance_t>(self.data_.count);
         }
     };
 };

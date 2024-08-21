@@ -10,9 +10,7 @@
 #include <flux/core/default_impls.hpp>
 #include <flux/core/functional.hpp>
 #include <flux/core/inline_sequence_base.hpp>
-#include <flux/core/macros.hpp>
 #include <flux/core/optional.hpp>
 #include <flux/core/sequence_access.hpp>
-#include <flux/core/simple_sequence_base.hpp>
 
 #endif // FLUX_CORE_HPP_INCLUDED

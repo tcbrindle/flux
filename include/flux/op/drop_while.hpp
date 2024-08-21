@@ -47,8 +47,8 @@ public:
                    flux::distance(self.base_, flux::first(self.base_), first(self));
         }
 
-        void size(...) = delete;
-        void for_each_while(...) = delete;
+        using default_sequence_traits::size;
+        using default_sequence_traits::for_each_while;
     };
 };
 

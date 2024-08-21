@@ -2,45 +2,72 @@
 Adaptors
 ========
 
-.. namespace:: flux
+..  namespace:: flux
+
+Flux adaptor functions take one or more sequences as input and return a new adapted sequence as output. When iterating, the elements of the adapted sequence are computed *lazily* from the elements of the underlying sequence. Adaptors are **sink functions**, meaning they take ownership of the sequences that are passed to them.
+
+While functions below are shown as taking their sequence arguments by value for documentation purposes, in fact they will *reject lvalue sequence arguments that are not trivially copyable*. If you have a non-trivially copyable sequence then you need to explicitly copy or move it into the adaptor using :func:`std::move`, :func:`flux::copy` or (in C++23) :expr:`auto()`. This is to prevent accidental copying of, for example, large vectors.
+
+You can pass a reference to a sequence into an adaptor using :func:`flux::ref` or :func:`flux::mut_ref`. Doing so introduces a *data and lifetime dependency* between the original sequence and the returned adaptor object. You **must not modify** the original sequence object (including calling its destructor) between the creation of the referencing adaptor object and its last use.
+
 
 ``adjacent``
 ^^^^^^^^^^^^
 
-.. function::
-   template <distance_t N> \
-      requires (N > 0) \
-   auto adjacent(multipass_sequence auto seq) -> multipass_sequence auto
+..  function::
+    template <distance_t N> \
+       requires (N > 0) \
+    auto adjacent(multipass_sequence auto seq) -> multipass_sequence auto
 
-   Given a compile-time size :var:`N` and a multipass sequence :var:`seq`, returns a new sequence which yields sliding windows of size :var:`N` as an :var:`N`-tuple of elements of :var:`seq`. If `seq` has fewer than :var:`N` elements, the adapted sequence will be empty.
+    Given a compile-time size :var:`N` and a multipass sequence :var:`seq`, returns a new sequence which yields sliding windows of size :var:`N` as an :var:`N`-tuple of elements of :var:`seq`. If `seq` has fewer than :var:`N` elements, the adapted sequence will be empty.
 
-   The returned sequence is always a :concept:`multipass_sequence`. It is also
-    * bidirectional when :var:`seq` is bidirectional
-    * random-access when :var:`seq` is random-access
-    * sized when :var:`seq` is sized
-    * bounded when :var:`seq` is *both* bounded and bidirectional
+    The :func:`slide()` adaptor is similar to :func:`adjacent()`, but takes its window size as a run-time rather than a compile-time parameter, and returns length-:any:`n` subsequences rather than tuples.
 
-   The :func:`slide()` adaptor is similar to :func:`adjacent()`, but takes its window size as a run-time rather than a compile-time parameter, and returns length-:any:`n` subsequences rather than tuples.
+    Equivalent to::
 
-   Equivalent to::
+        zip(seq, drop(seq, 1), drop(seq, 2), ..., drop(seq, N-1));
 
-       zip(seq, drop(seq, 1), drop(seq, 2), ..., drop(seq, N-1));
+    :tparam N: The size of the sliding window. Must be greater than zero.
 
-   :tparam N: The size of the sliding window. Must be greater than zero.
+    :param seq: A multipass sequence.
 
-   :param seq: A multipass sequence.
+    :returns: A sequence adaptor whose element type is a :expr:`std::tuple` of size :var:`N`, or a :expr:`std::pair` if :expr:`N == 2`.
 
-   :returns: A sequence adaptor whose element type is a :expr:`std::tuple` of size :var:`N`, or a :expr:`std::pair` if :expr:`N == 2`.
+    :models:
 
-   :example:
+    .. list-table::
+       :align: left
+       :header-rows: 1
+
+       * - Concept
+         - When
+       * - :concept:`multipass_sequence`
+         - Always
+       * - :concept:`bidirectional_sequence`
+         - :var:`seq` is bidirectional
+       * - :concept:`random_access_sequence`
+         - :var:`seq` is random-access
+       * - :concept:`contiguous_sequence`
+         - Never
+       * - :concept:`bounded_sequence`
+         - :var:`seq` is bidirectional and bounded
+       * - :concept:`sized_sequence`
+         - :var:`seq` is sized
+       * - :concept:`infinite_sequence`
+         - Never
+       * - :concept:`read_only_sequence`
+         - :var:`seq` is read-only
+       * - :concept:`const_iterable_sequence`
+         - :var:`seq` is const-iterable
+
+    :example:
 
     ..  literalinclude:: ../../example/docs/adjacent.cpp
         :language: cpp
         :dedent:
         :lines: 15-26
 
-   :see also:
-
+    :see also:
         * `std::views::adjacent <https://en.cppreference.com/w/cpp/ranges/adjacent_view>`_ (C++23)
         * :func:`flux::adjacent_map`
         * :func:`flux::pairwise`
@@ -56,14 +83,39 @@ Adaptors
 
     Applies the given binary predicate :var:`pred` to each pair of adjacent elements of :var:`seq`. If the predicate returns ``false``, the second element of the pair does not appear in the resulting sequence. The first element of :var:`seq` is always included in the output.
 
-    The resulting sequence is always multipass; it is also a :concept:`bidirectional_sequence` if :var:`Seq` is bidirectional, and a :concept:`bounded_sequence` if :var:`Seq` is bounded.
-
     A common use for :func:`adjacent_filter` is to remove adjacent equal elements from a sequence, which can be achieved by passing :expr:`std::not_equal_to{}` as the predicate. The :func:`dedup` function is a handy alias for :expr:`adjacent_filter(not_equal_to{})`.
 
     :param seq: A multipass sequence
     :param pred: A binary predicate to compare sequence elements
 
     :returns: The filtered sequence
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - Always
+      * - :concept:`bidirectional_sequence`
+        - :var:`Seq` is bidirectional
+      * - :concept:`random_access_sequence`
+        - Never
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`Seq` is bounded
+      * - :concept:`sized_sequence`
+        - Never
+      * - :concept:`infinite_sequence`
+        - Never
+      * - :concept:`read_only_sequence`
+        - :var:`Seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`Seq` is const-iterable
 
     :example:
 
@@ -80,23 +132,258 @@ Adaptors
 ``adjacent_map``
 ^^^^^^^^^^^^^^^^
 
-.. function::
-   template <distance_t N> \
-   auto adjacent_map(multipass_sequence auto seq, auto func) -> multipass_sequence auto;
+..  function::
+    template <distance_t N> \
+    auto adjacent_map(multipass_sequence auto seq, auto func) -> multipass_sequence auto;
+
+    Applies the :var:`N`-ary function :var:`func` to overlapping windows of size ``N``.
+
+    Equivalent to :expr:`map(adjacent\<N>(seq), unpack(func))`, but avoids forming an intermediate tuple.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - Always
+      * - :concept:`bidirectional_sequence`
+        - :var:`seq` is bidirectional
+      * - :concept:`random_access_sequence`
+        - :var:`seq` is random-access
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`seq` is bidirectional and bounded
+      * - :concept:`sized_sequence`
+        - :var:`seq` is sized
+      * - :concept:`infinite_sequence`
+        - Never
+      * - :concept:`read_only_sequence`
+        - :var:`seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`seq` is const-iterable and :var:`func` is const-invocable
 
 ``cache_last``
 ^^^^^^^^^^^^^^
 
 ..  function::
     template <sequence Seq> \
-        requires see_below \
+        requires bounded_sequence<Seq> || (multipass_sequence<Seq> && !infinite_sequence<Seq>) \
     auto cache_last(Seq seq) -> sequence auto;
+
+    :func:`cache_last` is used to turn a non-bounded sequence into a :concept:`bounded_sequence`, by internally caching the cursor position of the last element,
+
+    If passed a sequence that is already bounded, it is returned unchanged. Otherwise, the passed-in sequence must be multipass, and not infinite.
+
+    Note that because this adaptor uses internal caching it is not const-iterable.
+
+    :param seq: A sequence we want to ensure is bounded.
+
+    :returns: A bounded sequence
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`Seq` is multipass
+      * - :concept:`bidirectional_sequence`
+        - :var:`Seq` is bidirectional
+      * - :concept:`random_access_sequence`
+        - :var:`Seq` is random-access
+      * - :concept:`contiguous_sequence`
+        - :var:`Seq` is contiguous (passthrough)
+      * - :concept:`bounded_sequence`
+        - Always
+      * - :concept:`sized_sequence`
+        - :var:`Seq` is sized
+      * - :concept:`infinite_sequence`
+        - Never
+      * - :concept:`read_only_sequence`
+        - :var:`Seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`Seq` is bounded and const-iterable (passthrough)
+
+``cartesian_power``
+^^^^^^^^^^^^^^^^^^^
+
+..  function::
+    template <distance_t N> \
+        requires (N >= 0) \
+    auto cartesian_power(multipass_sequence auto seq) -> multipass_sequence auto;
+
+    Returns a sequence object giving the :var:`N` th `Cartesian power <https://en.wikipedia.org/wiki/Cartesian_product#n-ary_Cartesian_power>`_ of the elements of :var:`seq`. It is equivalent to :var:`N` nested ``for`` loops each iterating over :var:`seq`.
+
+    The element type of the returned sequence is an :var:`N`-tuple of the elements of :var:`seq`. The number of elements is :math:`S^N`, where :math:`S` is :expr:`count(seq)`.
+
+    Equivalent to :expr:`cartesian_product(seq, seq, ...)`, but stores only a single copy of :var:`seq`.
+
+    :tparam N: The cartesian power
+
+    :param seq: A multipass sequence
+
+    :returns: A multipass sequence yielding :var:`N`-tuples of all combinations of elements of :var:`seq`
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/cartesian_power.cpp
+        :language: cpp
+        :dedent:
+        :lines: 15-25
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - Always
+      * - :concept:`bidirectional_sequence`
+        - :var:`seq` is bidirectional
+      * - :concept:`random_access_sequence`
+        - :var:`seq` is random-access
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`seq` is bounded
+      * - :concept:`sized_sequence`
+        - :var:`seq` is sized
+      * - :concept:`infinite_sequence`
+        - Never
+      * - :concept:`read_only_sequence`
+        - :var:`seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`seq` is const-iterable
+
+    :see also:
+
+        * `std::views::cartesian_product <https://en.cppreference.com/w/cpp/ranges/cartesian_product_view>`_ (C++23)
+        * :func:`cartesian_power_map`
+        * :func:`cartesian_product`
+
+
+``cartesian_power_map``
+^^^^^^^^^^^^^^^^^^^^^^^
+
+..  function::
+    template <distance_t N> \
+        requires (N >= 0) \
+    auto cartesian_power_map(multipass_sequence auto seq, auto func) -> multipass_sequence auto;
+
+    Returns a sequence adaptor which applies the :var:`N`-ary function :var:`func` to the :var:`N` th `Cartesian power <https://en.wikipedia.org/wiki/Cartesian_product#n-ary_Cartesian_power>`_ of the elements of :var:`seq`.
+
+    The total number of elements in the returned sequence is :math:`S^N`, where :math:`S` is :expr:`count(seq)`.
+
+    Equivalent to :expr:`cartesian_power<N>(seq, unpack(func))`, but avoids forming an intermediate tuple.
+
+    :tparam N: The cartesian power
+
+    :param seq: A multipass sequence
+
+    :param func: An :var:`N`-ary function callable with the cartesian product of the elements of :var:`seq`
+
+    :returns: A multipass sequence whose elements are the result of applying :var:`func` to :var:`N` elements of :var:`seq`
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/cartesian_power_map.cpp
+        :language: cpp
+        :dedent:
+        :lines: 17-25
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - Always
+      * - :concept:`bidirectional_sequence`
+        - :var:`seq` is bidirectional
+      * - :concept:`random_access_sequence`
+        - :var:`seq` is random-access
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`seq` is bounded
+      * - :concept:`sized_sequence`
+        - :var:`seq` is sized
+      * - :concept:`infinite_sequence`
+        - Never
+      * - :concept:`read_only_sequence`
+        - :var:`seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`seq` is const-iterable and :var:`func` is const-invocable
+
+    :see also:
+
+        * `std::views::cartesian_product <https://en.cppreference.com/w/cpp/ranges/cartesian_product_view>`_ (C++23)
+        * :func:`cartesian_power`
+        * :func:`cartesian_product_map`
 
 ``cartesian_product``
 ^^^^^^^^^^^^^^^^^^^^^
 
 ..  function::
     auto cartesian_product(sequence auto seq0, multipass_sequence auto... seqs) -> sequence auto;
+
+    Returns an adaptor yielding the `cartesian_product <https://en.wikipedia.org/wiki/Cartesian_product>`_ of the input sequences.
+
+    The element type of the returned sequence is a tuple of the element types of the input sequences.
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/cartesian_product.cpp
+        :language: cpp
+        :dedent:
+        :lines: 17-43
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`seq0` is multipass
+      * - :concept:`bidirectional_sequence`
+        - All passed-in sequences are bidirectional and bounded
+      * - :concept:`random_access_sequence`
+        - All passed-in sequences are random-access and bounded
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`seq0` is bounded
+      * - :concept:`sized_sequence`
+        - All passed-in sequences are sized
+      * - :concept:`infinite_sequence`
+        - Never
+      * - :concept:`read_only_sequence`
+        - All passed-in sequences are read-only
+      * - :concept:`const_iterable_sequence`
+        - All passed-in sequences are const-iterable
+
+    :see also:
+
+        * `std::views::cartesian_product <https://en.cppreference.com/w/cpp/ranges/cartesian_product_view>`_ (C++23)
+        * :func:`cartesian_power`
+        * :func:`cartesian_product_map`
 
 ``cartesian_product_map``
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -106,6 +393,50 @@ Adaptors
     requires std::regular_invocable<Func&, element_t<Seq0>, element_t<Seqs>...> \
     auto cartesian_product_with(Func func, Seq0 seq0, Seqs... seqs) -> sequence auto;
 
+    Given ``N`` sequences and an ``N``-ary function :var:`func`, applies :var:`func` to the cartesian product of the elements of the input sequences.
+
+    Equivalent to :expr:`map(cartesian_product(seq0, seqs...), unpack(func))`, but avoids forming an intermediate tuple.
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/cartesian_product_map.cpp
+        :language: cpp
+        :dedent:
+        :lines: 17-29
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`seq0` is multipass
+      * - :concept:`bidirectional_sequence`
+        - All passed-in sequences are bidirectional and bounded
+      * - :concept:`random_access_sequence`
+        - All passed-in sequences are random-access and bounded
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`seq0` is bounded
+      * - :concept:`sized_sequence`
+        - All passed-in sequences are sized
+      * - :concept:`infinite_sequence`
+        - Never
+      * - :concept:`read_only_sequence`
+        - All passed-in sequences are read-only
+      * - :concept:`const_iterable_sequence`
+        - All passed-in sequences are const-iterable and :var:`func` is const-invocable
+
+    :see also:
+
+        * `std::views::cartesian_product <https://en.cppreference.com/w/cpp/ranges/cartesian_product_view>`_ (C++23)
+        * :func:`cartesian_power_map`
+        * :func:`cartesian_product`
+
 ``chain``
 ^^^^^^^^^
 
@@ -114,11 +445,75 @@ Adaptors
         requires see_below \
     auto chain(Seq0 seq0, Seqs... seqs) -> sequence auto;
 
+    Combines the given input sequences into one logical sequence.
+
+    :requires:
+
+        * The element types of the input sequences share a common reference type to which they are all convertible. This is the element type of the returned sequence.
+        * The rvalue element types of the input sequences share a common reference type to which they are all convertible. This is the rvalue element type of the returned sequence.
+        * The value types of the input sequences share a common type. This is the value type of the returned sequence.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - All passed-in sequences are multipass
+      * - :concept:`bidirectional_sequence`
+        - All passed-in sequences are bidirectional and bounded
+      * - :concept:`random_access_sequence`
+        - All passed-in sequences are random-access and bounded
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - The *last* passed-in sequence is bounded
+      * - :concept:`sized_sequence`
+        - All passed-in sequences are sized
+      * - :concept:`infinite_sequence`
+        - Any passed-in sequence is infinite
+      * - :concept:`read_only_sequence`
+        - All passed-in sequences are read-only
+      * - :concept:`const_iterable_sequence`
+        - All passed-in sequences are const-iterable
+
 ``chunk``
 ^^^^^^^^^
 
 ..  function::
     auto chunk(sequence auto seq, std::integral auto chunk_sz) -> sequence auto;
+
+    Splits :var:`seq` into a sequence of non-overlapping sequences, each of :var:`chunk_sz` elements. The final sequence may have fewer elements.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`seq` is multipass
+      * - :concept:`bidirectional_sequence`
+        - :var:`seq` is bidirectional
+      * - :concept:`random_access_sequence`
+        - :var:`seq` is random-access
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`seq` is multipass and bounded
+      * - :concept:`sized_sequence`
+        - :var:`seq` is sized
+      * - :concept:`infinite_sequence`
+        - :var:`seq` is infinite and multipass
+      * - :concept:`read_only_sequence`
+        - :var:`seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`seq` is const-iterable
 
 ``chunk_by``
 ^^^^^^^^^^^^
@@ -127,6 +522,36 @@ Adaptors
     template <multipass_sequence Seq, typename Pred> \
         requires std::predicate<Pred, element_t<Seq>, element_t<Seq>> \
     auto chunk_by(Seq seq, Pred pred) -> multipass_sequence auto;
+
+    Splits :var:`seq` into a sequence of non-overlapping sequences using the binary predicate :var:`pred`. The given predicate should return ``true`` if both elements should be considered part of the same chunk. If the predicate returns ``false``, a new chunk will be started, with the second argument to :var:`pred` belonging to the new chunk.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - Always
+      * - :concept:`bidirectional_sequence`
+        - :var:`Seq` is bidirectional
+      * - :concept:`random_access_sequence`
+        - Never
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`Seq` is bounded
+      * - :concept:`sized_sequence`
+        - Never
+      * - :concept:`infinite_sequence`
+        - Never
+      * - :concept:`read_only_sequence`
+        - :var:`Seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`Seq` is const-iterable and :var:`Pred` is const-invocable
+
 
 ``cursors``
 ^^^^^^^^^^^
@@ -141,6 +566,33 @@ Adaptors
     :param seq: A multipass sequence
 
     :returns: A sequence whose elements are the cursors of :var:`seq`
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - Always
+      * - :concept:`bidirectional_sequence`
+        - :var:`seq` is bidirectional
+      * - :concept:`random_access_sequence`
+        - :var:`seq` is random-access
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`seq` is bounded
+      * - :concept:`sized_sequence`
+        - :var:`seq` is sized
+      * - :concept:`infinite_sequence`
+        - :var:`seq` is infinite
+      * - :concept:`read_only_sequence`
+        - Always
+      * - :concept:`const_iterable_sequence`
+        - :var:`seq` is const-iterable
 
     :example:
 
@@ -185,6 +637,33 @@ Adaptors
 
     :returns: An adapted sequence which repeatedly loops through the elements of :var:`seq`.
 
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`Seq` is multipass
+      * - :concept:`bidirectional_sequence`
+        - :var:`Seq` is bidirectional and bounded
+      * - :concept:`random_access_sequence`
+        - :var:`Seq` is random-access and bounded
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - If :var:`count` is supplied
+      * - :concept:`sized_sequence`
+        - If :var:`count` is supplied
+      * - :concept:`infinite_sequence`
+        - If :var:`count` is not supplied
+      * - :concept:`read_only_sequence`
+        - Always
+      * - :concept:`const_iterable_sequence`
+        - :var:`Seq` is const-iterable
+
     :example:
 
     ..  literalinclude:: ../../example/docs/cycle.cpp
@@ -215,12 +694,39 @@ Adaptors
 
     Given a sequence :var:`seq` and a non-negative integral value :var:`count`, returns a new sequence which skips the first :var:`count` elements of :var:`seq`.
 
-    The returned sequence has the same capabilities as :var:seq. If :var:`seq` has fewer than :var:`count` elements, the returned sequence is empty.
+    The returned sequence has the same capabilities as :var:`seq`. If :var:`seq` has fewer than :var:`count` elements, the returned sequence is empty.
 
     :param seq: A sequence.
     :param count: A non-negative integral value indicating the number of elements to be skipped.
 
     :returns: A sequence adaptor that yields the remaining elements of :var:`seq`, with the first :var:`count` elements skipped.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`seq` is multipass
+      * - :concept:`bidirectional_sequence`
+        - :var:`seq` is bidirectional
+      * - :concept:`random_access_sequence`
+        - :var:`seq` is random-access
+      * - :concept:`contiguous_sequence`
+        - :var:`seq` is contiguous
+      * - :concept:`bounded_sequence`
+        - :var:`seq` is bounded
+      * - :concept:`sized_sequence`
+        - :var:`seq` is sized
+      * - :concept:`infinite_sequence`
+        - :var:`seq` is infinite
+      * - :concept:`read_only_sequence`
+        - :var:`seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`seq` is const-iterable
 
     :example:
 
@@ -242,6 +748,35 @@ Adaptors
         requires std::predicate<Pred&, element_t<Seq>> \
     auto drop_while(Seq seq, Pred pred) -> sequence auto;
 
+    Skips elements from the from of :var:`seq` while :var:`pred` returns ``true``. Once :var:`pred` has returned ``false``, the adaptor has done its job and the remaining elements of :var:`seq` are returned as normal.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`Seq` is multipass
+      * - :concept:`bidirectional_sequence`
+        - :var:`Seq` is bidirectional
+      * - :concept:`random_access_sequence`
+        - :var:`Seq` is random-access
+      * - :concept:`contiguous_sequence`
+        - :var:`Seq` is contiguous
+      * - :concept:`bounded_sequence`
+        - :var:`Seq` is bounded
+      * - :concept:`sized_sequence`
+        - :var:`Seq` is sized
+      * - :concept:`infinite_sequence`
+        - :var:`Seq` is infinite
+      * - :concept:`read_only_sequence`
+        - :var:`Seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`Seq` is const-iterable and :var:`Pred` is const-invocable
+
 ``filter``
 ^^^^^^^^^^
 
@@ -249,6 +784,122 @@ Adaptors
     template <sequence Seq, typename Pred> \
         requires std::predicate<Pred, element_t<Seq>&> \
     auto filter(Seq seq, Pred pred) -> sequence auto;
+
+    Skips elements of :var:`seq` for which unary predicate :var:`pred` returns ``false``.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`Seq` is multipass
+      * - :concept:`bidirectional_sequence`
+        - :var:`Seq` is bidirectional
+      * - :concept:`random_access_sequence`
+        - Never
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`Seq` is bounded
+      * - :concept:`sized_sequence`
+        - Never
+      * - :concept:`infinite_sequence`
+        - :var:`Seq` is infinite
+      * - :concept:`read_only_sequence`
+        - :var:`Seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`Seq` is const-iterable and :var:`Pred` is const-invocable
+
+``filter_deref``
+^^^^^^^^^^^^^^^^
+
+..  function::
+    template <sequence Seq> \
+        requires optional_like<element_t<Seq>> \
+    auto filter_deref(Seq seq) -> sequence auto;
+
+    Given a sequence of "optional-like" elements (e.g. :type:`std::optional`, :type:`flux::optional`, :expr:`T*` etc...), filters out those elements which return :texpr:`false` after conversion to :texpr:`bool`, and performs a dereference of the remaining elements.
+
+    Equivalent to :expr:`filter_map(seq, std::identity{})`.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`Seq` is multipass
+      * - :concept:`bidirectional_sequence`
+        - :var:`Seq` is bidirectional
+      * - :concept:`random_access_sequence`
+        - Never
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`Seq` is bounded
+      * - :concept:`sized_sequence`
+        - Never
+      * - :concept:`infinite_sequence`
+        - :var:`Seq` is infinite
+      * - :concept:`read_only_sequence`
+        - :var:`Seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`Seq` is const-iterable and :var:`Func` is const-invocable
+
+    :see also:
+
+        * :func:`flux::filter_map`
+
+``filter_map``
+^^^^^^^^^^^^^^
+
+..  function::
+    template <sequence Seq, typename Func> \
+        requires std::invocable<Func&, element_t<Seq>> && \
+                 optional_like<std::invoke_result_t<Func&, element_t<Seq>>> \
+    auto filter_map(Seq seq, Func func) -> sequence auto;
+
+    Performs both filtering and mapping using a single function.
+    Given a unary function :var:`func` returning an "optional-like" type, the returned adaptor filters out those elements for which :var:`func` returns a "disengaged" optional (that is, those which return :texpr:`false` after conversion to :texpr:`bool`). It then dereferences the remaining elements using :expr:`operator*`.
+    Equivalent to::
+
+        map(seq, func)
+        .filter([](auto&& arg) { return static_cast<bool>(arg) })
+        .map([](auto&& arg) -> decltype(auto) { return *std::forward(arg); });
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`Seq` is multipass
+      * - :concept:`bidirectional_sequence`
+        - :var:`Seq` is bidirectional
+      * - :concept:`random_access_sequence`
+        - Never
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`Seq` is bounded
+      * - :concept:`sized_sequence`
+        - Never
+      * - :concept:`infinite_sequence`
+        - :var:`Seq` is infinite
+      * - :concept:`read_only_sequence`
+        - :var:`Seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`Seq` is const-iterable and :var:`Func` is const-invocable
 
 ``flatten``
 ^^^^^^^^^^^
@@ -258,12 +909,123 @@ Adaptors
         requires sequence<element_t<Seq>> \
     auto flatten(Seq seq) -> sequence auto;
 
+    Given a sequence-of-sequences, removes one level of nesting.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`Seq` is multipass, :expr:`element_t<Seq>` is multipass and :expr:`element_t<Seq>` is a reference type
+      * - :concept:`bidirectional_sequence`
+        - :var:`Seq` is bidirectional, :expr:`element_t<Seq>` is bidirectional and :expr:`element_t<Seq>` is a reference type
+      * - :concept:`random_access_sequence`
+        - Never
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`Seq` is bounded
+      * - :concept:`sized_sequence`
+        - Never
+      * - :concept:`infinite_sequence`
+        - Never
+      * - :concept:`read_only_sequence`
+        - :var:`Seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`Seq` and :expr:`element_t<Seq>` are both const-iterable multipass sequences, and :expr:`element_t<Seq>` is a reference type
+
+``flatten_with``
+^^^^^^^^^^^^^^^^
+
+..  function::
+    template <sequence Seq> \
+        requires sequence<element_t<Seq>> \
+    auto flatten_with(Seq seq, value_t<element_t<Seq>> value) -> sequence auto;
+
+..  function::
+    template <sequence Seq, multipass_sequence Pattern> \
+        requires see_below \
+    auto flatten_with(Seq seq, Pattern pattern) -> sequence auto;
+
+    Works like :func:`flatten()`, but inserts :var:`value` (for the first overload) or all the elements of :var:`pattern` (for the second overload) between the elements of :var:`seq`.
+
+    :requires:
+
+    For the second overload, let :expr:`element_t<Seq>` be :type:`InnerSeq`. Then the expression in the requires clause is equivalent to::
+
+        sequence<InnerSeq> &&
+        std::common_reference_with<element_t<InnerSeq>, element_t<Pattern>> &&
+        std::common_reference_with<rvalue_element_t<InnerSeq>, rvalue_element_t<Pattern>> &&
+        std::common_with<value_t<InnerSeq>, value_t<Pattern>>;
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`Seq` is multipass, :expr:`element_t<Seq>` is multipass and :expr:`element_t<Seq>` is a reference type
+      * - :concept:`bidirectional_sequence`
+        - :var:`Seq` is bidirectional, :expr:`element_t<Seq>` is bidirectional and bounded, :expr:`Pattern` is bidirectional and bounded, and :expr:`element_t<Seq>` is a reference type
+      * - :concept:`random_access_sequence`
+        - Never
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`Seq` is bounded
+      * - :concept:`sized_sequence`
+        - Never
+      * - :concept:`infinite_sequence`
+        - Never
+      * - :concept:`read_only_sequence`
+        - :var:`Seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`Seq`, :expr:`element_t<Seq>` and :var:`Pattern` are all const-iterable multipass sequences, and :expr:`element_t<Seq>` is a reference type
+
 ``map``
 ^^^^^^^
 
-.. function::
-   template <sequence Seq, std::copy_constructable Func> \
-   auto map(Seq seq, Func func) -> sequence auto;
+..  function::
+    template <sequence Seq, typename Func> \
+        requires std::regular_invocable<Func&, element_t<Seq>> \
+    auto map(Seq seq, Func func) -> sequence auto;
+
+    Turns a sequence-of-``T`` into a sequence-of-``U``, where ``U`` is the return type of :var:`func`.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`Seq` is multipass
+      * - :concept:`bidirectional_sequence`
+        - :var:`Seq` is bidirectional
+      * - :concept:`random_access_sequence`
+        - :var:`Seq` is random-access
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`Seq` is bounded
+      * - :concept:`sized_sequence`
+        - :var:`Seq` is sized
+      * - :concept:`infinite_sequence`
+        - :var:`Seq` is infinite
+      * - :concept:`read_only_sequence`
+        - The return type of :var:`func` is a prvalue or a const reference
+      * - :concept:`const_iterable_sequence`
+        - :var:`Seq` is const-iterable and :var:`func` is const-invocable
+
 
 ``mask``
 ^^^^^^^^
@@ -281,6 +1043,33 @@ Adaptors
     :param where: A sequence whose element type is convertible to :expr:`bool`
 
     :returns: An adapted sequence whose elements are the elements of :var:`seq`, filtered by the corresponding elements of :var:`where`
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`Seq` and :var:`Mask` are both multipass
+      * - :concept:`bidirectional_sequence`
+        - :var:`Seq` and :var:`Mask` are both bidirectional
+      * - :concept:`random_access_sequence`
+        - Never
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`Seq` and :var:`Mask` are both bounded
+      * - :concept:`sized_sequence`
+        - :var:`Seq` and :var:`Mask` are both sized
+      * - :concept:`infinite_sequence`
+        - :var:`Seq` and :var:`Mask` are both infinite
+      * - :concept:`read_only_sequence`
+        - :var:`Seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`Seq` and :var:`Mask` are both const-iterable
 
     :example:
 
@@ -314,6 +1103,8 @@ Adaptors
              can_reference<std::invoke_result_t<Func&, element_t<Seq>, element_t<Seq>>> \
     auto pairwise_map(Seq seq, Func func) -> multipass_sequence auto;
 
+    An alias for :expr:`adjacent_map\<2>`.
+
 ``prescan``
 ^^^^^^^^^^^
 
@@ -341,6 +1132,33 @@ Adaptors
     :param init: The initial value for the scan
 
     :returns: A sequence adaptor which performs an exclusive scan of the elements of :var:`seq` using :var:`func`.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - Never
+      * - :concept:`bidirectional_sequence`
+        - Never
+      * - :concept:`random_access_sequence`
+        - Never
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`Seq` is bounded
+      * - :concept:`sized_sequence`
+        - :var:`Seq` is sized
+      * - :concept:`infinite_sequence`
+        - :var:`Seq` is infinite
+      * - :concept:`read_only_sequence`
+        - Always
+      * - :concept:`const_iterable_sequence`
+        - Never
 
     :example:
 
@@ -375,6 +1193,33 @@ Adaptors
 
     :returns: An adapted sequence which provides read-only access to the elements of :var:`seq`
 
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`Seq` is multipass
+      * - :concept:`bidirectional_sequence`
+        - :var:`Seq` is bidirectional
+      * - :concept:`random_access_sequence`
+        - :var:`Seq` is random-access
+      * - :concept:`contiguous_sequence`
+        - :var:`Seq` is contiguous
+      * - :concept:`bounded_sequence`
+        - :var:`Seq` is bounded
+      * - :concept:`sized_sequence`
+        - :var:`Seq` is sized
+      * - :concept:`infinite_sequence`
+        - :var:`Seq` is infinite
+      * - :concept:`read_only_sequence`
+        - Always
+      * - :concept:`const_iterable_sequence`
+        - :var:`Seq` is const-iterable
+
     :example:
 
     ..  literalinclude:: ../../example/docs/read_only.cpp
@@ -393,6 +1238,35 @@ Adaptors
     template <bidirectional_sequence Seq> \
         requires bounded_sequence<Seq> \
     auto reverse(Seq seq) -> bidirectional_sequence auto;
+
+    Given a bounded, bidirectional sequence :var:`seq`, returns an adaptor which yields the elements of :var:`seq` in reverse order.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - Always
+      * - :concept:`bidirectional_sequence`
+        - Always
+      * - :concept:`random_access_sequence`
+        - :var:`Seq` is random-access
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - Always
+      * - :concept:`sized_sequence`
+        - :var:`Seq` is sized
+      * - :concept:`infinite_sequence`
+        - Never
+      * - :concept:`read_only_sequence`
+        - Always
+      * - :concept:`const_iterable_sequence`
+        - :var:`Seq` is const-iterable
 
 ``scan``
 ^^^^^^^^
@@ -421,6 +1295,33 @@ Adaptors
     :param init: The initial value for the scan. If not supplied, a default constructed object of type :type:`value_t\<Seq>` is used.
 
     :returns: A sequence adaptor which performs an inclusive scan of the elements of :var:`seq` using :var:`func`.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - Never
+      * - :concept:`bidirectional_sequence`
+        - Never
+      * - :concept:`random_access_sequence`
+        - Never
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`Seq` is bounded
+      * - :concept:`sized_sequence`
+        - :var:`Seq` is sized
+      * - :concept:`infinite_sequence`
+        - :var:`Seq` is infinite
+      * - :concept:`read_only_sequence`
+        - Always
+      * - :concept:`const_iterable_sequence`
+        - Never
 
     :example:
 
@@ -461,6 +1362,33 @@ Adaptors
 
     :returns: A sequence adaptor which performs an inclusive scan of the elements of :var:`seq` using :var:`func`.
 
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - Never
+      * - :concept:`bidirectional_sequence`
+        - Never
+      * - :concept:`random_access_sequence`
+        - Never
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`Seq` is bounded
+      * - :concept:`sized_sequence`
+        - :var:`Seq` is sized
+      * - :concept:`infinite_sequence`
+        - :var:`Seq` is infinite
+      * - :concept:`read_only_sequence`
+        - Always
+      * - :concept:`const_iterable_sequence`
+        - Never
+
     :example:
 
     ..  literalinclude:: ../../example/docs/scan_first.cpp
@@ -478,21 +1406,48 @@ Adaptors
 ^^^^^^^^^^^^^^^^^^
 
 ..  function::
-    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::less> \
-        requires strict_weak_order_for<Cmp, Seq1> && strict_weak_order_for<Cmp, Seq2> \
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way> \
+        requires weak_ordering_for<Cmp, Seq1> && weak_ordering_for<Cmp, Seq2> \
     auto set_difference(Seq1 seq1, Seq2 seq2, Cmp cmp = {}) -> sequence auto;
 
     Returns a sequence adaptor which yields the set difference of the two input sequences :var:`seq1` and :var:`seq2`, ordered by the given comparison function :var:`cmp`.
 
     This function assumes that both :var:`seq1` and :var:`seq2` are sorted with respect to the comparison function :var:`cmp`. If the input sequences are not sorted, the contents of the resulting sequence is unspecified.
 
-    When the resulting sequence is iterated, it will output the elements from :var:`seq1` which are not found in the :var:`seq2` according to :var:`cmp`. If some element is found ``m`` times in :var:`seq1` and ``n`` times in :var:`seq2`, then the resulting sequence yields exactly ``std::max(m - n, 0)`` elements.
+    When the resulting sequence is iterated, it will output the elements from :var:`seq1` which are not found in the :var:`seq2` according to :var:`cmp`. If some element is found ``m`` times in :var:`seq1` and ``n`` times in :var:`seq2`, then the resulting sequence yields exactly :expr:`std::max(m - n, 0)` elements.
 
     :param seq1: The first sorted sequence.
     :param seq2: The second sorted sequence.
-    :param cmp: A binary predicate that takes two elements as arguments and returns true if the first element is less than the second.
+    :param cmp: A binary comparator whose return type is convertible to :type:`std::weak_ordering`. Both sequences must be sorted with respect to this comparator.
 
     :returns: A sequence adaptor that yields those elements of `seq1` which do not also appear in `seq2`.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`Seq1` and :var:`Seq2` are both multipass
+      * - :concept:`bidirectional_sequence`
+        - Never
+      * - :concept:`random_access_sequence`
+        - Never
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - Never
+      * - :concept:`sized_sequence`
+        - Never
+      * - :concept:`infinite_sequence`
+        - Never
+      * - :concept:`read_only_sequence`
+        - :var:`Seq1` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`Seq1` and :var:`Seq2` are both const-iterable, and :var:`cmp` is const-invocable
 
     :example:
 
@@ -511,8 +1466,8 @@ Adaptors
 ^^^^^^^^^^^^^^^^^^^^
 
 ..  function::
-    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::less> \
-        requires strict_weak_order_for<Cmp, Seq1> && strict_weak_order_for<Cmp, Seq2> \
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way> \
+        requires weak_ordering_for<Cmp, Seq1> && weak_ordering_for<Cmp, Seq2> \
     auto set_intersection(Seq1 seq1, Seq2 seq2, Cmp cmp = {}) -> sequence auto;
 
     Returns a sequence adaptor which yields the set intersection of the two input sequences :var:`seq1` and :var:`seq2`, ordered by the given comparison function :var:`cmp`.
@@ -523,9 +1478,36 @@ Adaptors
 
     :param seq1: The first sorted sequence.
     :param seq2: The second sorted sequence.
-    :param cmp: A binary predicate that takes two elements as arguments and returns true if the first element is less than the second.
+    :param cmp: A binary comparator whose return type is convertible to :type:`std::weak_ordering`. Both sequences must be sorted with respect to this comparator.
 
     :returns: A sequence adaptor that represents the set intersection of the two input sequences.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`Seq1` and :var:`Seq2` are both multipass
+      * - :concept:`bidirectional_sequence`
+        - Never
+      * - :concept:`random_access_sequence`
+        - Never
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - Never
+      * - :concept:`sized_sequence`
+        - Never
+      * - :concept:`infinite_sequence`
+        - Never
+      * - :concept:`read_only_sequence`
+        - :var:`Seq1` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`Seq1` and :var:`Seq2` are both const-iterable, and :var:`cmp` is const-invocable
 
     :example:
 
@@ -544,7 +1526,7 @@ Adaptors
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ..  function::
-    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::less> \
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way> \
         requires see_below \
     auto set_symmetric_difference(Seq1 seq1, Seq2 seq2, Cmp cmp = {}) -> sequence auto;
 
@@ -564,12 +1546,41 @@ Adaptors
             std::common_reference_with<element_t<Seq1>, element_t<Seq2>> &&
             std::common_reference_with<rvalue_element_t<Seq1>, rvalue_element_t<Seq2>> &&
             requires { typename std::common_type_t<value_t<Seq1>, value_t<Seq2>>; } &&
-            strict_weak_order_for<Cmp, Seq1> &&
-            strict_weak_order_for<Cmp, Seq2>
+            weak_ordering_for<Cmp, Seq1> &&
+            weak_ordering_for<Cmp, Seq2>
 
     :param seq1: The first sequence to merge.
     :param seq2: The second sequence to merge.
+    :param cmp: A binary comparator whose return type is convertible to :type:`std::weak_ordering`. Both sequences must be sorted with respect to this comparator.
+
     :returns: A sequence adaptor that yields elements of `seq1` and `seq2` which do not appear in both sequences.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`Seq1` and :var:`Seq2` are both multipass
+      * - :concept:`bidirectional_sequence`
+        - Never
+      * - :concept:`random_access_sequence`
+        - Never
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`Seq1` and :var:`Seq2` are both bounded
+      * - :concept:`sized_sequence`
+        - Never
+      * - :concept:`infinite_sequence`
+        - Never
+      * - :concept:`read_only_sequence`
+        - :expr:`std::common_reference_t<element_t<Seq1>, element_t<Seq2>>` is an object type or a const reference
+      * - :concept:`const_iterable_sequence`
+        - :var:`Seq1` and :var:`Seq2` are both const-iterable, and :var:`cmp` is const-invocable
 
     :example:
 
@@ -588,7 +1599,7 @@ Adaptors
 ^^^^^^^^^^^^^
 
 ..  function::
-    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::less> \
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way> \
         requires see_below \
     auto set_union(Seq1 seq1, Seq2 seq2, Cmp cmp = {}) -> sequence auto;
 
@@ -604,14 +1615,41 @@ Adaptors
             std::common_reference_with<element_t<Seq1>, element_t<Seq2>> &&
             std::common_reference_with<rvalue_element_t<Seq1>, rvalue_element_t<Seq2>> &&
             requires { typename std::common_type_t<value_t<Seq1>, value_t<Seq2>>; } &&
-            strict_weak_order_for<Cmp, Seq1> &&
-            strict_weak_order_for<Cmp, Seq2>
+            weak_ordering_for<Cmp, Seq1> &&
+            weak_ordering_for<Cmp, Seq2>
     
     :param seq1: The first sorted sequence to merge.
     :param seq2: The second sorted sequence to merge.
-    :param cmp: A binary predicate that takes two elements as arguments and returns true if the first element is less than the second.
+    :param cmp: A binary comparator whose return type is convertible to :type:`std::weak_ordering`. Both sequences must be sorted with respect to this comparator.
 
     :returns: A sequence adaptor that represents the set union of the two input sequences.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`Seq1` and :var:`Seq2` are both multipass
+      * - :concept:`bidirectional_sequence`
+        - Never
+      * - :concept:`random_access_sequence`
+        - Never
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`Seq1` and :var:`Seq2` are both bounded
+      * - :concept:`sized_sequence`
+        - Never
+      * - :concept:`infinite_sequence`
+        - Never
+      * - :concept:`read_only_sequence`
+        - :expr:`std::common_reference_t<element_t<Seq1>, element_t<Seq2>>` is an object type or a const reference
+      * - :concept:`const_iterable_sequence`
+        - :var:`Seq1` and :var:`Seq2` are both const-iterable, and :var:`cmp` is const-invocable
 
     :example:
 
@@ -631,29 +1669,179 @@ Adaptors
 ..  function::
     auto slide(multipass_sequence auto seq, std::integral auto win_sz) -> multipass_sequence auto;
 
+    Returns an adaptor which yields length-:var:`win_sz` overlapping subsequences of :var:`seq`.
+
+    The :func:`adjacent` adaptor is similar to :func:`slide`, but takes its window size argument as a compile-time rather than a run-time parameter, and yield :any:`N`-tuples rather than subsequences.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - Always
+      * - :concept:`bidirectional_sequence`
+        - :var:`seq` is bidirectional
+      * - :concept:`random_access_sequence`
+        - :var:`seq` is random-access
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`seq` is bidirectional and bounded
+      * - :concept:`sized_sequence`
+        - :var:`seq` is sized
+      * - :concept:`infinite_sequence`
+        - Never
+      * - :concept:`read_only_sequence`
+        - :var:`seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`seq` is const-iterable
+
+``split``
+^^^^^^^^^
+
+..  function::
+    template <multipass_sequence Seq, typename Delim> \
+        requires std::equality_comparable_with<element_t<Seq>, Delim const&> \
+    auto split(Seq seq, Delim delim) -> multipass_sequence auto;
+
+..  function::
+    template <multipass_sequence Seq, multipass_sequence Pattern> \
+        requires std::equality_comparable_with<element_t<Seq>, element_t<Pattern>> \
+    auto split(Seq seq, Pattern pattern) -> multipass_sequence auto;
+
+..  function::
+    template <multipass_sequence Seq, typename Pred> \
+        requires std::predicate<Pred const&, element_t<seq>> \
+    auto split(Seq seq, Pred pred) -> multipass_sequence auto;
+
+    Splits a :concept:`multipass_sequence` into a sequence-of-subsequences using the given argument.
+
+    The first overload takes a delimiter, which must be equality comparable with the source sequence's value type. The source sequence will be split on each occurrence of the delimiter, with the delimiter itself removed. Consecutive delimiters will result in empty subsequences in the output. If the source sequence begins with a delimiter then the first subsequence will be empty, and likewise if it ends with a delimiter then the final subsequence will be empty.
+
+    The second overload takes another sequence, the :var:`pattern`, whose elements must be equality comparable with the elements of the source sequence. The source is split whenever the pattern occurs as a subsequence. Consecutive (non-overlapping) occurrences of the pattern will result in empty sequences in the output. If :expr:`ends_with(seq, pattern)` is :expr:`true`, the final subsequence will be empty.
+
+    The third overload takes a unary predicate which will be called with successive elements of the source sequence and returns :expr:`true` when a split should occur. The "``true``" element will be removed from the output. If the predicate returns ``true`` for two consecutive of the source, then the output will contain an empty subsequence. If the predicate returns ``true``` for the final element of the source, then the final subsequence will be empty.
+
+    The returned sequence is always a :concept:`multipass_sequence`. It is additionally a :concept:`bounded_sequence` when :var:`Seq` is bounded.
+
+    :param seq: A multipass sequence to split.
+    :param delim: For the first overload, a delimiter to split on. Must be equality comparable with the element type of :var:`seq`
+    :param pattern: For the second overload, a multipass sequence to split on. Its element type must be equality comparable with the element type of :var:`seq`.
+    :param pred: For the third overload, a unary predicate accepting elements of :var:`seq`, returning ``true`` when a split should occur.
+
+    :returns: A multipass sequence whose elements are subsequences of :var:`seq`.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - Always
+      * - :concept:`bidirectional_sequence`
+        - Never
+      * - :concept:`random_access_sequence`
+        - Never
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`Seq` is bounded
+      * - :concept:`sized_sequence`
+        - Never
+      * - :concept:`infinite_sequence`
+        - Never
+      * - :concept:`read_only_sequence`
+        - :var:`Seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`Seq` is const-iterable, and :var:`Pattern` is const-iterable (for the second overload) or :var:`Pred` is const-invocable (for the third overload)
+
+    :example:
+
+    ..  literalinclude:: ../../example/docs/split.cpp
+        :language: cpp
+        :dedent:
+        :lines: 18-79
+
+    :see also:
+        * `std::views::split() <https://en.cppreference.com/w/cpp/ranges/split_view>`_
+        * :func:`flux::chunk_by`
+
 ``stride``
 ^^^^^^^^^^
 
 ..  function::
     auto stride(sequence auto seq, std::integral auto stride_len) -> sequence auto;
 
-``split``
-^^^^^^^^^
+    Returns an adapted sequence which yields the same first element as :var:`seq` and then yields every :var:`stride_len`-th element after that.
 
-..  function::
-    template <multipass_sequence Seq, multipass_sequence Pattern> \
-        requires std::equality_comparable_with<element_t<Seq>, element_t<Pattern>> \
-    auto split(Seq seq, Pattern pattern) -> sequence auto;
+    :models:
 
-..  function::
-    template <multipass_sequence Seq> \
-    auto split(Seq seq, value_t<Seq> delim) -> sequence auto;
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`seq` is multipass
+      * - :concept:`bidirectional_sequence`
+        - :var:`seq` is bidirectional
+      * - :concept:`random_access_sequence`
+        - :var:`seq` is random-access
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - :var:`seq` is bidirectional, bounded and sized
+      * - :concept:`sized_sequence`
+        - :var:`seq` is sized
+      * - :concept:`infinite_sequence`
+        - :var:`seq` is infinite
+      * - :concept:`read_only_sequence`
+        - :var:`seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`seq` is const-iterable
 
 ``take``
 ^^^^^^^^
 
 ..  function::
     auto take(sequence auto seq, std::integral auto count) -> sequence auto;
+
+    Returns an adapted sequence with at most :var:`count` elements.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`seq` is multipass
+      * - :concept:`bidirectional_sequence`
+        - :var:`seq` is bidirectional
+      * - :concept:`random_access_sequence`
+        - :var:`seq` is random-access
+      * - :concept:`contiguous_sequence`
+        - :var:`seq` is contiguous
+      * - :concept:`bounded_sequence`
+        - :var:`seq` is either infinite or both random-access and sized
+      * - :concept:`sized_sequence`
+        - :var:`seq` is sized or infinite
+      * - :concept:`infinite_sequence`
+        - :var:`seq` is infinite
+      * - :concept:`read_only_sequence`
+        - :var:`seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`seq` is const-iterable
 
 ``take_while``
 ^^^^^^^^^^^^^^
@@ -663,14 +1851,150 @@ Adaptors
         requires std::predicate<Pred&, element_t<Seq>> \
     auto take_while(Seq seq, Pred pred) -> sequence auto;
 
+    Returns an adapted sequence which yields elements of :var:`seq` while :var:`pred` returns ``true``. Iteration is complete when :var:`pred` returns ``false`` or the underlying sequence is exhausted.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`Seq` is multipass
+      * - :concept:`bidirectional_sequence`
+        - :var:`Seq` is bidirectional
+      * - :concept:`random_access_sequence`
+        - Never
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - Never
+      * - :concept:`sized_sequence`
+        - Never
+      * - :concept:`infinite_sequence`
+        - Never
+      * - :concept:`read_only_sequence`
+        - :var:`Seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`Seq` is const-iterable
+
 ``unchecked``
 ^^^^^^^^^^^^^
 
 ..  function::
     auto unchecked(sequence auto seq) -> sequence auto;
 
+    A passthrough adaptor which disables bounds checking.
+
+    It does so by forwarding each call to :func:`read_at` on the adapted sequence to the :func:`read_at_unchecked` implementation of the underlying sequence.
+
+    ..  danger:: Using this adaptor can result in undefined behaviour that would otherwise be caught by Flux's safety checks. Use it with great caution.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - :var:`seq` is multipass
+      * - :concept:`bidirectional_sequence`
+        - :var:`seq` is bidirectional
+      * - :concept:`random_access_sequence`
+        - :var:`seq` is random-access
+      * - :concept:`contiguous_sequence`
+        - :var:`seq` is contiguous
+      * - :concept:`bounded_sequence`
+        - :var:`seq` is bounded
+      * - :concept:`sized_sequence`
+        - :var:`seq` is sized
+      * - :concept:`infinite_sequence`
+        - :var:`seq` is infinite
+      * - :concept:`read_only_sequence`
+        - :var:`seq` is read-only
+      * - :concept:`const_iterable_sequence`
+        - :var:`seq` is const-iterable
+
 ``zip``
 ^^^^^^^
 
 ..  function::
     auto zip(sequence auto... seqs) -> sequence auto;
+
+    Returns a sequence adaptor which iterates over the input sequences in lock-step. Iteration is complete when any of the input sequences is exhausted.
+
+    The element type of the returned sequence is a :expr:`std::tuple` of the element types of the input sequences, or a :expr:`std::pair` for two inputs.
+
+    Iteration of the resulting adaptor is complete when any of the input sequences is exhausted.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - All inputs are multipass
+      * - :concept:`bidirectional_sequence`
+        - All inputs are bidirectional
+      * - :concept:`random_access_sequence`
+        - :var:`seq` is random-access
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - All inputs are bounded
+      * - :concept:`sized_sequence`
+        - All inputs are sized
+      * - :concept:`infinite_sequence`
+        - All inputs are infinite
+      * - :concept:`read_only_sequence`
+        - All inputs are read-only
+      * - :concept:`const_iterable_sequence`
+        - All inputs are const-iterable
+
+``zip_map``
+^^^^^^^^^^^
+
+..  function::
+    template <typename Func, sequence... Seqs> \
+        requires std::regular_invocable<Func&, element_t<Seqs>...> \
+    auto zip_map(Func func, Seqs... seqs) -> sequence auto;
+
+    Given ``N`` input sequences and an ``N``-ary function :var:`func`, returns a sequence adaptor which iterates over the input sequences in lock-step and yields the result of invoking :var:`func` with the sequence elements.
+
+    Iteration of the resulting adaptor is complete when any of the input sequences is exhausted.
+
+    Equivalent to :expr:`zip(seqs...).map(unpack(func))`, but avoids forming an intermediate tuple.
+
+    :models:
+
+    .. list-table::
+      :align: left
+      :header-rows: 1
+
+      * - Concept
+        - When
+      * - :concept:`multipass_sequence`
+        - All inputs are multipass
+      * - :concept:`bidirectional_sequence`
+        - All inputs are bidirectional
+      * - :concept:`random_access_sequence`
+        - :var:`seq` is random-access
+      * - :concept:`contiguous_sequence`
+        - Never
+      * - :concept:`bounded_sequence`
+        - All inputs are bounded
+      * - :concept:`sized_sequence`
+        - All inputs are sized
+      * - :concept:`infinite_sequence`
+        - All inputs are infinite
+      * - :concept:`read_only_sequence`
+        - All inputs are read-only
+      * - :concept:`const_iterable_sequence`
+        - All inputs are const-iterable

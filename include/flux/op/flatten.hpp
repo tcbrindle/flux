@@ -25,7 +25,7 @@ public:
         : base_(FLUX_FWD(base))
     {}
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
     private:
         using self_t = flatten_adaptor;
 
@@ -45,8 +45,8 @@ public:
         static constexpr auto satisfy(auto& self, cursor_type& cur) -> void
         {
             while (!flux::is_last(self.base_, cur.outer_cur)) {
-                self.inner_ = optional<InnerSeq>(flux::read_at(self.base_, cur.outer_cur));
-                cur.inner_cur = optional(flux::first(*self.inner_));
+                self.inner_.emplace(flux::read_at(self.base_, cur.outer_cur));
+                cur.inner_cur.emplace(flux::first(*self.inner_));
                 if (!flux::is_last(*self.inner_, *cur.inner_cur)) {
                     return;
                 }
@@ -105,7 +105,7 @@ public:
         : base_(FLUX_FWD(base))
     {}
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
     private:
         using InnerSeq = element_t<Base>;
 
@@ -129,7 +129,11 @@ public:
 
         static constexpr auto satisfy(auto& self, cursor_type& cur) -> void
         {
-            while (!flux::is_last(self.base_, cur.outer_cur)) {
+            while (true) {
+                if (flux::is_last(self.base_, cur.outer_cur)) {
+                    cur.inner_cur = cursor_t<InnerSeq>{};
+                    return;
+                }
                 auto&& inner = flux::read_at(self.base_, cur.outer_cur);
                 cur.inner_cur = flux::first(inner);
                 if (!flux::is_last(inner, cur.inner_cur)) {

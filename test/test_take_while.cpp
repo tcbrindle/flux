@@ -3,20 +3,16 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include "catch.hpp"
-
-#include <flux.hpp>
+#include <array>
 
 #include "test_utils.hpp"
-
-#include <array>
 
 namespace {
 
 struct ints {
     int from = 0;
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : flux::default_sequence_traits {
         static constexpr int first(ints) { return 0; }
         static constexpr bool is_last(ints, int) { return false; }
         static constexpr int read_at(ints self, int cur){ return self.from + cur; }
@@ -47,7 +43,7 @@ constexpr bool test_take_while()
 
         using S = decltype(seq);
 
-        static_assert(flux::contiguous_sequence<S>);
+        static_assert(flux::random_access_sequence<S>);
         static_assert(not flux::bounded_sequence<S>);
         static_assert(not flux::sized_sequence<S>);
 

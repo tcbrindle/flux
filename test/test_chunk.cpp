@@ -3,16 +3,12 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include "catch.hpp"
-
-#include <flux.hpp>
-
-#include "test_utils.hpp"
-
 #include <array>
 #include <limits>
 #include <list>
 #include <sstream>
+
+#include "test_utils.hpp"
 
 namespace {
 
@@ -33,8 +29,24 @@ struct NotBidir : flux::inline_sequence_base<NotBidir<Base>> {
     constexpr Base& base() & { return base_; }
     constexpr Base const& base() const& { return base_; }
 
-    struct flux_sequence_traits : flux::detail::passthrough_traits_base<Base> {
-        static void dec(...) = delete;
+    struct flux_sequence_traits : flux::default_sequence_traits {
+        static constexpr auto first(auto& self) { return flux::first(self.base_); }
+
+        static constexpr bool is_last(auto& self, auto const& cur) {
+            return flux::is_last(self.base_, cur);
+        }
+
+        static constexpr void inc(auto& self, auto& cur) {
+            flux::inc(self.base_, cur);
+        }
+
+        static constexpr decltype(auto) read_at(auto& self, auto const& cur) {
+            return flux::read_at(self.base_, cur);
+        }
+
+        static constexpr auto last(auto& self) { return flux::last(self.base_); }
+
+        static constexpr auto size(auto& self) { return flux::size(self.base_); }
     };
 };
 
@@ -462,7 +474,7 @@ TEST_CASE("chunk")
     res = test_chunk_bidir();
     REQUIRE(res);
 
-    SECTION("...with istream sequence")
+    SUBCASE("...with istream sequence")
     {
         std::istringstream iss("1 2 3 4 5");
         std::ostringstream out;
@@ -474,7 +486,7 @@ TEST_CASE("chunk")
         REQUIRE(out.str() == "[[1, 2], [3, 4], [5]]");
     }
 
-    SECTION("...with bidir only sequence")
+    SUBCASE("...with bidir only sequence")
     {
         std::list<int> list{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 

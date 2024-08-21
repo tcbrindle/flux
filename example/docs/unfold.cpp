@@ -5,7 +5,7 @@
 
 #include <flux.hpp>
 
-#include <cassert>
+#include "assert.hpp"
 #include <string>
 #include <vector>
 
@@ -26,5 +26,5 @@ int main()
     }, 0u);
 
     assert(flux::equal(std::move(fibs).take(10),
-                       std::array{0, 1, 1, 2, 3, 5, 8, 13, 21, 34}));
+                       std::array<unsigned, 10>{0, 1, 1, 2, 3, 5, 8, 13, 21, 34}));
 }

@@ -45,7 +45,7 @@ public:
     scan_adaptor(scan_adaptor&&) = default;
     scan_adaptor& operator=(scan_adaptor&&) = default;
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
     private:
 
         struct cursor_type : private scan_cursor_base<Mode> {
@@ -146,6 +146,8 @@ public:
                 return std::invoke(pred, std::as_const(self.accum_));
             }));
         }
+
+        using default_sequence_traits::for_each_while; // when Mode == exclusive
     };
 };
 

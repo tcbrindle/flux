@@ -3,11 +3,6 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include "catch.hpp"
-
-#include <flux/op/count.hpp>
-#include <flux/op/take_while.hpp>
-
 #include "test_utils.hpp"
 
 

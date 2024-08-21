@@ -3,9 +3,16 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include "catch.hpp"
+#include <doctest/doctest.h>
 
+#include <concepts>
+#include <initializer_list>
+
+#ifdef USE_MODULES
+import flux;
+#else
 #include <flux.hpp>
+#endif
 
 namespace {
 
@@ -42,7 +49,7 @@ struct cant_instantiate {
 };
 
 template <typename T>
-struct dummy_impl {
+struct dummy_impl : flux::default_sequence_traits {
     static int first(T&);
     static bool is_last(T&, int);
     static int& inc(T&, int&);
@@ -51,7 +58,7 @@ struct dummy_impl {
 
 template <typename Elem>
 struct minimal_seq_of {
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : flux::default_sequence_traits {
         static int first(minimal_seq_of);
         static bool is_last(minimal_seq_of, int);
         static int& inc(minimal_seq_of, int&);
@@ -61,7 +68,7 @@ struct minimal_seq_of {
 
 template <typename Idx>
 struct minimal_with_idx {
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : flux::default_sequence_traits {
         static Idx first(minimal_with_idx);
         static bool is_last(minimal_with_idx, Idx const&);
         static Idx& inc(minimal_with_idx, Idx&);
@@ -129,32 +136,38 @@ namespace {
     using flux::value_t;
     using flux::rvalue_element_t;
     using flux::common_element_t;
+    using flux::const_element_t;
     using std::same_as;
 
     static_assert(same_as<element_t<ref_seq>, int&>);
     static_assert(same_as<value_t<ref_seq>, int>);
     static_assert(same_as<rvalue_element_t<ref_seq>, int&&>);
     static_assert(same_as<common_element_t<ref_seq>, int&>);
+    static_assert(same_as<const_element_t<ref_seq>, int const&>);
 
     static_assert(same_as<element_t<cref_seq>, int const&>);
     static_assert(same_as<value_t<cref_seq>, int>);
     static_assert(same_as<rvalue_element_t<cref_seq>, int const&&>);
     static_assert(same_as<common_element_t<cref_seq>, int const&>);
+    static_assert(same_as<const_element_t<cref_seq>, int const&>);
 
     static_assert(same_as<element_t<rref_seq>, int&&>);
     static_assert(same_as<value_t<rref_seq>, int>);
     static_assert(same_as<rvalue_element_t<rref_seq>, int&&>);
     static_assert(same_as<common_element_t<rref_seq>, int const&>); // Yes, really
+    static_assert(same_as<const_element_t<rref_seq>, int const&&>);
 
     static_assert(same_as<element_t<crref_seq>, int const&&>);
     static_assert(same_as<value_t<crref_seq>, int>);
     static_assert(same_as<rvalue_element_t<crref_seq>, int const&&>);
     static_assert(same_as<common_element_t<crref_seq>, int const&>); // Yes, really
+    static_assert(same_as<const_element_t<crref_seq>, int const&&>);
 
     static_assert(same_as<element_t<val_seq>, int>);
     static_assert(same_as<value_t<val_seq>, int>);
     static_assert(same_as<rvalue_element_t<val_seq>, int>);
     static_assert(same_as<common_element_t<val_seq>, int>);
+    static_assert(same_as<const_element_t<val_seq>, int>);
 }
 
 namespace {
@@ -181,7 +194,7 @@ static_assert(flux::sequence<Derived2>);
 // Adaptable sequence tests
 namespace {
     struct movable_seq {
-        struct flux_sequence_traits {
+        struct flux_sequence_traits : flux::default_sequence_traits {
             static int first(movable_seq);
             static bool is_last(movable_seq, int);
             static int& inc(movable_seq, int&);
@@ -194,7 +207,7 @@ namespace {
         move_only_seq(move_only_seq&&) = default;
         move_only_seq& operator=(move_only_seq&&) = default;
 
-        struct flux_sequence_traits {
+        struct flux_sequence_traits : flux::default_sequence_traits {
             static int first(move_only_seq const&);
             static bool is_last(move_only_seq const&, int);
             static int& inc(move_only_seq const&, int&);
@@ -207,7 +220,7 @@ namespace {
         unmovable_seq(unmovable_seq&&) = delete;
         unmovable_seq& operator=(unmovable_seq&&) = delete;
 
-        struct flux_sequence_traits {
+        struct flux_sequence_traits : flux::default_sequence_traits {
             static int first(unmovable_seq const&);
             static bool is_last(unmovable_seq const&, int);
             static int& inc(unmovable_seq const&, int&);
@@ -236,4 +249,85 @@ namespace {
     static_assert(not flux::adaptable_sequence<ilist_t const&&>);
 }
 
+// const_iterable_sequence tests
+namespace {
+    struct const_iter {
+        struct flux_sequence_traits : flux::default_sequence_traits {
+            static int first(const_iter const&);
+            static bool is_last(const_iter const&, int);
+            static void inc(const_iter const&, int&);
+            static int& read_at(const_iter&, int);
+            static int const& read_at(const_iter const&, int);
+        };
+    };
+    static_assert(flux::const_iterable_sequence<const_iter>);
+    static_assert(flux::const_iterable_sequence<const_iter const>);
+
+    // read_at(S const&) is not defined
+    struct not_const_iter1 {
+        struct flux_sequence_traits : flux::default_sequence_traits {
+            static int first(not_const_iter1 const&);
+            static bool is_last(not_const_iter1 const&, int);
+            static void inc(not_const_iter1 const&, int&);
+            static int read_at(not_const_iter1&, int);
+        };
+    };
+    static_assert(not flux::const_iterable_sequence<not_const_iter1>);
+
+    // read_at(S) and read_at(S const) yield different types
+    struct not_const_iter2 {
+        struct flux_sequence_traits : flux::default_sequence_traits {
+            static int first(not_const_iter2 const&);
+            static bool is_last(not_const_iter2 const&, int);
+            static void inc(not_const_iter2 const&, int&);
+            static int read_at(not_const_iter2&, int);
+            static double read_at(not_const_iter2 const&, int);
+        };
+    };
+    static_assert(not flux::const_iterable_sequence<not_const_iter2>);
+    static_assert(flux::const_iterable_sequence<not_const_iter2 const>);
+
+    // read_at(S const) weakens const qualification
+    struct not_const_iter3 {
+        struct flux_sequence_traits : flux::default_sequence_traits {
+            static int first(not_const_iter3 const&);
+            static bool is_last(not_const_iter3 const&, int);
+            static void inc(not_const_iter3 const&, int&);
+            static int const& read_at(not_const_iter3&, int);
+            static int& read_at(not_const_iter3 const&, int);
+        };
+    };
+    static_assert(not flux::const_iterable_sequence<not_const_iter3>);
+    static_assert(flux::const_iterable_sequence<not_const_iter3 const>);
+
+    // S is bounded but S const is not
+    struct not_const_iter4 {
+        struct flux_sequence_traits : flux::default_sequence_traits {
+            static int first(not_const_iter4 const&);
+            static bool is_last(not_const_iter4 const&, int);
+            static void inc(not_const_iter4 const&, int&);
+            static int const& read_at(not_const_iter4&, int);
+            static int& read_at(not_const_iter4 const&, int);
+            static int last(not_const_iter4&);
+        };
+    };
+    static_assert(not flux::const_iterable_sequence<not_const_iter4>);
+    static_assert(flux::const_iterable_sequence<not_const_iter4 const>);
+
+    // S const is sized but S is not
+    struct not_const_iter5 {
+        struct flux_sequence_traits : flux::default_sequence_traits {
+            static int first(not_const_iter5 const&);
+            static bool is_last(not_const_iter5 const&, int);
+            static void inc(not_const_iter5 const&, int&);
+            static int const& read_at(not_const_iter5&, int);
+            static int& read_at(not_const_iter5 const&, int);
+            static void size(not_const_iter5&);
+            static int size(not_const_iter5 const&);
+        };
+    };
+    static_assert(not flux::const_iterable_sequence<not_const_iter5>);
+    static_assert(flux::const_iterable_sequence<not_const_iter5 const>);
+
+}
 

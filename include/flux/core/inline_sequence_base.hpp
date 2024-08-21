@@ -193,7 +193,7 @@ public:
         return std::invoke(FLUX_FWD(func), std::move(derived()), FLUX_FWD(args)...);
     }
 
-    constexpr auto ref() const& requires sequence<Derived const>;
+    constexpr auto ref() const& requires const_iterable_sequence<Derived>;
 
     auto ref() const&& -> void = delete;
 
@@ -271,8 +271,31 @@ public:
     [[nodiscard]]
     constexpr auto filter(Pred pred) &&;
 
+    template <typename Func>
+        requires std::invocable<Func&, element_t<Derived>> &&
+                 detail::optional_like<std::invoke_result_t<Func&, element_t<Derived>>>
+    [[nodiscard]]
+    constexpr auto filter_map(Func func) &&;
+
+    [[nodiscard]]
+    constexpr auto filter_deref() && requires detail::optional_like<value_t<Derived>>;
+
     [[nodiscard]]
     constexpr auto flatten() && requires sequence<element_t<Derived>>;
+
+    template <adaptable_sequence Pattern>
+        requires sequence<element_t<Derived>> &&
+                 multipass_sequence<Pattern> &&
+                 detail::flatten_with_compatible<element_t<Derived>, Pattern>
+    [[nodiscard]]
+    constexpr auto flatten_with(Pattern&& pattern) &&;
+
+
+    template <typename Value>
+        requires sequence<element_t<Derived>> &&
+                 std::constructible_from<value_t<element_t<Derived>>, Value&&>
+    [[nodiscard]]
+    constexpr auto flatten_with(Value value) &&;
 
     template <typename Func>
         requires std::invocable<Func&, element_t<Derived>>
@@ -317,15 +340,24 @@ public:
     [[nodiscard]]
     constexpr auto slide(std::integral auto win_sz) && requires multipass_sequence<Derived>;
 
-    template <multipass_sequence Pattern>
-        requires std::equality_comparable_with<element_t<Derived>, element_t<Pattern>>
+    template <typename Pattern>
+        requires multipass_sequence<Derived> &&
+                 multipass_sequence<Pattern> &&
+                 std::equality_comparable_with<element_t<Derived>, element_t<Pattern>>
     [[nodiscard]]
     constexpr auto split(Pattern&& pattern) &&;
 
-    template <typename ValueType>
-        requires decays_to<ValueType, value_t<Derived>>
+    template <typename Delim>
+        requires multipass_sequence<Derived> &&
+                 std::equality_comparable_with<element_t<Derived>, Delim const&>
     [[nodiscard]]
-    constexpr auto split(ValueType&& delim) &&;
+    constexpr auto split(Delim&& delim) &&;
+
+    template <typename Pred>
+        requires multipass_sequence<Derived> &&
+                 std::predicate<Pred const&, element_t<Derived>>
+    [[nodiscard]]
+    constexpr auto split(Pred pred) &&;
 
     template <typename Pattern>
     [[nodiscard]]
@@ -399,18 +431,18 @@ public:
     [[nodiscard]]
     constexpr auto find_if_not(Pred pred);
 
-    template <typename Cmp = std::ranges::less>
-        requires strict_weak_order_for<Cmp, Derived>
+    template <typename Cmp = std::compare_three_way>
+        requires weak_ordering_for<Cmp, Derived>
     [[nodiscard]]
     constexpr auto find_max(Cmp cmp = Cmp{});
 
-    template <typename Cmp = std::ranges::less>
-        requires strict_weak_order_for<Cmp, Derived>
+    template <typename Cmp = std::compare_three_way>
+        requires weak_ordering_for<Cmp, Derived>
     [[nodiscard]]
     constexpr auto find_min(Cmp cmp = Cmp{});
 
-    template <typename Cmp = std::ranges::less>
-        requires strict_weak_order_for<Cmp, Derived>
+    template <typename Cmp = std::compare_three_way>
+        requires weak_ordering_for<Cmp, Derived>
     [[nodiscard]]
     constexpr auto find_minmax(Cmp cmp = Cmp{});
 
@@ -438,16 +470,16 @@ public:
         requires bounded_sequence<Derived> &&
                  detail::element_swappable_with<Derived, Derived>;
 
-    template <typename Cmp = std::ranges::less>
-        requires strict_weak_order_for<Cmp, Derived>
+    template <typename Cmp = std::compare_three_way>
+        requires weak_ordering_for<Cmp, Derived>
     constexpr auto max(Cmp cmp = Cmp{});
 
-    template <typename Cmp = std::ranges::less>
-        requires strict_weak_order_for<Cmp, Derived>
+    template <typename Cmp = std::compare_three_way>
+        requires weak_ordering_for<Cmp, Derived>
     constexpr auto min(Cmp cmp = Cmp{});
 
-    template <typename Cmp = std::ranges::less>
-        requires strict_weak_order_for<Cmp, Derived>
+    template <typename Cmp = std::compare_three_way>
+        requires weak_ordering_for<Cmp, Derived>
     constexpr auto minmax(Cmp cmp = Cmp{});
 
     template <typename Pred>
@@ -464,11 +496,11 @@ public:
         requires foldable<Derived, std::plus<>, value_t<Derived>> &&
                  std::default_initializable<value_t<Derived>>;
 
-    template <typename Cmp = std::ranges::less>
+    template <typename Cmp = std::compare_three_way>
         requires random_access_sequence<Derived> &&
                  bounded_sequence<Derived> &&
                  detail::element_swappable_with<Derived, Derived> &&
-                 strict_weak_order_for<Cmp, Derived>
+                 weak_ordering_for<Cmp, Derived>
     constexpr void sort(Cmp cmp = {});
 
     constexpr auto product()

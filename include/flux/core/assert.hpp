@@ -25,8 +25,8 @@ namespace detail {
 
 struct runtime_error_fn {
     [[noreturn]]
-    inline void operator()(char const* msg,
-                           std::source_location loc = std::source_location::current()) const
+    void operator()(char const* msg,
+                    std::source_location loc = std::source_location::current()) const
     {
         if constexpr (config::on_error == error_policy::unwind) {
             char buf[1024];
@@ -46,6 +46,11 @@ struct runtime_error_fn {
 }
 
 FLUX_EXPORT inline constexpr auto runtime_error = detail::runtime_error_fn{};
+
+#ifdef FLUX_HAVE_GCC_STATIC_BOUNDS_CHECKING
+[[gnu::error("out-of-bounds sequence access detected")]]
+void static_bounds_check_failed(); // not defined
+#endif
 
 namespace detail {
 
@@ -70,14 +75,30 @@ struct bounds_check_fn {
     }
 };
 
+struct indexed_bounds_check_fn {
+    template <typename T>
+    inline constexpr void operator()(T idx, T limit,
+                                     std::source_location loc = std::source_location::current()) const
+    {
+        if (!std::is_constant_evaluated()) {
+#ifdef FLUX_HAVE_GCC_STATIC_BOUNDS_CHECKING
+            if (__builtin_constant_p(idx) && __builtin_constant_p(limit)) {
+                if (idx < T{0} || idx >= limit) {
+                    static_bounds_check_failed();
+                }
+            }
+#endif
+            assert_fn{}(idx >= T{0}, "index cannot be negative", loc);
+            assert_fn{}(idx < limit, "out-of-bounds sequence access", loc);
+        }
+    }
+};
+
 } // namespace detail
 
 FLUX_EXPORT inline constexpr auto assert_ = detail::assert_fn{};
 FLUX_EXPORT inline constexpr auto bounds_check = detail::bounds_check_fn{};
-
-#define FLUX_ASSERT(cond) (::flux::assert_(cond, "assertion '" #cond "' failed"))
-
-#define FLUX_DEBUG_ASSERT(cond) (::flux::assert_(!::flux::config::enable_debug_asserts || (cond), "assertion '" #cond "' failed"));
+FLUX_EXPORT inline constexpr auto indexed_bounds_check = detail::indexed_bounds_check_fn{};
 
 } // namespace flux
 

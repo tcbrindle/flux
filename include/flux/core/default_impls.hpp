@@ -6,6 +6,7 @@
 #ifndef FLUX_CORE_DEFAULT_IMPLS_HPP_INCLUDED
 #define FLUX_CORE_DEFAULT_IMPLS_HPP_INCLUDED
 
+#include <flux/core/numeric.hpp>
 #include <flux/core/sequence_access.hpp>
 
 #include <functional>
@@ -17,7 +18,7 @@ namespace flux {
  * Default implementation for C arrays of known bound
  */
 template <typename T, index_t N>
-struct sequence_traits<T[N]> {
+struct sequence_traits<T[N]> : default_sequence_traits {
 
     static constexpr auto first(auto const&) -> index_t { return index_t{0}; }
 
@@ -25,8 +26,7 @@ struct sequence_traits<T[N]> {
 
     static constexpr auto read_at(auto& self, index_t idx) -> decltype(auto)
     {
-        bounds_check(idx >= 0);
-        bounds_check(idx < N);
+        indexed_bounds_check(idx, N);
         return self[idx];
     }
 
@@ -82,7 +82,7 @@ struct sequence_traits<T[N]> {
  * Default implementation for std::reference_wrapper<T>
  */
 template <sequence Seq>
-struct sequence_traits<std::reference_wrapper<Seq>> {
+struct sequence_traits<std::reference_wrapper<Seq>> : default_sequence_traits {
 
     using self_t = std::reference_wrapper<Seq>;
 
@@ -172,7 +172,7 @@ template <typename R>
              std::ranges::sized_range<R> &&
              std::ranges::contiguous_range<R const> &&
              std::ranges::sized_range<R const>)
-struct sequence_traits<R> {
+struct sequence_traits<R> : default_sequence_traits {
 
     using value_type = std::ranges::range_value_t<R>;
 
@@ -191,8 +191,7 @@ struct sequence_traits<R> {
 
     static constexpr auto read_at(auto& self, index_t idx) -> decltype(auto)
     {
-        bounds_check(idx >= 0);
-        bounds_check(idx < size(self));
+        indexed_bounds_check(idx, size(self));
         return data(self)[idx];
     }
 

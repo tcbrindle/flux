@@ -5,18 +5,10 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include "catch.hpp"
-
-#include <flux/op/cartesian_product.hpp>
-#include <flux/op/reverse.hpp>
-#include <flux/source/iota.hpp>
-#include <flux/source/empty.hpp>
-#include <flux/source/iota.hpp>
-#include <flux/op/for_each.hpp>
-
 #include <array>
 #include <iostream>
 #include <string_view>
+#include <tuple>
 
 #include "test_utils.hpp"
 
@@ -505,9 +497,37 @@ constexpr bool test_cartesian_product()
 }
 static_assert(test_cartesian_product());
 
+// https://github.com/tcbrindle/flux/issues/167
+void issue_167()
+{
+    // Check that overflowing size() is correctly caught
+    auto ints = flux::ints(0, std::numeric_limits<flux::distance_t>::max());
+
+    auto prod = flux::cartesian_product(ints, ints, ints);
+
+    REQUIRE_THROWS_AS(flux::size(prod), flux::unrecoverable_error);
+}
+
+// https://github.com/tcbrindle/flux/issues/177
+constexpr bool issue_177()
+{
+    auto seq = flux::cartesian_product(std::array{1, 2, 3}, flux::empty<int>);
+
+    STATIC_CHECK(seq.is_empty());
+    STATIC_CHECK(seq.size() == 0);
+    STATIC_CHECK(seq.is_last(seq.first()));
+    STATIC_CHECK(seq.first() == seq.last());
+
+    return true;
+}
+static_assert(issue_177());
+
 }
 
 TEST_CASE("cartesian_product")
 {
     REQUIRE(test_cartesian_product());
+
+    issue_167();
+    REQUIRE(issue_177());
 }

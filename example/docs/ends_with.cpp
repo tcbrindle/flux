@@ -5,7 +5,7 @@
 
 #include <flux.hpp>
 
-#include <cassert>
+#include "assert.hpp"
 #include <string>
 #include <vector>
 

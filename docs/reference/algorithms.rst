@@ -349,7 +349,7 @@ Algorithms
 ------------
 
 ..  function::
-    template <multipass_sequence Seq, strict_weak_order_for<Seq> Cmp = std::ranges::less> \
+    template <multipass_sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way> \
     auto find_max(Seq&& seq, Cmp cmp = {}) -> cursor_t<Seq>;
 
     Returns a cursor to the maximum element of :var:`seq`, compared using :var:`cmp`.
@@ -359,7 +359,7 @@ Algorithms
     ..  note:: This behaviour differs from :func:`std::max_element()`, which returns an iterator to the *first* maximal element.
 
     :param seq: A multipass sequence
-    :param cmp: A comparator to use to find the maximum element, defaulting to :type:`std::ranges::less`
+    :param cmp: A comparator to use to find the maximum element, defaulting to :type:`std::compare_three_way`
 
     :returns: A cursor pointing to the maximum element of :var:`seq`.
 
@@ -380,7 +380,7 @@ Algorithms
 ------------
 
 ..  function::
-    template <multipass_sequence Seq, strict_weak_order_for<Seq> Cmp = std::ranges::less> \
+    template <multipass_sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way> \
     auto find_min(Seq&& seq, Cmp cmp = {}) -> cursor_t<Seq>;
 
     Returns a cursor to the minimum element of :var:`seq`, compared using :var:`cmp`.
@@ -388,7 +388,7 @@ Algorithms
     If several elements are equally minimal, :func:`find_min` returns a cursor to the **first** such element.
 
     :param seq: A multipass sequence
-    :param cmp: A comparator to use to find the minimum element, defaulting to :type:`std::ranges::less`
+    :param cmp: A comparator to use to find the minimum element, defaulting to :type:`std::compare_three_way`
 
     :returns: A cursor pointing to the minimum element of :var:`seq`.
 
@@ -409,7 +409,7 @@ Algorithms
 ---------------
 
 ..  function::
-    template <multipass_sequence Seq, strict_weak_order_for<Seq> Cmp = std::ranges::less> \
+    template <multipass_sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way> \
     auto find_minmax(Seq&& seq, Cmp cmp = {}) -> minmax_result<cursor_t<Seq>>;
 
     Returns a pair of cursors to the minimum and maximum elements of :var:`seq`, compared using :var:`cmp`.
@@ -424,7 +424,7 @@ Algorithms
     but only does a single pass over :var:`seq`.
 
     :param seq: A multipass sequence
-    :param cmp: A comparator to use to find the maximum element, defaulting to :type:`std::ranges::less`
+    :param cmp: A comparator to use to find the maximum element, defaulting to :type:`std::compare_three_way`
 
     :returns: A cursor pointing to the maximum element of :var:`seq`.
 
@@ -489,15 +489,14 @@ Algorithms
 -------
 
 ..  function::
-    template <sequence Seq, typename Cmp = std::ranges::less> \
-        requires std::predicate<Cmp&, value_t<Seq>, element_t<Seq>> \
+    template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way> \
     auto max(Seq&& seq, Cmp cmp = {}) -> optional<value_t<Seq>>;
 
 ``min``
 -------
 
 ..  function::
-    template <sequence Seq, typename Cmp = std::ranges::less> \
+    template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way> \
         requires std::predicate<Cmp&, value_t<Seq>, element_t<Seq>> \
     auto min(Seq&& seq, Cmp cmp = {}) -> optional<value_t<Seq>>;
 
@@ -507,7 +506,7 @@ Algorithms
 ..  struct:: template <typename T> minmax_result;
 
 ..  function::
-    template <sequence Seq, typename Cmp = std::ranges::less> \
+    template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way> \
         requires std::predicate<Cmp&, value_t<Seq>, element_t<Seq>> \
     auto minmax(Seq&& seq, Cmp cmp = {}) -> optional<minmax_result<Seq>>;
 
@@ -547,7 +546,7 @@ Algorithms
 --------
 
 ..  function::
-    template <random_access_sequence Seq, typename Cmp = std::ranges::less> \
+    template <random_access_sequence Seq, typename Cmp = std::compare_three_way> \
         requires see_below \
     auto sort(Seq&& seq, Cmp cmp = {}) -> void;
 
