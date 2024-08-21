@@ -11,6 +11,7 @@
  * If adding/modifying tests, make sure to do the same in both files
  */
 
+#include <climits> // for CHAR_BIT
 
 #include "../test_utils.hpp"
 

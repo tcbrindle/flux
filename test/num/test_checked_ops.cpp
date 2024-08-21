@@ -12,7 +12,7 @@
  */
 
 
-#include <flux/core/numeric.hpp>
+#include <climits> // for CHAR_BIT
 
 #include "../test_utils.hpp"
 
