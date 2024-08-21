@@ -42,7 +42,7 @@ struct from_istreambuf_fn {
 } // namespace detail
 
 template <detail::derives_from_streambuf Streambuf>
-struct sequence_traits<Streambuf>
+struct sequence_traits<Streambuf> : default_sequence_traits
 {
 private:
     struct cursor_type {

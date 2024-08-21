@@ -57,7 +57,7 @@ struct chain_fn {
 } // namespace detail
 
 template <typename... Bases>
-struct sequence_traits<detail::chain_adaptor<Bases...>> {
+struct sequence_traits<detail::chain_adaptor<Bases...>> : default_sequence_traits {
 
     using value_type = std::common_type_t<value_t<Bases>...>;
 

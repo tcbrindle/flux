@@ -45,7 +45,7 @@ struct cartesian_traits_types<Arity, cartesian_kind::product, read_kind::tuple, 
 };
 
 template <std::size_t Arity, cartesian_kind CartesianKind, read_kind ReadKind, typename... Bases>
-struct cartesian_traits_base_impl {
+struct cartesian_traits_base_impl : default_sequence_traits {
 private:
 
     template<std::size_t I, typename Self>
@@ -305,12 +305,38 @@ public:
 
     template <typename Self>
     static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
-    -> decltype(auto)
+        -> decltype(auto)
         requires (ReadKind == read_kind::map)
     {
         return [&]<std::size_t... N>(std::index_sequence<N...>) -> decltype(auto) {
             return std::invoke(self.func_, flux::read_at(get_base<N>(self), std::get<N>(cur))...);
         }(std::make_index_sequence<Arity>{});
+    }
+
+    template <typename Self>
+    static constexpr auto read_at_unchecked(Self& self, cursor_t<Self> const& cur)
+        -> decltype(auto)
+        requires (ReadKind == read_kind::map)
+    {
+        return [&]<std::size_t... N>(std::index_sequence<N...>) -> decltype(auto) {
+            return std::invoke(self.func_, flux::read_at_unchecked(get_base<N>(self), std::get<N>(cur))...);
+        }(std::make_index_sequence<Arity>{});
+    }
+
+    template <typename Self>
+    static constexpr auto move_at(Self& self, cursor_t<Self> const& cur)
+        -> decltype(auto)
+        requires (ReadKind == read_kind::map)
+    {
+        return default_sequence_traits::move_at(self, cur);
+    }
+
+    template <typename Self>
+    static constexpr auto move_at_unchecked(Self& self, cursor_t<Self> const& cur)
+        -> decltype(auto)
+        requires (ReadKind == read_kind::map)
+    {
+        return default_sequence_traits::move_at_unchecked(self, cur);
     }
 
     template <typename Self>
@@ -343,6 +369,13 @@ public:
         cursor_t<Self> cur;
         for_each_while_impl<0>(self, keep_going, cur, FLUX_FWD(func));
         return cur;
+    }
+
+    template <typename Self, typename Function>
+    static constexpr auto for_each_while(Self& self, Function&& func) -> cursor_t<Self>
+        requires (ReadKind == read_kind::map)
+    {
+        return default_sequence_traits::for_each_while(self, FLUX_FWD(func));
     }
 
 };

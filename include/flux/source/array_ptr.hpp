@@ -78,7 +78,7 @@ public:
         return std::ranges::equal_to{}(lhs.data_, rhs.data_) && lhs.sz_ == rhs.sz_;
     }
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
 
         static constexpr auto first(array_ptr const&) -> index_t { return 0; }
 

@@ -47,7 +47,7 @@ public:
           pattern_(FLUX_FWD(pattern))
     {}
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
     private:
         using self_t = flatten_with_adaptor;
         using element_type =
@@ -173,7 +173,7 @@ public:
           pattern_(FLUX_FWD(pattern))
     {}
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
     private:
         using InnerSeq = element_t<Base>;
 

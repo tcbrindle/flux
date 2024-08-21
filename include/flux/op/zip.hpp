@@ -31,7 +31,7 @@ using pair_or_tuple_t = typename pair_or_tuple<Ts...>::type;
 }
 
 template <typename... Bases>
-struct zip_traits_base {
+struct zip_traits_base : default_sequence_traits {
 private:
     template <typename From, typename To>
     using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
@@ -280,6 +280,9 @@ public:
     {
         return read_(flux::read_at_unchecked, self, cur);
     }
+
+    using default_sequence_traits::move_at;
+    using default_sequence_traits::move_at_unchecked;
 };
 
 FLUX_EXPORT inline constexpr auto zip = detail::zip_fn{};

@@ -134,8 +134,8 @@ struct sequence_traits<subsequence<Base, Bounded>>
                flux::distance(*self.base_, flux::first(*self.base_), self.data_.first);
     }
 
-    void size() = delete;
-    void for_each_while() = delete;
+    using default_sequence_traits::size;
+    using default_sequence_traits::for_each_while;
 };
 
 FLUX_EXPORT inline constexpr auto slice = detail::slice_fn{};

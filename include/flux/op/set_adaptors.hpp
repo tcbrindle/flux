@@ -29,7 +29,7 @@ public:
           cmp_(cmp)
     {}
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
     private:
 
         struct cursor_type {
@@ -162,7 +162,7 @@ public:
           cmp_(cmp)
     {}
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
     private:
 
         struct cursor_type {
@@ -265,7 +265,7 @@ public:
           cmp_(cmp)
     {}
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
     private:
 
         struct cursor_type {
@@ -410,7 +410,7 @@ public:
           cmp_(cmp)
     {}
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
     private:
 
         struct cursor_type {

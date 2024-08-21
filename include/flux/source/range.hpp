@@ -27,7 +27,7 @@ private:
     using V = std::conditional_t<IsConst, R const, R>;
 
 public:
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
     private:
         class cursor_type {
 
