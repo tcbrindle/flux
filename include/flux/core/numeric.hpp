@@ -57,16 +57,7 @@ struct overflowing_cast_fn {
         if constexpr (requires { To{from}; }) {
             return {To{from}, false}; // not a narrowing conversion
         } else {
-            To to = static_cast<To>(from);
-            if (static_cast<From>(to) != from) {
-                return {to, true};
-            }
-            if constexpr (std::is_signed_v<From> != std::is_signed_v<To>) {
-                if ((to < To{}) != (from < From{})) {
-                    return {to, true};
-                }
-            }
-            return {to, false};
+            return {static_cast<To>(from), !std::in_range<To>(from)};
         }
     }
 };
