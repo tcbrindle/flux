@@ -15,52 +15,19 @@
 
 namespace flux::num {
 
-namespace detail {
-
+FLUX_EXPORT
 template <typename T>
-concept builtin_integral =
+concept integral =
     std::integral<T> &&
     !flux::detail::any_of<T, bool, char, wchar_t, char8_t, char16_t, char32_t>;
 
-template <typename>
-inline constexpr bool is_extended_integral_v = false;
-
+FLUX_EXPORT
 template <typename T>
-concept extended_integral =
-    is_extended_integral_v<T> &&
-    std::is_enum_v<T> &&
-    builtin_integral<std::underlying_type_t<T>>;
-
-} // namespace detail
+concept signed_integral = integral<T> && std::signed_integral<T>;
 
 FLUX_EXPORT
 template <typename T>
-concept integral = detail::builtin_integral<T> || detail::extended_integral<T>;
-
-namespace detail {
-
-template <integral>
-struct builtin_type;
-
-template <builtin_integral T>
-struct builtin_type<T> { using type = T; };
-
-template <extended_integral T>
-struct builtin_type<T> { using type = std::underlying_type_t<T>; };
-
-} // namespace detail
-
-FLUX_EXPORT
-template <integral T>
-using builtin_type_t = typename detail::builtin_type<T>::type;
-
-FLUX_EXPORT
-template <typename T>
-concept signed_integral = integral<T> && std::is_signed_v<builtin_type_t<T>>;
-
-FLUX_EXPORT
-template <typename T>
-concept unsigned_integral = integral<T> && !signed_integral<T>;
+concept unsigned_integral = integral<T> && std::unsigned_integral<T>;
 
 FLUX_EXPORT
 template <integral T>
@@ -70,14 +37,6 @@ struct overflow_result {
 };
 
 namespace detail {
-
-inline constexpr auto to_builtin = []<integral T>(T val) -> builtin_type_t<T> {
-    if constexpr (builtin_integral<T>) {
-        return val;
-    } else {
-        return static_cast<std::underlying_type_t<T>>(val);
-    }
-};
 
 template <integral To>
 struct unchecked_cast_fn {
@@ -133,11 +92,7 @@ struct unchecked_add_fn {
     [[nodiscard]]
     constexpr auto operator()(T lhs, T rhs) const noexcept -> T
     {
-        if constexpr (builtin_integral<T>) {
-            return static_cast<T>(lhs + rhs);
-        } else {
-            return static_cast<T>(to_builtin(lhs) + to_builtin(rhs));
-        }
+        return static_cast<T>(lhs + rhs);
     }
 };
 
@@ -146,11 +101,7 @@ struct unchecked_sub_fn {
     [[nodiscard]]
     constexpr auto operator()(T lhs, T rhs) const noexcept -> T
     {
-        if constexpr (builtin_integral<T>) {
-            return static_cast<T>(lhs - rhs);
-        } else {
-            return static_cast<T>(to_builtin(lhs) - to_builtin(rhs));
-        }
+        return static_cast<T>(lhs - rhs);
     }
 };
 
@@ -159,11 +110,7 @@ struct unchecked_mul_fn {
     [[nodiscard]]
     constexpr auto operator()(T lhs, T rhs) const noexcept -> T
     {
-        if constexpr (builtin_integral<T>) {
-            return static_cast<T>(lhs * rhs);
-        } else {
-            return static_cast<T>(to_builtin(lhs) * to_builtin(rhs));
-        }
+        return static_cast<T>(lhs * rhs);
     }
 };
 
@@ -172,11 +119,7 @@ struct unchecked_div_fn {
     [[nodiscard]]
     constexpr auto operator()(T lhs, T rhs) const noexcept -> T
     {
-        if constexpr (builtin_integral<T>) {
-            return static_cast<T>(lhs / rhs);
-        } else {
-            return static_cast<T>(to_builtin(lhs) / to_builtin(rhs));
-        }
+        return static_cast<T>(lhs / rhs);
     }
 };
 
@@ -185,11 +128,7 @@ struct unchecked_mod_fn {
     [[nodiscard]]
     constexpr auto operator()(T lhs, T rhs) const noexcept -> T
     {
-        if constexpr (builtin_integral<T>) {
-            return static_cast<T>(lhs % rhs);
-        } else {
-            return static_cast<T>(to_builtin(lhs) % to_builtin(rhs));
-        }
+        return static_cast<T>(lhs % rhs);
     }
 };
 
@@ -198,7 +137,7 @@ struct unchecked_shl_fn {
     [[nodiscard]]
     constexpr auto operator()(T lhs, U rhs) const noexcept -> T
     {
-        return static_cast<T>(to_builtin(lhs) << to_builtin(rhs));
+        return static_cast<T>(lhs << rhs);
     }
 };
 
@@ -207,7 +146,7 @@ struct unchecked_shr_fn {
     [[nodiscard]]
     constexpr auto operator()(T lhs, U rhs) const noexcept -> T
     {
-        return static_cast<T>(to_builtin(lhs) >> to_builtin(rhs));
+        return static_cast<T>(lhs >> rhs);
     }
 };
 
@@ -265,14 +204,8 @@ struct overflowing_add_fn {
     constexpr auto operator()(T lhs, T rhs) const noexcept -> overflow_result<T>
     {
         if constexpr (use_builtin_overflow_ops) {
-            if constexpr (builtin_integral<T>) {
-                bool o = __builtin_add_overflow(lhs, rhs, &lhs);
-                return {lhs, o};
-            } else {
-                auto tmp = to_builtin(lhs);
-                bool o = __builtin_add_overflow(tmp, to_builtin(rhs), &tmp);
-                return {static_cast<T>(tmp), o};
-            }
+            bool o = __builtin_add_overflow(lhs, rhs, &lhs);
+            return {lhs, o};
         } else {
             T value = wrapping_add_fn{}(lhs, rhs);
             if constexpr (signed_integral<T>) {
@@ -291,14 +224,8 @@ struct overflowing_sub_fn {
     constexpr auto operator()(T lhs, T rhs) const noexcept -> overflow_result<T>
     {
         if constexpr (use_builtin_overflow_ops) {
-            if constexpr (builtin_integral<T>) {
-                bool o = __builtin_sub_overflow(lhs, rhs, &lhs);
-                return {lhs, o};
-            } else {
-                auto tmp = to_builtin(lhs);
-                bool o = __builtin_sub_overflow(tmp, to_builtin(rhs), &tmp);
-                return {static_cast<T>(tmp), o};
-            }
+            bool o = __builtin_sub_overflow(lhs, rhs, &lhs);
+            return {lhs, o};
         } else {
             T value = wrapping_sub_fn{}(lhs, rhs);
             if constexpr (signed_integral<T>) {
@@ -363,14 +290,8 @@ struct overflowing_mul_fn {
     constexpr auto operator()(T lhs, T rhs) const noexcept -> overflow_result<T>
     {
         if constexpr (detail::use_builtin_overflow_ops) {
-            if constexpr (builtin_integral<T>) {
-                bool o = __builtin_mul_overflow(lhs, rhs, &lhs);
-                return {lhs, o};
-            } else {
-                auto tmp = to_builtin(lhs);
-                bool o = __builtin_mul_overflow(tmp, to_builtin(rhs), &tmp);
-                return {static_cast<T>(tmp), o};
-            }
+            bool o = __builtin_mul_overflow(lhs, rhs, &lhs);
+            return {lhs, o};
         } else {
             return overflowing_mul_impl<T>{}(lhs, rhs);
         }
