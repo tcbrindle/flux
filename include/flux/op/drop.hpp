@@ -44,7 +44,7 @@ public:
         static constexpr auto size(auto& self)
             requires sized_sequence<Base>
         {
-            return (cmp::max)(num::checked_sub(flux::size(self.base()), self.count_),
+            return (cmp::max)(num::sub(flux::size(self.base()), self.count_),
                               distance_t{0});
         }
 

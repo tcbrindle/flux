@@ -103,7 +103,7 @@ public:
 
         static constexpr auto inc(auto& self, cursor_type& cur, distance_t dist) -> void
         {
-            flux::inc(self.base_, cur.base_cur, num::checked_sub(distance_t{}, dist));
+            flux::inc(self.base_, cur.base_cur, num::sub(distance_t{}, dist));
         }
 
         static constexpr auto distance(auto& self, cursor_type const& from, cursor_type const& to)

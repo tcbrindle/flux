@@ -57,7 +57,7 @@ public:
         static constexpr auto inc(auto& self, cursor_type& cur)
         {
             flux::inc(self.base_, cur.base_cur);
-            cur.length = num::checked_sub(cur.length, distance_t{1});
+            cur.length = num::sub(cur.length, distance_t{1});
         }
 
         static constexpr auto read_at(auto& self, cursor_type const& cur)
@@ -88,22 +88,22 @@ public:
             requires bidirectional_sequence<Base>
         {
             flux::dec(self.base_, cur.base_cur);
-            cur.length = num::checked_add(cur.length, distance_t{1});
+            cur.length = num::add(cur.length, distance_t{1});
         }
 
         static constexpr auto inc(auto& self, cursor_type& cur, distance_t offset)
             requires random_access_sequence<Base>
         {
             flux::inc(self.base_, cur.base_cur, offset);
-            cur.length = num::checked_sub(cur.length, offset);
+            cur.length = num::sub(cur.length, offset);
         }
 
         static constexpr auto distance(auto& self, cursor_type const& from, cursor_type const& to)
             -> distance_t
             requires random_access_sequence<Base>
         {
-            return (std::min)(flux::distance(self.base_, from.base_cur, to.base_cur),
-                              num::checked_sub(from.length, to.length));
+            return (cmp::min)(flux::distance(self.base_, from.base_cur, to.base_cur),
+                              num::sub(from.length, to.length));
         }
 
         static constexpr auto data(auto& self)
@@ -119,7 +119,7 @@ public:
             if constexpr (infinite_sequence<Base>) {
                 return self.count_;
             } else {
-                return (std::min)(flux::size(self.base_), self.count_);
+                return (cmp::min)(flux::size(self.base_), self.count_);
             }
         }
 

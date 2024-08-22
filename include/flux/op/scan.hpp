@@ -132,7 +132,7 @@ public:
             requires sized_sequence<Base>
         {
             if constexpr (Mode == scan_mode::exclusive) {
-                return num::checked_add(flux::size(self.base_), distance_t{1});
+                return num::add(flux::size(self.base_), distance_t{1});
             } else {
                 return flux::size(self.base_);
             }

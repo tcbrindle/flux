@@ -17,7 +17,7 @@ inline constexpr auto checked_pow =
 {
     T res{1};
     for(U i{0}; i < exponent; i++) {
-        res = num::checked_mul(res, base, loc);
+        res = num::mul(res, base, loc);
     }
     return res;
 };
@@ -116,18 +116,18 @@ private:
 
         auto& base = get_base<I>(self);
         const auto this_index = flux::distance(base, flux::first(base), std::get<I>(cur));
-        auto new_index = num::checked_add(this_index, offset);
+        auto new_index = num::add(this_index, offset);
         auto this_size = flux::size(base);
 
         // If the new index overflows the maximum or underflows zero, calculate the carryover and fix it.
         if (new_index < 0 || new_index >= this_size) {
-            offset = num::checked_div(new_index, this_size);
-            new_index = num::checked_mod(new_index, this_size);
+            offset = num::div(new_index, this_size);
+            new_index = num::mod(new_index, this_size);
 
             // Correct for negative index which may happen when underflowing.
             if (new_index < 0) {
-                new_index = num::checked_add(new_index, this_size);
-                offset = num::checked_sub(offset, flux::distance_t(1));
+                new_index = num::add(new_index, this_size);
+                offset = num::sub(offset, flux::distance_t(1));
             }
 
             // Call the next level down if necessary.
@@ -138,7 +138,7 @@ private:
             }
         }
 
-        flux::inc(base, std::get<I>(cur), num::checked_sub(new_index, this_index));
+        flux::inc(base, std::get<I>(cur), num::sub(new_index, this_index));
 
         return cur;
     }
@@ -235,7 +235,7 @@ public:
     {
         return std::apply([](auto& base0, auto&... bases) {
             distance_t sz = flux::size(base0);
-            ((sz = num::checked_mul(sz, flux::size(bases))), ...);
+            ((sz = num::mul(sz, flux::size(bases))), ...);
             return sz;
         }, self.bases_);
     }

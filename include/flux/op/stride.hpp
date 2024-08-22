@@ -47,13 +47,14 @@ inline constexpr struct advance_fn {
     constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur, distance_t offset) const -> distance_t
     {
         if (offset > 0) {
-            auto dist = std::min(flux::distance(seq, cur, flux::last(seq)), offset);
+            auto dist = (cmp::min)(flux::distance(seq, cur, flux::last(seq)), offset);
             flux::inc(seq, cur, dist);
-            return offset - dist;
+            return num::sub(offset, dist);
         } else if (offset < 0) {
-            auto dist = -std::min(flux::distance(seq, flux::first(seq), cur), -offset);
+            auto dist = num::sub(distance_t{0},
+                                 (cmp::min)(flux::distance(seq, flux::first(seq), cur), -offset));
             flux::inc(seq, cur, dist);
-            return offset - dist;
+            return num::sub(offset, dist);
         } else {
             return 0;
         }
@@ -225,9 +226,10 @@ public:
             requires random_access_sequence<Base>
         {
             if (offset > 0) {
-                cur.missing = advance(self.base_, cur.cur, num::checked_mul(offset, self.stride_)) % self.stride_;
+                cur.missing = num::mod(advance(self.base_, cur.cur, num::mul(offset, self.stride_)),
+                                       self.stride_);
             } else if (offset < 0) {
-                advance(self.base_, cur.cur, num::checked_add(num::checked_mul(offset, self.stride_), cur.missing));
+                advance(self.base_, cur.cur, num::add(num::mul(offset, self.stride_), cur.missing));
                 cur.missing = 0;
             }
         }

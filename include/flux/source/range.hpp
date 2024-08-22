@@ -117,7 +117,7 @@ public:
             requires std::ranges::random_access_range<R>
         {
             if (offset < 0) {
-                bounds_check(num::checked_add(offset, distance(self, first(self), cur)) >= 0);
+                bounds_check(num::add(offset, distance(self, first(self), cur)) >= 0);
             } else if (offset > 0) {
                 bounds_check(offset < distance(self, cur, last(self)));
             }

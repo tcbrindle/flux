@@ -63,7 +63,7 @@ public:
             } else {
                 auto const seq1_size = flux::usize(seq1);
                 auto const seq2_size = flux::usize(seq2);
-                auto min_size = std::min(seq1_size, seq2_size);
+                auto min_size = (cmp::min)(seq1_size, seq2_size);
 
                 int cmp_result = 0;
                 if(min_size > 0) {

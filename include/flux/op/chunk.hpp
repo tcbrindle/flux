@@ -286,9 +286,9 @@ public:
             requires random_access_sequence<Base>
         {
             if (offset > 0) {
-                cur.missing = advance(self.base_, cur.cur, num::checked_mul(offset, self.chunk_sz_)) % self.chunk_sz_;
+                cur.missing = advance(self.base_, cur.cur, num::mul(offset, self.chunk_sz_)) % self.chunk_sz_;
             } else if (offset < 0) {
-                advance(self.base_, cur.cur, num::checked_add(num::checked_mul(offset, self.chunk_sz_), cur.missing));
+                advance(self.base_, cur.cur, num::add(num::mul(offset, self.chunk_sz_), cur.missing));
                 cur.missing = 0;
             }
         }

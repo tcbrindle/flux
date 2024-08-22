@@ -38,7 +38,7 @@ struct sequence_traits<T[N]> : default_sequence_traits {
     static constexpr auto inc(auto const&, index_t& idx)
     {
         FLUX_DEBUG_ASSERT(idx < N);
-        idx = num::checked_add(idx, distance_t{1});
+        idx = num::add(idx, distance_t{1});
     }
 
     static constexpr auto last(auto const&) -> index_t { return N; }
@@ -46,19 +46,19 @@ struct sequence_traits<T[N]> : default_sequence_traits {
     static constexpr auto dec(auto const&, index_t& idx)
     {
         FLUX_DEBUG_ASSERT(idx > 0);
-        idx = num::checked_sub(idx, distance_t{1});
+        idx = num::sub(idx, distance_t{1});
     }
 
     static constexpr auto inc(auto const&, index_t& idx, distance_t offset)
     {
-        FLUX_DEBUG_ASSERT(num::checked_add(idx, offset) <= N);
-        FLUX_DEBUG_ASSERT(num::checked_add(idx, offset) >= 0);
-        idx = num::checked_add(idx, offset);
+        FLUX_DEBUG_ASSERT(num::add(idx, offset) <= N);
+        FLUX_DEBUG_ASSERT(num::add(idx, offset) >= 0);
+        idx = num::add(idx, offset);
     }
 
     static constexpr auto distance(auto const&, index_t from, index_t to) -> distance_t
     {
-        return num::checked_sub(to, from);
+        return num::sub(to, from);
     }
 
     static constexpr auto data(auto& self) -> auto* { return self; }
@@ -186,7 +186,7 @@ struct sequence_traits<R> : default_sequence_traits {
     static constexpr auto inc(auto& self, index_t& idx)
     {
         FLUX_DEBUG_ASSERT(idx < size(self));
-        idx = num::checked_add(idx, distance_t{1});
+        idx = num::add(idx, distance_t{1});
     }
 
     static constexpr auto read_at(auto& self, index_t idx) -> decltype(auto)
@@ -203,21 +203,21 @@ struct sequence_traits<R> : default_sequence_traits {
     static constexpr auto dec(auto&, index_t& idx)
     {
         FLUX_DEBUG_ASSERT(idx > 0);
-        idx = num::checked_sub(idx, distance_t{1});
+        idx = num::sub(idx, distance_t{1});
     }
 
     static constexpr auto last(auto& self) -> index_t { return size(self); }
 
     static constexpr auto inc(auto& self, index_t& idx, distance_t offset)
     {
-        FLUX_DEBUG_ASSERT(num::checked_add(idx, offset) <= size(self));
-        FLUX_DEBUG_ASSERT(num::checked_add(idx, offset) >= 0);
-        idx = num::checked_add(idx, offset);
+        FLUX_DEBUG_ASSERT(num::add(idx, offset) <= size(self));
+        FLUX_DEBUG_ASSERT(num::add(idx, offset) >= 0);
+        idx = num::add(idx, offset);
     }
 
     static constexpr auto distance(auto&, index_t from, index_t to) -> distance_t
     {
-        return num::checked_sub(to, from);
+        return num::sub(to, from);
     }
 
     static constexpr auto size(auto& self) -> distance_t
