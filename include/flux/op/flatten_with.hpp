@@ -23,7 +23,7 @@ inline constexpr auto variant_emplace =
         variant.template emplace<N>(FLUX_FWD(args)...);
     } else {
         if (std::is_constant_evaluated()) {
-            variant = std::variant<Types...>(std::in_place_index<N>, FLUX_FWD(args)...);
+            variant = std::variant<Types...>(std::in_place_index<N>, FLUX_FWD(args)...); // LCOV_EXCL_LINE
         } else {
             variant.template emplace<N>(FLUX_FWD(args)...);
         }

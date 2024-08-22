@@ -301,7 +301,7 @@ struct checked_add_fn {
         // constant evaluation already checks for overflow
         if (signed_integral<T> && (sizeof(T) >= sizeof(int)) &&
             std::is_constant_evaluated()) {
-            return unchecked_add_fn{}(lhs, rhs);
+            return unchecked_add_fn{}(lhs, rhs); // LCOV_EXCL_LINE
         } else {
             auto result = overflowing_add_fn{}(lhs, rhs);
             if (result.overflowed) {
@@ -321,7 +321,7 @@ struct checked_sub_fn {
     {
         if (signed_integral<T> && (sizeof(T) >= sizeof(int)) &&
             std::is_constant_evaluated()) {
-            return unchecked_sub_fn{}(lhs, rhs);
+            return unchecked_sub_fn{}(lhs, rhs); // LCOV_EXCL_LINE
         } else {
             auto result = overflowing_sub_fn{}(lhs, rhs);
             if (result.overflowed) {
@@ -341,7 +341,7 @@ struct checked_mul_fn {
     {
         if (signed_integral<T> && (sizeof(T) >= sizeof(int)) &&
             std::is_constant_evaluated()) {
-            return unchecked_mul_fn{}(lhs, rhs);
+            return unchecked_mul_fn{}(lhs, rhs); // LCOV_EXCL_LINE
         } else {
             auto result = overflowing_mul_fn{}(lhs, rhs);
             if (result.overflowed) {

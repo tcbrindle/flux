@@ -59,7 +59,7 @@ public:
 
         if constexpr (can_memcmp) {
             if (std::is_constant_evaluated()) {
-                return impl(seq1, seq2, cmp);
+                return impl(seq1, seq2, cmp); // LCOV_EXCL_LINE
             } else {
                 auto const seq1_size = flux::usize(seq1);
                 auto const seq2_size = flux::usize(seq2);

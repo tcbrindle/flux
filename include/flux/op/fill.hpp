@@ -35,7 +35,7 @@ public:
 
         if constexpr (can_memset) {
             if (std::is_constant_evaluated()) {
-                impl(seq, value);
+                impl(seq, value); // LCOV_EXCL_LINE
             } else {
                 auto size = flux::usize(seq);
                 if(size == 0) {

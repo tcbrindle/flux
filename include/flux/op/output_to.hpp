@@ -40,7 +40,7 @@ public:
 
         if constexpr (can_memcpy) {
             if (std::is_constant_evaluated()) {
-                return impl(seq, iter);
+                return impl(seq, iter); // LCOV_EXCL_LINE
             } else {
                 auto size = flux::usize(seq);
                 if (size == 0) {
