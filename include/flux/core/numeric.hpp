@@ -79,6 +79,22 @@ struct checked_cast_fn {
     }
 };
 
+template <integral To>
+struct cast_fn {
+    template <integral From>
+    [[nodiscard]]
+    constexpr auto operator()(From from,
+                              std::source_location loc = std::source_location::current()) const
+        -> To
+    {
+        if constexpr (config::on_integer_cast == integer_cast_policy::checked) {
+            return checked_cast_fn<To>{}(from, loc);
+        } else {
+            return unchecked_cast_fn<To>{}(from);
+        }
+    }
+};
+
 struct unchecked_add_fn {
     template <integral T>
     [[nodiscard]]
@@ -486,6 +502,10 @@ inline constexpr auto overflowing_cast = detail::overflowing_cast_fn<To>{};
 FLUX_EXPORT
 template <integral To>
 inline constexpr auto checked_cast = detail::checked_cast_fn<To>{};
+
+FLUX_EXPORT
+template <integral To>
+inline constexpr auto cast = detail::cast_fn<To>{};
 
 FLUX_EXPORT inline constexpr auto unchecked_add = detail::unchecked_add_fn{};
 FLUX_EXPORT inline constexpr auto unchecked_sub = detail::unchecked_sub_fn{};
