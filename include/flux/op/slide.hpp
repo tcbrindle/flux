@@ -128,7 +128,7 @@ struct slide_fn {
 FLUX_EXPORT inline constexpr auto slide = detail::slide_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::slide(std::integral auto win_sz) &&
+constexpr auto inline_sequence_base<D>::slide(num::integral auto win_sz) &&
         requires multipass_sequence<D>
 {
     FLUX_ASSERT(win_sz > 0);

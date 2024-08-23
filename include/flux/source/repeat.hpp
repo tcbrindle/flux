@@ -125,7 +125,7 @@ struct repeat_fn {
 
     template <typename T>
         requires std::movable<std::decay_t<T>>
-    constexpr auto operator()(T&& obj, std::integral auto count) const
+    constexpr auto operator()(T&& obj, num::integral auto count) const
     {
         auto c = num::checked_cast<distance_t>(count);
         if (c < 0) {

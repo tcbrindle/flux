@@ -225,7 +225,7 @@ struct cycle_fn {
     template <adaptable_sequence Seq>
         requires multipass_sequence<Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, std::integral auto count) const
+    constexpr auto operator()(Seq&& seq, num::integral auto count) const
         -> multipass_sequence auto
     {
         auto c = num::checked_cast<distance_t>(count);
@@ -249,7 +249,7 @@ constexpr auto inline_sequence_base<D>::cycle() &&
 }
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::cycle(std::integral auto count) &&
+constexpr auto inline_sequence_base<D>::cycle(num::integral auto count) &&
     requires multipass_sequence<D>
 {
     return flux::cycle(std::move(derived()), count);

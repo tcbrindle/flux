@@ -235,7 +235,7 @@ public:
                      (multipass_sequence<Derived> && not infinite_sequence<Derived>);
 
     [[nodiscard]]
-    constexpr auto chunk(std::integral auto chunk_sz) &&;
+    constexpr auto chunk(num::integral auto chunk_sz) &&;
 
     template <typename Pred>
         requires multipass_sequence<Derived> &&
@@ -251,7 +251,7 @@ public:
             requires infinite_sequence<Derived> || multipass_sequence<Derived>;
 
     [[nodiscard]]
-    constexpr auto cycle(std::integral auto count) && requires multipass_sequence<Derived>;
+    constexpr auto cycle(num::integral auto count) && requires multipass_sequence<Derived>;
 
     [[nodiscard]]
     constexpr auto dedup() &&
@@ -259,7 +259,7 @@ public:
                  std::equality_comparable<element_t<Derived>>;
 
     [[nodiscard]]
-    constexpr auto drop(std::integral auto count) &&;
+    constexpr auto drop(num::integral auto count) &&;
 
     template <typename Pred>
         requires std::predicate<Pred&, element_t<Derived>>
@@ -338,7 +338,7 @@ public:
     constexpr auto scan_first(Func func) &&;
 
     [[nodiscard]]
-    constexpr auto slide(std::integral auto win_sz) && requires multipass_sequence<Derived>;
+    constexpr auto slide(num::integral auto win_sz) && requires multipass_sequence<Derived>;
 
     template <typename Pattern>
         requires multipass_sequence<Derived> &&
@@ -364,10 +364,10 @@ public:
     constexpr auto split_string(Pattern&& pattern) &&;
 
     [[nodiscard]]
-    constexpr auto stride(std::integral auto by) &&;
+    constexpr auto stride(num::integral auto by) &&;
 
     [[nodiscard]]
-    constexpr auto take(std::integral auto count) &&;
+    constexpr auto take(num::integral auto count) &&;
 
     template <typename Pred>
         requires std::predicate<Pred&, element_t<Derived>>

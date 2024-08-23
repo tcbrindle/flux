@@ -298,7 +298,7 @@ public:
 struct chunk_fn {
     template <adaptable_sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, std::integral auto chunk_sz) const
+    constexpr auto operator()(Seq&& seq, num::integral auto chunk_sz) const
         -> sequence auto
     {
         FLUX_ASSERT(chunk_sz > 0);
@@ -312,7 +312,7 @@ struct chunk_fn {
 FLUX_EXPORT inline constexpr auto chunk = detail::chunk_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::chunk(std::integral auto chunk_sz) &&
+constexpr auto inline_sequence_base<D>::chunk(num::integral auto chunk_sz) &&
 {
     return flux::chunk(std::move(derived()), chunk_sz);
 }

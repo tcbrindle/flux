@@ -254,7 +254,7 @@ public:
 struct stride_fn {
     template <adaptable_sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, std::integral auto by) const
+    constexpr auto operator()(Seq&& seq, num::integral auto by) const
     {
         FLUX_ASSERT(by > 0);
         return stride_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq),
@@ -267,7 +267,7 @@ struct stride_fn {
 FLUX_EXPORT inline constexpr auto stride = detail::stride_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::stride(std::integral auto by) &&
+constexpr auto inline_sequence_base<D>::stride(num::integral auto by) &&
 {
     return flux::stride(std::move(derived()), by);
 }
