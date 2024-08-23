@@ -127,7 +127,7 @@ struct usize_fn {
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const -> std::size_t
     {
-        return num::checked_cast<std::size_t>(size_fn{}(seq));
+        return num::unchecked_cast<std::size_t>(size_fn{}(seq));
     }
 };
 

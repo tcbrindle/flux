@@ -77,7 +77,7 @@ public:
 
         static constexpr auto distance(self_t const&, std::size_t from, std::size_t to) -> distance_t
         {
-            return num::checked_cast<distance_t>(to) - num::checked_cast<distance_t>(from);
+            return num::cast<distance_t>(to) - num::cast<distance_t>(from);
         }
 
         static constexpr auto for_each_while(self_t const& self, auto&& pred) -> std::size_t
@@ -110,7 +110,7 @@ public:
         static constexpr auto size(self_t const& self) -> distance_t
             requires (!IsInfinite)
         {
-            return num::checked_cast<distance_t>(self.data_.count);
+            return num::cast<distance_t>(self.data_.count);
         }
     };
 };

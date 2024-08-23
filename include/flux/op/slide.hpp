@@ -115,7 +115,7 @@ struct slide_fn {
     template <adaptable_sequence Seq>
         requires multipass_sequence<Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, std::integral auto win_sz) const
+    constexpr auto operator()(Seq&& seq, num::integral auto win_sz) const
         -> sequence auto
     {
         return slide_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq),
@@ -132,7 +132,7 @@ constexpr auto inline_sequence_base<D>::slide(std::integral auto win_sz) &&
         requires multipass_sequence<D>
 {
     FLUX_ASSERT(win_sz > 0);
-    return flux::slide(std::move(derived()), num::checked_cast<distance_t>(win_sz));
+    return flux::slide(std::move(derived()), win_sz);
 }
 
 } // namespace slide
