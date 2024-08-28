@@ -65,7 +65,11 @@ struct sum_op {
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const -> value_t<Seq>
     {
-        return fold_op{}(FLUX_FWD(seq), std::plus<>{}, value_t<Seq>(0));
+        if constexpr (num::integral<value_t<Seq>>) {
+            return fold_op{}(FLUX_FWD(seq), num::add, value_t<Seq>(0));
+        } else {
+            return fold_op{}(FLUX_FWD(seq), std::plus<>{}, value_t<Seq>(0));
+        }
     }
 };
 
@@ -76,7 +80,11 @@ struct product_op {
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const -> value_t<Seq>
     {
-        return fold_op{}(FLUX_FWD(seq), std::multiplies<>{}, value_t<Seq>(1));
+        if constexpr (num::integral<value_t<Seq>>) {
+            return fold_op{}(FLUX_FWD(seq), num::mul, value_t<Seq>(1));
+        } else {
+            return fold_op{}(FLUX_FWD(seq), std::multiplies<>{}, value_t<Seq>(1));
+        }
     }
 };
 
