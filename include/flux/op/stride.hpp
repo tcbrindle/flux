@@ -51,8 +51,8 @@ inline constexpr struct advance_fn {
             flux::inc(seq, cur, dist);
             return num::sub(offset, dist);
         } else if (offset < 0) {
-            auto dist = num::sub(distance_t{0},
-                                 (cmp::min)(flux::distance(seq, flux::first(seq), cur), -offset));
+            auto dist = num::neg((cmp::min)(flux::distance(seq, flux::first(seq), cur),
+                                            num::neg(offset)));
             flux::inc(seq, cur, dist);
             return num::sub(offset, dist);
         } else {
