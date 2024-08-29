@@ -305,6 +305,46 @@ static_assert(test_overflowing_mul<unsigned long>());
 static_assert(test_overflowing_mul<signed long long>());
 static_assert(test_overflowing_mul<unsigned long long>());
 
+template <typename T>
+constexpr bool test_overflowing_neg()
+{
+    constexpr auto& neg = flux::num::overflowing_neg;
+
+    constexpr T zero = T{0};
+    constexpr T one = T{1};
+    constexpr T minus_one = T{-1};
+    constexpr T min = std::numeric_limits<T>::lowest();
+    constexpr T max = std::numeric_limits<T>::max();
+
+    auto r = neg(zero);
+    STATIC_CHECK(r.value == zero);
+    STATIC_CHECK(r.overflowed == false);
+
+    r = neg(one);
+    STATIC_CHECK(r.value == minus_one);
+    STATIC_CHECK(r.overflowed == false);
+
+    r = neg(minus_one);
+    STATIC_CHECK(r.value == one);
+    STATIC_CHECK(r.overflowed == false);
+
+    r = neg(max);
+    STATIC_CHECK(r.value == min + 1);
+    STATIC_CHECK(r.overflowed == false);
+
+    r = neg(min);
+    STATIC_CHECK(r.value == min);
+    STATIC_CHECK(r.overflowed == true);
+
+    return true;
+}
+static_assert(test_overflowing_neg<signed char>());
+static_assert(test_overflowing_neg<signed short>());
+static_assert(test_overflowing_neg<signed int>());
+static_assert(test_overflowing_neg<signed long>());
+static_assert(test_overflowing_neg<signed long long>());
+
+
 }
 
 TEST_CASE("num.overflowing_add")
@@ -349,3 +389,11 @@ TEST_CASE("num.overflowing_mul")
     test_overflowing_mul<unsigned long long>();
 }
 
+TEST_CASE("num.overflowing_neg")
+{
+    test_overflowing_neg<signed char>();
+    test_overflowing_neg<signed short>();
+    test_overflowing_neg<signed int>();
+    test_overflowing_neg<signed long>();
+    test_overflowing_neg<signed long long>();
+}

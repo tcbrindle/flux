@@ -158,6 +158,15 @@ struct unchecked_shr_fn {
     }
 };
 
+struct unchecked_neg_fn {
+    template <signed_integral T>
+    [[nodiscard]]
+    constexpr auto operator()(T val) const noexcept -> T
+    {
+        return static_cast<T>(-val);
+    }
+};
+
 struct wrapping_add_fn {
     template <integral T>
     [[nodiscard]]
@@ -187,6 +196,16 @@ struct wrapping_mul_fn {
                                      unsigned,
                                      std::make_unsigned_t<T>>;
         return static_cast<T>(static_cast<U>(lhs) * static_cast<U>(rhs));
+    }
+};
+
+struct wrapping_neg_fn {
+    template <signed_integral T>
+    [[nodiscard]]
+    constexpr auto operator()(T val) const noexcept -> T
+    {
+        using U = std::make_unsigned_t<T>;
+        return static_cast<T>(static_cast<U>(0) - static_cast<U>(val));
     }
 };
 
@@ -302,6 +321,20 @@ struct overflowing_mul_fn {
             return {lhs, o};
         } else {
             return overflowing_mul_impl<T>{}(lhs, rhs);
+        }
+    }
+};
+
+struct overflowing_neg_fn {
+    template <signed_integral T>
+    [[nodiscard]]
+    constexpr auto operator()(T val) const noexcept -> overflow_result<T>
+    {
+        if constexpr (use_builtin_overflow_ops) {
+            bool o = __builtin_sub_overflow(T{0}, val, &val);
+            return {val, o};
+        } else {
+            return {wrapping_neg_fn{}(val), val == std::numeric_limits<T>::lowest()};
         }
     }
 };
@@ -458,6 +491,23 @@ struct checked_shr_fn {
     }
 };
 
+struct checked_neg_fn {
+    template <signed_integral T>
+    [[nodiscard]]
+    constexpr auto operator()(T val,
+                              std::source_location loc = std::source_location::current()) const
+        -> T
+    {
+        // If T is at least as large as int, we already get a check
+        // when in constant evaluation
+        if ((!std::is_constant_evaluated() || (sizeof(T) < sizeof(int))) &&
+            val == std::numeric_limits<T>::lowest()) {
+            flux::runtime_error("overflow in signed negation", loc);
+        }
+        return unchecked_neg_fn{}(val);
+    }
+};
+
 template <overflow_policy>
 struct default_ops;
 
@@ -466,6 +516,7 @@ struct default_ops<overflow_policy::ignore> {
     using add_fn = unchecked_add_fn;
     using sub_fn = unchecked_sub_fn;
     using mul_fn = unchecked_mul_fn;
+    using neg_fn = unchecked_neg_fn;
     using shl_fn = unchecked_shl_fn;
     using shr_fn = unchecked_shr_fn;
 };
@@ -475,6 +526,7 @@ struct default_ops<overflow_policy::wrap> {
     using add_fn = wrapping_add_fn;
     using sub_fn = wrapping_sub_fn;
     using mul_fn = wrapping_mul_fn;
+    using neg_fn = wrapping_neg_fn;
     // no wrapping versions of these yet, so use the checked versions
     using shl_fn = checked_shl_fn;
     using shr_fn = checked_shr_fn;
@@ -485,6 +537,7 @@ struct default_ops<overflow_policy::error> {
     using add_fn = checked_add_fn;
     using sub_fn = checked_sub_fn;
     using mul_fn = checked_mul_fn;
+    using neg_fn = checked_neg_fn;
     using shl_fn = checked_shl_fn;
     using shr_fn = checked_shr_fn;
 };
@@ -512,22 +565,26 @@ FLUX_EXPORT inline constexpr auto unchecked_sub = detail::unchecked_sub_fn{};
 FLUX_EXPORT inline constexpr auto unchecked_mul = detail::unchecked_mul_fn{};
 FLUX_EXPORT inline constexpr auto unchecked_div = detail::unchecked_div_fn{};
 FLUX_EXPORT inline constexpr auto unchecked_mod = detail::unchecked_mod_fn{};
+FLUX_EXPORT inline constexpr auto unchecked_neg = detail::unchecked_neg_fn{};
 FLUX_EXPORT inline constexpr auto unchecked_shl = detail::unchecked_shl_fn{};
 FLUX_EXPORT inline constexpr auto unchecked_shr = detail::unchecked_shr_fn{};
 
 FLUX_EXPORT inline constexpr auto wrapping_add = detail::wrapping_add_fn{};
 FLUX_EXPORT inline constexpr auto wrapping_sub = detail::wrapping_sub_fn{};
 FLUX_EXPORT inline constexpr auto wrapping_mul = detail::wrapping_mul_fn{};
+FLUX_EXPORT inline constexpr auto wrapping_neg = detail::wrapping_neg_fn{};
 
 FLUX_EXPORT inline constexpr auto overflowing_add = detail::overflowing_add_fn{};
 FLUX_EXPORT inline constexpr auto overflowing_sub = detail::overflowing_sub_fn{};
 FLUX_EXPORT inline constexpr auto overflowing_mul = detail::overflowing_mul_fn{};
+FLUX_EXPORT inline constexpr auto overflowing_neg = detail::overflowing_neg_fn{};
 
 FLUX_EXPORT inline constexpr auto checked_add = detail::checked_add_fn{};
 FLUX_EXPORT inline constexpr auto checked_sub = detail::checked_sub_fn{};
 FLUX_EXPORT inline constexpr auto checked_mul = detail::checked_mul_fn{};
 FLUX_EXPORT inline constexpr auto checked_div = detail::checked_div_fn{};
 FLUX_EXPORT inline constexpr auto checked_mod = detail::checked_mod_fn{};
+FLUX_EXPORT inline constexpr auto checked_neg = detail::checked_neg_fn{};
 FLUX_EXPORT inline constexpr auto checked_shl = detail::checked_shl_fn{};
 FLUX_EXPORT inline constexpr auto checked_shr = detail::checked_shr_fn{};
 
@@ -538,6 +595,7 @@ FLUX_EXPORT inline constexpr auto div =
     detail::checked_div_fn<config::on_overflow, config::on_divide_by_zero>{};
 FLUX_EXPORT inline constexpr auto mod =
     detail::checked_mod_fn<config::on_overflow, config::on_divide_by_zero>{};
+FLUX_EXPORT inline constexpr auto neg = detail::default_ops<config::on_overflow>::neg_fn{};
 FLUX_EXPORT inline constexpr auto shl = detail::default_ops<config::on_overflow>::shl_fn{};
 FLUX_EXPORT inline constexpr auto shr = detail::default_ops<config::on_overflow>::shr_fn{};
 

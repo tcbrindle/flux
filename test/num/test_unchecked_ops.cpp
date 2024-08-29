@@ -55,6 +55,26 @@ void test_unchecked_sub()
 }
 
 template <typename T>
+void test_unchecked_neg()
+{
+    constexpr auto& neg = flux::num::unchecked_neg;
+
+    constexpr T zero = 0;
+    constexpr T one = 1;
+    constexpr T minus_one = -1;
+    constexpr T min = std::numeric_limits<T>::lowest();
+    constexpr T max = std::numeric_limits<T>::max();
+
+    REQUIRE(neg(zero) == zero);
+    REQUIRE(neg(one) == minus_one);
+    REQUIRE(neg(minus_one) == one);
+    REQUIRE(neg(neg(one)) == one);
+    REQUIRE(neg(neg(minus_one)) == minus_one);
+    REQUIRE(neg(max) == min + 1);
+    REQUIRE(neg(min + 1) == max);
+}
+
+template <typename T>
 void test_unchecked_mul()
 {
     constexpr auto& mul = flux::num::unchecked_mul;
@@ -226,6 +246,15 @@ TEST_CASE("num.unchecked_sub")
     test_unchecked_sub<unsigned long>();
     test_unchecked_sub<signed long long>();
     test_unchecked_sub<unsigned long long>();
+}
+
+TEST_CASE("num.unchecked_neg")
+{
+    test_unchecked_neg<signed char>();
+    test_unchecked_neg<signed short>();
+    test_unchecked_neg<signed int>();
+    test_unchecked_neg<signed long>();
+    test_unchecked_neg<signed long long>();
 }
 
 TEST_CASE("num.unchecked_mul")

@@ -319,6 +319,32 @@ static_assert(test_checked_mod_constexpr<unsigned long>());
 static_assert(test_checked_mod_constexpr<signed long long>());
 static_assert(test_checked_mod_constexpr<unsigned long long>());
 
+template <typename T>
+constexpr bool test_checked_neg_constexpr()
+{
+    constexpr auto& neg = flux::num::checked_neg;
+
+    constexpr T zero = T{0};
+    constexpr T one = T{1};
+    constexpr T minus_one = T{-1};
+    constexpr T min = std::numeric_limits<T>::lowest();
+    constexpr T max = std::numeric_limits<T>::max();
+
+    // Only neg(min) overflows
+    STATIC_CHECK(neg(zero) == zero);
+    STATIC_CHECK(neg(one) == minus_one);
+    STATIC_CHECK(neg(minus_one) == one);
+    STATIC_CHECK(neg(max) == min + 1);
+
+    STATIC_CHECK(not CONSTEXPR_CALLABLE(neg(min)));
+
+    return true;
+}
+static_assert(test_checked_neg_constexpr<signed char>());
+static_assert(test_checked_neg_constexpr<signed short>());
+static_assert(test_checked_neg_constexpr<signed int>());
+static_assert(test_checked_neg_constexpr<signed long>());
+static_assert(test_checked_neg_constexpr<signed long long>());
 
 template <typename T, typename U>
 struct test_checked_shl_constexpr {
@@ -658,6 +684,25 @@ void test_checked_mod_runtime()
     }
 };
 
+template <typename T>
+void test_checked_neg_runtime()
+{
+    constexpr auto& neg = flux::num::neg;
+
+    constexpr T zero = T{0};
+    constexpr T one = T{1};
+    constexpr T minus_one = T{-1};
+    constexpr T min = std::numeric_limits<T>::lowest();
+    constexpr T max = std::numeric_limits<T>::max();
+
+    // Only neg(min) overflows
+    REQUIRE(neg(zero) == zero);
+    REQUIRE(neg(one) == minus_one);
+    REQUIRE(neg(minus_one) == one);
+    REQUIRE(neg(max) == min + 1);
+
+    REQUIRE_THROWS_AS(neg(min), flux::unrecoverable_error);
+}
 
 template <typename T, typename U>
 struct test_checked_shl_runtime {
@@ -802,6 +847,15 @@ TEST_CASE("num.checked_mod")
     test_checked_mod_runtime<unsigned long>();
     test_checked_mod_runtime<signed long long>();
     test_checked_mod_runtime<unsigned long long>();
+}
+
+TEST_CASE("num.checked_neg")
+{
+    test_checked_neg_runtime<signed char>();
+    test_checked_neg_runtime<signed short>();
+    test_checked_neg_runtime<signed int>();
+    test_checked_neg_runtime<signed long>();
+    test_checked_neg_runtime<signed long long>();
 }
 
 TEST_CASE("num.checked_shl")

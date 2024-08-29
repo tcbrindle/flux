@@ -124,6 +124,28 @@ void test_wrapping_mul()
     }
 }
 
+template <typename T>
+void test_wrapping_neg()
+{
+    constexpr auto& neg = flux::num::wrapping_neg;
+
+    constexpr T zero = 0;
+    constexpr T one = 1;
+    constexpr T minus_one = -1;
+    constexpr T min = std::numeric_limits<T>::lowest();
+    constexpr T max = std::numeric_limits<T>::max();
+
+    REQUIRE(neg(zero) == zero);
+    REQUIRE(neg(one) == minus_one);
+    REQUIRE(neg(minus_one) == one);
+    REQUIRE(neg(neg(one)) == one);
+    REQUIRE(neg(neg(minus_one)) == minus_one);
+    REQUIRE(neg(max) == min + 1);
+    REQUIRE(neg(min + 1) == max);
+    REQUIRE(neg(min) == min);
+    REQUIRE(neg(neg(min)) == min);
+}
+
 }
 
 TEST_CASE("num.wrapping_add")
@@ -166,5 +188,14 @@ TEST_CASE("num.wrapping_mul")
     test_wrapping_mul<unsigned long>();
     test_wrapping_mul<signed long long>();
     test_wrapping_mul<unsigned long long>();
+}
+
+TEST_CASE("num.wrapping_neg")
+{
+    test_wrapping_neg<signed char>();
+    test_wrapping_neg<signed short>();
+    test_wrapping_neg<signed int>();
+    test_wrapping_neg<signed long>();
+    test_wrapping_neg<signed long long>();
 }
 
