@@ -498,13 +498,11 @@ struct checked_neg_fn {
                               std::source_location loc = std::source_location::current()) const
         -> T
     {
-        // If T is at least as large as int, we already get a check
-        // when in constant evaluation
-        if ((!std::is_constant_evaluated() || (sizeof(T) < sizeof(int))) &&
-            val == std::numeric_limits<T>::lowest()) {
-            flux::runtime_error("overflow in signed negation", loc);
+        auto [r, o] = overflowing_neg_fn{}(val);
+        if (o) {
+            flux::runtime_error("Overflow in signed negation", loc);
         }
-        return unchecked_neg_fn{}(val);
+        return r;
     }
 };
 
