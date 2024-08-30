@@ -117,6 +117,9 @@
 #define FLUX_DIVIDE_BY_ZERO_POLICY_ERROR   100
 #define FLUX_DIVIDE_BY_ZERO_POLICY_IGNORE  101
 
+#define FLUX_INTEGER_CAST_POLICY_CHECKED 1001
+#define FLUX_INTEGER_CAST_POLICY_UNCHECKED 1002
+
 // Default error policy is terminate
 #define FLUX_DEFAULT_ERROR_POLICY FLUX_ERROR_POLICY_TERMINATE
 
@@ -143,6 +146,13 @@
 #  define FLUX_ERROR_POLICY FLUX_DEFAULT_ERROR_POLICY
 #endif // FLUX_TERMINATE_ON_ERROR
 
+// Default integer cast policy is checked in debug builds, unchecked in release builds
+#ifdef NDEBUG
+#  define FLUX_DEFAULT_INTEGER_CAST_POLICY FLUX_INTEGER_CAST_POLICY_UNCHECKED
+#else
+#  define FLUX_DEFAULT_INTEGER_CAST_POLICY FLUX_INTEGER_CAST_POLICY_CHECKED
+#endif // NDEBUG
+
 // Should we print an error message before terminating?
 #ifndef FLUX_PRINT_ERROR_ON_TERMINATE
 #  define FLUX_PRINT_ERROR_ON_TERMINATE 1
@@ -168,7 +178,7 @@
 #  define FLUX_OVERFLOW_POLICY FLUX_DEFAULT_OVERFLOW_POLICY
 #endif // FLUX_ERROR_ON_OVERFLOW
 
-// Select which overflow policy to use
+// Select which divide by zero policy to use
 #if defined(FLUX_ERROR_ON_DIVIDE_BY_ZERO)
 #  define FLUX_DIVIDE_BY_ZERO_POLICY FLUX_DIVIDE_BY_ZERO_POLICY_ERROR
 #elif defined(FLUX_IGNORE_DIVIDE_BY_ZERO)
@@ -176,6 +186,15 @@
 #else
 #  define FLUX_DIVIDE_BY_ZERO_POLICY FLUX_DEFAULT_DIVIDE_BY_ZERO_POLICY
 #endif // FLUX_ERROR_ON_DIVIDE_BY_ZERO
+
+// Select which integer cast policy to use
+#if defined(FLUX_CHECKED_INTEGER_CASTS)
+#  define FLUX_INTEGER_CAST_POLICY FLUX_INTEGER_CAST_POLICY_CHECKED
+#elif defined(FLUX_UNCHECKED_INTEGER_CASTS)
+#  define FLUX_INTEGER_CAST_POLICY FLUX_INTEGER_CAST_POLICY_UNCHECKED
+#else
+#  define FLUX_INTEGER_CAST_POLICY FLUX_DEFAULT_INTEGER_CAST_POLICY
+#endif
 
 // Should we try to use static bounds checking?
 #if !defined(FLUX_DISABLE_STATIC_BOUNDS_CHECKING)
@@ -209,9 +228,16 @@ enum class overflow_policy {
     error = FLUX_OVERFLOW_POLICY_ERROR
 };
 
+FLUX_EXPORT
 enum class divide_by_zero_policy {
     ignore = FLUX_DIVIDE_BY_ZERO_POLICY_IGNORE,
     error = FLUX_DIVIDE_BY_ZERO_POLICY_ERROR
+};
+
+FLUX_EXPORT
+enum class integer_cast_policy {
+    checked = FLUX_INTEGER_CAST_POLICY_CHECKED,
+    unchecked = FLUX_INTEGER_CAST_POLICY_UNCHECKED
 };
 
 namespace config {
@@ -229,6 +255,9 @@ inline constexpr overflow_policy on_overflow = static_cast<overflow_policy>(FLUX
 
 FLUX_EXPORT
 inline constexpr divide_by_zero_policy on_divide_by_zero = static_cast<divide_by_zero_policy>(FLUX_DIVIDE_BY_ZERO_POLICY);
+
+FLUX_EXPORT
+inline constexpr integer_cast_policy on_integer_cast = static_cast<integer_cast_policy>(FLUX_INTEGER_CAST_POLICY);
 
 FLUX_EXPORT
 inline constexpr bool print_error_on_terminate = FLUX_PRINT_ERROR_ON_TERMINATE;
@@ -370,33 +399,6 @@ struct copy_fn {
 } // namespace detail
 
 FLUX_EXPORT inline constexpr auto copy = detail::copy_fn{};
-
-namespace detail {
-
-template <std::integral To>
-struct checked_cast_fn {
-    template <std::integral From>
-    [[nodiscard]]
-    constexpr auto operator()(From from) const -> To
-    {
-        if constexpr (requires { To{from}; }) {
-            return To{from}; // not a narrowing conversion
-        } else {
-            To to = static_cast<To>(from);
-            FLUX_DEBUG_ASSERT(static_cast<From>(to) == from);
-            if constexpr (std::is_signed_v<From> != std::is_signed_v<To>) {
-                FLUX_DEBUG_ASSERT((to < To{}) == (from < From{}));
-            }
-            return to;
-        }
-    }
-};
-
-} // namespace detail
-
-FLUX_EXPORT
-template <std::integral To>
-inline constexpr auto checked_cast = detail::checked_cast_fn<To>{};
 
 namespace detail {
 
@@ -903,32 +905,206 @@ concept optional_like =
 
 
 
+
+#include <climits>
+#include <cstdint>
 #include <limits>
+#include <utility>
 
 namespace flux::num {
 
 FLUX_EXPORT
-inline constexpr auto wrapping_add = []<std::signed_integral T>(T lhs, T rhs) -> T
-{
-    using U = std::make_unsigned_t<T>;
-    return static_cast<T>(static_cast<U>(lhs) + static_cast<U>(rhs));
-};
+template <typename T>
+concept integral =
+    std::integral<T> &&
+    !flux::detail::any_of<T, bool, char, wchar_t, char8_t, char16_t, char32_t>;
 
 FLUX_EXPORT
-inline constexpr auto wrapping_sub = []<std::signed_integral T>(T lhs, T rhs) -> T
-{
-    using U = std::make_unsigned_t<T>;
-    return static_cast<T>(static_cast<U>(lhs) - static_cast<U>(rhs));
-};
+template <typename T>
+concept signed_integral = integral<T> && std::signed_integral<T>;
 
 FLUX_EXPORT
-inline constexpr auto wrapping_mul = []<std::signed_integral T>(T lhs, T rhs) -> T
-{
-    using U = std::make_unsigned_t<T>;
-    return static_cast<T>(static_cast<U>(lhs) * static_cast<U>(rhs));
+template <typename T>
+concept unsigned_integral = integral<T> && std::unsigned_integral<T>;
+
+FLUX_EXPORT
+template <integral T>
+struct overflow_result {
+    T value;
+    bool overflowed;
 };
 
 namespace detail {
+
+template <integral To>
+struct unchecked_cast_fn {
+    template <integral From>
+    [[nodiscard]]
+    constexpr auto operator()(From from) const noexcept -> To
+    {
+        return static_cast<To>(from);
+    }
+};
+
+template <integral To>
+struct overflowing_cast_fn {
+    template <integral From>
+    [[nodiscard]]
+    constexpr auto operator()(From from) const noexcept -> overflow_result<To>
+    {
+        if constexpr (requires { To{from}; }) {
+            return {To{from}, false}; // not a narrowing conversion
+        } else {
+            return {static_cast<To>(from), !std::in_range<To>(from)};
+        }
+    }
+};
+
+template <integral To>
+struct checked_cast_fn {
+    template <integral From>
+    [[nodiscard]]
+    constexpr auto operator()(From from,
+                              std::source_location loc = std::source_location::current()) const
+        -> To
+    {
+        auto r = overflowing_cast_fn<To>{}(from);
+        if (r.overflowed) {
+            runtime_error("checked_cast failed", loc);
+        }
+        return r.value;
+    }
+};
+
+template <integral To>
+struct cast_fn {
+    template <integral From>
+    [[nodiscard]]
+    constexpr auto operator()(From from,
+                              std::source_location loc = std::source_location::current()) const
+        -> To
+    {
+        if constexpr (config::on_integer_cast == integer_cast_policy::checked) {
+            return checked_cast_fn<To>{}(from, loc);
+        } else {
+            return unchecked_cast_fn<To>{}(from);
+        }
+    }
+};
+
+struct unchecked_add_fn {
+    template <integral T>
+    [[nodiscard]]
+    constexpr auto operator()(T lhs, T rhs) const noexcept -> T
+    {
+        return static_cast<T>(lhs + rhs);
+    }
+};
+
+struct unchecked_sub_fn {
+    template <integral T>
+    [[nodiscard]]
+    constexpr auto operator()(T lhs, T rhs) const noexcept -> T
+    {
+        return static_cast<T>(lhs - rhs);
+    }
+};
+
+struct unchecked_mul_fn {
+    template <integral T>
+    [[nodiscard]]
+    constexpr auto operator()(T lhs, T rhs) const noexcept -> T
+    {
+        return static_cast<T>(lhs * rhs);
+    }
+};
+
+struct unchecked_div_fn {
+    template <integral T>
+    [[nodiscard]]
+    constexpr auto operator()(T lhs, T rhs) const noexcept -> T
+    {
+        return static_cast<T>(lhs / rhs);
+    }
+};
+
+struct unchecked_mod_fn {
+    template <integral T>
+    [[nodiscard]]
+    constexpr auto operator()(T lhs, T rhs) const noexcept -> T
+    {
+        return static_cast<T>(lhs % rhs);
+    }
+};
+
+struct unchecked_shl_fn {
+    template <integral T, integral U>
+    [[nodiscard]]
+    constexpr auto operator()(T lhs, U rhs) const noexcept -> T
+    {
+        return static_cast<T>(lhs << rhs);
+    }
+};
+
+struct unchecked_shr_fn {
+    template <integral T, integral U>
+    [[nodiscard]]
+    constexpr auto operator()(T lhs, U rhs) const noexcept -> T
+    {
+        return static_cast<T>(lhs >> rhs);
+    }
+};
+
+struct unchecked_neg_fn {
+    template <signed_integral T>
+    [[nodiscard]]
+    constexpr auto operator()(T val) const noexcept -> T
+    {
+        return static_cast<T>(-val);
+    }
+};
+
+struct wrapping_add_fn {
+    template <integral T>
+    [[nodiscard]]
+    constexpr auto operator()(T lhs, T rhs) const noexcept -> T
+    {
+        using U = std::make_unsigned_t<T>;
+        return static_cast<T>(static_cast<U>(lhs) + static_cast<U>(rhs));
+    }
+};
+
+struct wrapping_sub_fn {
+    template <integral T>
+    [[nodiscard]]
+    constexpr auto operator()(T lhs, T rhs) const noexcept -> T
+    {
+        using U = std::make_unsigned_t<T>;
+        return static_cast<T>(static_cast<U>(lhs) - static_cast<U>(rhs));
+    }
+};
+
+struct wrapping_mul_fn {
+    template <integral T>
+    [[nodiscard]]
+    constexpr auto operator()(T lhs, T rhs) const noexcept -> T
+    {
+        using U = std::conditional_t<(sizeof(T) < sizeof(unsigned)),
+                                     unsigned,
+                                     std::make_unsigned_t<T>>;
+        return static_cast<T>(static_cast<U>(lhs) * static_cast<U>(rhs));
+    }
+};
+
+struct wrapping_neg_fn {
+    template <signed_integral T>
+    [[nodiscard]]
+    constexpr auto operator()(T val) const noexcept -> T
+    {
+        using U = std::make_unsigned_t<T>;
+        return static_cast<T>(static_cast<U>(0) - static_cast<U>(val));
+    }
+};
 
 #if defined(__has_builtin)
 #  if __has_builtin(__builtin_add_overflow) && \
@@ -939,184 +1115,384 @@ namespace detail {
 #endif
 
 #ifdef FLUX_HAVE_BUILTIN_OVERFLOW_OPS
-    inline constexpr bool use_builtin_overflow_ops = true;
+inline constexpr bool use_builtin_overflow_ops = true;
 #else
-    inline constexpr bool use_builtin_overflow_ops = false;
+inline constexpr bool use_builtin_overflow_ops = false;
 #endif
 
 #undef FLUX_HAVE_BUILTIN_OVERFLOW_OPS
 
-}
-
-FLUX_EXPORT
-template <std::signed_integral T>
-struct overflow_result {
-    T value;
-    bool overflowed;
-};
-
-FLUX_EXPORT
-inline constexpr auto overflowing_add = []<std::signed_integral T>(T lhs, T rhs)
-    -> overflow_result<T>
-{
-    if constexpr (detail::use_builtin_overflow_ops) {
-        bool overflowed = __builtin_add_overflow(lhs, rhs, &lhs);
-        return {lhs, overflowed};
-    } else {
-        T value = wrapping_add(lhs, rhs);
-        bool overflowed = ((lhs < T{}) == (rhs < T{})) && ((lhs < T{}) != (value < T{}));
-        return {value, overflowed};
+struct overflowing_add_fn {
+    template <integral T>
+    [[nodiscard]]
+    constexpr auto operator()(T lhs, T rhs) const noexcept -> overflow_result<T>
+    {
+        if constexpr (use_builtin_overflow_ops) {
+            bool o = __builtin_add_overflow(lhs, rhs, &lhs);
+            return {lhs, o};
+        } else {
+            T value = wrapping_add_fn{}(lhs, rhs);
+            if constexpr (signed_integral<T>) {
+                bool o = ((lhs < T{}) == (rhs < T{})) && ((lhs < T{}) != (value < T{}));
+                return {value, o};
+            } else {
+                return {value, value < lhs};
+            }
+        }
     }
 };
 
-FLUX_EXPORT
-inline constexpr auto overflowing_sub = []<std::signed_integral T>(T lhs, T rhs)
-    -> overflow_result<T>
-{
-    if constexpr (detail::use_builtin_overflow_ops) {
-        bool overflowed = __builtin_sub_overflow(lhs, rhs, &lhs);
-        return {lhs, overflowed};
-    } else {
-        T value = wrapping_sub(lhs, rhs);
-        bool overflowed = (lhs >= T{} && rhs < T{} && value < T{}) ||
+struct overflowing_sub_fn {
+    template <integral T>
+    [[nodiscard]]
+    constexpr auto operator()(T lhs, T rhs) const noexcept -> overflow_result<T>
+    {
+        if constexpr (use_builtin_overflow_ops) {
+            bool o = __builtin_sub_overflow(lhs, rhs, &lhs);
+            return {lhs, o};
+        } else {
+            T value = wrapping_sub_fn{}(lhs, rhs);
+            if constexpr (signed_integral<T>) {
+                bool o = (lhs >= T{} && rhs < T{} && value < T{}) ||
                          (lhs < T{} && rhs > T{} && value > T{});
-        return {value, overflowed};
-    }
-};
-
-FLUX_EXPORT
-inline constexpr auto overflowing_mul = []<std::signed_integral T>(T lhs, T rhs)
-    -> overflow_result<T>
-{
-    if constexpr (detail::use_builtin_overflow_ops) {
-        bool overflowed = __builtin_mul_overflow(lhs, rhs, &lhs);
-        return {lhs, overflowed};
-    } else {
-        T value =  wrapping_mul(lhs, rhs);
-        return {value, lhs != 0 && value/lhs != rhs};
-    }
-};
-
-FLUX_EXPORT
-inline constexpr auto checked_add =
-    []<std::signed_integral T>(T lhs, T rhs,
-                               std::source_location loc = std::source_location::current())
-    -> T
-{
-    if (std::is_constant_evaluated()) {
-        return lhs + rhs;
-    } else {
-        if constexpr (config::on_overflow == overflow_policy::ignore) {
-            return lhs + rhs;
-        } else if constexpr (config::on_overflow == overflow_policy::wrap) {
-            return wrapping_add(lhs, rhs);
-        } else {
-            auto res = overflowing_add(lhs, rhs);
-            if (res.overflowed) {
-                runtime_error("signed overflow in addition", loc);
+                return {value, o};
+            } else {
+                return {value, rhs > lhs};
             }
-            return res.value;
         }
     }
 };
 
-FLUX_EXPORT
-inline constexpr auto checked_sub =
-    []<std::signed_integral T>(T lhs, T rhs,
-                               std::source_location loc = std::source_location::current())
-    -> T
-{
-  if (std::is_constant_evaluated()) {
-      return lhs - rhs;
-  } else {
-      if constexpr (config::on_overflow == overflow_policy::ignore) {
-          return lhs - rhs;
-      } else if constexpr (config::on_overflow == overflow_policy::wrap) {
-          return wrapping_sub(lhs, rhs);
-      } else {
-          auto res = overflowing_sub(lhs, rhs);
-          if (res.overflowed) {
-              runtime_error("signed overflow in subtraction", loc);
-          }
-          return res.value;
-      }
-  }
-};
+template <std::size_t, bool> struct builtin_sized_int {};
+template <> struct builtin_sized_int<2, true> { using type = std::int16_t; };
+template <> struct builtin_sized_int<2, false> { using type = std::uint16_t; };
+template <> struct builtin_sized_int<4, true> { using type = std::int32_t; };
+template <> struct builtin_sized_int<4, false> { using type = std::uint32_t; };
+template <> struct builtin_sized_int<8, true> { using type = std::int64_t; };
+template <> struct builtin_sized_int<8, false> { using type = std::uint64_t; };
 
-FLUX_EXPORT
-inline constexpr auto checked_mul =
-    []<std::signed_integral T>(T lhs, T rhs,
-                               std::source_location loc = std::source_location::current())
-    -> T
-{
-  if (std::is_constant_evaluated()) {
-      return lhs * rhs;
-  } else {
-      if constexpr (config::on_overflow == overflow_policy::ignore) {
-          return lhs * rhs;
-      } else if constexpr (config::on_overflow == overflow_policy::wrap) {
-          return wrapping_mul(lhs, rhs);
-      } else {
-          auto res = overflowing_mul(lhs, rhs);
-          if (res.overflowed) {
-              runtime_error("signed overflow in multiplication", loc);
-          }
-          return res.value;
-      }
-  }
-};
+template <std::size_t Sz, bool Signed>
+using builtin_sized_int_t = typename builtin_sized_int<Sz, Signed>::type;
 
-FLUX_EXPORT
-inline constexpr auto checked_pow =
-        []<std::signed_integral T, std::unsigned_integral U>(T base, U exponent,
-                                   std::source_location loc = std::source_location::current())
-                -> T
-{
-    T res{1};
-    for(U i{0}; i < exponent; i++) {
-        res = checked_mul(res, base, loc);
+template <integral T>
+struct overflowing_mul_impl;
+
+// If we have a builtin that is big enough to hold the result of the
+// multiplication, use it
+template <integral T>
+    requires requires { typename builtin_sized_int_t<2 * sizeof(T), signed_integral<T>>; }
+struct overflowing_mul_impl<T> {
+    inline constexpr auto operator()(T lhs, T rhs) const -> overflow_result<T>
+    {
+        using U = builtin_sized_int_t<2 * sizeof(T), signed_integral<T>>;
+        auto result = static_cast<U>(lhs) * static_cast<U>(rhs);
+        return overflowing_cast_fn<T>{}(result);
     }
-    return res;
 };
 
-
-inline constexpr auto checked_div =
-    []<std::signed_integral T>(T lhs, T rhs,
-                               std::source_location loc = std::source_location::current())
-    -> T
-{
-    if (std::is_constant_evaluated()) {
-        return lhs / rhs;
-    } else {
-        if constexpr (config::on_divide_by_zero == divide_by_zero_policy::ignore) {
-            return lhs / rhs;
+// Otherwise, fall back to checking for overflow via a division operation
+template <integral T>
+struct overflowing_mul_impl {
+    inline constexpr auto operator()(T lhs, T rhs) const -> overflow_result<T>
+    {
+        constexpr T min = std::numeric_limits<T>::lowest();
+        T value =  wrapping_mul_fn{}(lhs, rhs);
+        if constexpr (signed_integral<T>) {
+            bool o = (lhs == T{-1} && rhs == min) ||
+                     (lhs != T{}  && unchecked_div_fn{}(value, lhs) != rhs);
+            return {value, o};
         } else {
-            if (rhs == 0) {
-                runtime_error("divide by zero", loc);
-            }
-            return lhs / rhs;
+            bool o = lhs != T{} && unchecked_div_fn{}(value, lhs) != rhs;
+            return {value, o};
         }
     }
 };
 
-inline constexpr auto checked_mod =
-    []<std::signed_integral T>(T lhs, T rhs,
-                               std::source_location loc = std::source_location::current())
-    -> T
-{
-    if (std::is_constant_evaluated()) {
-        return lhs % rhs;
-    } else {
-        if constexpr (config::on_divide_by_zero == divide_by_zero_policy::ignore) {
-            return lhs % rhs;
+struct overflowing_mul_fn {
+    template <integral T>
+    [[nodiscard]]
+    constexpr auto operator()(T lhs, T rhs) const noexcept -> overflow_result<T>
+    {
+        if constexpr (detail::use_builtin_overflow_ops) {
+            bool o = __builtin_mul_overflow(lhs, rhs, &lhs);
+            return {lhs, o};
         } else {
-            if (rhs == 0) {
-                runtime_error("divide by zero", loc);
-            }
-            return lhs % rhs;
+            return overflowing_mul_impl<T>{}(lhs, rhs);
         }
     }
 };
+
+struct overflowing_neg_fn {
+    template <signed_integral T>
+    [[nodiscard]]
+    constexpr auto operator()(T val) const noexcept -> overflow_result<T>
+    {
+        if constexpr (use_builtin_overflow_ops) {
+            bool o = __builtin_sub_overflow(T{0}, val, &val);
+            return {val, o};
+        } else {
+            return {wrapping_neg_fn{}(val), val == std::numeric_limits<T>::lowest()};
+        }
+    }
+};
+
+struct checked_add_fn {
+    template <integral T>
+    [[nodiscard]]
+    constexpr auto operator()(T lhs, T rhs,
+                              std::source_location loc = std::source_location::current()) const
+        -> T
+    {
+        // For built-in signed types at least as large as int,
+        // constant evaluation already checks for overflow
+        if (signed_integral<T> && (sizeof(T) >= sizeof(int)) &&
+            std::is_constant_evaluated()) {
+            return unchecked_add_fn{}(lhs, rhs); // LCOV_EXCL_LINE
+        } else {
+            auto result = overflowing_add_fn{}(lhs, rhs);
+            if (result.overflowed) {
+                runtime_error("overflow in addition", loc);
+            }
+            return result.value;
+        }
+    }
+};
+
+struct checked_sub_fn {
+    template <integral T>
+    [[nodiscard]]
+    constexpr auto operator()(T lhs, T rhs,
+                              std::source_location loc = std::source_location::current()) const
+        -> T
+    {
+        if (signed_integral<T> && (sizeof(T) >= sizeof(int)) &&
+            std::is_constant_evaluated()) {
+            return unchecked_sub_fn{}(lhs, rhs); // LCOV_EXCL_LINE
+        } else {
+            auto result = overflowing_sub_fn{}(lhs, rhs);
+            if (result.overflowed) {
+                runtime_error("overflow in subtraction", loc);
+            }
+            return result.value;
+        }
+    }
+};
+
+struct checked_mul_fn {
+    template <integral T>
+    [[nodiscard]]
+    constexpr auto operator()(T lhs, T rhs,
+                              std::source_location loc = std::source_location::current()) const
+        -> T
+    {
+        if (signed_integral<T> && (sizeof(T) >= sizeof(int)) &&
+            std::is_constant_evaluated()) {
+            return unchecked_mul_fn{}(lhs, rhs); // LCOV_EXCL_LINE
+        } else {
+            auto result = overflowing_mul_fn{}(lhs, rhs);
+            if (result.overflowed) {
+                runtime_error("overflow in multiplication", loc);
+            }
+            return result.value;
+        }
+    }
+};
+
+template <overflow_policy OnOverflow = overflow_policy::error,
+          divide_by_zero_policy OnDivByZero = divide_by_zero_policy::error>
+struct checked_div_fn {
+    template <integral T>
+    [[nodiscard]]
+    constexpr auto operator()(T lhs, T rhs,
+                              std::source_location loc = std::source_location::current()) const
+        -> T
+    {
+        // If we're in constant evaluation, we already get a divide-by-zero check
+        if (!std::is_constant_evaluated()) {
+            if constexpr (OnDivByZero == divide_by_zero_policy::error) {
+                if (rhs == T{}) {
+                    runtime_error("division by zero", loc);
+                }
+            }
+        }
+
+        // For signed types, MIN/-1 overflows
+        if constexpr (signed_integral<T> && (OnOverflow != overflow_policy::ignore)) {
+             if (lhs == std::numeric_limits<T>::lowest() && rhs == T{-1}) {
+                 runtime_error("overflow in division", loc);
+             }
+         }
+
+        return unchecked_div_fn{}(lhs, rhs);
+    }
+};
+
+template <overflow_policy OnOverflow = overflow_policy::error,
+          divide_by_zero_policy OnDivByZero = divide_by_zero_policy::error>
+struct checked_mod_fn {
+    template <integral T>
+    [[nodiscard]]
+    constexpr auto operator()(T lhs, T rhs,
+                              std::source_location loc = std::source_location::current()) const
+        -> T
+    {
+        if (!std::is_constant_evaluated()) {
+             if constexpr (OnDivByZero == divide_by_zero_policy::error) {
+                 if (rhs == T{}) {
+                    runtime_error("modulo with zero", loc);
+                 }
+             }
+        }
+
+        if constexpr (signed_integral<T> && (OnOverflow != overflow_policy::ignore)) {
+            if (lhs == std::numeric_limits<T>::lowest() && rhs == T{-1}) {
+                runtime_error("overflow in modulo", loc);
+            }
+        }
+
+        return unchecked_mod_fn{}(lhs, rhs);
+    }
+};
+
+struct checked_shl_fn {
+    template <integral T, integral U>
+    [[nodiscard]]
+    constexpr auto operator()(T lhs, U rhs,
+                              std::source_location loc = std::source_location::current()) const
+        -> T
+    {
+        constexpr std::size_t width = sizeof(T) * CHAR_BIT;
+        // If T is at least as large as int, we already get a check when
+        // in constant evaluation
+        if ((!std::is_constant_evaluated() || (sizeof(T) < sizeof(int))) &&
+            ((static_cast<std::size_t>(rhs) >= width) || rhs < U{})) {
+            flux::runtime_error("left shift argument too large or negative", loc);
+        }
+        return unchecked_shl_fn{}(lhs, rhs);
+    }
+};
+
+struct checked_shr_fn {
+    template <integral T, integral U>
+    [[nodiscard]]
+    constexpr auto operator()(T lhs, U rhs,
+               std::source_location loc = std::source_location::current()) const
+        -> T
+    {
+        constexpr std::size_t width = sizeof(T) * CHAR_BIT;
+        if ((!std::is_constant_evaluated() || (sizeof(T) < sizeof(int)))&&
+            ((static_cast<std::size_t>(rhs) >= width) || rhs < U{})) {
+            flux::runtime_error("right shift argument too large or negative", loc);
+        }
+        return unchecked_shr_fn{}(lhs, rhs);
+    }
+};
+
+struct checked_neg_fn {
+    template <signed_integral T>
+    [[nodiscard]]
+    constexpr auto operator()(T val,
+                              std::source_location loc = std::source_location::current()) const
+        -> T
+    {
+        auto [r, o] = overflowing_neg_fn{}(val);
+        if (o) {
+            flux::runtime_error("Overflow in signed negation", loc);
+        }
+        return r;
+    }
+};
+
+template <overflow_policy>
+struct default_ops;
+
+template <>
+struct default_ops<overflow_policy::ignore> {
+    using add_fn = unchecked_add_fn;
+    using sub_fn = unchecked_sub_fn;
+    using mul_fn = unchecked_mul_fn;
+    using neg_fn = unchecked_neg_fn;
+    using shl_fn = unchecked_shl_fn;
+    using shr_fn = unchecked_shr_fn;
+};
+
+template <>
+struct default_ops<overflow_policy::wrap> {
+    using add_fn = wrapping_add_fn;
+    using sub_fn = wrapping_sub_fn;
+    using mul_fn = wrapping_mul_fn;
+    using neg_fn = wrapping_neg_fn;
+    // no wrapping versions of these yet, so use the checked versions
+    using shl_fn = checked_shl_fn;
+    using shr_fn = checked_shr_fn;
+};
+
+template <>
+struct default_ops<overflow_policy::error> {
+    using add_fn = checked_add_fn;
+    using sub_fn = checked_sub_fn;
+    using mul_fn = checked_mul_fn;
+    using neg_fn = checked_neg_fn;
+    using shl_fn = checked_shl_fn;
+    using shr_fn = checked_shr_fn;
+};
+
+} // namespace detail
+
+FLUX_EXPORT
+template <integral To>
+inline constexpr auto unchecked_cast = detail::unchecked_cast_fn<To>{};
+
+FLUX_EXPORT
+template <integral To>
+inline constexpr auto overflowing_cast = detail::overflowing_cast_fn<To>{};
+
+FLUX_EXPORT
+template <integral To>
+inline constexpr auto checked_cast = detail::checked_cast_fn<To>{};
+
+FLUX_EXPORT
+template <integral To>
+inline constexpr auto cast = detail::cast_fn<To>{};
+
+FLUX_EXPORT inline constexpr auto unchecked_add = detail::unchecked_add_fn{};
+FLUX_EXPORT inline constexpr auto unchecked_sub = detail::unchecked_sub_fn{};
+FLUX_EXPORT inline constexpr auto unchecked_mul = detail::unchecked_mul_fn{};
+FLUX_EXPORT inline constexpr auto unchecked_div = detail::unchecked_div_fn{};
+FLUX_EXPORT inline constexpr auto unchecked_mod = detail::unchecked_mod_fn{};
+FLUX_EXPORT inline constexpr auto unchecked_neg = detail::unchecked_neg_fn{};
+FLUX_EXPORT inline constexpr auto unchecked_shl = detail::unchecked_shl_fn{};
+FLUX_EXPORT inline constexpr auto unchecked_shr = detail::unchecked_shr_fn{};
+
+FLUX_EXPORT inline constexpr auto wrapping_add = detail::wrapping_add_fn{};
+FLUX_EXPORT inline constexpr auto wrapping_sub = detail::wrapping_sub_fn{};
+FLUX_EXPORT inline constexpr auto wrapping_mul = detail::wrapping_mul_fn{};
+FLUX_EXPORT inline constexpr auto wrapping_neg = detail::wrapping_neg_fn{};
+
+FLUX_EXPORT inline constexpr auto overflowing_add = detail::overflowing_add_fn{};
+FLUX_EXPORT inline constexpr auto overflowing_sub = detail::overflowing_sub_fn{};
+FLUX_EXPORT inline constexpr auto overflowing_mul = detail::overflowing_mul_fn{};
+FLUX_EXPORT inline constexpr auto overflowing_neg = detail::overflowing_neg_fn{};
+
+FLUX_EXPORT inline constexpr auto checked_add = detail::checked_add_fn{};
+FLUX_EXPORT inline constexpr auto checked_sub = detail::checked_sub_fn{};
+FLUX_EXPORT inline constexpr auto checked_mul = detail::checked_mul_fn{};
+FLUX_EXPORT inline constexpr auto checked_div = detail::checked_div_fn{};
+FLUX_EXPORT inline constexpr auto checked_mod = detail::checked_mod_fn{};
+FLUX_EXPORT inline constexpr auto checked_neg = detail::checked_neg_fn{};
+FLUX_EXPORT inline constexpr auto checked_shl = detail::checked_shl_fn{};
+FLUX_EXPORT inline constexpr auto checked_shr = detail::checked_shr_fn{};
+
+FLUX_EXPORT inline constexpr auto add = detail::default_ops<config::on_overflow>::add_fn{};
+FLUX_EXPORT inline constexpr auto sub = detail::default_ops<config::on_overflow>::sub_fn{};
+FLUX_EXPORT inline constexpr auto mul = detail::default_ops<config::on_overflow>::mul_fn{};
+FLUX_EXPORT inline constexpr auto div =
+    detail::checked_div_fn<config::on_overflow, config::on_divide_by_zero>{};
+FLUX_EXPORT inline constexpr auto mod =
+    detail::checked_mod_fn<config::on_overflow, config::on_divide_by_zero>{};
+FLUX_EXPORT inline constexpr auto neg = detail::default_ops<config::on_overflow>::neg_fn{};
+FLUX_EXPORT inline constexpr auto shl = detail::default_ops<config::on_overflow>::shl_fn{};
+FLUX_EXPORT inline constexpr auto shr = detail::default_ops<config::on_overflow>::shr_fn{};
 
 } // namespace flux::num
 
@@ -1616,6 +1992,7 @@ public:
 #endif
 
 
+
 namespace flux {
 
 namespace detail {
@@ -1733,7 +2110,7 @@ struct usize_fn {
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const -> std::size_t
     {
-        return checked_cast<std::size_t>(size_fn{}(seq));
+        return num::unchecked_cast<std::size_t>(size_fn{}(seq));
     }
 };
 
@@ -1960,7 +2337,7 @@ struct sequence_traits<T[N]> : default_sequence_traits {
     static constexpr auto inc(auto const&, index_t& idx)
     {
         FLUX_DEBUG_ASSERT(idx < N);
-        idx = num::checked_add(idx, distance_t{1});
+        idx = num::add(idx, distance_t{1});
     }
 
     static constexpr auto last(auto const&) -> index_t { return N; }
@@ -1968,19 +2345,19 @@ struct sequence_traits<T[N]> : default_sequence_traits {
     static constexpr auto dec(auto const&, index_t& idx)
     {
         FLUX_DEBUG_ASSERT(idx > 0);
-        idx = num::checked_sub(idx, distance_t{1});
+        idx = num::sub(idx, distance_t{1});
     }
 
     static constexpr auto inc(auto const&, index_t& idx, distance_t offset)
     {
-        FLUX_DEBUG_ASSERT(num::checked_add(idx, offset) <= N);
-        FLUX_DEBUG_ASSERT(num::checked_add(idx, offset) >= 0);
-        idx = num::checked_add(idx, offset);
+        FLUX_DEBUG_ASSERT(num::add(idx, offset) <= N);
+        FLUX_DEBUG_ASSERT(num::add(idx, offset) >= 0);
+        idx = num::add(idx, offset);
     }
 
     static constexpr auto distance(auto const&, index_t from, index_t to) -> distance_t
     {
-        return num::checked_sub(to, from);
+        return num::sub(to, from);
     }
 
     static constexpr auto data(auto& self) -> auto* { return self; }
@@ -2108,7 +2485,7 @@ struct sequence_traits<R> : default_sequence_traits {
     static constexpr auto inc(auto& self, index_t& idx)
     {
         FLUX_DEBUG_ASSERT(idx < size(self));
-        idx = num::checked_add(idx, distance_t{1});
+        idx = num::add(idx, distance_t{1});
     }
 
     static constexpr auto read_at(auto& self, index_t idx) -> decltype(auto)
@@ -2125,26 +2502,26 @@ struct sequence_traits<R> : default_sequence_traits {
     static constexpr auto dec(auto&, index_t& idx)
     {
         FLUX_DEBUG_ASSERT(idx > 0);
-        idx = num::checked_sub(idx, distance_t{1});
+        idx = num::sub(idx, distance_t{1});
     }
 
     static constexpr auto last(auto& self) -> index_t { return size(self); }
 
     static constexpr auto inc(auto& self, index_t& idx, distance_t offset)
     {
-        FLUX_DEBUG_ASSERT(num::checked_add(idx, offset) <= size(self));
-        FLUX_DEBUG_ASSERT(num::checked_add(idx, offset) >= 0);
-        idx = num::checked_add(idx, offset);
+        FLUX_DEBUG_ASSERT(num::add(idx, offset) <= size(self));
+        FLUX_DEBUG_ASSERT(num::add(idx, offset) >= 0);
+        idx = num::add(idx, offset);
     }
 
     static constexpr auto distance(auto&, index_t from, index_t to) -> distance_t
     {
-        return num::checked_sub(to, from);
+        return num::sub(to, from);
     }
 
     static constexpr auto size(auto& self) -> distance_t
     {
-        return checked_cast<distance_t>(std::ranges::ssize(self));
+        return num::cast<distance_t>(std::ranges::ssize(self));
     }
 
     static constexpr auto data(auto& self) -> auto*
@@ -2164,7 +2541,7 @@ struct sequence_traits<R> : default_sequence_traits {
             ++iter;
         }
 
-        return checked_cast<index_t>(iter - std::ranges::begin(self));
+        return num::cast<index_t>(iter - std::ranges::begin(self));
     }
 };
 
@@ -2892,7 +3269,7 @@ public:
                      (multipass_sequence<Derived> && not infinite_sequence<Derived>);
 
     [[nodiscard]]
-    constexpr auto chunk(std::integral auto chunk_sz) &&;
+    constexpr auto chunk(num::integral auto chunk_sz) &&;
 
     template <typename Pred>
         requires multipass_sequence<Derived> &&
@@ -2908,7 +3285,7 @@ public:
             requires infinite_sequence<Derived> || multipass_sequence<Derived>;
 
     [[nodiscard]]
-    constexpr auto cycle(std::integral auto count) && requires multipass_sequence<Derived>;
+    constexpr auto cycle(num::integral auto count) && requires multipass_sequence<Derived>;
 
     [[nodiscard]]
     constexpr auto dedup() &&
@@ -2916,7 +3293,7 @@ public:
                  std::equality_comparable<element_t<Derived>>;
 
     [[nodiscard]]
-    constexpr auto drop(std::integral auto count) &&;
+    constexpr auto drop(num::integral auto count) &&;
 
     template <typename Pred>
         requires std::predicate<Pred&, element_t<Derived>>
@@ -2995,7 +3372,7 @@ public:
     constexpr auto scan_first(Func func) &&;
 
     [[nodiscard]]
-    constexpr auto slide(std::integral auto win_sz) && requires multipass_sequence<Derived>;
+    constexpr auto slide(num::integral auto win_sz) && requires multipass_sequence<Derived>;
 
     template <typename Pattern>
         requires multipass_sequence<Derived> &&
@@ -3021,10 +3398,10 @@ public:
     constexpr auto split_string(Pattern&& pattern) &&;
 
     [[nodiscard]]
-    constexpr auto stride(std::integral auto by) &&;
+    constexpr auto stride(num::integral auto by) &&;
 
     [[nodiscard]]
-    constexpr auto take(std::integral auto count) &&;
+    constexpr auto take(num::integral auto count) &&;
 
     template <typename Pred>
         requires std::predicate<Pred&, element_t<Derived>>
@@ -3302,7 +3679,7 @@ public:
     constexpr auto operator-=(difference_type n) -> sequence_iterator&
         requires random_access_sequence<S>
     {
-        flux::inc(*seq_, cur_, -n);
+        flux::inc(*seq_, cur_, num::neg(n));
         return *this;
     }
 
@@ -3353,7 +3730,7 @@ public:
         -> sequence_iterator
         requires random_access_sequence<S>
     {
-        flux::inc(*self.seq_, self.cur_, -n);
+        flux::inc(*self.seq_, self.cur_, num::neg(n));
         return self;
     }
 
@@ -3873,7 +4250,7 @@ public:
 
         static constexpr auto inc(auto& self, cursor_type& cur, distance_t dist) -> void
         {
-            flux::inc(self.base_, cur.base_cur, num::checked_sub(distance_t{}, dist));
+            flux::inc(self.base_, cur.base_cur, num::neg(dist));
         }
 
         static constexpr auto distance(auto& self, cursor_type const& from, cursor_type const& to)
@@ -4405,19 +4782,19 @@ struct iota_sequence_traits : default_sequence_traits {
         -> cursor_type&
         requires advancable<T>
     {
-        return cur += checked_cast<std::iter_difference_t<T>>(offset);
+        return cur += num::cast<std::iter_difference_t<T>>(offset);
     }
 
     static constexpr auto distance(auto&, cursor_type const& from, cursor_type const& to)
         requires advancable<T>
     {
-        return from <= to ? checked_cast<distance_t>(to - from) : -checked_cast<distance_t>(from - to);
+        return from <= to ? num::cast<distance_t>(to - from) : -num::cast<distance_t>(from - to);
     }
 
     static constexpr auto size(auto& self) -> distance_t
         requires advancable<T> && (Traits.has_start && Traits.has_end)
     {
-        return checked_cast<distance_t>(self.end_ - self.start_);
+        return num::cast<distance_t>(self.end_ - self.start_);
     }
 };
 
@@ -4599,7 +4976,7 @@ public:
         requires sized_sequence<Base>
     {
         auto s = (flux::size(self.base_) - N) + 1;
-        return (std::max)(s, distance_t{0});
+        return (cmp::max)(s, distance_t{0});
     }
 };
 
@@ -5128,6 +5505,18 @@ constexpr auto inline_sequence_base<Derived>::cache_last() &&
 
 namespace flux::detail {
 
+inline constexpr auto checked_pow =
+    []<std::signed_integral T, std::unsigned_integral U>(T base, U exponent,
+                                                         std::source_location loc = std::source_location::current())
+    -> T
+{
+    T res{1};
+    for(U i{0}; i < exponent; i++) {
+        res = num::mul(res, base, loc);
+    }
+    return res;
+};
+
 enum class cartesian_kind { product, power };
 enum class read_kind { tuple, map };
 
@@ -5222,18 +5611,18 @@ private:
 
         auto& base = get_base<I>(self);
         const auto this_index = flux::distance(base, flux::first(base), std::get<I>(cur));
-        auto new_index = num::checked_add(this_index, offset);
+        auto new_index = num::add(this_index, offset);
         auto this_size = flux::size(base);
 
         // If the new index overflows the maximum or underflows zero, calculate the carryover and fix it.
         if (new_index < 0 || new_index >= this_size) {
-            offset = num::checked_div(new_index, this_size);
-            new_index = num::checked_mod(new_index, this_size);
+            offset = num::div(new_index, this_size);
+            new_index = num::mod(new_index, this_size);
 
             // Correct for negative index which may happen when underflowing.
             if (new_index < 0) {
-                new_index = num::checked_add(new_index, this_size);
-                offset = num::checked_sub(offset, flux::distance_t(1));
+                new_index = num::add(new_index, this_size);
+                offset = num::sub(offset, flux::distance_t(1));
             }
 
             // Call the next level down if necessary.
@@ -5244,7 +5633,7 @@ private:
             }
         }
 
-        flux::inc(base, std::get<I>(cur), num::checked_sub(new_index, this_index));
+        flux::inc(base, std::get<I>(cur), num::sub(new_index, this_index));
 
         return cur;
     }
@@ -5341,7 +5730,7 @@ public:
     {
         return std::apply([](auto& base0, auto&... bases) {
             distance_t sz = flux::size(base0);
-            ((sz = num::checked_mul(sz, flux::size(bases))), ...);
+            ((sz = num::mul(sz, flux::size(bases))), ...);
             return sz;
         }, self.bases_);
     }
@@ -5351,7 +5740,7 @@ public:
         requires (CartesianKind == cartesian_kind::power
                   && (sized_sequence<Bases> && ...))
     {
-        return num::checked_pow(flux::size(self.base_), Arity);
+        return checked_pow(flux::size(self.base_), Arity);
     }
 
     template <typename Self>
@@ -6326,13 +6715,14 @@ inline constexpr struct advance_fn {
     constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur, distance_t offset) const -> distance_t
     {
         if (offset > 0) {
-            auto dist = std::min(flux::distance(seq, cur, flux::last(seq)), offset);
+            auto dist = (cmp::min)(flux::distance(seq, cur, flux::last(seq)), offset);
             flux::inc(seq, cur, dist);
-            return offset - dist;
+            return num::sub(offset, dist);
         } else if (offset < 0) {
-            auto dist = -std::min(flux::distance(seq, flux::first(seq), cur), -offset);
+            auto dist = num::neg((cmp::min)(flux::distance(seq, flux::first(seq), cur),
+                                            num::neg(offset)));
             flux::inc(seq, cur, dist);
-            return offset - dist;
+            return num::sub(offset, dist);
         } else {
             return 0;
         }
@@ -6504,9 +6894,10 @@ public:
             requires random_access_sequence<Base>
         {
             if (offset > 0) {
-                cur.missing = advance(self.base_, cur.cur, num::checked_mul(offset, self.stride_)) % self.stride_;
+                cur.missing = num::mod(advance(self.base_, cur.cur, num::mul(offset, self.stride_)),
+                                       self.stride_);
             } else if (offset < 0) {
-                advance(self.base_, cur.cur, num::checked_add(num::checked_mul(offset, self.stride_), cur.missing));
+                advance(self.base_, cur.cur, num::add(num::mul(offset, self.stride_), cur.missing));
                 cur.missing = 0;
             }
         }
@@ -6531,10 +6922,11 @@ public:
 struct stride_fn {
     template <adaptable_sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, std::integral auto by) const
+    constexpr auto operator()(Seq&& seq, num::integral auto by) const
     {
         FLUX_ASSERT(by > 0);
-        return stride_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq), checked_cast<distance_t>(by));
+        return stride_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq),
+                                                 num::checked_cast<distance_t>(by));
     }
 };
 
@@ -6543,7 +6935,7 @@ struct stride_fn {
 FLUX_EXPORT inline constexpr auto stride = detail::stride_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::stride(std::integral auto by) &&
+constexpr auto inline_sequence_base<D>::stride(num::integral auto by) &&
 {
     return flux::stride(std::move(derived()), by);
 }
@@ -6611,7 +7003,7 @@ public:
         static constexpr auto inc(auto& self, cursor_type& cur)
         {
             flux::inc(self.base_, cur.base_cur);
-            cur.length = num::checked_sub(cur.length, distance_t{1});
+            cur.length = num::sub(cur.length, distance_t{1});
         }
 
         static constexpr auto read_at(auto& self, cursor_type const& cur)
@@ -6642,22 +7034,22 @@ public:
             requires bidirectional_sequence<Base>
         {
             flux::dec(self.base_, cur.base_cur);
-            cur.length = num::checked_add(cur.length, distance_t{1});
+            cur.length = num::add(cur.length, distance_t{1});
         }
 
         static constexpr auto inc(auto& self, cursor_type& cur, distance_t offset)
             requires random_access_sequence<Base>
         {
             flux::inc(self.base_, cur.base_cur, offset);
-            cur.length = num::checked_sub(cur.length, offset);
+            cur.length = num::sub(cur.length, offset);
         }
 
         static constexpr auto distance(auto& self, cursor_type const& from, cursor_type const& to)
             -> distance_t
             requires random_access_sequence<Base>
         {
-            return (std::min)(flux::distance(self.base_, from.base_cur, to.base_cur),
-                              num::checked_sub(from.length, to.length));
+            return (cmp::min)(flux::distance(self.base_, from.base_cur, to.base_cur),
+                              num::sub(from.length, to.length));
         }
 
         static constexpr auto data(auto& self)
@@ -6673,7 +7065,7 @@ public:
             if constexpr (infinite_sequence<Base>) {
                 return self.count_;
             } else {
-                return (std::min)(flux::size(self.base_), self.count_);
+                return (cmp::min)(flux::size(self.base_), self.count_);
             }
         }
 
@@ -6702,9 +7094,9 @@ public:
 struct take_fn {
     template <adaptable_sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, std::integral auto count) const
+    constexpr auto operator()(Seq&& seq, num::integral auto count) const
     {
-        auto count_ = checked_cast<distance_t>(count);
+        auto count_ = num::checked_cast<distance_t>(count);
         if (count_ < 0) {
             runtime_error("Negative argument passed to take()");
         }
@@ -6718,7 +7110,7 @@ struct take_fn {
 FLUX_EXPORT inline constexpr auto take = detail::take_fn{};
 
 template <typename Derived>
-constexpr auto inline_sequence_base<Derived>::take(std::integral auto count) &&
+constexpr auto inline_sequence_base<Derived>::take(num::integral auto count) &&
 {
     return flux::take(std::move(derived()), count);
 }
@@ -7002,9 +7394,9 @@ public:
             requires random_access_sequence<Base>
         {
             if (offset > 0) {
-                cur.missing = advance(self.base_, cur.cur, num::checked_mul(offset, self.chunk_sz_)) % self.chunk_sz_;
+                cur.missing = advance(self.base_, cur.cur, num::mul(offset, self.chunk_sz_)) % self.chunk_sz_;
             } else if (offset < 0) {
-                advance(self.base_, cur.cur, num::checked_add(num::checked_mul(offset, self.chunk_sz_), cur.missing));
+                advance(self.base_, cur.cur, num::add(num::mul(offset, self.chunk_sz_), cur.missing));
                 cur.missing = 0;
             }
         }
@@ -7014,12 +7406,12 @@ public:
 struct chunk_fn {
     template <adaptable_sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, std::integral auto chunk_sz) const
+    constexpr auto operator()(Seq&& seq, num::integral auto chunk_sz) const
         -> sequence auto
     {
         FLUX_ASSERT(chunk_sz > 0);
         return chunk_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq),
-                                                checked_cast<distance_t>(chunk_sz));
+                                                num::checked_cast<distance_t>(chunk_sz));
     }
 };
 
@@ -7028,7 +7420,7 @@ struct chunk_fn {
 FLUX_EXPORT inline constexpr auto chunk = detail::chunk_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::chunk(std::integral auto chunk_sz) &&
+constexpr auto inline_sequence_base<D>::chunk(num::integral auto chunk_sz) &&
 {
     return flux::chunk(std::move(derived()), chunk_sz);
 }
@@ -7248,11 +7640,11 @@ public:
 
         if constexpr (can_memcmp) {
             if (std::is_constant_evaluated()) {
-                return impl(seq1, seq2, cmp);
+                return impl(seq1, seq2, cmp); // LCOV_EXCL_LINE
             } else {
                 auto const seq1_size = flux::usize(seq1);
                 auto const seq2_size = flux::usize(seq2);
-                auto min_size = std::min(seq1_size, seq2_size);
+                auto min_size = (cmp::min)(seq1_size, seq2_size);
 
                 int cmp_result = 0;
                 if(min_size > 0) {
@@ -7712,7 +8104,7 @@ public:
             }
 
             auto off = flux::distance(self.base_, first, cur.base_cur);
-            off = num::checked_add(off, offset);
+            off = num::add(off, offset);
 
             cur.n += static_cast<std::size_t>(off/sz);
 
@@ -7730,9 +8122,9 @@ public:
             requires random_access_sequence<decltype(self.base_)> &&
                      sized_sequence<decltype(self.base_)>
         {
-            auto dist = checked_cast<distance_t>(to.n) - checked_cast<distance_t>(from.n);
-            dist = num::checked_mul(dist, flux::size(self.base_));
-            return num::checked_add(dist,
+            auto dist = num::cast<distance_t>(to.n) - num::cast<distance_t>(from.n);
+            dist = num::mul(dist, flux::size(self.base_));
+            return num::add(dist,
                     flux::distance(self.base_, from.base_cur, to.base_cur));
         }
 
@@ -7747,8 +8139,8 @@ public:
         static constexpr auto size(auto& self) -> distance_t
             requires (!IsInfinite && sized_sequence<Base>)
         {
-            return num::checked_mul(flux::size(self.base_),
-                                    checked_cast<flux::distance_t>(self.data_.count));
+            return num::mul(flux::size(self.base_),
+                            num::cast<flux::distance_t>(self.data_.count));
         }
     };
 };
@@ -7769,15 +8161,15 @@ struct cycle_fn {
     template <adaptable_sequence Seq>
         requires multipass_sequence<Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, std::integral auto count) const
+    constexpr auto operator()(Seq&& seq, num::integral auto count) const
         -> multipass_sequence auto
     {
-        auto c = checked_cast<distance_t>(count);
+        auto c = num::checked_cast<distance_t>(count);
         if (c < 0) {
             runtime_error("Negative count passed to cycle()");
         }
         return cycle_adaptor<std::decay_t<Seq>, false>(
-            FLUX_FWD(seq), checked_cast<std::size_t>(c));
+            FLUX_FWD(seq), num::checked_cast<std::size_t>(c));
     }
 };
 
@@ -7793,7 +8185,7 @@ constexpr auto inline_sequence_base<D>::cycle() &&
 }
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::cycle(std::integral auto count) &&
+constexpr auto inline_sequence_base<D>::cycle(num::integral auto count) &&
     requires multipass_sequence<D>
 {
     return flux::cycle(std::move(derived()), count);
@@ -7849,7 +8241,7 @@ public:
         static constexpr auto size(auto& self)
             requires sized_sequence<Base>
         {
-            return (cmp::max)(num::checked_sub(flux::size(self.base()), self.count_),
+            return (cmp::max)(num::sub(flux::size(self.base()), self.count_),
                               distance_t{0});
         }
 
@@ -7869,9 +8261,9 @@ public:
 struct drop_fn {
     template <adaptable_sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, std::integral auto count) const
+    constexpr auto operator()(Seq&& seq, num::integral auto count) const
     {
-        auto count_ = checked_cast<distance_t>(count);
+        auto count_ = num::checked_cast<distance_t>(count);
         if (count_ < 0) {
             runtime_error("Negative argument passed to drop()");
         }
@@ -7886,7 +8278,7 @@ struct drop_fn {
 FLUX_EXPORT inline constexpr auto drop = detail::drop_fn{};
 
 template <typename Derived>
-constexpr auto inline_sequence_base<Derived>::drop(std::integral auto count) &&
+constexpr auto inline_sequence_base<Derived>::drop(num::integral auto count) &&
 {
     return flux::drop(std::move(derived()), count);
 }
@@ -8041,7 +8433,7 @@ public:
 
         if constexpr (can_memcmp) {
             if (std::is_constant_evaluated()) {
-                return impl(seq1, seq2, cmp);
+                return impl(seq1, seq2, cmp); // LCOV_EXCL_LINE
             } else {
                 auto size = flux::usize(seq1);
                 if(size == 0) {
@@ -8261,7 +8653,7 @@ public:
 
         if constexpr (can_memset) {
             if (std::is_constant_evaluated()) {
-                impl(seq, value);
+                impl(seq, value); // LCOV_EXCL_LINE
             } else {
                 auto size = flux::usize(seq);
                 if(size == 0) {
@@ -8344,7 +8736,7 @@ public:
 
         if constexpr (can_memchr) {
             if (std::is_constant_evaluated()) {
-                return impl(seq, value);
+                return impl(seq, value); // LCOV_EXCL_LINE
             } else {
                 auto size = flux::usize(seq);
                 if (size == 0) {
@@ -8809,6 +9201,16 @@ struct fold_first_op {
     }
 };
 
+// Workaround libc++18 invoke() bug: https://github.com/llvm/llvm-project/issues/106428
+consteval bool libcpp_fold_invoke_workaround_required()
+{
+#if defined(_LIBCPP_VERSION)
+    return _LIBCPP_VERSION >= 180000 && _LIBCPP_VERSION < 190000;
+#else
+    return false;
+#endif
+}
+
 struct sum_op {
     template <sequence Seq>
         requires std::default_initializable<value_t<Seq>> &&
@@ -8816,7 +9218,16 @@ struct sum_op {
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const -> value_t<Seq>
     {
-        return fold_op{}(FLUX_FWD(seq), std::plus<>{}, value_t<Seq>(0));
+        if constexpr (num::integral<value_t<Seq>>) {
+            if constexpr (libcpp_fold_invoke_workaround_required()) {
+                auto add = []<typename T>(T lhs, T rhs) -> T { return num::add(lhs, rhs); };
+                return fold_op{}(FLUX_FWD(seq), add, value_t<Seq>(0));
+            } else {
+                return fold_op{}(FLUX_FWD(seq), num::add, value_t<Seq>(0));
+            }
+        } else {
+            return fold_op{}(FLUX_FWD(seq), std::plus<>{}, value_t<Seq>(0));
+        }
     }
 };
 
@@ -8827,7 +9238,16 @@ struct product_op {
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const -> value_t<Seq>
     {
-        return fold_op{}(FLUX_FWD(seq), std::multiplies<>{}, value_t<Seq>(1));
+        if constexpr (num::integral<value_t<Seq>>) {
+            if constexpr (libcpp_fold_invoke_workaround_required()) {
+                auto mul = []<typename T>(T lhs, T rhs) -> T { return num::mul(lhs, rhs); };
+                return fold_op{}(FLUX_FWD(seq), mul, value_t<Seq>(1));
+            } else {
+                return fold_op{}(FLUX_FWD(seq), num::mul, value_t<Seq>(1));
+            }
+        } else {
+            return fold_op{}(FLUX_FWD(seq), std::multiplies<>{}, value_t<Seq>(1));
+        }
     }
 };
 
@@ -9505,7 +9925,7 @@ inline constexpr auto variant_emplace =
         variant.template emplace<N>(FLUX_FWD(args)...);
     } else {
         if (std::is_constant_evaluated()) {
-            variant = std::variant<Types...>(std::in_place_index<N>, FLUX_FWD(args)...);
+            variant = std::variant<Types...>(std::in_place_index<N>, FLUX_FWD(args)...); // LCOV_EXCL_LINE
         } else {
             variant.template emplace<N>(FLUX_FWD(args)...);
         }
@@ -10318,7 +10738,7 @@ public:
             requires sized_sequence<Base>
         {
             if constexpr (Mode == scan_mode::exclusive) {
-                return num::checked_add(flux::size(self.base_), distance_t{1});
+                return num::add(flux::size(self.base_), distance_t{1});
             } else {
                 return flux::size(self.base_);
             }
@@ -11146,7 +11566,7 @@ public:
         static constexpr auto first(auto& self) -> cursor_type {
             auto cur = flux::first(self.base_);
             auto end = cur;
-            advance(self.base_, end, self.win_sz_ - 1);
+            advance(self.base_, end, num::sub(self.win_sz_, distance_t{1}));
 
             return cursor_type{.from = std::move(cur), .to = std::move(end)};
         }
@@ -11173,7 +11593,7 @@ public:
         {
             auto end = flux::last(self.base_);
             auto cur = end;
-            advance(self.base_, cur, 1 - self.win_sz_);
+            advance(self.base_, cur, num::sub(distance_t{1}, self.win_sz_));
             return cursor_type{.from = std::move(cur), .to = std::move(end)};
         }
 
@@ -11201,8 +11621,8 @@ public:
         static constexpr auto size(auto& self) -> distance_t
             requires sized_sequence<Base>
         {
-            auto s = (flux::size(self.base_) - self.win_sz_) + 1;
-            return std::max(s, distance_t{0});
+            auto s = num::add(num::sub(flux::size(self.base_), self.win_sz_), distance_t{1});
+            return (cmp::max)(s, distance_t{0});
         }
     };
 };
@@ -11211,11 +11631,11 @@ struct slide_fn {
     template <adaptable_sequence Seq>
         requires multipass_sequence<Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, std::integral auto win_sz) const
+    constexpr auto operator()(Seq&& seq, num::integral auto win_sz) const
         -> sequence auto
     {
         return slide_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq),
-                                                checked_cast<distance_t>(win_sz));
+                                                num::checked_cast<distance_t>(win_sz));
     }
 };
 
@@ -11224,11 +11644,11 @@ struct slide_fn {
 FLUX_EXPORT inline constexpr auto slide = detail::slide_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::slide(std::integral auto win_sz) &&
+constexpr auto inline_sequence_base<D>::slide(num::integral auto win_sz) &&
         requires multipass_sequence<D>
 {
     FLUX_ASSERT(win_sz > 0);
-    return flux::slide(std::move(derived()), std::move(win_sz));
+    return flux::slide(std::move(derived()), win_sz);
 }
 
 } // namespace slide
@@ -11713,7 +12133,7 @@ partition_right_branchless(Seq& seq, Cur const begin, Cur const end, Comp& comp)
         }
 
         // Swap elements and update block sizes and first/last boundaries.
-        int num = (std::min)(num_l, num_r);
+        int num = (cmp::min)(num_l, num_r);
         swap_offsets(seq, first, last, offsets_l + start_l, offsets_r + start_r, num,
                      num_l == num_r);
         num_l -= num;
@@ -11762,7 +12182,7 @@ partition_right_branchless(Seq& seq, Cur const begin, Cur const end, Comp& comp)
         }
     }
 
-    int num = (std::min)(num_l, num_r);
+    int num = (cmp::min)(num_l, num_r);
     swap_offsets(seq, first, last, offsets_l + start_l, offsets_r + start_r, num,
                  num_l == num_r);
     num_l -= num;
@@ -12757,7 +13177,7 @@ public:
 
         if constexpr (can_memcpy) {
             if (std::is_constant_evaluated()) {
-                return impl(seq, iter);
+                return impl(seq, iter); // LCOV_EXCL_LINE
             } else {
                 auto size = flux::usize(seq);
                 if (size == 0) {
@@ -12766,7 +13186,7 @@ public:
                 FLUX_ASSERT(flux::data(seq) != nullptr);
                 std::memmove(std::to_address(iter), flux::data(seq),
                              size * sizeof(value_t<Seq>));
-                return iter + checked_cast<std::iter_difference_t<Iter>>(flux::size(seq));
+                return iter + num::checked_cast<std::iter_difference_t<Iter>>(flux::size(seq));
             }
         } else {
             return impl(seq, iter);
@@ -13218,7 +13638,7 @@ public:
         static constexpr auto inc(array_ptr const& self, index_t& idx) -> void
         {
             FLUX_DEBUG_ASSERT(idx < self.sz_);
-            idx = num::checked_add(idx, distance_t{1});
+            idx = num::add(idx, distance_t{1});
         }
 
         static constexpr auto read_at(array_ptr const& self, index_t idx) -> T&
@@ -13243,7 +13663,7 @@ public:
         static constexpr auto inc(array_ptr const& self, index_t& idx, distance_t offset)
             -> void
         {
-            index_t nxt = num::checked_add(idx, offset);
+            index_t nxt = num::add(idx, offset);
             FLUX_DEBUG_ASSERT(nxt >= 0);
             FLUX_DEBUG_ASSERT(nxt <= self.sz_);
             idx = nxt;
@@ -13252,7 +13672,7 @@ public:
         static constexpr auto distance(array_ptr const&, index_t from, index_t to)
             -> distance_t
         {
-            return num::checked_sub(to, from);
+            return num::sub(to, from);
         }
 
         static constexpr auto size(array_ptr const& self) -> distance_t
@@ -13286,9 +13706,9 @@ namespace detail {
 struct make_array_ptr_unchecked_fn {
     template <typename T>
         requires (std::is_object_v<T> && !std::is_abstract_v<T>)
-    constexpr auto operator()(T* ptr, std::integral auto size) const -> array_ptr<T>
+    constexpr auto operator()(T* ptr, num::integral auto size) const -> array_ptr<T>
     {
-        return array_ptr<T>(ptr, checked_cast<distance_t>(size));
+        return array_ptr<T>(ptr, num::checked_cast<distance_t>(size));
     }
 };
 
@@ -13891,12 +14311,12 @@ public:
             requires std::ranges::random_access_range<R>
         {
             if (offset < 0) {
-                bounds_check(num::checked_add(offset, distance(self, first(self), cur)) >= 0);
+                bounds_check(num::add(offset, distance(self, first(self), cur)) >= 0);
             } else if (offset > 0) {
                 bounds_check(offset < distance(self, cur, last(self)));
             }
 
-            cur.iter += checked_cast<std::ranges::range_difference_t<V>>(offset);
+            cur.iter += num::cast<std::ranges::range_difference_t<V>>(offset);
         }
 
         template <typename Self>
@@ -13905,7 +14325,7 @@ public:
             -> distance_t
             requires std::ranges::random_access_range<R>
         {
-            return checked_cast<distance_t>(std::ranges::distance(from.iter, to.iter));
+            return num::cast<distance_t>(std::ranges::distance(from.iter, to.iter));
         }
 
         template <typename Self>
@@ -13933,7 +14353,7 @@ public:
         static constexpr auto size(Self& self) -> distance_t
             requires std::ranges::sized_range<R>
         {
-            return checked_cast<distance_t>(std::ranges::ssize(self.rng_));
+            return num::cast<distance_t>(std::ranges::ssize(self.rng_));
         }
 
         template <typename Self>
@@ -14095,7 +14515,7 @@ public:
 
         static constexpr auto distance(self_t const&, std::size_t from, std::size_t to) -> distance_t
         {
-            return checked_cast<distance_t>(to) - checked_cast<distance_t>(from);
+            return num::cast<distance_t>(to) - num::cast<distance_t>(from);
         }
 
         static constexpr auto for_each_while(self_t const& self, auto&& pred) -> std::size_t
@@ -14128,7 +14548,7 @@ public:
         static constexpr auto size(self_t const& self) -> distance_t
             requires (!IsInfinite)
         {
-            return checked_cast<distance_t>(self.data_.count);
+            return num::cast<distance_t>(self.data_.count);
         }
     };
 };
@@ -14143,14 +14563,14 @@ struct repeat_fn {
 
     template <typename T>
         requires std::movable<std::decay_t<T>>
-    constexpr auto operator()(T&& obj, std::integral auto count) const
+    constexpr auto operator()(T&& obj, num::integral auto count) const
     {
-        auto c = checked_cast<distance_t>(count);
+        auto c = num::checked_cast<distance_t>(count);
         if (c < 0) {
             runtime_error("Negative count passed to repeat()");
         }
         return repeat_sequence<std::decay_t<T>, false>(
-            FLUX_FWD(obj), checked_cast<std::size_t>(c));
+            FLUX_FWD(obj), num::checked_cast<std::size_t>(c));
     }
 };
 
