@@ -312,7 +312,7 @@ partition_right_branchless(Seq& seq, Cur const begin, Cur const end, Comp& comp)
         }
 
         // Swap elements and update block sizes and first/last boundaries.
-        int num = (std::min)(num_l, num_r);
+        int num = (cmp::min)(num_l, num_r);
         swap_offsets(seq, first, last, offsets_l + start_l, offsets_r + start_r, num,
                      num_l == num_r);
         num_l -= num;
@@ -361,7 +361,7 @@ partition_right_branchless(Seq& seq, Cur const begin, Cur const end, Comp& comp)
         }
     }
 
-    int num = (std::min)(num_l, num_r);
+    int num = (cmp::min)(num_l, num_r);
     swap_offsets(seq, first, last, offsets_l + start_l, offsets_r + start_r, num,
                  num_l == num_r);
     num_l -= num;

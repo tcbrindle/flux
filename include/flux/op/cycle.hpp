@@ -168,7 +168,7 @@ public:
             }
 
             auto off = flux::distance(self.base_, first, cur.base_cur);
-            off = num::checked_add(off, offset);
+            off = num::add(off, offset);
 
             cur.n += static_cast<std::size_t>(off/sz);
 
@@ -186,9 +186,9 @@ public:
             requires random_access_sequence<decltype(self.base_)> &&
                      sized_sequence<decltype(self.base_)>
         {
-            auto dist = checked_cast<distance_t>(to.n) - checked_cast<distance_t>(from.n);
-            dist = num::checked_mul(dist, flux::size(self.base_));
-            return num::checked_add(dist,
+            auto dist = num::cast<distance_t>(to.n) - num::cast<distance_t>(from.n);
+            dist = num::mul(dist, flux::size(self.base_));
+            return num::add(dist,
                     flux::distance(self.base_, from.base_cur, to.base_cur));
         }
 
@@ -203,8 +203,8 @@ public:
         static constexpr auto size(auto& self) -> distance_t
             requires (!IsInfinite && sized_sequence<Base>)
         {
-            return num::checked_mul(flux::size(self.base_),
-                                    checked_cast<flux::distance_t>(self.data_.count));
+            return num::mul(flux::size(self.base_),
+                            num::cast<flux::distance_t>(self.data_.count));
         }
     };
 };
@@ -225,15 +225,15 @@ struct cycle_fn {
     template <adaptable_sequence Seq>
         requires multipass_sequence<Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, std::integral auto count) const
+    constexpr auto operator()(Seq&& seq, num::integral auto count) const
         -> multipass_sequence auto
     {
-        auto c = checked_cast<distance_t>(count);
+        auto c = num::checked_cast<distance_t>(count);
         if (c < 0) {
             runtime_error("Negative count passed to cycle()");
         }
         return cycle_adaptor<std::decay_t<Seq>, false>(
-            FLUX_FWD(seq), checked_cast<std::size_t>(c));
+            FLUX_FWD(seq), num::checked_cast<std::size_t>(c));
     }
 };
 
@@ -249,7 +249,7 @@ constexpr auto inline_sequence_base<D>::cycle() &&
 }
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::cycle(std::integral auto count) &&
+constexpr auto inline_sequence_base<D>::cycle(num::integral auto count) &&
     requires multipass_sequence<D>
 {
     return flux::cycle(std::move(derived()), count);

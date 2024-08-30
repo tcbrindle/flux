@@ -44,7 +44,7 @@ public:
         static constexpr auto size(auto& self)
             requires sized_sequence<Base>
         {
-            return (cmp::max)(num::checked_sub(flux::size(self.base()), self.count_),
+            return (cmp::max)(num::sub(flux::size(self.base()), self.count_),
                               distance_t{0});
         }
 
@@ -64,9 +64,9 @@ public:
 struct drop_fn {
     template <adaptable_sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, std::integral auto count) const
+    constexpr auto operator()(Seq&& seq, num::integral auto count) const
     {
-        auto count_ = checked_cast<distance_t>(count);
+        auto count_ = num::checked_cast<distance_t>(count);
         if (count_ < 0) {
             runtime_error("Negative argument passed to drop()");
         }
@@ -81,7 +81,7 @@ struct drop_fn {
 FLUX_EXPORT inline constexpr auto drop = detail::drop_fn{};
 
 template <typename Derived>
-constexpr auto inline_sequence_base<Derived>::drop(std::integral auto count) &&
+constexpr auto inline_sequence_base<Derived>::drop(num::integral auto count) &&
 {
     return flux::drop(std::move(derived()), count);
 }

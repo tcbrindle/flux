@@ -117,12 +117,12 @@ public:
             requires std::ranges::random_access_range<R>
         {
             if (offset < 0) {
-                bounds_check(num::checked_add(offset, distance(self, first(self), cur)) >= 0);
+                bounds_check(num::add(offset, distance(self, first(self), cur)) >= 0);
             } else if (offset > 0) {
                 bounds_check(offset < distance(self, cur, last(self)));
             }
 
-            cur.iter += checked_cast<std::ranges::range_difference_t<V>>(offset);
+            cur.iter += num::cast<std::ranges::range_difference_t<V>>(offset);
         }
 
         template <typename Self>
@@ -131,7 +131,7 @@ public:
             -> distance_t
             requires std::ranges::random_access_range<R>
         {
-            return checked_cast<distance_t>(std::ranges::distance(from.iter, to.iter));
+            return num::cast<distance_t>(std::ranges::distance(from.iter, to.iter));
         }
 
         template <typename Self>
@@ -159,7 +159,7 @@ public:
         static constexpr auto size(Self& self) -> distance_t
             requires std::ranges::sized_range<R>
         {
-            return checked_cast<distance_t>(std::ranges::ssize(self.rng_));
+            return num::cast<distance_t>(std::ranges::ssize(self.rng_));
         }
 
         template <typename Self>

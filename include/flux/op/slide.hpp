@@ -50,7 +50,7 @@ public:
         static constexpr auto first(auto& self) -> cursor_type {
             auto cur = flux::first(self.base_);
             auto end = cur;
-            advance(self.base_, end, self.win_sz_ - 1);
+            advance(self.base_, end, num::sub(self.win_sz_, distance_t{1}));
 
             return cursor_type{.from = std::move(cur), .to = std::move(end)};
         }
@@ -77,7 +77,7 @@ public:
         {
             auto end = flux::last(self.base_);
             auto cur = end;
-            advance(self.base_, cur, 1 - self.win_sz_);
+            advance(self.base_, cur, num::sub(distance_t{1}, self.win_sz_));
             return cursor_type{.from = std::move(cur), .to = std::move(end)};
         }
 
@@ -105,8 +105,8 @@ public:
         static constexpr auto size(auto& self) -> distance_t
             requires sized_sequence<Base>
         {
-            auto s = (flux::size(self.base_) - self.win_sz_) + 1;
-            return std::max(s, distance_t{0});
+            auto s = num::add(num::sub(flux::size(self.base_), self.win_sz_), distance_t{1});
+            return (cmp::max)(s, distance_t{0});
         }
     };
 };
@@ -115,11 +115,11 @@ struct slide_fn {
     template <adaptable_sequence Seq>
         requires multipass_sequence<Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, std::integral auto win_sz) const
+    constexpr auto operator()(Seq&& seq, num::integral auto win_sz) const
         -> sequence auto
     {
         return slide_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq),
-                                                checked_cast<distance_t>(win_sz));
+                                                num::checked_cast<distance_t>(win_sz));
     }
 };
 
@@ -128,11 +128,11 @@ struct slide_fn {
 FLUX_EXPORT inline constexpr auto slide = detail::slide_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::slide(std::integral auto win_sz) &&
+constexpr auto inline_sequence_base<D>::slide(num::integral auto win_sz) &&
         requires multipass_sequence<D>
 {
     FLUX_ASSERT(win_sz > 0);
-    return flux::slide(std::move(derived()), std::move(win_sz));
+    return flux::slide(std::move(derived()), win_sz);
 }
 
 } // namespace slide

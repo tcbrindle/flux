@@ -47,13 +47,14 @@ inline constexpr struct advance_fn {
     constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur, distance_t offset) const -> distance_t
     {
         if (offset > 0) {
-            auto dist = std::min(flux::distance(seq, cur, flux::last(seq)), offset);
+            auto dist = (cmp::min)(flux::distance(seq, cur, flux::last(seq)), offset);
             flux::inc(seq, cur, dist);
-            return offset - dist;
+            return num::sub(offset, dist);
         } else if (offset < 0) {
-            auto dist = -std::min(flux::distance(seq, flux::first(seq), cur), -offset);
+            auto dist = num::neg((cmp::min)(flux::distance(seq, flux::first(seq), cur),
+                                            num::neg(offset)));
             flux::inc(seq, cur, dist);
-            return offset - dist;
+            return num::sub(offset, dist);
         } else {
             return 0;
         }
@@ -225,9 +226,10 @@ public:
             requires random_access_sequence<Base>
         {
             if (offset > 0) {
-                cur.missing = advance(self.base_, cur.cur, num::checked_mul(offset, self.stride_)) % self.stride_;
+                cur.missing = num::mod(advance(self.base_, cur.cur, num::mul(offset, self.stride_)),
+                                       self.stride_);
             } else if (offset < 0) {
-                advance(self.base_, cur.cur, num::checked_add(num::checked_mul(offset, self.stride_), cur.missing));
+                advance(self.base_, cur.cur, num::add(num::mul(offset, self.stride_), cur.missing));
                 cur.missing = 0;
             }
         }
@@ -252,10 +254,11 @@ public:
 struct stride_fn {
     template <adaptable_sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, std::integral auto by) const
+    constexpr auto operator()(Seq&& seq, num::integral auto by) const
     {
         FLUX_ASSERT(by > 0);
-        return stride_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq), checked_cast<distance_t>(by));
+        return stride_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq),
+                                                 num::checked_cast<distance_t>(by));
     }
 };
 
@@ -264,7 +267,7 @@ struct stride_fn {
 FLUX_EXPORT inline constexpr auto stride = detail::stride_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::stride(std::integral auto by) &&
+constexpr auto inline_sequence_base<D>::stride(num::integral auto by) &&
 {
     return flux::stride(std::move(derived()), by);
 }

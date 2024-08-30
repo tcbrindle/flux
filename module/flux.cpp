@@ -4,6 +4,7 @@ module;
 #include <algorithm>
 #include <array>
 #include <bitset>
+#include <climits>
 #include <compare>
 #include <concepts>
 #include <coroutine>

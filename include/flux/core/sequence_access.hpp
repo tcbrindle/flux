@@ -8,6 +8,7 @@
 
 #include <flux/core/concepts.hpp>
 #include <flux/core/optional.hpp>
+#include <flux/core/numeric.hpp>
 
 namespace flux {
 
@@ -126,7 +127,7 @@ struct usize_fn {
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const -> std::size_t
     {
-        return checked_cast<std::size_t>(size_fn{}(seq));
+        return num::unchecked_cast<std::size_t>(size_fn{}(seq));
     }
 };
 

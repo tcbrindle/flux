@@ -77,7 +77,7 @@ public:
 
         static constexpr auto distance(self_t const&, std::size_t from, std::size_t to) -> distance_t
         {
-            return checked_cast<distance_t>(to) - checked_cast<distance_t>(from);
+            return num::cast<distance_t>(to) - num::cast<distance_t>(from);
         }
 
         static constexpr auto for_each_while(self_t const& self, auto&& pred) -> std::size_t
@@ -110,7 +110,7 @@ public:
         static constexpr auto size(self_t const& self) -> distance_t
             requires (!IsInfinite)
         {
-            return checked_cast<distance_t>(self.data_.count);
+            return num::cast<distance_t>(self.data_.count);
         }
     };
 };
@@ -125,14 +125,14 @@ struct repeat_fn {
 
     template <typename T>
         requires std::movable<std::decay_t<T>>
-    constexpr auto operator()(T&& obj, std::integral auto count) const
+    constexpr auto operator()(T&& obj, num::integral auto count) const
     {
-        auto c = checked_cast<distance_t>(count);
+        auto c = num::checked_cast<distance_t>(count);
         if (c < 0) {
             runtime_error("Negative count passed to repeat()");
         }
         return repeat_sequence<std::decay_t<T>, false>(
-            FLUX_FWD(obj), checked_cast<std::size_t>(c));
+            FLUX_FWD(obj), num::checked_cast<std::size_t>(c));
     }
 };
 

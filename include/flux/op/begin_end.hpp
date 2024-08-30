@@ -102,7 +102,7 @@ public:
     constexpr auto operator-=(difference_type n) -> sequence_iterator&
         requires random_access_sequence<S>
     {
-        flux::inc(*seq_, cur_, -n);
+        flux::inc(*seq_, cur_, num::neg(n));
         return *this;
     }
 
@@ -153,7 +153,7 @@ public:
         -> sequence_iterator
         requires random_access_sequence<S>
     {
-        flux::inc(*self.seq_, self.cur_, -n);
+        flux::inc(*self.seq_, self.cur_, num::neg(n));
         return self;
     }
 

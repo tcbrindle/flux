@@ -40,7 +40,7 @@ public:
 
         if constexpr (can_memcpy) {
             if (std::is_constant_evaluated()) {
-                return impl(seq, iter);
+                return impl(seq, iter); // LCOV_EXCL_LINE
             } else {
                 auto size = flux::usize(seq);
                 if (size == 0) {
@@ -49,7 +49,7 @@ public:
                 FLUX_ASSERT(flux::data(seq) != nullptr);
                 std::memmove(std::to_address(iter), flux::data(seq),
                              size * sizeof(value_t<Seq>));
-                return iter + checked_cast<std::iter_difference_t<Iter>>(flux::size(seq));
+                return iter + num::checked_cast<std::iter_difference_t<Iter>>(flux::size(seq));
             }
         } else {
             return impl(seq, iter);

@@ -286,9 +286,9 @@ public:
             requires random_access_sequence<Base>
         {
             if (offset > 0) {
-                cur.missing = advance(self.base_, cur.cur, num::checked_mul(offset, self.chunk_sz_)) % self.chunk_sz_;
+                cur.missing = advance(self.base_, cur.cur, num::mul(offset, self.chunk_sz_)) % self.chunk_sz_;
             } else if (offset < 0) {
-                advance(self.base_, cur.cur, num::checked_add(num::checked_mul(offset, self.chunk_sz_), cur.missing));
+                advance(self.base_, cur.cur, num::add(num::mul(offset, self.chunk_sz_), cur.missing));
                 cur.missing = 0;
             }
         }
@@ -298,12 +298,12 @@ public:
 struct chunk_fn {
     template <adaptable_sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, std::integral auto chunk_sz) const
+    constexpr auto operator()(Seq&& seq, num::integral auto chunk_sz) const
         -> sequence auto
     {
         FLUX_ASSERT(chunk_sz > 0);
         return chunk_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq),
-                                                checked_cast<distance_t>(chunk_sz));
+                                                num::checked_cast<distance_t>(chunk_sz));
     }
 };
 
@@ -312,7 +312,7 @@ struct chunk_fn {
 FLUX_EXPORT inline constexpr auto chunk = detail::chunk_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::chunk(std::integral auto chunk_sz) &&
+constexpr auto inline_sequence_base<D>::chunk(num::integral auto chunk_sz) &&
 {
     return flux::chunk(std::move(derived()), chunk_sz);
 }

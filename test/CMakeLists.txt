@@ -11,8 +11,15 @@ FetchContent_MakeAvailable(doctest)
 
 add_executable(test-flux
 
+    num/test_concepts.cpp
+    num/test_casts.cpp
+    num/test_unchecked_ops.cpp
+    num/test_wrapping_ops.cpp
+    num/test_overflowing_ops.cpp
+    num/test_checked_ops.cpp
+    num/test_default_ops.cpp
+
     test_concepts.cpp
-    test_overflow.cpp
     test_optional.cpp
     test_predicates.cpp
     test_apply.cpp
@@ -86,10 +93,12 @@ add_executable(test-flux
     test_single.cpp
     test_unfold.cpp
 )
+
 target_link_libraries(test-flux flux-internal doctest::doctest_with_main)
 target_compile_definitions(test-flux PUBLIC
     FLUX_UNWIND_ON_ERROR
     FLUX_ERROR_ON_OVERFLOW
+    FLUX_ERROR_ON_DIVIDE_BY_ZERO
     FLUX_DISABLE_STATIC_BOUNDS_CHECKING
     DOCTEST_CONFIG_VOID_CAST_EXPRESSIONS
 )

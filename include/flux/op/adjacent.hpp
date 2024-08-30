@@ -112,7 +112,7 @@ public:
         requires sized_sequence<Base>
     {
         auto s = (flux::size(self.base_) - N) + 1;
-        return (std::max)(s, distance_t{0});
+        return (cmp::max)(s, distance_t{0});
     }
 };
 

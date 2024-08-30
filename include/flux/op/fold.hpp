@@ -58,6 +58,16 @@ struct fold_first_op {
     }
 };
 
+// Workaround libc++18 invoke() bug: https://github.com/llvm/llvm-project/issues/106428
+consteval bool libcpp_fold_invoke_workaround_required()
+{
+#if defined(_LIBCPP_VERSION)
+    return _LIBCPP_VERSION >= 180000 && _LIBCPP_VERSION < 190000;
+#else
+    return false;
+#endif
+}
+
 struct sum_op {
     template <sequence Seq>
         requires std::default_initializable<value_t<Seq>> &&
@@ -65,7 +75,16 @@ struct sum_op {
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const -> value_t<Seq>
     {
-        return fold_op{}(FLUX_FWD(seq), std::plus<>{}, value_t<Seq>(0));
+        if constexpr (num::integral<value_t<Seq>>) {
+            if constexpr (libcpp_fold_invoke_workaround_required()) {
+                auto add = []<typename T>(T lhs, T rhs) -> T { return num::add(lhs, rhs); };
+                return fold_op{}(FLUX_FWD(seq), add, value_t<Seq>(0));
+            } else {
+                return fold_op{}(FLUX_FWD(seq), num::add, value_t<Seq>(0));
+            }
+        } else {
+            return fold_op{}(FLUX_FWD(seq), std::plus<>{}, value_t<Seq>(0));
+        }
     }
 };
 
@@ -76,7 +95,16 @@ struct product_op {
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const -> value_t<Seq>
     {
-        return fold_op{}(FLUX_FWD(seq), std::multiplies<>{}, value_t<Seq>(1));
+        if constexpr (num::integral<value_t<Seq>>) {
+            if constexpr (libcpp_fold_invoke_workaround_required()) {
+                auto mul = []<typename T>(T lhs, T rhs) -> T { return num::mul(lhs, rhs); };
+                return fold_op{}(FLUX_FWD(seq), mul, value_t<Seq>(1));
+            } else {
+                return fold_op{}(FLUX_FWD(seq), num::mul, value_t<Seq>(1));
+            }
+        } else {
+            return fold_op{}(FLUX_FWD(seq), std::multiplies<>{}, value_t<Seq>(1));
+        }
     }
 };
 
