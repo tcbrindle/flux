@@ -161,6 +161,16 @@ struct move_at_unchecked_fn {
     }
 };
 
+struct for_each_while_fn {
+    template <sequence Seq, typename Pred>
+        requires std::invocable<Pred&, element_t<Seq>> &&
+        boolean_testable<std::invoke_result_t<Pred&, element_t<Seq>>>
+    constexpr auto operator()(Seq&& seq, Pred pred) const -> cursor_t<Seq>
+    {
+        return traits_t<Seq>::for_each_while(seq, std::move(pred));
+    }
+};
+
 } // namespace detail
 
 FLUX_EXPORT inline constexpr auto first = detail::first_fn{};
@@ -176,6 +186,7 @@ FLUX_EXPORT inline constexpr auto data = detail::data_fn{};
 FLUX_EXPORT inline constexpr auto last = detail::last_fn{};
 FLUX_EXPORT inline constexpr auto size = detail::size_fn{};
 FLUX_EXPORT inline constexpr auto usize = detail::usize_fn{};
+FLUX_EXPORT inline constexpr auto for_each_while = detail::for_each_while_fn{};
 
 namespace detail {
 

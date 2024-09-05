@@ -12,7 +12,7 @@
 #ifdef USE_MODULES
 import flux;
 #else
-#include <flux/op/all_any_none.hpp>
+#include <flux/algorithm/all_any_none.hpp>
 #endif
 
 namespace {

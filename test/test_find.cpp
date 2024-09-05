@@ -13,8 +13,7 @@
 import flux;
 #else
 #include <flux/core/default_impls.hpp>
-#include <flux/op/find.hpp>
-#include <flux/op/from.hpp>
+#include <flux/algorithm/find.hpp>
 #endif
 
 namespace {

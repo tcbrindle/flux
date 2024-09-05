@@ -8,8 +8,6 @@
 
 #include <flux/core.hpp>
 
-#include <flux/op/ref.hpp>
-
 namespace flux {
 
 namespace detail {

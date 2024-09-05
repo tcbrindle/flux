@@ -8,8 +8,6 @@
 
 #include <flux/core.hpp>
 
-#include <flux/op/from.hpp>
-
 #include <iosfwd>
 
 namespace flux {
