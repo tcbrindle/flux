@@ -19,7 +19,7 @@ private:
     Base base_;
     flux::optional<cursor_t<Base>> cached_last_{};
 
-    friend struct passthrough_traits_base<Base>;
+    friend struct passthrough_traits_base;
 
     constexpr auto base() -> Base& { return base_; }
 
@@ -28,7 +28,7 @@ public:
         : base_(FLUX_FWD(base))
     {}
 
-    struct flux_sequence_traits : detail::passthrough_traits_base<Base> {
+    struct flux_sequence_traits : detail::passthrough_traits_base {
 
         using value_type = value_t<Base>;
         using self_t = cache_last_adaptor;

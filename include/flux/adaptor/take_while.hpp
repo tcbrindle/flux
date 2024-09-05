@@ -21,7 +21,7 @@ private:
     constexpr auto base() & -> Base& { return base_; }
 
     friend struct sequence_traits<take_while_adaptor>;
-    friend struct passthrough_traits_base<Base>;
+    friend struct passthrough_traits_base;
 
 public:
     constexpr take_while_adaptor(decays_to<Base> auto&& base, decays_to<Pred> auto&& pred)
@@ -48,7 +48,7 @@ struct take_while_fn {
 
 template <typename Base, typename Pred>
 struct sequence_traits<detail::take_while_adaptor<Base, Pred>>
-    : detail::passthrough_traits_base<Base>
+    : detail::passthrough_traits_base
 {
     using self_t = detail::take_while_adaptor<Base, Pred>;
 

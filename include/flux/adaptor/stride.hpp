@@ -76,7 +76,7 @@ public:
     constexpr auto base() & -> Base& { return base_; }
     constexpr auto base() const& -> Base const& { return base_; }
 
-    struct flux_sequence_traits : passthrough_traits_base<Base> {
+    struct flux_sequence_traits : passthrough_traits_base {
 
         using value_type = value_t<Base>;
         static inline constexpr bool is_infinite = infinite_sequence<Base>;

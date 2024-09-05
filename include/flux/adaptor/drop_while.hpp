@@ -18,7 +18,7 @@ private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Pred pred_;
 
-    friend struct passthrough_traits_base<Base>;
+    friend struct passthrough_traits_base;
 
     constexpr auto base() & -> Base& { return base_; }
     constexpr auto base() const& -> Base const& { return base_; }
@@ -29,7 +29,7 @@ public:
           pred_(FLUX_FWD(pred))
     {}
 
-    struct flux_sequence_traits : detail::passthrough_traits_base<Base> {
+    struct flux_sequence_traits : detail::passthrough_traits_base {
         using value_type = value_t<Base>;
 
         static constexpr bool disable_multipass = !multipass_sequence<Base>;

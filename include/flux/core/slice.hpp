@@ -95,7 +95,7 @@ using detail::subsequence;
 
 template <typename Base, bool Bounded>
 struct sequence_traits<subsequence<Base, Bounded>>
-    : detail::passthrough_traits_base<Base>
+    : detail::passthrough_traits_base
 {
     using value_type = value_t<Base>;
     using self_t = subsequence<Base, Bounded>;

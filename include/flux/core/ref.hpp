@@ -14,7 +14,6 @@ namespace flux {
 
 namespace detail {
 
-template <typename Base>
 struct passthrough_traits_base : default_sequence_traits {
 
     static constexpr auto first(auto& self)
@@ -144,7 +143,7 @@ public:
 
     constexpr Base& base() const noexcept { return *base_; }
 
-    struct flux_sequence_traits : passthrough_traits_base<Base> {
+    struct flux_sequence_traits : passthrough_traits_base {
         using value_type = value_t<Base>;
     };
 };
@@ -205,7 +204,7 @@ public:
     constexpr Base&& base() && noexcept { return std::move(base_); }
     constexpr Base const&& base() const&& noexcept { return std::move(base_); }
 
-    struct flux_sequence_traits : passthrough_traits_base<Base> {
+    struct flux_sequence_traits : passthrough_traits_base {
         using value_type = value_t<Base>;
     };
 };
