@@ -10,7 +10,7 @@
 #ifdef USE_MODULES
 import flux;
 #else
-#include <flux/source/empty.hpp>
+#include <flux/sequence/empty.hpp>
 #endif
 
 namespace {
