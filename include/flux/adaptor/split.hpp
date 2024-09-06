@@ -9,7 +9,7 @@
 #include <flux/core.hpp>
 #include <flux/algorithm/find.hpp>
 #include <flux/algorithm/search.hpp>
-#include <flux/source/single.hpp>
+#include <flux/sequence/single.hpp>
 
 namespace flux {
 

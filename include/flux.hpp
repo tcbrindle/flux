@@ -9,18 +9,6 @@
 #include <flux/adaptor.hpp>
 #include <flux/algorithm.hpp>
 #include <flux/core.hpp>
-
-#include <flux/source/array_ptr.hpp>
-#include <flux/source/bitset.hpp>
-#include <flux/source/empty.hpp>
-#include <flux/source/generator.hpp>
-#include <flux/source/getlines.hpp>
-#include <flux/source/iota.hpp>
-#include <flux/source/istream.hpp>
-#include <flux/source/istreambuf.hpp>
-#include <flux/source/range.hpp>
-#include <flux/source/repeat.hpp>
-#include <flux/source/single.hpp>
-#include <flux/source/unfold.hpp>
+#include <flux/sequence.hpp>
 
 #endif

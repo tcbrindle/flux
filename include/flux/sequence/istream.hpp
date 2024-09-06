@@ -3,8 +3,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_SOURCE_FROM_ISTREAM_HPP_INCLUDED
-#define FLUX_SOURCE_FROM_ISTREAM_HPP_INCLUDED
+#ifndef FLUX_SEQUENCE_FROM_ISTREAM_HPP_INCLUDED
+#define FLUX_SEQUENCE_FROM_ISTREAM_HPP_INCLUDED
 
 #include <flux/core.hpp>
 
@@ -91,4 +91,4 @@ inline constexpr auto from_istream = detail::from_istream_fn<T>{};
 
 } // namespace flux
 
-#endif
+#endif // FLUX_SEQUENCE_ISTREAM_HPP_INCLUDED

@@ -3,8 +3,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_SOURCE_EMPTY_HPP_INCLUDED
-#define FLUX_SOURCE_EMPTY_HPP_INCLUDED
+#ifndef FLUX_SEQUENCE_EMPTY_HPP_INCLUDED
+#define FLUX_SEQUENCE_EMPTY_HPP_INCLUDED
 
 #include <flux/core.hpp>
 
@@ -62,4 +62,4 @@ inline constexpr auto empty = detail::empty_sequence<T>{};
 
 } // namespace flux
 
-#endif // FLUX_SOURCE_EMPTY_HPP_INCLUDED
+#endif // FLUX_SEQUENCE_EMPTY_HPP_INCLUDED

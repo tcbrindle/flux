@@ -7,7 +7,7 @@
 #define FLUX_ADAPTOR_ZIP_HPP_INCLUDED
 
 #include <flux/core.hpp>
-#include <flux/source/empty.hpp>
+#include <flux/sequence/empty.hpp>
 
 #include <algorithm> // for std::min({ilist...})
 
