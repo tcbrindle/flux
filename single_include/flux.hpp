@@ -7,6 +7,22 @@
 #define FLUX_HPP_INCLUDED
 
 
+// Copyright (c) 2024 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_ADAPTOR_HPP_INCLUDED
+#define FLUX_ADAPTOR_HPP_INCLUDED
+
+
+// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_ADAPTOR_ADJACENT_HPP_INCLUDED
+#define FLUX_ADAPTOR_ADJACENT_HPP_INCLUDED
+
+
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -55,8 +71,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_CORE_MACROS_HPP_INCLUDED
-#define FLUX_CORE_MACROS_HPP_INCLUDED
+#ifndef FLUX_MACROS_HPP_INCLUDED
+#define FLUX_MACROS_HPP_INCLUDED
 
 #include <version>
 
@@ -100,7 +116,7 @@
 #define FLUX_EXPORT
 #endif
 
-#endif // FLUX_CORE_MACROS_HPP_INCLUDED
+#endif // FLUX_MACROS_HPP_INCLUDED
 
 
 #include <concepts>
@@ -2144,6 +2160,16 @@ struct move_at_unchecked_fn {
     }
 };
 
+struct for_each_while_fn {
+    template <sequence Seq, typename Pred>
+        requires std::invocable<Pred&, element_t<Seq>> &&
+        boolean_testable<std::invoke_result_t<Pred&, element_t<Seq>>>
+    constexpr auto operator()(Seq&& seq, Pred pred) const -> cursor_t<Seq>
+    {
+        return traits_t<Seq>::for_each_while(seq, std::move(pred));
+    }
+};
+
 } // namespace detail
 
 FLUX_EXPORT inline constexpr auto first = detail::first_fn{};
@@ -2159,6 +2185,7 @@ FLUX_EXPORT inline constexpr auto data = detail::data_fn{};
 FLUX_EXPORT inline constexpr auto last = detail::last_fn{};
 FLUX_EXPORT inline constexpr auto size = detail::size_fn{};
 FLUX_EXPORT inline constexpr auto usize = detail::usize_fn{};
+FLUX_EXPORT inline constexpr auto for_each_while = detail::for_each_while_fn{};
 
 namespace detail {
 
@@ -2971,13 +2998,12 @@ FLUX_EXPORT inline constexpr auto partial_max = detail::partial_max_fn{};
 
 
 
-
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_REQUIREMENTS_HPP_INCLUDED
-#define FLUX_OP_REQUIREMENTS_HPP_INCLUDED
+#ifndef FLUX_CORE_OPERATION_REQUIREMENTS_HPP_INCLUDED
+#define FLUX_CORE_OPERATION_REQUIREMENTS_HPP_INCLUDED
 
 
 
@@ -2995,10 +3021,6 @@ concept foldable_ =
     std::invocable<Func&, R, element_t<Seq>> &&
     std::convertible_to<Init, R> &&
     std::assignable_from<R&, std::invoke_result_t<Func&, R, element_t<Seq>>>;
-
-} // namespace detail
-
-namespace detail {
 
 template <typename Func, typename E, distance_t N>
 struct repeated_invocable_helper {
@@ -3041,7 +3063,7 @@ concept weak_ordering_for =
 
 } // namespace flux
 
-#endif // FLUX_OP_REQUIREMENTS_HPP_INCLUDED
+#endif // FLUX_CORE_OPERATION_REQUIREMENTS_HPP_INCLUDED
 
 
 namespace flux {
@@ -3155,6 +3177,14 @@ public:
 
     [[nodiscard]]
     constexpr auto usize() const requires sized_sequence<Derived const> { return flux::usize(derived()); }
+
+    template <typename Pred>
+        requires std::invocable<Pred&, element_t<Derived>> &&
+        detail::boolean_testable<std::invoke_result_t<Pred&, element_t<Derived>>>
+    constexpr auto for_each_while(Pred pred)
+    {
+        return flux::for_each_while(derived(), std::ref(pred));
+    }
 
     /// Returns true if the sequence contains no elements
     [[nodiscard]]
@@ -3495,11 +3525,6 @@ public:
         requires std::invocable<Func&, element_t<Derived>>
     constexpr auto for_each(Func func) -> Func;
 
-    template <typename Pred>
-        requires std::invocable<Pred&, element_t<Derived>> &&
-                 detail::boolean_testable<std::invoke_result_t<Pred&, element_t<Derived>>>
-    constexpr auto for_each_while(Pred pred);
-
     constexpr auto inplace_reverse()
         requires bounded_sequence<Derived> &&
                  detail::element_swappable_with<Derived, Derived>;
@@ -3562,25 +3587,281 @@ public:
 
 
 
-#endif // FLUX_CORE_HPP_INCLUDED
 
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_CORE_REF_HPP_INCLUDED
+#define FLUX_CORE_REF_HPP_INCLUDED
+
+
+
+
+
+namespace flux {
+
+namespace detail {
+
+struct passthrough_traits_base : default_sequence_traits {
+
+    static constexpr auto first(auto& self)
+        -> decltype(flux::first(self.base()))
+    {
+        return flux::first(self.base());
+    }
+
+    template <typename Self>
+    static constexpr auto is_last(Self& self, auto const& cur)
+        -> decltype(flux::is_last(self.base(), cur))
+    {
+        return flux::is_last(self.base(), cur);
+    }
+
+    template <typename Self>
+    static constexpr auto read_at(Self& self, auto const& cur)
+        -> decltype(flux::read_at(self.base(), cur))
+    {
+        return flux::read_at(self.base(), cur);
+    }
+
+    template <typename Self>
+    static constexpr auto inc(Self& self, auto& cur)
+        -> decltype(flux::inc(self.base(), cur))
+    {
+        return flux::inc(self.base(), cur);
+    }
+
+    template <typename Self>
+    static constexpr auto dec(Self& self, auto& cur)
+        -> decltype(flux::dec(self.base(), cur))
+    {
+        return flux::dec(self.base(), cur);
+    }
+
+    template <typename Self>
+    static constexpr auto inc(Self& self, auto& cur, distance_t dist)
+        -> decltype(flux::inc(self.base(), cur, dist))
+    {
+        return flux::inc(self.base(), cur, dist);
+    }
+
+    template <typename Self>
+    static constexpr auto distance(Self& self, auto const& from, auto const& to)
+        -> decltype(flux::distance(self.base(), from, to))
+        requires random_access_sequence<decltype(self.base())>
+    {
+        return flux::distance(self.base(), from, to);
+    }
+
+    static constexpr auto data(auto& self)
+        -> decltype(flux::data(self.base()))
+    {
+        return flux::data(self.base());
+    }
+
+    template <typename Self>
+    static constexpr auto size(Self& self) -> decltype(flux::size(self.base()))
+    {
+        return flux::size(self.base());
+    }
+
+    static constexpr auto last(auto& self) -> decltype(flux::last(self.base()))
+    {
+        return flux::last(self.base());
+    }
+
+    template <typename Self>
+    static constexpr auto move_at(Self& self, auto const& cur)
+        -> decltype(flux::move_at(self.base(), cur))
+    {
+        return flux::move_at(self.base(), cur);
+    }
+
+    template <typename Self>
+    static constexpr auto read_at_unchecked(Self& self, auto const& cur)
+        -> decltype(flux::read_at_unchecked(self.base(), cur))
+    {
+        return flux::read_at_unchecked(self.base(), cur);
+    }
+
+    template <typename Self>
+    static constexpr auto move_at_unchecked(Self& self, auto const& cur)
+        -> decltype(flux::move_at_unchecked(self.base(), cur))
+    {
+        return flux::move_at_unchecked(self.base(), cur);
+    }
+
+    template <typename Self>
+    static constexpr auto for_each_while(Self& self, auto&& pred)
+        -> decltype(flux::for_each_while(self.base(), FLUX_FWD(pred)))
+    {
+        return flux::for_each_while(self.base(), FLUX_FWD(pred));
+    }
+};
+
+template <sequence Base>
+struct ref_adaptor : inline_sequence_base<ref_adaptor<Base>> {
+private:
+    Base* base_;
+
+    static void test_func(Base&) noexcept;
+    static void test_func(Base&&) = delete;
+
+public:
+    // This seems thoroughly overcomplicated, but it's the formulation
+    // std::reference_wrapper and ranges::ref_view use to avoid binding rvalues
+    // when Base is a const type, while also avoiding implicit conversions
+    template <typename Seq>
+        requires (!std::same_as<std::decay_t<Seq>, ref_adaptor> &&
+                  std::convertible_to<Seq, Base&> &&
+                  requires { test_func(std::declval<Seq>()); })
+    constexpr ref_adaptor(Seq&& seq)
+        noexcept(noexcept(test_func(std::declval<Seq>())))
+        : base_(std::addressof(static_cast<Base&>(FLUX_FWD(seq))))
+    {}
+
+    // We are always movable
+    ref_adaptor(ref_adaptor&&) = default;
+    ref_adaptor& operator=(ref_adaptor&&) = default;
+    ~ref_adaptor() = default;
+
+    // ...but only copyable when `Base` is const
+    ref_adaptor(ref_adaptor const&) requires std::is_const_v<Base> = default;
+    ref_adaptor& operator=(ref_adaptor const&) requires std::is_const_v<Base> = default;
+
+    constexpr Base& base() const noexcept { return *base_; }
+
+    struct flux_sequence_traits : passthrough_traits_base {
+        using value_type = value_t<Base>;
+    };
+};
+
+template <typename>
+inline constexpr bool is_ref_adaptor = false;
+
+template <typename T>
+inline constexpr bool is_ref_adaptor<ref_adaptor<T>> = true;
+
+struct mut_ref_fn {
+    template <sequence Seq>
+        requires (!std::is_const_v<Seq>)
+    [[nodiscard]]
+    constexpr auto operator()(Seq& seq) const
+    {
+        if constexpr (is_ref_adaptor<Seq>) {
+            return seq;
+        } else {
+            return ref_adaptor<Seq>(seq);
+        }
+    }
+};
+
+struct ref_fn {
+    template <const_iterable_sequence Seq>
+        requires (!is_ref_adaptor<Seq>)
+    [[nodiscard]]
+    constexpr auto operator()(Seq const& seq) const
+    {
+        return ref_adaptor<Seq const>(seq);
+    }
+
+    template <const_iterable_sequence Seq>
+    [[nodiscard]]
+    constexpr auto operator()(ref_adaptor<Seq> ref) const
+    {
+        return ref_adaptor<Seq const>(ref.base());
+    }
+
+    template <typename T>
+    auto operator()(T const&&) const -> void = delete;
+};
+
+template <sequence Base>
+    requires std::movable<Base>
+struct owning_adaptor : inline_sequence_base<owning_adaptor<Base>> {
+private:
+    Base base_;
+
+public:
+    constexpr explicit owning_adaptor(decays_to<Base> auto&& base)
+        : base_(FLUX_FWD(base))
+    {}
+
+    constexpr Base& base() & noexcept { return base_; }
+    constexpr Base const& base() const& noexcept { return base_; }
+    constexpr Base&& base() && noexcept { return std::move(base_); }
+    constexpr Base const&& base() const&& noexcept { return std::move(base_); }
+
+    struct flux_sequence_traits : passthrough_traits_base {
+        using value_type = value_t<Base>;
+    };
+};
+
+struct from_fn {
+    template <adaptable_sequence Seq>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq) const
+    {
+        if constexpr (derived_from_inline_sequence_base<Seq>) {
+            return FLUX_FWD(seq);
+        } else {
+            return owning_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq));
+        }
+    }
+};
+
+struct from_fwd_ref_fn {
+    template <sequence Seq>
+        requires adaptable_sequence<Seq> || std::is_lvalue_reference_v<Seq>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq) const
+    {
+        if constexpr (std::is_lvalue_reference_v<Seq>) {
+            if constexpr (std::is_const_v<std::remove_reference_t<Seq>>) {
+                return ref_fn{}(seq);
+            } else {
+                return mut_ref_fn{}(seq);
+            }
+        } else {
+            return from_fn{}(seq);
+        }
+    }
+};
+
+
+} // namespace detail
+
+FLUX_EXPORT inline constexpr auto mut_ref = detail::mut_ref_fn{};
+FLUX_EXPORT inline constexpr auto ref = detail::ref_fn{};
+FLUX_EXPORT inline constexpr auto from = detail::from_fn{};
+FLUX_EXPORT inline constexpr auto from_fwd_ref = detail::from_fwd_ref_fn{};
+
+template <typename D>
+constexpr auto inline_sequence_base<D>::ref() const&
+    requires const_iterable_sequence<D>
+{
+    return flux::ref(derived());
+}
+
+template <typename D>
+constexpr auto inline_sequence_base<D>::mut_ref() &
+{
+    return flux::mut_ref(derived());
+}
+
+} // namespace flux
+
+#endif // FLUX_CORE_REF_HPP_INCLUDED
 
 
 // Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_ADJACENT_HPP_INCLUDED
-#define FLUX_OP_ADJACENT_HPP_INCLUDED
+#ifndef FLUX_CORE_SEQUENCE_ITERATOR_HPP_INCLUDED
+#define FLUX_CORE_SEQUENCE_ITERATOR_HPP_INCLUDED
 
-
-
-// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_BEGIN_END_HPP_INCLUDED
-#define FLUX_OP_BEGIN_END_HPP_INCLUDED
 
 
 
@@ -3816,43 +4097,16 @@ template <flux::detail::derived_from_inline_sequence_base Seq>
 inline constexpr bool std::ranges::enable_view<Seq> =
     std::is_trivially_copyable_v<Seq> || !std::copyable<Seq>;
 
-#endif // FLUX_OP_BEGIN_END_HPP_INCLUDED
+#endif // FLUX_CORE_SEQUENCE_ITERATOR_HPP_INCLUDED
 
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_REVERSE_HPP_INCLUDED
-#define FLUX_OP_REVERSE_HPP_INCLUDED
+#ifndef FLUX_OP_SLICE_HPP_INCLUDED
+#define FLUX_OP_SLICE_HPP_INCLUDED
 
-
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_FROM_HPP_INCLUDED
-#define FLUX_OP_FROM_HPP_INCLUDED
-
-
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_REF_HPP_INCLUDED
-#define FLUX_OP_REF_HPP_INCLUDED
-
-
-
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_FOR_EACH_WHILE_HPP_INCLUDED
-#define FLUX_OP_FOR_EACH_WHILE_HPP_INCLUDED
 
 
 
@@ -3860,300 +4114,165 @@ namespace flux {
 
 namespace detail {
 
-struct for_each_while_fn {
-    template <sequence Seq, typename Pred>
-        requires std::invocable<Pred&, element_t<Seq>> &&
-                 boolean_testable<std::invoke_result_t<Pred&, element_t<Seq>>>
-    constexpr auto operator()(Seq&& seq, Pred pred) const -> cursor_t<Seq>
-    {
-        return traits_t<Seq>::for_each_while(seq, std::move(pred));
-    }
+template <cursor Cur, bool Bounded>
+struct slice_data {
+    Cur first;
+    Cur last;
 };
 
-} // namespace detail
+template <cursor Cur>
+struct slice_data<Cur, false> {
+    Cur first;
+};
 
-FLUX_EXPORT inline constexpr auto for_each_while = detail::for_each_while_fn{};
-
-template <typename Derived>
-template <typename Pred>
-    requires std::invocable<Pred&, element_t<Derived>> &&
-             detail::boolean_testable<std::invoke_result_t<Pred&, element_t<Derived>>>
-constexpr auto inline_sequence_base<Derived>::for_each_while(Pred pred)
+template <sequence Base, bool Bounded>
+    requires (!Bounded || regular_cursor<cursor_t<Base>>)
+struct subsequence : inline_sequence_base<subsequence<Base, Bounded>>
 {
-    return flux::for_each_while(derived(), std::ref(pred));
-}
-
-} // namespace flux
-
-#endif // FLUX_OP_FOR_EACH_WHILE_HPP_INCLUDED
-
-
-namespace flux {
-
-namespace detail {
-
-template <typename Base>
-struct passthrough_traits_base : default_sequence_traits {
-
-    static constexpr auto first(auto& self)
-        -> decltype(flux::first(self.base()))
-    {
-        return flux::first(self.base());
-    }
-
-    template <typename Self>
-    static constexpr auto is_last(Self& self, auto const& cur)
-        -> decltype(flux::is_last(self.base(), cur))
-    {
-        return flux::is_last(self.base(), cur);
-    }
-
-    template <typename Self>
-    static constexpr auto read_at(Self& self, auto const& cur)
-        -> decltype(flux::read_at(self.base(), cur))
-    {
-        return flux::read_at(self.base(), cur);
-    }
-
-    template <typename Self>
-    static constexpr auto inc(Self& self, auto& cur)
-        -> decltype(flux::inc(self.base(), cur))
-    {
-        return flux::inc(self.base(), cur);
-    }
-
-    template <typename Self>
-    static constexpr auto dec(Self& self, auto& cur)
-        -> decltype(flux::dec(self.base(), cur))
-    {
-        return flux::dec(self.base(), cur);
-    }
-
-    template <typename Self>
-    static constexpr auto inc(Self& self, auto& cur, distance_t dist)
-        -> decltype(flux::inc(self.base(), cur, dist))
-    {
-        return flux::inc(self.base(), cur, dist);
-    }
-
-    template <typename Self>
-    static constexpr auto distance(Self& self, auto const& from, auto const& to)
-        -> decltype(flux::distance(self.base(), from, to))
-        requires random_access_sequence<decltype(self.base())>
-    {
-        return flux::distance(self.base(), from, to);
-    }
-
-    static constexpr auto data(auto& self)
-        -> decltype(flux::data(self.base()))
-    {
-        return flux::data(self.base());
-    }
-
-    template <typename Self>
-    static constexpr auto size(Self& self) -> decltype(flux::size(self.base()))
-    {
-        return flux::size(self.base());
-    }
-
-    static constexpr auto last(auto& self) -> decltype(flux::last(self.base()))
-    {
-        return flux::last(self.base());
-    }
-
-    template <typename Self>
-    static constexpr auto move_at(Self& self, auto const& cur)
-        -> decltype(flux::move_at(self.base(), cur))
-    {
-        return flux::move_at(self.base(), cur);
-    }
-
-    template <typename Self>
-    static constexpr auto read_at_unchecked(Self& self, auto const& cur)
-        -> decltype(flux::read_at_unchecked(self.base(), cur))
-    {
-        return flux::read_at_unchecked(self.base(), cur);
-    }
-
-    template <typename Self>
-    static constexpr auto move_at_unchecked(Self& self, auto const& cur)
-        -> decltype(flux::move_at_unchecked(self.base(), cur))
-    {
-        return flux::move_at_unchecked(self.base(), cur);
-    }
-
-    template <typename Self>
-    static constexpr auto for_each_while(Self& self, auto&& pred)
-        -> decltype(flux::for_each_while(self.base(), FLUX_FWD(pred)))
-    {
-        return flux::for_each_while(self.base(), FLUX_FWD(pred));
-    }
-};
-
-template <sequence Base>
-struct ref_adaptor : inline_sequence_base<ref_adaptor<Base>> {
 private:
     Base* base_;
+    FLUX_NO_UNIQUE_ADDRESS slice_data<cursor_t<Base>, Bounded> data_;
 
-    static void test_func(Base&) noexcept;
-    static void test_func(Base&&) = delete;
-
-public:
-    // This seems thoroughly overcomplicated, but it's the formulation
-    // std::reference_wrapper and ranges::ref_view use to avoid binding rvalues
-    // when Base is a const type, while also avoiding implicit conversions
-    template <typename Seq>
-        requires (!std::same_as<std::decay_t<Seq>, ref_adaptor> &&
-                  std::convertible_to<Seq, Base&> &&
-                  requires { test_func(std::declval<Seq>()); })
-    constexpr ref_adaptor(Seq&& seq)
-        noexcept(noexcept(test_func(std::declval<Seq>())))
-        : base_(std::addressof(static_cast<Base&>(FLUX_FWD(seq))))
-    {}
-
-    // We are always movable
-    ref_adaptor(ref_adaptor&&) = default;
-    ref_adaptor& operator=(ref_adaptor&&) = default;
-    ~ref_adaptor() = default;
-
-    // ...but only copyable when `Base` is const
-    ref_adaptor(ref_adaptor const&) requires std::is_const_v<Base> = default;
-    ref_adaptor& operator=(ref_adaptor const&) requires std::is_const_v<Base> = default;
-
-    constexpr Base& base() const noexcept { return *base_; }
-
-    struct flux_sequence_traits : passthrough_traits_base<Base> {
-        using value_type = value_t<Base>;
-    };
-};
-
-template <typename>
-inline constexpr bool is_ref_adaptor = false;
-
-template <typename T>
-inline constexpr bool is_ref_adaptor<ref_adaptor<T>> = true;
-
-template <sequence Base>
-    requires std::movable<Base>
-struct owning_adaptor : inline_sequence_base<owning_adaptor<Base>> {
-private:
-    Base base_;
+    friend struct sequence_traits<subsequence>;
 
 public:
-    constexpr explicit owning_adaptor(decays_to<Base> auto&& base)
-        : base_(FLUX_FWD(base))
+    constexpr subsequence(Base& base, cursor_t<Base>&& from,
+                          cursor_t<Base>&& to)
+        requires Bounded
+        : base_(std::addressof(base)),
+          data_{std::move(from), std::move(to)}
     {}
 
-    constexpr Base& base() & noexcept { return base_; }
-    constexpr Base const& base() const& noexcept { return base_; }
-    constexpr Base&& base() && noexcept { return std::move(base_); }
-    constexpr Base const&& base() const&& noexcept { return std::move(base_); }
+    constexpr subsequence(Base& base, cursor_t<Base>&& from)
+        requires (!Bounded)
+        : base_(std::addressof(base)),
+          data_{std::move(from)}
+    {}
 
-    struct flux_sequence_traits : passthrough_traits_base<Base> {
-        using value_type = value_t<Base>;
+    constexpr auto base() const -> Base& { return *base_; };
+};
+
+template <sequence Seq>
+subsequence(Seq&, cursor_t<Seq>, cursor_t<Seq>) -> subsequence<Seq, true>;
+
+template <sequence Seq>
+subsequence(Seq&, cursor_t<Seq>) -> subsequence<Seq, false>;
+
+template <typename Seq>
+concept has_overloaded_slice =
+    requires (Seq& seq, cursor_t<Seq> cur) {
+        { traits_t<Seq>::slice(seq, std::move(cur)) } -> sequence;
+        { traits_t<Seq>::slice(seq, std::move(cur), std::move(cur)) } -> sequence;
     };
-};
 
-struct mut_ref_fn {
+struct slice_fn {
     template <sequence Seq>
-        requires (!std::is_const_v<Seq>)
-    [[nodiscard]]
-    constexpr auto operator()(Seq& seq) const
+    constexpr auto operator()(Seq& seq, cursor_t<Seq> from,
+                              cursor_t<Seq> to) const
+        -> sequence auto
     {
-        if constexpr (is_ref_adaptor<Seq>) {
-            return seq;
+        if constexpr (has_overloaded_slice<Seq>) {
+            return traits_t<Seq>::slice(seq, std::move(from), std::move(to));
         } else {
-            return ref_adaptor<Seq>(seq);
+            return subsequence(seq, std::move(from), std::move(to));
         }
     }
-};
 
-struct ref_fn {
-    template <const_iterable_sequence Seq>
-        requires (!is_ref_adaptor<Seq>)
-    [[nodiscard]]
-    constexpr auto operator()(Seq const& seq) const
-    {
-        return ref_adaptor<Seq const>(seq);
-    }
-
-    template <const_iterable_sequence Seq>
-    [[nodiscard]]
-    constexpr auto operator()(ref_adaptor<Seq> ref) const
-    {
-        return ref_adaptor<Seq const>(ref.base());
-    }
-
-    template <typename T>
-    auto operator()(T const&&) const -> void = delete;
-};
-
-} // namespace detail
-
-FLUX_EXPORT inline constexpr auto mut_ref = detail::mut_ref_fn{};
-FLUX_EXPORT inline constexpr auto ref = detail::ref_fn{};
-
-template <typename D>
-constexpr auto inline_sequence_base<D>::ref() const&
-    requires const_iterable_sequence<D>
-{
-    return flux::ref(derived());
-}
-
-template <typename D>
-constexpr auto inline_sequence_base<D>::mut_ref() &
-{
-    return flux::mut_ref(derived());
-}
-
-} // namespace flux
-
-#endif // FLUX_OP_REF_HPP_INCLUDED
-
-
-namespace flux {
-
-namespace detail {
-
-struct from_fn {
-    template <adaptable_sequence Seq>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const
-    {
-        if constexpr (derived_from_inline_sequence_base<Seq>) {
-            return FLUX_FWD(seq);
-        } else {
-            return owning_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq));
-        }
-    }
-};
-
-struct from_fwd_ref_fn {
     template <sequence Seq>
-        requires adaptable_sequence<Seq> || std::is_lvalue_reference_v<Seq>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const
+    constexpr auto operator()(Seq& seq, cursor_t<Seq> from, last_fn) const
+        -> sequence auto
     {
-        if constexpr (std::is_lvalue_reference_v<Seq>) {
-            if constexpr (std::is_const_v<std::remove_reference_t<Seq>>) {
-                return flux::ref(seq);
-            } else {
-                return flux::mut_ref(seq);
-            }
+        if constexpr (has_overloaded_slice<Seq>) {
+            return traits_t<Seq>::slice(seq, std::move(from));
         } else {
-            return from_fn{}(seq);
+            return subsequence(seq, std::move(from));
         }
     }
 };
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto from = detail::from_fn{};
-FLUX_EXPORT inline constexpr auto from_fwd_ref = detail::from_fwd_ref_fn{};
+using detail::subsequence;
+
+template <typename Base, bool Bounded>
+struct sequence_traits<subsequence<Base, Bounded>>
+    : detail::passthrough_traits_base
+{
+    using value_type = value_t<Base>;
+    using self_t = subsequence<Base, Bounded>;
+
+    static constexpr auto first(self_t& self) -> cursor_t<Base>
+    {
+        if constexpr (std::copy_constructible<decltype(self.data_.first)>) {
+            return self.data_.first;
+        } else {
+            return std::move(self.data_.first);
+        }
+    }
+
+    static constexpr bool is_last(self_t& self, cursor_t<Base> const& cur) {
+        if constexpr (Bounded) {
+            return cur == self.data_.last;
+        } else {
+            return flux::is_last(*self.base_, cur);
+        }
+    }
+
+    static constexpr auto last(self_t& self) -> cursor_t<Base>
+        requires (Bounded || bounded_sequence<Base>)
+    {
+        if constexpr (Bounded) {
+            return self.data_.last;
+        } else {
+            return flux::last(*self.base_);
+        }
+    }
+
+    static constexpr auto data(self_t& self)
+        requires contiguous_sequence<Base>
+    {
+        return flux::data(*self.base_) +
+               flux::distance(*self.base_, flux::first(*self.base_), self.data_.first);
+    }
+
+    using default_sequence_traits::size;
+    using default_sequence_traits::for_each_while;
+};
+
+FLUX_EXPORT inline constexpr auto slice = detail::slice_fn{};
+
+#if 0
+template <typename Derived>
+template <std::same_as<Derived> D>
+constexpr auto inline_sequence_base<Derived>::slice(cursor_t<D> from, cursor_t<D> to) &
+{
+    return flux::slice(derived(), std::move(from), std::move(to));
+}
+
+template <typename Derived>
+template <std::same_as<Derived> D>
+constexpr auto inline_sequence_base<Derived>::slice_from(cursor_t<D> from) &
+{
+    return flux::slice(derived(), std::move(from));
+}
+#endif
 
 } // namespace flux
 
-#endif // FLUX_OP_FROM_HPP_INCLUDED
+#endif // namespace FLUX_OP_SLICE_HPP_INCLUDED
+
+
+#endif // FLUX_CORE_HPP_INCLUDED
+
+
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_ADAPTOR_REVERSE_HPP_INCLUDED
+#define FLUX_ADAPTOR_REVERSE_HPP_INCLUDED
+
 
 
 namespace flux {
@@ -4320,7 +4439,15 @@ constexpr auto inline_sequence_base<D>::reverse() &&
 
 } // namespace flux
 
-#endif
+#endif // FLUX_ADAPTOR_REVERSE_HPP_INCLUDED
+
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_ADAPTOR_ZIP_HPP_INCLUDED
+#define FLUX_ADAPTOR_ZIP_HPP_INCLUDED
 
 
 
@@ -4328,17 +4455,8 @@ constexpr auto inline_sequence_base<D>::reverse() &&
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_ZIP_HPP_INCLUDED
-#define FLUX_OP_ZIP_HPP_INCLUDED
-
-
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_SOURCE_EMPTY_HPP_INCLUDED
-#define FLUX_SOURCE_EMPTY_HPP_INCLUDED
+#ifndef FLUX_SEQUENCE_EMPTY_HPP_INCLUDED
+#define FLUX_SEQUENCE_EMPTY_HPP_INCLUDED
 
 
 
@@ -4396,7 +4514,7 @@ inline constexpr auto empty = detail::empty_sequence<T>{};
 
 } // namespace flux
 
-#endif // FLUX_SOURCE_EMPTY_HPP_INCLUDED
+#endif // FLUX_SEQUENCE_EMPTY_HPP_INCLUDED
 
 
 #include <algorithm> // for std::min({ilist...})
@@ -4680,15 +4798,15 @@ FLUX_EXPORT inline constexpr auto zip_map = detail::zip_map_fn{};
 
 } // namespace flux
 
-#endif // FLUX_OP_ZIP_HPP_INCLUDED
+#endif // FLUX_ADAPTOR_ZIP_HPP_INCLUDED
 
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_SOURCE_IOTA_HPP_INCLUDED
-#define FLUX_SOURCE_IOTA_HPP_INCLUDED
+#ifndef FLUX_SEQUENCE_IOTA_HPP_INCLUDED
+#define FLUX_SEQUENCE_IOTA_HPP_INCLUDED
 
 
 
@@ -4875,7 +4993,7 @@ FLUX_EXPORT inline constexpr auto ints = detail::ints_fn{};
 
 } // namespace flux
 
-#endif // FLUX_SOURCE_IOTA_HPP_INCLUDED
+#endif // FLUX_SEQUENCE_IOTA_HPP_INCLUDED
 
 
 #include <array>
@@ -5141,15 +5259,15 @@ constexpr auto inline_sequence_base<D>::pairwise_map(Func func) &&
 
 } // namespace flux
 
-#endif // FLUX_OP_ADJACENT_HPP_INCLUDED
+#endif // FLUX_ADAPTOR_ADJACENT_HPP_INCLUDED
 
 
 // Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_ADJACENT_FILTER_HPP_INCLUDED
-#define FLUX_OP_ADJACENT_FILTER_HPP_INCLUDED
+#ifndef FLUX_ADAPTOR_ADJACENT_FILTER_HPP_INCLUDED
+#define FLUX_ADAPTOR_ADJACENT_FILTER_HPP_INCLUDED
 
 
 
@@ -5305,109 +5423,15 @@ constexpr auto inline_sequence_base<D>::dedup() &&
 
 } // namespace flux
 
-#endif // FLUX_OP_ADJACENT_FILTER_HPP_INCLUDED
+#endif // FLUX_ADAPTOR_ADJACENT_FILTER_HPP_INCLUDED
 
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_ALL_ANY_NONE_HPP_INCLUDED
-#define FLUX_OP_ALL_ANY_NONE_HPP_INCLUDED
-
-
-
-
-namespace flux {
-
-namespace all_detail {
-
-struct fn {
-    template <sequence Seq, typename Pred>
-        requires std::predicate<Pred&, element_t<Seq>>
-    constexpr bool operator()(Seq&& seq, Pred pred) const
-    {
-        return is_last(seq, for_each_while(seq, [&](auto&& elem) {
-            return std::invoke(pred, FLUX_FWD(elem));
-        }));
-    }
-};
-
-} // namespace all_detail
-
-FLUX_EXPORT inline constexpr auto all = all_detail::fn{};
-
-namespace none_detail {
-
-struct fn {
-    template <sequence Seq, typename Pred>
-        requires std::predicate<Pred&, element_t<Seq>>
-    constexpr bool operator()(Seq&& seq, Pred pred) const
-    {
-        return is_last(seq, for_each_while(seq, [&](auto&& elem) {
-            return !std::invoke(pred, FLUX_FWD(elem));
-        }));
-    }
-};
-
-} // namespace none_detail
-
-FLUX_EXPORT inline constexpr auto none = none_detail::fn{};
-
-namespace any_detail {
-
-struct fn {
-    template <sequence Seq, typename Pred>
-        requires std::predicate<Pred&, element_t<Seq>>
-    constexpr bool operator()(Seq&& seq, Pred pred) const
-    {
-        return !is_last(seq, for_each_while(seq, [&](auto&& elem) {
-            return !std::invoke(pred, FLUX_FWD(elem));
-        }));
-    }
-};
-
-} // namespace any_detail
-
-FLUX_EXPORT inline constexpr auto any = any_detail::fn{};
-
-template <typename D>
-template <typename Pred>
-    requires std::predicate<Pred&, element_t<D>>
-constexpr auto inline_sequence_base<D>::all(Pred pred)
-{
-    return flux::all(derived(), std::move(pred));
-}
-
-template <typename D>
-template <typename Pred>
-    requires std::predicate<Pred&, element_t<D>>
-constexpr auto inline_sequence_base<D>::any(Pred pred)
-{
-    return flux::any(derived(), std::move(pred));
-}
-
-template <typename D>
-template <typename Pred>
-    requires std::predicate<Pred&, element_t<D>>
-constexpr auto inline_sequence_base<D>::none(Pred pred)
-{
-    return flux::none(derived(), std::move(pred));
-}
-
-} // namespace flux
-
-#endif // FLUX_OP_ALL_ANY_NONE_HPP_INCLUDED
-
-
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_CACHE_LAST_HPP_INCLUDED
-#define FLUX_OP_CACHE_LAST_HPP_INCLUDED
-
+#ifndef FLUX_ADAPTOR_CACHE_LAST_HPP_INCLUDED
+#define FLUX_ADAPTOR_CACHE_LAST_HPP_INCLUDED
 
 
 
@@ -5422,7 +5446,7 @@ private:
     Base base_;
     flux::optional<cursor_t<Base>> cached_last_{};
 
-    friend struct passthrough_traits_base<Base>;
+    friend struct passthrough_traits_base;
 
     constexpr auto base() -> Base& { return base_; }
 
@@ -5431,7 +5455,7 @@ public:
         : base_(FLUX_FWD(base))
     {}
 
-    struct flux_sequence_traits : detail::passthrough_traits_base<Base> {
+    struct flux_sequence_traits : detail::passthrough_traits_base {
 
         using value_type = value_t<Base>;
         using self_t = cache_last_adaptor;
@@ -5491,7 +5515,7 @@ constexpr auto inline_sequence_base<Derived>::cache_last() &&
 
 } // namespace flux
 
-#endif // FLUX_OP_CACHE_LAST_HPP_INCLUDED
+#endif // FLUX_ADAPTOR_CACHE_LAST_HPP_INCLUDED
 
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
@@ -5500,8 +5524,10 @@ constexpr auto inline_sequence_base<Derived>::cache_last() &&
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_CARTESIAN_BASE_HPP_INCLUDED
-#define FLUX_CARTESIAN_BASE_HPP_INCLUDED
+#ifndef FLUX_ADAPTOR_CARTESIAN_BASE_HPP_INCLUDED
+#define FLUX_ADAPTOR_CARTESIAN_BASE_HPP_INCLUDED
+
+
 
 namespace flux::detail {
 
@@ -5901,7 +5927,7 @@ struct cartesian_traits_base<Arity, CartesianKind, read_kind::tuple, Bases...> :
 
 }
 
-#endif //FLUX_CARTESIAN_BASE_HPP_INCLUDED
+#endif //FLUX_ADAPTOR_CARTESIAN_BASE_HPP_INCLUDED
 
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
@@ -5910,9 +5936,8 @@ struct cartesian_traits_base<Arity, CartesianKind, read_kind::tuple, Bases...> :
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_CARTESIAN_POWER_HPP_INCLUDED
-#define FLUX_OP_CARTESIAN_POWER_HPP_INCLUDED
-
+#ifndef FLUX_ADAPTOR_CARTESIAN_POWER_HPP_INCLUDED
+#define FLUX_ADAPTOR_CARTESIAN_POWER_HPP_INCLUDED
 
 
 
@@ -5973,17 +5998,15 @@ inline constexpr auto cartesian_power = detail::cartesian_power_fn<N>{};
 
 } // end namespace flux
 
-#endif
-
+#endif // FLUX_ADAPTOR_CARTESIAN_POWER_HPP_INCLUDED
 
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_CARTESIAN_POWER_MAP_HPP_INCLUDED
-#define FLUX_OP_CARTESIAN_POWER_MAP_HPP_INCLUDED
-
+#ifndef FLUX_ADAPTOR_CARTESIAN_POWER_MAP_HPP_INCLUDED
+#define FLUX_ADAPTOR_CARTESIAN_POWER_MAP_HPP_INCLUDED
 
 
 
@@ -6040,7 +6063,7 @@ inline constexpr auto cartesian_power_map = detail::cartesian_power_map_fn<N>{};
 
 } // namespace flux
 
-#endif
+#endif // FLUX_ADAPTOR_CARTESIAN_POWER_MAP_HPP_INCLUDED
 
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
@@ -6049,9 +6072,8 @@ inline constexpr auto cartesian_power_map = detail::cartesian_power_map_fn<N>{};
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_CARTESIAN_PRODUCT_HPP_INCLUDED
-#define FLUX_OP_CARTESIAN_PRODUCT_HPP_INCLUDED
-
+#ifndef FLUX_ADAPTOR_CARTESIAN_PRODUCT_HPP_INCLUDED
+#define FLUX_ADAPTOR_CARTESIAN_PRODUCT_HPP_INCLUDED
 
 
 
@@ -6101,16 +6123,15 @@ FLUX_EXPORT inline constexpr auto cartesian_product = detail::cartesian_product_
 
 } // end namespace flux
 
-#endif
-
+#endif // FLUX_ADAPTOR_CARTESIAN_PRODUCT_HPP_INCLUDED
 
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_CARTESIAN_PRODUCT_MAP_HPP_INCLUDED
-#define FLUX_OP_CARTESIAN_PRODUCT_MAP_HPP_INCLUDED
+#ifndef FLUX_ADAPTOR_CARTESIAN_PRODUCT_MAP_HPP_INCLUDED
+#define FLUX_ADAPTOR_CARTESIAN_PRODUCT_MAP_HPP_INCLUDED
 
 
 
@@ -6161,15 +6182,15 @@ FLUX_EXPORT inline constexpr auto cartesian_product_map = detail::cartesian_prod
 
 } // namespace flux
 
-#endif
+#endif // FLUX_ADAPTOR_CARTESIAN_PRODUCT_MAP_HPP_INCLUDED
 
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_CHAIN_HPP_INCLUDED
-#define FLUX_OP_CHAIN_HPP_INCLUDED
+#ifndef FLUX_ADAPTOR_CHAIN_HPP_INCLUDED
+#define FLUX_ADAPTOR_CHAIN_HPP_INCLUDED
 
 
 
@@ -6492,187 +6513,25 @@ FLUX_EXPORT inline constexpr auto chain = detail::chain_fn{};
 
 } // namespace flux
 
-#endif
+#endif // FLUX_ADAPTOR_CHAIN_HPP_INCLUDED
 
 
 // Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_CHUNK_HPP_INCLUDED
-#define FLUX_OP_CHUNK_HPP_INCLUDED
+#ifndef FLUX_ADAPTOR_CHUNK_HPP_INCLUDED
+#define FLUX_ADAPTOR_CHUNK_HPP_INCLUDED
 
 
-
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_SLICE_HPP_INCLUDED
-#define FLUX_OP_SLICE_HPP_INCLUDED
-
-
-
-
-namespace flux {
-
-namespace detail {
-
-template <cursor Cur, bool Bounded>
-struct slice_data {
-    Cur first;
-    Cur last;
-};
-
-template <cursor Cur>
-struct slice_data<Cur, false> {
-    Cur first;
-};
-
-template <sequence Base, bool Bounded>
-    requires (!Bounded || regular_cursor<cursor_t<Base>>)
-struct subsequence : inline_sequence_base<subsequence<Base, Bounded>>
-{
-private:
-    Base* base_;
-    FLUX_NO_UNIQUE_ADDRESS slice_data<cursor_t<Base>, Bounded> data_;
-
-    friend struct sequence_traits<subsequence>;
-
-public:
-    constexpr subsequence(Base& base, cursor_t<Base>&& from,
-                          cursor_t<Base>&& to)
-        requires Bounded
-        : base_(std::addressof(base)),
-          data_{std::move(from), std::move(to)}
-    {}
-
-    constexpr subsequence(Base& base, cursor_t<Base>&& from)
-        requires (!Bounded)
-        : base_(std::addressof(base)),
-          data_{std::move(from)}
-    {}
-
-    constexpr auto base() const -> Base& { return *base_; };
-};
-
-template <sequence Seq>
-subsequence(Seq&, cursor_t<Seq>, cursor_t<Seq>) -> subsequence<Seq, true>;
-
-template <sequence Seq>
-subsequence(Seq&, cursor_t<Seq>) -> subsequence<Seq, false>;
-
-template <typename Seq>
-concept has_overloaded_slice =
-    requires (Seq& seq, cursor_t<Seq> cur) {
-        { traits_t<Seq>::slice(seq, std::move(cur)) } -> sequence;
-        { traits_t<Seq>::slice(seq, std::move(cur), std::move(cur)) } -> sequence;
-    };
-
-struct slice_fn {
-    template <sequence Seq>
-    constexpr auto operator()(Seq& seq, cursor_t<Seq> from,
-                              cursor_t<Seq> to) const
-        -> sequence auto
-    {
-        if constexpr (has_overloaded_slice<Seq>) {
-            return traits_t<Seq>::slice(seq, std::move(from), std::move(to));
-        } else {
-            return subsequence(seq, std::move(from), std::move(to));
-        }
-    }
-
-    template <sequence Seq>
-    constexpr auto operator()(Seq& seq, cursor_t<Seq> from, last_fn) const
-        -> sequence auto
-    {
-        if constexpr (has_overloaded_slice<Seq>) {
-            return traits_t<Seq>::slice(seq, std::move(from));
-        } else {
-            return subsequence(seq, std::move(from));
-        }
-    }
-};
-
-} // namespace detail
-
-using detail::subsequence;
-
-template <typename Base, bool Bounded>
-struct sequence_traits<subsequence<Base, Bounded>>
-    : detail::passthrough_traits_base<Base>
-{
-    using value_type = value_t<Base>;
-    using self_t = subsequence<Base, Bounded>;
-
-    static constexpr auto first(self_t& self) -> cursor_t<Base>
-    {
-        if constexpr (std::copy_constructible<decltype(self.data_.first)>) {
-            return self.data_.first;
-        } else {
-            return std::move(self.data_.first);
-        }
-    }
-
-    static constexpr bool is_last(self_t& self, cursor_t<Base> const& cur) {
-        if constexpr (Bounded) {
-            return cur == self.data_.last;
-        } else {
-            return flux::is_last(*self.base_, cur);
-        }
-    }
-
-    static constexpr auto last(self_t& self) -> cursor_t<Base>
-        requires (Bounded || bounded_sequence<Base>)
-    {
-        if constexpr (Bounded) {
-            return self.data_.last;
-        } else {
-            return flux::last(*self.base_);
-        }
-    }
-
-    static constexpr auto data(self_t& self)
-        requires contiguous_sequence<Base>
-    {
-        return flux::data(*self.base_) +
-               flux::distance(*self.base_, flux::first(*self.base_), self.data_.first);
-    }
-
-    using default_sequence_traits::size;
-    using default_sequence_traits::for_each_while;
-};
-
-FLUX_EXPORT inline constexpr auto slice = detail::slice_fn{};
-
-#if 0
-template <typename Derived>
-template <std::same_as<Derived> D>
-constexpr auto inline_sequence_base<Derived>::slice(cursor_t<D> from, cursor_t<D> to) &
-{
-    return flux::slice(derived(), std::move(from), std::move(to));
-}
-
-template <typename Derived>
-template <std::same_as<Derived> D>
-constexpr auto inline_sequence_base<Derived>::slice_from(cursor_t<D> from) &
-{
-    return flux::slice(derived(), std::move(from));
-}
-#endif
-
-} // namespace flux
-
-#endif // namespace FLUX_OP_SLICE_HPP_INCLUDED
 
 
 // Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_STRIDE_HPP_INCLUDED
-#define FLUX_OP_STRIDE_HPP_INCLUDED
+#ifndef FLUX_ADAPTOR_STRIDE_HPP_INCLUDED
+#define FLUX_ADAPTOR_STRIDE_HPP_INCLUDED
 
 
 
@@ -6744,7 +6603,7 @@ public:
     constexpr auto base() & -> Base& { return base_; }
     constexpr auto base() const& -> Base const& { return base_; }
 
-    struct flux_sequence_traits : passthrough_traits_base<Base> {
+    struct flux_sequence_traits : passthrough_traits_base {
 
         using value_type = value_t<Base>;
         static inline constexpr bool is_infinite = infinite_sequence<Base>;
@@ -6942,17 +6801,15 @@ constexpr auto inline_sequence_base<D>::stride(num::integral auto by) &&
 
 } // namespace flux
 
-#endif // FLUX_OP_STRIDE_HPP_INCLUDED
+#endif // FLUX_ADAPTOR_STRIDE_HPP_INCLUDED
 
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_TAKE_HPP_INCLUDED
-#define FLUX_OP_TAKE_HPP_INCLUDED
-
-
+#ifndef FLUX_ADAPTOR_TAKE_HPP_INCLUDED
+#define FLUX_ADAPTOR_TAKE_HPP_INCLUDED
 
 
 
@@ -7117,7 +6974,7 @@ constexpr auto inline_sequence_base<Derived>::take(num::integral auto count) &&
 
 } // namespace flux
 
-#endif // FLUX_OP_TAKE_HPP_INCLUDED
+#endif // FLUX_ADAPTOR_TAKE_HPP_INCLUDED
 
 
 namespace flux {
@@ -7427,16 +7284,15 @@ constexpr auto inline_sequence_base<D>::chunk(num::integral auto chunk_sz) &&
 
 } // namespace flux
 
-#endif // FLUX_OP_CHUNK_HPP_INCLUDED
+#endif // FLUX_ADAPTOR_CHUNK_HPP_INCLUDED
 
 
 // Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_CHUNK_BY_HPP_INCLUDED
-#define FLUX_OP_CHUNK_BY_HPP_INCLUDED
-
+#ifndef FLUX_ADAPTOR_CHUNK_BY_HPP_INCLUDED
+#define FLUX_ADAPTOR_CHUNK_BY_HPP_INCLUDED
 
 
 
@@ -7577,263 +7433,15 @@ constexpr auto inline_sequence_base<Derived>::chunk_by(Pred pred) &&
 
 } // namespace flux
 
-#endif
+#endif // FLUX_ADAPTOR_CHUNK_BY_HPP_INCLUDED
 
 
 // Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_COMPARE_HPP_INCLUDED
-#define FLUX_OP_COMPARE_HPP_INCLUDED
-
-
-
-#include <compare>
-#include <cstring>
-#include <bit>
-
-namespace flux {
-
-namespace detail {
-
-struct compare_fn {
-private:
-    template <typename Seq1, typename Seq2, typename Cmp>
-    static constexpr auto impl(Seq1& seq1, Seq2& seq2, Cmp& cmp)
-        -> std::decay_t<
-            std::invoke_result_t<Cmp &, element_t<Seq1>, element_t<Seq2>>>
-    {
-        auto cur1 = flux::first(seq1);
-        auto cur2 = flux::first(seq2);
-
-        while (!flux::is_last(seq1, cur1) && !flux::is_last(seq2, cur2)) {
-            if (auto r = std::invoke(cmp, flux::read_at(seq1, cur1), flux::read_at(seq2, cur2));
-                r != 0) {
-                return r;
-            }
-            flux::inc(seq1, cur1);
-            flux::inc(seq2, cur2);
-        }
-
-        return !flux::is_last(seq1, cur1) ? std::strong_ordering::greater :
-               !flux::is_last(seq2, cur2) ? std::strong_ordering::less :
-                                            std::strong_ordering::equal;
-    }
-
-public:
-    template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way>
-        requires ordering_invocable<Cmp&, element_t<Seq1>, element_t<Seq2>>
-    constexpr auto operator()(Seq1 &&seq1, Seq2 &&seq2, Cmp cmp = {}) const
-        -> std::decay_t<
-            std::invoke_result_t<Cmp&, element_t<Seq1>, element_t<Seq2>>>
-    {
-        constexpr bool can_memcmp = 
-            std::same_as<Cmp, std::compare_three_way> &&
-            contiguous_sequence<Seq1> && 
-            contiguous_sequence<Seq2> &&
-            sized_sequence<Seq1> && 
-            sized_sequence<Seq2> &&
-            std::same_as<value_t<Seq1>, value_t<Seq2>> &&
-            std::unsigned_integral<value_t<Seq1>> &&
-            ((sizeof(value_t<Seq1>) == 1) || (std::endian::native == std::endian::big));
-
-        if constexpr (can_memcmp) {
-            if (std::is_constant_evaluated()) {
-                return impl(seq1, seq2, cmp); // LCOV_EXCL_LINE
-            } else {
-                auto const seq1_size = flux::usize(seq1);
-                auto const seq2_size = flux::usize(seq2);
-                auto min_size = (cmp::min)(seq1_size, seq2_size);
-
-                int cmp_result = 0;
-                if(min_size > 0) {
-                    auto data1 = flux::data(seq1);
-                    FLUX_ASSERT(data1 != nullptr);
-                    auto data2 = flux::data(seq2);
-                    FLUX_ASSERT(data2 != nullptr);
-
-                    cmp_result = std::memcmp(data1, data2, min_size);
-                }
-
-                if (cmp_result == 0) {
-                    if (seq1_size == seq2_size) {
-                        return std::strong_ordering::equal;
-                    } else if (seq1_size < seq2_size) {
-                        return std::strong_ordering::less;
-                    } else /* seq1_size > seq2_size */ {
-                        return std::strong_ordering::greater;
-                    }
-                } else if (cmp_result > 0) {
-                    return std::strong_ordering::greater;
-                } else /* cmp_result < 0 */ {
-                    return std::strong_ordering::less;
-                }
-            }
-        } else {
-            return impl(seq1, seq2, cmp);
-        }
-    }
-};
-
-} // namespace detail
-
-FLUX_EXPORT inline constexpr auto compare = detail::compare_fn{};
-
-} // namespace flux
-
-#endif // FLUX_OP_EQUAL_HPP_INCLUDED
-
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_CONTAINS_HPP_INCLUDED
-#define FLUX_OP_CONTAINS_HPP_INCLUDED
-
-
-
-namespace flux {
-
-namespace detail {
-
-struct contains_fn {
-    template <sequence Seq, typename Value>
-        requires std::equality_comparable_with<element_t<Seq>, Value const&>
-    constexpr auto operator()(Seq&& seq, Value const& value) const
-        -> bool
-    {
-        return !flux::is_last(seq, flux::for_each_while(seq, [&](auto&& elem) {
-            return FLUX_FWD(elem) != value;
-        }));
-    }
-};
-
-
-} // namespace detail
-
-FLUX_EXPORT inline constexpr auto contains = detail::contains_fn{};
-
-template <typename D>
-template <typename Value>
-    requires std::equality_comparable_with<element_t<D>, Value const&>
-constexpr auto inline_sequence_base<D>::contains(Value const& value) -> bool
-{
-    return flux::contains(derived(), value);
-}
-
-} // namespace flux
-
-#endif
-
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_COUNT_HPP_INCLUDED
-#define FLUX_OP_COUNT_HPP_INCLUDED
-
-
-
-namespace flux {
-
-namespace detail {
-
-struct count_fn {
-    template <sequence Seq>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const -> distance_t
-    {
-        if constexpr (sized_sequence<Seq>) {
-            return flux::size(seq);
-        } else {
-            distance_t counter = 0;
-            flux::for_each_while(seq, [&](auto&&) {
-                ++counter;
-                return true;
-            });
-            return counter;
-        }
-    }
-};
-
-struct count_eq_fn {
-    template <sequence Seq, typename Value>
-        requires std::equality_comparable_with<element_t<Seq>, Value const&>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Value const& value) const
-        -> distance_t
-    {
-        distance_t counter = 0;
-        flux::for_each_while(seq, [&](auto&& elem) {
-            if (value == FLUX_FWD(elem)) {
-                ++counter;
-            }
-            return true;
-        });
-        return counter;
-    }
-};
-
-struct count_if_fn {
-    template <sequence Seq, typename Pred>
-        requires std::predicate<Pred&, element_t<Seq>>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Pred pred) const
-        -> distance_t
-    {
-        distance_t counter = 0;
-        flux::for_each_while(seq, [&](auto&& elem) {
-            if (std::invoke(pred, FLUX_FWD(elem))) {
-                ++counter;
-            }
-            return true;
-        });
-        return counter;
-    }
-};
-
-} // namespace detail
-
-FLUX_EXPORT inline constexpr auto count = detail::count_fn{};
-FLUX_EXPORT inline constexpr auto count_eq = detail::count_eq_fn{};
-FLUX_EXPORT inline constexpr auto count_if = detail::count_if_fn{};
-
-template <typename D>
-constexpr auto inline_sequence_base<D>::count()
-{
-    return flux::count(derived());
-}
-
-template <typename D>
-template <typename Value>
-    requires std::equality_comparable_with<element_t<D>, Value const&>
-constexpr auto inline_sequence_base<D>::count_eq(Value const& value)
-{
-    return flux::count_eq(derived(), value);
-}
-
-template <typename D>
-template <typename Pred>
-    requires std::predicate<Pred&, element_t<D>>
-constexpr auto inline_sequence_base<D>::count_if(Pred pred)
-{
-    return flux::count_if(derived(), std::move(pred));
-}
-
-} // namespace flux
-
-#endif
-
-
-// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_CURSORS_HPP_INCLUDED
-#define FLUX_OP_CURSORS_HPP_INCLUDED
+#ifndef FLUX_ADAPTOR_CURSORS_HPP_INCLUDED
+#define FLUX_ADAPTOR_CURSORS_HPP_INCLUDED
 
 
 
@@ -7932,15 +7540,15 @@ constexpr auto inline_sequence_base<D>::cursors() &&
 
 } // namespace flux
 
-#endif // FLUX_OP_CURSORS_HPP_INCLUDED
+#endif // FLUX_ADAPTOR_CURSORS_HPP_INCLUDED
 
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_CYCLE_HPP_INCLUDED
-#define FLUX_OP_CYCLE_HPP_INCLUDED
+#ifndef FLUX_ADAPTOR_CYCLE_HPP_INCLUDED
+#define FLUX_ADAPTOR_CYCLE_HPP_INCLUDED
 
 
 
@@ -8193,16 +7801,15 @@ constexpr auto inline_sequence_base<D>::cycle(num::integral auto count) &&
 
 } // namespace flux
 
-#endif // FLUX_OP_CYCLE_HPP_INCLUDED
+#endif // FLUX_ADAPTOR_CYCLE_HPP_INCLUDED
 
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_DROP_HPP_INCLUDED
-#define FLUX_OP_DROP_HPP_INCLUDED
-
+#ifndef FLUX_ADAPTOR_DROP_HPP_INCLUDED
+#define FLUX_ADAPTOR_DROP_HPP_INCLUDED
 
 
 
@@ -8226,7 +7833,7 @@ public:
     constexpr Base& base() & { return base_; }
     constexpr Base const& base() const& { return base_; }
 
-    struct flux_sequence_traits : passthrough_traits_base<drop_adaptor> {
+    struct flux_sequence_traits : passthrough_traits_base {
         using value_type = value_t<Base>;
 
         static constexpr bool disable_multipass = !multipass_sequence<Base>;
@@ -8285,16 +7892,15 @@ constexpr auto inline_sequence_base<Derived>::drop(num::integral auto count) &&
 
 } // namespace flux
 
-#endif
+#endif // FLUX_ADAPTOR_DROP_HPP_INCLUDED
 
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_DROP_WHILE_HPP_INCLUDED
-#define FLUX_OP_DROP_WHILE_HPP_INCLUDED
-
+#ifndef FLUX_ADAPTOR_DROP_WHILE_HPP_INCLUDED
+#define FLUX_ADAPTOR_DROP_WHILE_HPP_INCLUDED
 
 
 
@@ -8308,7 +7914,7 @@ private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Pred pred_;
 
-    friend struct passthrough_traits_base<Base>;
+    friend struct passthrough_traits_base;
 
     constexpr auto base() & -> Base& { return base_; }
     constexpr auto base() const& -> Base const& { return base_; }
@@ -8319,7 +7925,7 @@ public:
           pred_(FLUX_FWD(pred))
     {}
 
-    struct flux_sequence_traits : detail::passthrough_traits_base<Base> {
+    struct flux_sequence_traits : detail::passthrough_traits_base {
         using value_type = value_t<Base>;
 
         static constexpr bool disable_multipass = !multipass_sequence<Base>;
@@ -8365,15 +7971,15 @@ constexpr auto inline_sequence_base<D>::drop_while(Pred pred) &&
 
 } // namespace flux
 
-#endif
+#endif // FLUX_ADAPTOR_DROP_WHILE_HPP_INCLUDED
 
 
-// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_ENDS_WITH_HPP_INCLUDED
-#define FLUX_OP_ENDS_WITH_HPP_INCLUDED
+#ifndef FLUX_ADAPTOR_FILTER_HPP_INCLUDED
+#define FLUX_ADAPTOR_FILTER_HPP_INCLUDED
 
 
 
@@ -8381,329 +7987,8 @@ constexpr auto inline_sequence_base<D>::drop_while(Pred pred) &&
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_EQUAL_HPP_INCLUDED
-#define FLUX_OP_EQUAL_HPP_INCLUDED
-
-
-#include <type_traits>
-#include <cstring>
-
-namespace flux {
-
-namespace detail {
-
-struct equal_fn {
-private:
-    template <typename Seq1, typename Seq2, typename Cmp>
-    static constexpr auto impl(Seq1& seq1, Seq2& seq2, Cmp cmp)
-    {
-        auto cur1 = flux::first(seq1);
-        auto cur2 = flux::first(seq2);
-
-        while (!flux::is_last(seq1, cur1) && !flux::is_last(seq2, cur2)) {
-            if (!std::invoke(cmp, flux::read_at(seq1, cur1), flux::read_at(seq2, cur2))) {
-                return false;
-            }
-            flux::inc(seq1, cur1);
-            flux::inc(seq2, cur2);
-        }
-
-        return flux::is_last(seq1, cur1) == flux::is_last(seq2, cur2);
-    }
-
-public:
-    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::equal_to>
-        requires std::predicate<Cmp&, element_t<Seq1>, element_t<Seq2>>
-    constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const
-        -> bool
-    {
-        if constexpr (sized_sequence<Seq1> && sized_sequence<Seq2>) {
-            if (flux::size(seq1) != flux::size(seq2)) {
-                return false;
-            }
-        }
-
-        constexpr bool can_memcmp = 
-            std::same_as<Cmp, std::ranges::equal_to> &&
-            contiguous_sequence<Seq1> && contiguous_sequence<Seq2> &&
-            sized_sequence<Seq1> && sized_sequence<Seq2> &&
-            std::same_as<value_t<Seq1>, value_t<Seq2>> &&
-            (std::integral<value_t<Seq1>> || std::is_pointer_v<value_t<Seq1>>) &&
-            std::has_unique_object_representations_v<value_t<Seq1>>;
-
-        if constexpr (can_memcmp) {
-            if (std::is_constant_evaluated()) {
-                return impl(seq1, seq2, cmp); // LCOV_EXCL_LINE
-            } else {
-                auto size = flux::usize(seq1);
-                if(size == 0) {
-                    return true;
-                }
-
-                auto data1 = flux::data(seq1);
-                auto data2 = flux::data(seq2);
-                FLUX_ASSERT(data1 != nullptr);
-                FLUX_ASSERT(data2 != nullptr);
-
-                auto result = std::memcmp(data1, data2, size * sizeof(value_t<Seq1>));
-                return result == 0;
-            }
-        } else {
-            return impl(seq1, seq2, cmp);
-        }
-    }
-
-    template <sequence Seq1, sequence Seq2>
-        requires (sequence<element_t<Seq1>> &&
-                 sequence<element_t<Seq2>> &&
-                 !std::equality_comparable_with<element_t<Seq1>, element_t<Seq2>> &&
-                 std::is_invocable_v<equal_fn&, Seq1&, Seq2&, equal_fn&>)
-    constexpr auto operator()(Seq1&& seq1, Seq2&& seq2) const -> bool
-    {
-        if constexpr (sized_sequence<Seq1> && sized_sequence<Seq2>) {
-            if (flux::size(seq1) != flux::size(seq2)) {
-                return false;
-            }
-        }
-
-        return (*this)(seq1, seq2, *this);
-    }
-};
-
-} // namespace detail
-
-FLUX_EXPORT inline constexpr auto equal = detail::equal_fn{};
-
-} // namespace flux
-
-#endif // FLUX_OP_EQUAL_HPP_INCLUDED
-
-
-namespace flux {
-
-namespace detail {
-
-struct ends_with_fn {
-private:
-    template <typename H, typename N>
-    static constexpr auto bidir_impl(H& h, N& n, auto& cmp) -> bool
-    {
-        if constexpr (sized_sequence<H> && sized_sequence<N>) {
-            if (flux::size(h) < flux::size(n)) {
-                return false;
-            }
-        }
-
-        auto cur1 = flux::last(h);
-        auto cur2 = flux::last(n);
-
-        auto const f1 = flux::first(h);
-        auto const f2 = flux::first(n);
-
-        if (cur2 == f2) {
-            return true;
-        } else if (cur1 == f1) {
-            return false;
-        }
-
-        while (true) {
-            flux::dec(h, cur1);
-            flux::dec(n, cur2);
-
-            if (!std::invoke(cmp, flux::read_at(h, cur1), flux::read_at(n, cur2))) {
-                return false;
-            }
-
-            if (cur2 == f2) {
-                return true;
-            } else if (cur1 == f1) {
-                return false;
-            }
-        }
-    }
-
-public:
-    template <sequence Haystack, sequence Needle, typename Cmp = std::ranges::equal_to>
-        requires std::predicate<Cmp&, element_t<Haystack>, element_t<Needle>> &&
-                 (multipass_sequence<Haystack> || sized_sequence<Haystack>) &&
-                 (multipass_sequence<Needle> || sized_sequence<Needle>)
-    constexpr auto operator()(Haystack&& haystack, Needle&& needle, Cmp cmp = Cmp{}) const
-        -> bool
-    {
-        if constexpr(bidirectional_sequence<Haystack> &&
-                     bounded_sequence<Haystack> &&
-                     bidirectional_sequence<Needle> &&
-                     bounded_sequence<Needle>) {
-            return bidir_impl(haystack, needle, cmp);
-        } else {
-            distance_t len1 = flux::count(haystack);
-            distance_t len2 = flux::count(needle);
-
-            if (len1 < len2) {
-                return false;
-            }
-
-            auto cur1 = flux::first(haystack);
-            detail::advance(haystack, cur1, len1 - len2);
-
-            return flux::equal(flux::slice(haystack, std::move(cur1), flux::last),
-                               needle, std::move(cmp));
-        }
-    }
-};
-
-} // namespace detail
-
-FLUX_EXPORT inline constexpr auto ends_with = detail::ends_with_fn{};
-
-template <typename Derived>
-template <sequence Needle, typename Cmp>
-    requires std::predicate<Cmp&, element_t<Derived>, element_t<Needle>> &&
-             (multipass_sequence<Derived> || sized_sequence<Derived>) &&
-             (multipass_sequence<Needle> || sized_sequence<Needle>)
-constexpr auto inline_sequence_base<Derived>::ends_with(Needle&& needle, Cmp cmp) -> bool
-{
-    return flux::ends_with(derived(), FLUX_FWD(needle), std::move(cmp));
-}
-
-
-} // namespace flux
-
-#endif // FLUX_OP_ENDS_WITH_HPP_INCLUDED
-
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_FILL_HPP_INCLUDED
-#define FLUX_OP_FILL_HPP_INCLUDED
-
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_FOR_EACH_HPP_INCLUDED
-#define FLUX_OP_FOR_EACH_HPP_INCLUDED
-
-
-
-namespace flux {
-
-namespace detail {
-
-struct for_each_fn {
-
-    template <sequence Seq, typename Func>
-        requires (std::invocable<Func&, element_t<Seq>> &&
-                  !infinite_sequence<Seq>)
-    constexpr auto operator()(Seq&& seq, Func func) const -> Func
-    {
-        (void) flux::for_each_while(FLUX_FWD(seq), [&](auto&& elem) {
-            std::invoke(func, FLUX_FWD(elem));
-            return true;
-        });
-        return func;
-    }
-};
-
-} // namespace detail
-
-FLUX_EXPORT inline constexpr auto for_each = detail::for_each_fn{};
-
-template <typename D>
-template <typename Func>
-    requires std::invocable<Func&, element_t<D>>
-constexpr auto inline_sequence_base<D>::for_each(Func func) -> Func
-{
-    return flux::for_each(derived(), std::move(func));
-}
-
-} // namespace flux
-
-#endif
-
-#include <type_traits>
-#include <cstring>
-
-namespace flux {
-
-namespace detail {
-
-struct fill_fn {
-private:
-    template <typename Seq, typename Value>
-    static constexpr auto impl(Seq& seq, Value const& value)
-    {
-        flux::for_each(seq, [&value](auto&& elem) { FLUX_FWD(elem) = value; });
-    }
-
-public:
-    template <typename Value, writable_sequence_of<Value> Seq>
-    constexpr void operator()(Seq&& seq, Value const& value) const
-    {
-        constexpr bool can_memset = 
-            contiguous_sequence<Seq> &&
-            sized_sequence<Seq> &&
-            std::same_as<Value, value_t<Seq>> &&
-            // only allow memset on single byte types
-            sizeof(value_t<Seq>) == 1 &&
-            std::is_trivially_copyable_v<value_t<Seq>>;
-
-        if constexpr (can_memset) {
-            if (std::is_constant_evaluated()) {
-                impl(seq, value); // LCOV_EXCL_LINE
-            } else {
-                auto size = flux::usize(seq);
-                if(size == 0) {
-                    return;
-                }
-                
-                FLUX_ASSERT(flux::data(seq) != nullptr);
-                
-                std::memset(flux::data(seq), value,
-                    size * sizeof(value_t<Seq>));
-            }
-        } else {
-            impl(seq, value);
-        }
-    }
-};
-
-} // namespace detail
-
-FLUX_EXPORT inline constexpr auto fill = detail::fill_fn{};
-
-template <typename D>
-template <typename Value>
-    requires writable_sequence_of<D, Value const&>
-constexpr void inline_sequence_base<D>::fill(Value const& value)
-{
-    flux::fill(derived(), value);
-}
-
-} // namespace flux
-
-#endif
-
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_FILTER_HPP_INCLUDED
-#define FLUX_OP_FILTER_HPP_INCLUDED
-
-
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_FIND_HPP_INCLUDED
-#define FLUX_OP_FIND_HPP_INCLUDED
-
+#ifndef FLUX_ALGORITHM_FIND_HPP_INCLUDED
+#define FLUX_ALGORITHM_FIND_HPP_INCLUDED
 
 
 
@@ -8814,9 +8099,7 @@ constexpr auto inline_sequence_base<D>::find_if_not(Pred pred)
 
 } // namespace flux
 
-#endif // FLUX_OP_FIND_HPP_INCLUDED
-
-
+#endif // FLUX_ALGORITHM_FIND_HPP_INCLUDED
 
 namespace flux {
 
@@ -8948,7 +8231,7 @@ constexpr auto inline_sequence_base<D>::filter(Pred pred) &&
 
 } // namespace flux
 
-#endif // FLUX_OP_FILTER_HPP_INCLUDED
+#endif // FLUX_ADAPTOR_FILTER_HPP_INCLUDED
 
 
 
@@ -8956,8 +8239,8 @@ constexpr auto inline_sequence_base<D>::filter(Pred pred) &&
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_FILTER_MAP_HPP_INCLUDED
-#define FLUX_OP_FILTER_MAP_HPP_INCLUDED
+#ifndef FLUX_ADAPTOR_FILTER_MAP_HPP_INCLUDED
+#define FLUX_ADAPTOR_FILTER_MAP_HPP_INCLUDED
 
 
 
@@ -8965,9 +8248,8 @@ constexpr auto inline_sequence_base<D>::filter(Pred pred) &&
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_MAP_HPP_INCLUDED
-#define FLUX_OP_MAP_HPP_INCLUDED
-
+#ifndef FLUX_ADAPTOR_MAP_HPP_INCLUDED
+#define FLUX_ADAPTOR_MAP_HPP_INCLUDED
 
 
 
@@ -8997,7 +8279,7 @@ public:
     constexpr auto base() && -> Base&& { return std::move(base_); }
     constexpr auto base() const&& -> Base const&& { return std::move(base_); }
 
-    struct flux_sequence_traits  : detail::passthrough_traits_base<Base>
+    struct flux_sequence_traits  : detail::passthrough_traits_base
     {
         using value_type = std::remove_cvref_t<std::invoke_result_t<Func&, element_t<Base>>>;
 
@@ -9056,7 +8338,7 @@ constexpr auto inline_sequence_base<Derived>::map(Func func) &&
 
 } // namespace flux
 
-#endif
+#endif // FLUX_ADAPTOR_MAP_HPP_INCLUDED
 
 
 namespace flux {
@@ -9119,403 +8401,15 @@ constexpr auto inline_sequence_base<D>::filter_deref() && requires detail::optio
 }
 } // namespace flux
 
-#endif
-
+#endif // FLUX_ADAPTOR_FILTER_MAP_HPP_INCLUDED
 
 
 // Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_FIND_MIN_MAX_HPP_INCLUDED
-#define FLUX_OP_FIND_MIN_MAX_HPP_INCLUDED
-
-
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_MINMAX_HPP_INCLUDED
-#define FLUX_OP_MINMAX_HPP_INCLUDED
-
-
-
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_FOLD_HPP_INCLUDED
-#define FLUX_OP_FOLD_HPP_INCLUDED
-
-
-
-namespace flux {
-
-namespace detail {
-
-template <typename Seq, typename Func, typename Init>
-using fold_result_t = std::decay_t<std::invoke_result_t<Func&, Init, element_t<Seq>>>;
-
-struct fold_op {
-    template <sequence Seq, typename Func, std::movable Init = value_t<Seq>,
-              typename R = fold_result_t<Seq, Func, Init>>
-        requires std::invocable<Func&,  Init, element_t<Seq>> &&
-                 std::invocable<Func&, R, element_t<Seq>> &&
-                 std::convertible_to<Init, R> &&
-                 std::assignable_from<Init&, std::invoke_result_t<Func&, R, element_t<Seq>>>
-    constexpr auto operator()(Seq&& seq, Func func, Init init = Init{}) const -> R
-    {
-        R init_ = R(std::move(init));
-        flux::for_each_while(seq, [&func, &init_](auto&& elem) {
-            init_ = std::invoke(func, std::move(init_), FLUX_FWD(elem));
-            return true;
-        });
-        return init_;
-    }
-};
-
-struct fold_first_op {
-    template <sequence Seq, typename Func, typename V = value_t<Seq>>
-        requires std::invocable<Func&, V, element_t<Seq>> &&
-                 std::assignable_from<value_t<Seq>&, std::invoke_result_t<Func&, V&&, element_t<Seq>>>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Func func) const -> flux::optional<V>
-    {
-        auto cur = flux::first(seq);
-
-        if (flux::is_last(seq, cur)) {
-            return std::nullopt;
-        }
-
-        V init(flux::read_at(seq, cur));
-        flux::inc(seq, cur);
-
-        while (!flux::is_last(seq, cur)) {
-            init = std::invoke(func, std::move(init), flux::read_at(seq, cur));
-            flux::inc(seq, cur);
-        }
-
-        return flux::optional<V>(std::in_place, std::move(init));
-    }
-};
-
-// Workaround libc++18 invoke() bug: https://github.com/llvm/llvm-project/issues/106428
-consteval bool libcpp_fold_invoke_workaround_required()
-{
-#if defined(_LIBCPP_VERSION)
-    return _LIBCPP_VERSION >= 180000 && _LIBCPP_VERSION < 190000;
-#else
-    return false;
-#endif
-}
-
-struct sum_op {
-    template <sequence Seq>
-        requires std::default_initializable<value_t<Seq>> &&
-                 std::invocable<fold_op, Seq, std::plus<>>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const -> value_t<Seq>
-    {
-        if constexpr (num::integral<value_t<Seq>>) {
-            if constexpr (libcpp_fold_invoke_workaround_required()) {
-                auto add = []<typename T>(T lhs, T rhs) -> T { return num::add(lhs, rhs); };
-                return fold_op{}(FLUX_FWD(seq), add, value_t<Seq>(0));
-            } else {
-                return fold_op{}(FLUX_FWD(seq), num::add, value_t<Seq>(0));
-            }
-        } else {
-            return fold_op{}(FLUX_FWD(seq), std::plus<>{}, value_t<Seq>(0));
-        }
-    }
-};
-
-struct product_op {
-    template <sequence Seq>
-        requires std::invocable<fold_op, Seq, std::multiplies<>> &&
-                 requires { value_t<Seq>(1); }
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const -> value_t<Seq>
-    {
-        if constexpr (num::integral<value_t<Seq>>) {
-            if constexpr (libcpp_fold_invoke_workaround_required()) {
-                auto mul = []<typename T>(T lhs, T rhs) -> T { return num::mul(lhs, rhs); };
-                return fold_op{}(FLUX_FWD(seq), mul, value_t<Seq>(1));
-            } else {
-                return fold_op{}(FLUX_FWD(seq), num::mul, value_t<Seq>(1));
-            }
-        } else {
-            return fold_op{}(FLUX_FWD(seq), std::multiplies<>{}, value_t<Seq>(1));
-        }
-    }
-};
-
-} // namespace detail
-
-FLUX_EXPORT inline constexpr auto fold = detail::fold_op{};
-FLUX_EXPORT inline constexpr auto fold_first = detail::fold_first_op{};
-FLUX_EXPORT inline constexpr auto sum = detail::sum_op{};
-FLUX_EXPORT inline constexpr auto product = detail::product_op{};
-
-template <typename Derived>
-template <typename D, typename Func, typename Init>
-    requires foldable<Derived, Func, Init>
-[[nodiscard]]
-constexpr auto inline_sequence_base<Derived>::fold(Func func, Init init) -> fold_result_t<D, Func, Init>
-{
-    return flux::fold(derived(), std::move(func), std::move(init));
-}
-
-template <typename Derived>
-template <typename D, typename Func>
-    requires std::invocable<Func&, value_t<D>, element_t<D>> &&
-             std::assignable_from<value_t<D>&, std::invoke_result_t<Func&, value_t<D>, element_t<D>>>
-constexpr auto inline_sequence_base<Derived>::fold_first(Func func)
-{
-    return flux::fold_first(derived(), std::move(func));
-}
-
-template <typename D>
-constexpr auto inline_sequence_base<D>::sum()
-    requires foldable<D, std::plus<>, value_t<D>> &&
-             std::default_initializable<value_t<D>>
-{
-    return flux::sum(derived());
-}
-
-template <typename D>
-constexpr auto inline_sequence_base<D>::product()
-    requires foldable<D, std::multiplies<>, value_t<D>> &&
-             requires { value_t<D>(1); }
-{
-    return flux::product(derived());
-}
-
-} // namespace flux
-
-#endif // FLUX_OP_FOLD_HPP_INCLUDED
-
-
-
-namespace flux {
-
-FLUX_EXPORT
-template <typename T>
-struct minmax_result {
-    T min;
-    T max;
-};
-
-namespace detail {
-
-struct min_op {
-    template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
-        -> flux::optional<value_t<Seq>>
-    {
-        return flux::fold_first(FLUX_FWD(seq), [&](auto min, auto&& elem) -> value_t<Seq> {
-            if (std::invoke(cmp, elem, min) < 0) {
-                return value_t<Seq>(FLUX_FWD(elem));
-            } else {
-                return min;
-            }
-        });
-    }
-};
-
-struct max_op {
-    template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
-        -> flux::optional<value_t<Seq>>
-    {
-        return flux::fold_first(FLUX_FWD(seq), [&](auto max, auto&& elem) -> value_t<Seq> {
-            if (!(std::invoke(cmp, elem, max) < 0)) {
-                return value_t<Seq>(FLUX_FWD(elem));
-            } else {
-                return max;
-            }
-        });
-    }
-};
-
-struct minmax_op {
-    template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
-        -> flux::optional<minmax_result<value_t<Seq>>>
-    {
-        using R = minmax_result<value_t<Seq>>;
-
-        auto cur = flux::first(seq);
-        if (flux::is_last(seq, cur)) {
-            return std::nullopt;
-        }
-
-        R init = R{value_t<Seq>(flux::read_at(seq, cur)),
-                   value_t<Seq>(flux::read_at(seq, cur))};
-
-        auto fold_fn = [&](R mm, auto&& elem) -> R {
-            if (std::invoke(cmp, elem, mm.min) < 0) {
-                mm.min = value_t<Seq>(elem);
-            }
-            if (!(std::invoke(cmp, elem, mm.max) < 0)) {
-                mm.max = value_t<Seq>(FLUX_FWD(elem));
-            }
-            return mm;
-        };
-
-        return flux::optional<R>(std::in_place,
-                                flux::fold(flux::slice(seq, std::move(cur), flux::last), fold_fn, std::move(init)));
-    }
-};
-
-} // namespace detail
-
-FLUX_EXPORT inline constexpr auto min = detail::min_op{};
-FLUX_EXPORT inline constexpr auto max = detail::max_op{};
-FLUX_EXPORT inline constexpr auto minmax = detail::minmax_op{};
-
-template <typename Derived>
-template <typename Cmp>
-    requires weak_ordering_for<Cmp, Derived>
-constexpr auto inline_sequence_base<Derived>::max(Cmp cmp)
-{
-    return flux::max(derived(), std::move(cmp));
-}
-
-template <typename Derived>
-template <typename Cmp>
-    requires weak_ordering_for<Cmp, Derived>
-constexpr auto inline_sequence_base<Derived>::min(Cmp cmp)
-{
-    return flux::min(derived(), std::move(cmp));
-}
-
-template <typename Derived>
-template <typename Cmp>
-    requires weak_ordering_for<Cmp, Derived>
-constexpr auto inline_sequence_base<Derived>::minmax(Cmp cmp)
-{
-    return flux::minmax(derived(), std::move(cmp));
-}
-
-} // namespace flux
-
-#endif // FLUX_OP_MINMAX_HPP_INCLUDED
-
-
-namespace flux {
-
-namespace detail {
-
-struct find_min_fn {
-    template <multipass_sequence Seq,
-              weak_ordering_for<Seq> Cmp = std::compare_three_way>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Cmp cmp = {}) const -> cursor_t<Seq>
-    {
-        auto min = first(seq);
-        if (!is_last(seq, min)) {
-            for (auto cur = next(seq, min); !is_last(seq, cur); inc(seq, cur)) {
-                if (std::invoke(cmp, read_at(seq, cur), read_at(seq, min)) < 0) {
-                    min = cur;
-                }
-            }
-        }
-
-        return min;
-    }
-};
-
-struct find_max_fn {
-    template <multipass_sequence Seq,
-              weak_ordering_for<Seq> Cmp = std::compare_three_way>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Cmp cmp = {}) const -> cursor_t<Seq>
-    {
-        auto max = first(seq);
-        if (!is_last(seq, max)) {
-            for (auto cur = next(seq, max); !is_last(seq, cur); inc(seq, cur)) {
-                if (!(std::invoke(cmp, read_at(seq, cur), read_at(seq, max)) < 0)) {
-                    max = cur;
-                }
-            }
-        }
-
-        return max;
-    }
-};
-
-struct find_minmax_fn {
-    template <multipass_sequence Seq,
-              weak_ordering_for<Seq> Cmp = std::compare_three_way>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Cmp cmp = {}) const
-        -> minmax_result<cursor_t<Seq>>
-    {
-        auto min = first(seq);
-        auto max = min;
-        if (!is_last(seq, min)) {
-            for (auto cur = next(seq, min); !is_last(seq, cur); inc(seq, cur)) {
-                auto&& elem = read_at(seq, cur);
-
-                if (std::invoke(cmp, elem, read_at(seq, min)) < 0) {
-                    min = cur;
-                }
-                if (!(std::invoke(cmp, elem, read_at(seq, max)) < 0)) {
-                    max = cur;
-                }
-            }
-        }
-
-        return {std::move(min), std::move(max)};
-    }
-};
-
-} // namespace detail
-
-FLUX_EXPORT inline constexpr auto find_min = detail::find_min_fn{};
-FLUX_EXPORT inline constexpr auto find_max = detail::find_max_fn{};
-FLUX_EXPORT inline constexpr auto find_minmax = detail::find_minmax_fn{};
-
-template <typename D>
-template <typename Cmp>
-    requires weak_ordering_for<Cmp, D>
-constexpr auto inline_sequence_base<D>::find_min(Cmp cmp)
-{
-    return flux::find_min(derived(), std::move(cmp));
-}
-
-template <typename D>
-template <typename Cmp>
-    requires weak_ordering_for<Cmp, D>
-constexpr auto inline_sequence_base<D>::find_max(Cmp cmp)
-{
-    return flux::find_max(derived(), std::move(cmp));
-}
-
-template <typename D>
-template <typename Cmp>
-    requires weak_ordering_for<Cmp, D>
-constexpr auto inline_sequence_base<D>::find_minmax(Cmp cmp)
-{
-    return flux::find_minmax(derived(), std::move(cmp));
-}
-
-} // namespace flux
-
-#endif // FLUX_OP_FIND_MIN_MAX_HPP_INCLUDED
-
-
-// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_FLATTEN_HPP_INCLUDED
-#define FLUX_OP_FLATTEN_HPP_INCLUDED
+#ifndef FLUX_ADAPTOR_FLATTEN_HPP_INCLUDED
+#define FLUX_ADAPTOR_FLATTEN_HPP_INCLUDED
 
 
 
@@ -9764,15 +8658,15 @@ constexpr auto inline_sequence_base<Derived>::flatten() &&
 
 } // namespace flux
 
-#endif // FLUX_OP_FLATTEN_HPP_INCLUDED
+#endif // FLUX_ADAPTOR_FLATTEN_HPP_INCLUDED
 
 
 // Copyright (c) 2024 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_FLATTEN_WITH_HPP_INCLUDED
-#define FLUX_OP_FLATTEN_WITH_HPP_INCLUDED
+#ifndef FLUX_ADAPTOR_FLATTEN_WITH_HPP_INCLUDED
+#define FLUX_ADAPTOR_FLATTEN_WITH_HPP_INCLUDED
 
 
 
@@ -9781,8 +8675,8 @@ constexpr auto inline_sequence_base<Derived>::flatten() &&
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_SOURCE_SINGLE_HPP_INCLUDED
-#define FLUX_SOURCE_SINGLE_HPP_INCLUDED
+#ifndef FLUX_SEQUENCE_SINGLE_HPP_INCLUDED
+#define FLUX_SEQUENCE_SINGLE_HPP_INCLUDED
 
 
 
@@ -9909,7 +8803,7 @@ FLUX_EXPORT inline constexpr auto single = detail::single_fn{};
 
 } // namespace flux
 
-#endif // FLUX_SOURCE_SINGLE_HPP_INCLUDED
+#endif // FLUX_SEQUENCE_SINGLE_HPP_INCLUDED
 
 
 namespace flux {
@@ -10293,64 +9187,15 @@ constexpr auto inline_sequence_base<Derived>::flatten_with(Value value) &&
 
 } // namespace flux
 
-#endif // FLUX_OP_FLATTEN_WITH_HPP_INCLUDED
-
-
-
-
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_INPLACE_REVERSE_HPP_INCLUDED
-#define FLUX_OP_INPLACE_REVERSE_HPP_INCLUDED
-
-
-
-namespace flux {
-
-namespace detail {
-
-struct inplace_reverse_fn {
-    template <bidirectional_sequence Seq>
-        requires bounded_sequence<Seq> &&
-                 element_swappable_with<Seq, Seq>
-    constexpr void operator()(Seq&& seq) const
-    {
-        auto first = flux::first(seq);
-        auto last = flux::last(seq);
-
-        while (first != last && first != flux::dec(seq, last)) {
-            flux::swap_at(seq, first, last);
-            flux::inc(seq, first);
-        }
-    }
-};
-
-} // namespace detail
-
-FLUX_EXPORT inline constexpr auto inplace_reverse = detail::inplace_reverse_fn{};
-
-template <typename D>
-constexpr auto inline_sequence_base<D>::inplace_reverse()
-    requires bounded_sequence<D> && detail::element_swappable_with<D, D>
-{
-    return flux::inplace_reverse(derived());
-}
-
-} // namespace flux
-
-#endif // FLUX_OP_INPLACE_REVERSE_HPP_INCLUDED
-
+#endif // FLUX_ADAPTOR_FLATTEN_WITH_HPP_INCLUDED
 
 
 // Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_MASK_HPP_INCLUDED
-#define FLUX_OP_MASK_HPP_INCLUDED
+#ifndef FLUX_ADAPTOR_MASK_HPP_INCLUDED
+#define FLUX_ADAPTOR_MASK_HPP_INCLUDED
 
 
 
@@ -10511,16 +9356,15 @@ constexpr auto inline_sequence_base<D>::mask(Mask&& mask_) &&
 
 } // namespace flux
 
-#endif // FLUX_OP_MASK_HPP_INCLUDED
-
+#endif // FLUX_ADAPTOR_MASK_HPP_INCLUDED
 
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_READ_ONLY_HPP_INCLUDED
-#define FLUX_OP_READ_ONLY_HPP_INCLUDED
+#ifndef FLUX_ADAPTOR_READ_ONLY_HPP_INCLUDED
+#define FLUX_ADAPTOR_READ_ONLY_HPP_INCLUDED
 
 
 
@@ -10600,8 +9444,7 @@ constexpr auto inline_sequence_base<D>::read_only() &&
 
 } // namespace flux
 
-#endif
-
+#endif // FLUX_ADAPTOR_READ_ONlY_HPP_INCLUDED
 
 
 
@@ -10609,10 +9452,161 @@ constexpr auto inline_sequence_base<D>::read_only() &&
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_SCAN_HPP_INCLUDED
-#define FLUX_OP_SCAN_HPP_INCLUDED
+#ifndef FLUX_ADAPTOR_SCAN_HPP_INCLUDED
+#define FLUX_ADAPTOR_SCAN_HPP_INCLUDED
 
 
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_ALGORITHM_FOLD_HPP_INCLUDED
+#define FLUX_ALGORITHM_FOLD_HPP_INCLUDED
+
+
+
+namespace flux {
+
+namespace detail {
+
+struct fold_op {
+    template <sequence Seq, typename Func, std::movable Init = value_t<Seq>,
+              typename R = fold_result_t<Seq, Func, Init>>
+        requires std::invocable<Func&,  Init, element_t<Seq>> &&
+                 std::invocable<Func&, R, element_t<Seq>> &&
+                 std::convertible_to<Init, R> &&
+                 std::assignable_from<Init&, std::invoke_result_t<Func&, R, element_t<Seq>>>
+    constexpr auto operator()(Seq&& seq, Func func, Init init = Init{}) const -> R
+    {
+        R init_ = R(std::move(init));
+        flux::for_each_while(seq, [&func, &init_](auto&& elem) {
+            init_ = std::invoke(func, std::move(init_), FLUX_FWD(elem));
+            return true;
+        });
+        return init_;
+    }
+};
+
+struct fold_first_op {
+    template <sequence Seq, typename Func, typename V = value_t<Seq>>
+        requires std::invocable<Func&, V, element_t<Seq>> &&
+                 std::assignable_from<value_t<Seq>&, std::invoke_result_t<Func&, V&&, element_t<Seq>>>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq, Func func) const -> flux::optional<V>
+    {
+        auto cur = flux::first(seq);
+
+        if (flux::is_last(seq, cur)) {
+            return std::nullopt;
+        }
+
+        V init(flux::read_at(seq, cur));
+        flux::inc(seq, cur);
+
+        while (!flux::is_last(seq, cur)) {
+            init = std::invoke(func, std::move(init), flux::read_at(seq, cur));
+            flux::inc(seq, cur);
+        }
+
+        return flux::optional<V>(std::in_place, std::move(init));
+    }
+};
+
+// Workaround libc++18 invoke() bug: https://github.com/llvm/llvm-project/issues/106428
+consteval bool libcpp_fold_invoke_workaround_required()
+{
+#if defined(_LIBCPP_VERSION)
+    return _LIBCPP_VERSION >= 180000 && _LIBCPP_VERSION < 190000;
+#else
+    return false;
+#endif
+}
+
+struct sum_op {
+    template <sequence Seq>
+        requires std::default_initializable<value_t<Seq>> &&
+                 std::invocable<fold_op, Seq, std::plus<>>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq) const -> value_t<Seq>
+    {
+        if constexpr (num::integral<value_t<Seq>>) {
+            if constexpr (libcpp_fold_invoke_workaround_required()) {
+                auto add = []<typename T>(T lhs, T rhs) -> T { return num::add(lhs, rhs); };
+                return fold_op{}(FLUX_FWD(seq), add, value_t<Seq>(0));
+            } else {
+                return fold_op{}(FLUX_FWD(seq), num::add, value_t<Seq>(0));
+            }
+        } else {
+            return fold_op{}(FLUX_FWD(seq), std::plus<>{}, value_t<Seq>(0));
+        }
+    }
+};
+
+struct product_op {
+    template <sequence Seq>
+        requires std::invocable<fold_op, Seq, std::multiplies<>> &&
+                 requires { value_t<Seq>(1); }
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq) const -> value_t<Seq>
+    {
+        if constexpr (num::integral<value_t<Seq>>) {
+            if constexpr (libcpp_fold_invoke_workaround_required()) {
+                auto mul = []<typename T>(T lhs, T rhs) -> T { return num::mul(lhs, rhs); };
+                return fold_op{}(FLUX_FWD(seq), mul, value_t<Seq>(1));
+            } else {
+                return fold_op{}(FLUX_FWD(seq), num::mul, value_t<Seq>(1));
+            }
+        } else {
+            return fold_op{}(FLUX_FWD(seq), std::multiplies<>{}, value_t<Seq>(1));
+        }
+    }
+};
+
+} // namespace detail
+
+FLUX_EXPORT inline constexpr auto fold = detail::fold_op{};
+FLUX_EXPORT inline constexpr auto fold_first = detail::fold_first_op{};
+FLUX_EXPORT inline constexpr auto sum = detail::sum_op{};
+FLUX_EXPORT inline constexpr auto product = detail::product_op{};
+
+template <typename Derived>
+template <typename D, typename Func, typename Init>
+    requires foldable<Derived, Func, Init>
+[[nodiscard]]
+constexpr auto inline_sequence_base<Derived>::fold(Func func, Init init) -> fold_result_t<D, Func, Init>
+{
+    return flux::fold(derived(), std::move(func), std::move(init));
+}
+
+template <typename Derived>
+template <typename D, typename Func>
+    requires std::invocable<Func&, value_t<D>, element_t<D>> &&
+             std::assignable_from<value_t<D>&, std::invoke_result_t<Func&, value_t<D>, element_t<D>>>
+constexpr auto inline_sequence_base<Derived>::fold_first(Func func)
+{
+    return flux::fold_first(derived(), std::move(func));
+}
+
+template <typename D>
+constexpr auto inline_sequence_base<D>::sum()
+    requires foldable<D, std::plus<>, value_t<D>> &&
+             std::default_initializable<value_t<D>>
+{
+    return flux::sum(derived());
+}
+
+template <typename D>
+constexpr auto inline_sequence_base<D>::product()
+    requires foldable<D, std::multiplies<>, value_t<D>> &&
+             requires { value_t<D>(1); }
+{
+    return flux::product(derived());
+}
+
+} // namespace flux
+
+#endif // FLUX_ALGORITHM_FOLD_HPP_INCLUDED
 
 
 #include <utility> // for std::as_const
@@ -10806,15 +9800,15 @@ constexpr auto inline_sequence_base<Derived>::prescan(Func func, Init init) &&
 
 } // namespace flux
 
-#endif // FLUX_OP_SCAN_HPP_INCLUDED
+#endif // FLUX_ADAPTOR_SCAN_HPP_INCLUDED
 
 
 // Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_SCAN_FIRST_HPP_INCLUDED
-#define FLUX_OP_SCAN_FIRST_HPP_INCLUDED
+#ifndef FLUX_ADAPTOR_SCAN_FIRST_HPP_INCLUDED
+#define FLUX_ADAPTOR_SCAN_FIRST_HPP_INCLUDED
 
 
 
@@ -10948,16 +9942,15 @@ constexpr auto inline_sequence_base<Derived>::scan_first(Func func) &&
 
 } // namespace flux
 
-#endif // FLUX_OP_SCAN_FIRST_HPP_INCLUDED
+#endif // FLUX_ADAPTOR_SCAN_FIRST_HPP_INCLUDED
 
 
 // Copyright (c) 2023 Jiri Nytra (jiri.nytra at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_SET_ADAPTORS_HPP_INCLUDED
-#define FLUX_OP_SET_ADAPTORS_HPP_INCLUDED
-
+#ifndef FLUX_ADAPTOR_SET_ADAPTORS_HPP_INCLUDED
+#define FLUX_ADAPTOR_SET_ADAPTORS_HPP_INCLUDED
 
 
 
@@ -11511,17 +10504,15 @@ FLUX_EXPORT inline constexpr auto set_intersection = detail::set_intersection_fn
 
 } // namespace flux
 
-#endif // namespace FLUX_OP_SET_ADAPTORS_HPP_INCLUDED
-
+#endif // namespace FLUX_ADAPTOR_SET_ADAPTORS_HPP_INCLUDED
 
 
 // Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_SLIDE_HPP_INCLUDED
-#define FLUX_OP_SLIDE_HPP_INCLUDED
-
+#ifndef FLUX_ADAPTOR_SLIDE_HPP_INCLUDED
+#define FLUX_ADAPTOR_SLIDE_HPP_INCLUDED
 
 
 
@@ -11653,11 +10644,1577 @@ constexpr auto inline_sequence_base<D>::slide(num::integral auto win_sz) &&
 
 } // namespace slide
 
-#endif // FLUX_OP_SLIDE_HPP_INCLUDED
+#endif // FLUX_ADAPTOR_SLIDE_HPP_INCLUDED
 
 
-#ifndef FLUX_OP_SORT_HPP_INCLUDED
-#define FLUX_OP_SORT_HPP_INCLUDED
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_ADAPTOR_SPLIT_HPP_INCLUDED
+#define FLUX_ADAPTOR_SPLIT_HPP_INCLUDED
+
+
+
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_ALGORITHM_SEARCH_HPP_INCLUDED
+#define FLUX_ALGORITHM_SEARCH_HPP_INCLUDED
+
+
+
+namespace flux {
+
+namespace detail {
+
+struct search_fn {
+    template <multipass_sequence Haystack, multipass_sequence Needle,
+              typename Cmp = std::ranges::equal_to>
+        requires std::predicate<Cmp&, element_t<Haystack>, element_t<Needle>>
+    constexpr auto operator()(Haystack&& h, Needle&& n, Cmp cmp = {}) const
+        -> bounds_t<Haystack>
+    {
+        auto hfirst = flux::first(h);
+
+        while(true) {
+            auto cur1 = hfirst;
+            auto cur2 = flux::first(n);
+
+            while (true) {
+                if (is_last(n, cur2)) {
+                    return {std::move(hfirst), std::move(cur1)};
+                }
+
+                if (is_last(h, cur1)) {
+                    return {cur1, cur1};
+                }
+
+                if (!std::invoke(cmp, read_at(h, cur1), read_at(n, cur2))) {
+                    break;
+                }
+
+                inc(h, cur1);
+                inc(n, cur2);
+            }
+
+            inc(h, hfirst);
+        }
+    }
+
+};
+
+} // namespace detail
+
+FLUX_EXPORT inline constexpr auto search = detail::search_fn{};
+
+} // namespace flux
+
+#endif // FLUX_ALGORITHM_SEARCH_HPP_INCLUDED
+
+
+
+
+namespace flux {
+
+namespace detail {
+
+template <typename Splitter, typename Seq>
+concept splitter_for = requires(Splitter& splitter, Seq& seq, cursor_t<Seq> const& cur) {
+    { splitter(flux::slice(seq, cur, flux::last)) } -> std::same_as<bounds_t<Seq>>;
+};
+
+template <multipass_sequence Base, splitter_for<Base> Splitter>
+struct split_adaptor : inline_sequence_base<split_adaptor<Base, Splitter>> {
+private:
+    FLUX_NO_UNIQUE_ADDRESS Base base_;
+    FLUX_NO_UNIQUE_ADDRESS Splitter splitter_;
+
+public:
+    constexpr split_adaptor(decays_to<Base> auto&& base, decays_to<Splitter> auto&& splitter)
+        : base_(FLUX_FWD(base)),
+          splitter_(FLUX_FWD(splitter))
+    {}
+
+    struct flux_sequence_traits : default_sequence_traits {
+    private:
+        struct cursor_type {
+            cursor_t<Base> cur{};
+            bounds_t<Base> next{};
+            bool trailing_empty = false;
+
+            friend constexpr bool operator==(cursor_type const& lhs, cursor_type const& rhs)
+            {
+                return lhs.cur == rhs.cur && lhs.trailing_empty == rhs.trailing_empty;
+            }
+        };
+
+    public:
+        static constexpr bool is_infinite = infinite_sequence<Base>;
+
+        static constexpr auto first(auto& self) -> cursor_type
+            requires sequence<decltype((self.base_))> &&
+                     splitter_for<decltype((self.splitter_)), decltype((self.base_))>
+        {
+            auto fst = flux::first(self.base_);
+            auto bounds = self.splitter_(flux::slice(self.base_, fst, flux::last));
+            return cursor_type{.cur = std::move(fst),
+                               .next = std::move(bounds)};
+        }
+
+        static constexpr auto is_last(auto& self, cursor_type const& cur)
+            -> bool
+        {
+            return flux::is_last(self.base_, cur.cur) && !cur.trailing_empty;
+        }
+
+        static constexpr auto read_at(auto& self, cursor_type const& cur)
+        {
+            return flux::slice(self.base_, cur.cur, cur.next.from);
+        }
+
+        static constexpr auto inc(auto& self, cursor_type& cur) -> void
+        {
+            cur.cur = cur.next.from;
+            if (!flux::is_last(self.base_, cur.cur)) {
+                cur.cur = cur.next.to;
+                if (flux::is_last(self.base_, cur.cur)) {
+                    cur.trailing_empty = true;
+                    cur.next = {cur.cur, cur.cur};
+                } else {
+                    cur.next = self.splitter_(flux::slice(self.base_, cur.cur, flux::last));
+                }
+            } else {
+                cur.trailing_empty = false;
+            }
+        }
+
+        static constexpr auto last(auto& self) -> cursor_type
+            requires bounded_sequence<decltype(self.base_)>
+        {
+            return cursor_type{.cur = flux::last(self.base_)};
+        }
+    };
+};
+
+template <multipass_sequence Pattern>
+struct pattern_splitter {
+private:
+    FLUX_NO_UNIQUE_ADDRESS Pattern pattern_;
+
+public:
+    constexpr explicit pattern_splitter(decays_to<Pattern> auto&& pattern)
+        : pattern_(FLUX_FWD(pattern))
+    {}
+
+    template <multipass_sequence Seq>
+        requires std::equality_comparable_with<element_t<Seq>, element_t<Pattern>>
+    constexpr auto operator()(Seq&& seq) -> bounds_t<Seq>
+    {
+        return flux::search(seq, pattern_);
+    }
+
+    template <multipass_sequence Seq>
+        requires multipass_sequence<Pattern const> &&
+                 std::equality_comparable_with<element_t<Seq>, element_t<Pattern const>>
+    constexpr auto operator()(Seq&& seq) const -> bounds_t<Seq>
+    {
+        return flux::search(seq, pattern_);
+    }
+};
+
+template <typename Delim>
+struct delim_splitter {
+private:
+    FLUX_NO_UNIQUE_ADDRESS Delim delim_;
+
+public:
+    constexpr explicit delim_splitter(decays_to<Delim> auto&& delim)
+        : delim_(FLUX_FWD(delim))
+    {}
+
+    template <multipass_sequence Seq>
+        requires std::equality_comparable_with<element_t<Seq>, Delim const&>
+    constexpr auto operator()(Seq&& seq) const -> bounds_t<Seq>
+    {
+        auto nxt = flux::find(seq, delim_);
+        if (!flux::is_last(seq, nxt)) {
+            return bounds{nxt, flux::next(seq, nxt)};
+        } else {
+            return bounds{nxt, nxt};
+        }
+    }
+};
+
+template <typename Pred>
+struct predicate_splitter {
+private:
+    FLUX_NO_UNIQUE_ADDRESS Pred pred_;
+
+public:
+    constexpr explicit predicate_splitter(decays_to<Pred> auto&& pred)
+        : pred_(FLUX_FWD(pred))
+    {}
+
+    template <multipass_sequence Seq>
+        requires std::predicate<Pred const&, element_t<Seq>>
+    constexpr auto operator()(Seq&& seq) const -> bounds_t<Seq>
+    {
+        auto nxt = flux::find_if(seq, pred_);
+        if (!flux::is_last(seq, nxt)) {
+            return bounds{nxt, flux::next(seq, nxt)};
+        } else {
+            return bounds{nxt, nxt};
+        }
+    }
+};
+
+struct split_fn {
+    template <adaptable_sequence Seq, adaptable_sequence Pattern>
+        requires multipass_sequence<Seq> &&
+                 multipass_sequence<Pattern> &&
+                 std::equality_comparable_with<element_t<Seq>, element_t<Pattern>>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq, Pattern&& pattern) const
+    {
+        using splitter_t = pattern_splitter<std::decay_t<Pattern>>;
+        return split_adaptor<std::decay_t<Seq>, splitter_t>(
+            FLUX_FWD(seq), splitter_t(FLUX_FWD(pattern)));
+    }
+
+    template <adaptable_sequence Seq, typename Delim>
+        requires multipass_sequence<Seq> &&
+                 std::equality_comparable_with<element_t<Seq>, Delim const&>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq, Delim&& delim) const
+    {
+        using splitter_t = delim_splitter<std::decay_t<Delim>>;
+        return split_adaptor<std::decay_t<Seq>, splitter_t>(
+            FLUX_FWD(seq), splitter_t(FLUX_FWD(delim)));
+    }
+
+    template <adaptable_sequence Seq, typename Pred>
+        requires multipass_sequence<Seq> &&
+                 std::predicate<Pred const&, element_t<Seq>>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq, Pred pred) const
+    {
+        using splitter_t = predicate_splitter<Pred>;
+        return split_adaptor<std::decay_t<Seq>, splitter_t>(
+            FLUX_FWD(seq), splitter_t(std::move(pred)));
+    }
+};
+
+} // namespace detail
+
+FLUX_EXPORT inline constexpr auto split = detail::split_fn{};
+
+template <typename Derived>
+template <typename Pattern>
+    requires multipass_sequence<Derived> &&
+             multipass_sequence<Pattern> &&
+             std::equality_comparable_with<element_t<Derived>, element_t<Pattern>>
+constexpr auto inline_sequence_base<Derived>::split(Pattern&& pattern) &&
+{
+    return flux::split(std::move(derived()), FLUX_FWD(pattern));
+}
+
+template <typename Derived>
+template <typename Delim>
+    requires multipass_sequence<Derived> &&
+             std::equality_comparable_with<element_t<Derived>, Delim const&>
+constexpr auto inline_sequence_base<Derived>::split(Delim&& delim) &&
+{
+    return flux::split(std::move(derived()), FLUX_FWD(delim));
+}
+
+template <typename Derived>
+template <typename Pred>
+    requires multipass_sequence<Derived> &&
+             std::predicate<Pred const&, element_t<Derived>>
+constexpr auto inline_sequence_base<Derived>::split(Pred pred) &&
+{
+    return flux::split(std::move(derived()), std::move(pred));
+}
+
+
+} // namespace flux
+
+#endif // FLUX_ADAPTOR_SPLIT_HPP_INCLUDED
+
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_ADAPTOR_STRING_SPLIT_HPP_INCLUDED
+#define FLUX_ADAPTOR_STRING_SPLIT_HPP_INCLUDED
+
+
+
+
+#include <string_view>
+
+namespace flux {
+
+namespace detail {
+
+template <typename C>
+concept character = any_of<C, char, wchar_t, char8_t, char16_t, char32_t>;
+
+struct to_string_view_fn {
+    template <contiguous_sequence Seq>
+        requires sized_sequence<Seq> && character<value_t<Seq>>
+    constexpr auto operator()(Seq&& seq) const
+    {
+        return std::basic_string_view<value_t<Seq>>(flux::data(seq), flux::usize(seq));
+    }
+};
+
+inline constexpr auto to_string_view = to_string_view_fn{};
+
+struct split_string_fn {
+
+    template <contiguous_sequence Seq, multipass_sequence Pattern>
+        requires character<value_t<Seq>> &&
+                std::equality_comparable_with<element_t<Seq>, element_t<Pattern>>
+    constexpr auto operator()(Seq&& seq, Pattern&& pattern) const
+    {
+        return flux::split(FLUX_FWD(seq), FLUX_FWD(pattern)).map(to_string_view);
+    }
+
+    // Attempt to hijack string literal patterns to do the right thing
+    template <contiguous_sequence Seq, std::size_t N>
+        requires character<value_t<Seq>>
+    constexpr auto operator()(Seq&& seq, value_t<Seq> const (&pattern)[N]) const
+    {
+        return flux::split(FLUX_FWD(seq), std::basic_string_view(pattern))
+                    .map(to_string_view);
+    }
+
+    template <contiguous_sequence Seq>
+        requires character<value_t<Seq>>
+    constexpr auto operator()(Seq&& seq, value_t<Seq> delim) const
+    {
+        return flux::split(FLUX_FWD(seq), delim).map(to_string_view);
+    }
+};
+
+} // namespace detail
+
+FLUX_EXPORT inline constexpr auto split_string = detail::split_string_fn{};
+
+template <typename D>
+constexpr auto inline_sequence_base<D>::split_string(auto&& pattern) &&
+{
+    return flux::split_string(std::move(derived()), FLUX_FWD(pattern));
+}
+
+
+} // namespace flux
+
+#endif // FLUX_ADAPTOR_SPLIT_STRING_HPP_INCLUDED
+
+
+
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_ADAPTOR_TAKE_WHILE_HPP_INCLUDED
+#define FLUX_ADAPTOR_TAKE_WHILE_HPP_INCLUDED
+
+
+
+namespace flux {
+
+namespace detail {
+
+template <sequence Base, typename Pred>
+struct take_while_adaptor : inline_sequence_base<take_while_adaptor<Base, Pred>> {
+private:
+    Base base_;
+    Pred pred_;
+
+    constexpr auto base() & -> Base& { return base_; }
+
+    friend struct sequence_traits<take_while_adaptor>;
+    friend struct passthrough_traits_base;
+
+public:
+    constexpr take_while_adaptor(decays_to<Base> auto&& base, decays_to<Pred> auto&& pred)
+        : base_(FLUX_FWD(base)),
+          pred_(FLUX_FWD(pred))
+    {}
+
+    [[nodiscard]] constexpr auto base() const& -> Base const& { return base_; }
+    [[nodiscard]] constexpr auto base() && -> Base { return std::move(base_); }
+};
+
+struct take_while_fn {
+    template <adaptable_sequence Seq, std::move_constructible Pred>
+        requires std::predicate<Pred&, element_t<Seq>>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq, Pred pred) const
+    {
+        return take_while_adaptor<std::decay_t<Seq>, Pred>(
+                    FLUX_FWD(seq), std::move(pred));
+    }
+};
+
+} // namespace detail
+
+template <typename Base, typename Pred>
+struct sequence_traits<detail::take_while_adaptor<Base, Pred>>
+    : detail::passthrough_traits_base
+{
+    using self_t = detail::take_while_adaptor<Base, Pred>;
+
+    using value_type = value_t<Base>;
+
+    static constexpr bool is_infinite = false;
+
+    template <typename Self>
+    static constexpr bool is_last(Self& self, cursor_t<Self> const& cur)
+        requires std::predicate<decltype((self.pred_)), element_t<decltype(self.base_)>>
+    {
+        if (flux::is_last(self.base_, cur) ||
+            !std::invoke(self.pred_, flux::read_at(self.base_, cur))) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    void last() = delete;
+    void size() = delete;
+
+    static constexpr auto for_each_while(auto& self, auto&& func)
+    {
+        return flux::for_each_while(self.base_, [&](auto&& elem) {
+            if (!std::invoke(self.pred_, elem)) {
+                return false;
+            } else {
+                return std::invoke(func, FLUX_FWD(elem));
+            }
+        });
+    }
+};
+
+FLUX_EXPORT inline constexpr auto take_while = detail::take_while_fn{};
+
+template <typename D>
+template <typename Pred>
+    requires std::predicate<Pred&, element_t<D>>
+constexpr auto inline_sequence_base<D>::take_while(Pred pred) &&
+{
+    return flux::take_while(std::move(derived()), std::move(pred));
+}
+
+} // namespace flux
+
+#endif // FLUX_ADAPTOR_TAKE_WHILE_HPP_INCLUDED
+
+
+// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_ADAPTOR_UNCHECKED_HPP_INCLUDED
+#define FLUX_ADAPTOR_UNCHECKED_HPP_INCLUDED
+
+
+
+namespace flux {
+
+namespace detail {
+
+template <sequence Base>
+struct unchecked_adaptor : inline_sequence_base<unchecked_adaptor<Base>> {
+private:
+    Base base_;
+
+public:
+    constexpr explicit unchecked_adaptor(decays_to<Base> auto&& base)
+        : base_(FLUX_FWD(base))
+    {}
+
+    constexpr auto base() & -> Base& { return base_; }
+    constexpr auto base() const& -> Base const& { return base_; }
+
+    struct flux_sequence_traits : passthrough_traits_base {
+
+        using value_type = value_t<Base>;
+        static constexpr bool disable_multipass = !multipass_sequence<Base>;
+        static constexpr bool is_infinite = infinite_sequence<Base>;
+
+        static constexpr auto read_at(auto& self, auto const& cur)
+            -> element_t<Base>
+        {
+            return flux::read_at_unchecked(self.base(), cur);
+        }
+
+        static constexpr auto move_at(auto& self, auto const& cur)
+            -> rvalue_element_t<Base>
+        {
+            return flux::move_at_unchecked(self.base(), cur);
+        }
+    };
+};
+
+struct unchecked_fn {
+    template <adaptable_sequence Seq>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq) const
+        -> unchecked_adaptor<std::decay_t<Seq>>
+    {
+        return unchecked_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq));
+    }
+};
+
+} // namespace detail
+
+FLUX_EXPORT inline constexpr auto unchecked = detail::unchecked_fn{};
+
+} // namespace flux
+
+#endif // FLUX_ADAPTOR_UNCHECKED_HPP_INCLUDED
+
+
+
+#endif // FLUX_ADAPTOR_HPP_INCLUDED
+
+
+// Copyright (c) 2024 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_ALGORITHM_HPP_INCLUDED
+#define FLUX_ALGORITHM_HPP_INCLUDED
+
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_ALGORITHM_ALL_ANY_NONE_HPP_INCLUDED
+#define FLUX_ALGORITHM_ALL_ANY_NONE_HPP_INCLUDED
+
+
+
+namespace flux {
+
+namespace all_detail {
+
+struct fn {
+    template <sequence Seq, typename Pred>
+        requires std::predicate<Pred&, element_t<Seq>>
+    constexpr bool operator()(Seq&& seq, Pred pred) const
+    {
+        return is_last(seq, for_each_while(seq, [&](auto&& elem) {
+            return std::invoke(pred, FLUX_FWD(elem));
+        }));
+    }
+};
+
+} // namespace all_detail
+
+FLUX_EXPORT inline constexpr auto all = all_detail::fn{};
+
+namespace none_detail {
+
+struct fn {
+    template <sequence Seq, typename Pred>
+        requires std::predicate<Pred&, element_t<Seq>>
+    constexpr bool operator()(Seq&& seq, Pred pred) const
+    {
+        return is_last(seq, for_each_while(seq, [&](auto&& elem) {
+            return !std::invoke(pred, FLUX_FWD(elem));
+        }));
+    }
+};
+
+} // namespace none_detail
+
+FLUX_EXPORT inline constexpr auto none = none_detail::fn{};
+
+namespace any_detail {
+
+struct fn {
+    template <sequence Seq, typename Pred>
+        requires std::predicate<Pred&, element_t<Seq>>
+    constexpr bool operator()(Seq&& seq, Pred pred) const
+    {
+        return !is_last(seq, for_each_while(seq, [&](auto&& elem) {
+            return !std::invoke(pred, FLUX_FWD(elem));
+        }));
+    }
+};
+
+} // namespace any_detail
+
+FLUX_EXPORT inline constexpr auto any = any_detail::fn{};
+
+template <typename D>
+template <typename Pred>
+    requires std::predicate<Pred&, element_t<D>>
+constexpr auto inline_sequence_base<D>::all(Pred pred)
+{
+    return flux::all(derived(), std::move(pred));
+}
+
+template <typename D>
+template <typename Pred>
+    requires std::predicate<Pred&, element_t<D>>
+constexpr auto inline_sequence_base<D>::any(Pred pred)
+{
+    return flux::any(derived(), std::move(pred));
+}
+
+template <typename D>
+template <typename Pred>
+    requires std::predicate<Pred&, element_t<D>>
+constexpr auto inline_sequence_base<D>::none(Pred pred)
+{
+    return flux::none(derived(), std::move(pred));
+}
+
+} // namespace flux
+
+#endif // FLUX_ALGORITHM_ALL_ANY_NONE_HPP_INCLUDED
+
+
+// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_ALGORITHM_COMPARE_HPP_INCLUDED
+#define FLUX_ALGORITHM_COMPARE_HPP_INCLUDED
+
+
+
+#include <compare>
+#include <cstring>
+#include <bit>
+
+namespace flux {
+
+namespace detail {
+
+struct compare_fn {
+private:
+    template <typename Seq1, typename Seq2, typename Cmp>
+    static constexpr auto impl(Seq1& seq1, Seq2& seq2, Cmp& cmp)
+        -> std::decay_t<
+            std::invoke_result_t<Cmp &, element_t<Seq1>, element_t<Seq2>>>
+    {
+        auto cur1 = flux::first(seq1);
+        auto cur2 = flux::first(seq2);
+
+        while (!flux::is_last(seq1, cur1) && !flux::is_last(seq2, cur2)) {
+            if (auto r = std::invoke(cmp, flux::read_at(seq1, cur1), flux::read_at(seq2, cur2));
+                r != 0) {
+                return r;
+            }
+            flux::inc(seq1, cur1);
+            flux::inc(seq2, cur2);
+        }
+
+        return !flux::is_last(seq1, cur1) ? std::strong_ordering::greater :
+               !flux::is_last(seq2, cur2) ? std::strong_ordering::less :
+                                            std::strong_ordering::equal;
+    }
+
+public:
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::compare_three_way>
+        requires ordering_invocable<Cmp&, element_t<Seq1>, element_t<Seq2>>
+    constexpr auto operator()(Seq1 &&seq1, Seq2 &&seq2, Cmp cmp = {}) const
+        -> std::decay_t<
+            std::invoke_result_t<Cmp&, element_t<Seq1>, element_t<Seq2>>>
+    {
+        constexpr bool can_memcmp = 
+            std::same_as<Cmp, std::compare_three_way> &&
+            contiguous_sequence<Seq1> && 
+            contiguous_sequence<Seq2> &&
+            sized_sequence<Seq1> && 
+            sized_sequence<Seq2> &&
+            std::same_as<value_t<Seq1>, value_t<Seq2>> &&
+            std::unsigned_integral<value_t<Seq1>> &&
+            ((sizeof(value_t<Seq1>) == 1) || (std::endian::native == std::endian::big));
+
+        if constexpr (can_memcmp) {
+            if (std::is_constant_evaluated()) {
+                return impl(seq1, seq2, cmp); // LCOV_EXCL_LINE
+            } else {
+                auto const seq1_size = flux::usize(seq1);
+                auto const seq2_size = flux::usize(seq2);
+                auto min_size = (cmp::min)(seq1_size, seq2_size);
+
+                int cmp_result = 0;
+                if(min_size > 0) {
+                    auto data1 = flux::data(seq1);
+                    FLUX_ASSERT(data1 != nullptr);
+                    auto data2 = flux::data(seq2);
+                    FLUX_ASSERT(data2 != nullptr);
+
+                    cmp_result = std::memcmp(data1, data2, min_size);
+                }
+
+                if (cmp_result == 0) {
+                    if (seq1_size == seq2_size) {
+                        return std::strong_ordering::equal;
+                    } else if (seq1_size < seq2_size) {
+                        return std::strong_ordering::less;
+                    } else /* seq1_size > seq2_size */ {
+                        return std::strong_ordering::greater;
+                    }
+                } else if (cmp_result > 0) {
+                    return std::strong_ordering::greater;
+                } else /* cmp_result < 0 */ {
+                    return std::strong_ordering::less;
+                }
+            }
+        } else {
+            return impl(seq1, seq2, cmp);
+        }
+    }
+};
+
+} // namespace detail
+
+FLUX_EXPORT inline constexpr auto compare = detail::compare_fn{};
+
+} // namespace flux
+
+#endif // FLUX_ALGORITHM_COMPARE_HPP_INCLUDED
+
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_ALGORITHM_CONTAINS_HPP_INCLUDED
+#define FLUX_ALGORITHM_CONTAINS_HPP_INCLUDED
+
+
+
+namespace flux {
+
+namespace detail {
+
+struct contains_fn {
+    template <sequence Seq, typename Value>
+        requires std::equality_comparable_with<element_t<Seq>, Value const&>
+    constexpr auto operator()(Seq&& seq, Value const& value) const
+        -> bool
+    {
+        return !flux::is_last(seq, flux::for_each_while(seq, [&](auto&& elem) {
+            return FLUX_FWD(elem) != value;
+        }));
+    }
+};
+
+
+} // namespace detail
+
+FLUX_EXPORT inline constexpr auto contains = detail::contains_fn{};
+
+template <typename D>
+template <typename Value>
+    requires std::equality_comparable_with<element_t<D>, Value const&>
+constexpr auto inline_sequence_base<D>::contains(Value const& value) -> bool
+{
+    return flux::contains(derived(), value);
+}
+
+} // namespace flux
+
+#endif // FLUX_ALGORITHM_CONTAINS_HPP_INCLUDED
+
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_ALGORITHM_COUNT_HPP_INCLUDED
+#define FLUX_ALGORITHM_COUNT_HPP_INCLUDED
+
+
+
+namespace flux {
+
+namespace detail {
+
+struct count_fn {
+    template <sequence Seq>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq) const -> distance_t
+    {
+        if constexpr (sized_sequence<Seq>) {
+            return flux::size(seq);
+        } else {
+            distance_t counter = 0;
+            flux::for_each_while(seq, [&](auto&&) {
+                ++counter;
+                return true;
+            });
+            return counter;
+        }
+    }
+};
+
+struct count_eq_fn {
+    template <sequence Seq, typename Value>
+        requires std::equality_comparable_with<element_t<Seq>, Value const&>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq, Value const& value) const
+        -> distance_t
+    {
+        distance_t counter = 0;
+        flux::for_each_while(seq, [&](auto&& elem) {
+            if (value == FLUX_FWD(elem)) {
+                ++counter;
+            }
+            return true;
+        });
+        return counter;
+    }
+};
+
+struct count_if_fn {
+    template <sequence Seq, typename Pred>
+        requires std::predicate<Pred&, element_t<Seq>>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq, Pred pred) const
+        -> distance_t
+    {
+        distance_t counter = 0;
+        flux::for_each_while(seq, [&](auto&& elem) {
+            if (std::invoke(pred, FLUX_FWD(elem))) {
+                ++counter;
+            }
+            return true;
+        });
+        return counter;
+    }
+};
+
+} // namespace detail
+
+FLUX_EXPORT inline constexpr auto count = detail::count_fn{};
+FLUX_EXPORT inline constexpr auto count_eq = detail::count_eq_fn{};
+FLUX_EXPORT inline constexpr auto count_if = detail::count_if_fn{};
+
+template <typename D>
+constexpr auto inline_sequence_base<D>::count()
+{
+    return flux::count(derived());
+}
+
+template <typename D>
+template <typename Value>
+    requires std::equality_comparable_with<element_t<D>, Value const&>
+constexpr auto inline_sequence_base<D>::count_eq(Value const& value)
+{
+    return flux::count_eq(derived(), value);
+}
+
+template <typename D>
+template <typename Pred>
+    requires std::predicate<Pred&, element_t<D>>
+constexpr auto inline_sequence_base<D>::count_if(Pred pred)
+{
+    return flux::count_if(derived(), std::move(pred));
+}
+
+} // namespace flux
+
+#endif // FLUX_ALGORITHM_COUNT_HPP_INCLUDED
+
+
+// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_ALGORITHM_ENDS_WITH_HPP_INCLUDED
+#define FLUX_ALGORITHM_ENDS_WITH_HPP_INCLUDED
+
+
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_ALGORITHM_EQUAL_HPP_INCLUDED
+#define FLUX_ALGORITHM_EQUAL_HPP_INCLUDED
+
+
+#include <type_traits>
+#include <cstring>
+
+namespace flux {
+
+namespace detail {
+
+struct equal_fn {
+private:
+    template <typename Seq1, typename Seq2, typename Cmp>
+    static constexpr auto impl(Seq1& seq1, Seq2& seq2, Cmp cmp)
+    {
+        auto cur1 = flux::first(seq1);
+        auto cur2 = flux::first(seq2);
+
+        while (!flux::is_last(seq1, cur1) && !flux::is_last(seq2, cur2)) {
+            if (!std::invoke(cmp, flux::read_at(seq1, cur1), flux::read_at(seq2, cur2))) {
+                return false;
+            }
+            flux::inc(seq1, cur1);
+            flux::inc(seq2, cur2);
+        }
+
+        return flux::is_last(seq1, cur1) == flux::is_last(seq2, cur2);
+    }
+
+public:
+    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::equal_to>
+        requires std::predicate<Cmp&, element_t<Seq1>, element_t<Seq2>>
+    constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const
+        -> bool
+    {
+        if constexpr (sized_sequence<Seq1> && sized_sequence<Seq2>) {
+            if (flux::size(seq1) != flux::size(seq2)) {
+                return false;
+            }
+        }
+
+        constexpr bool can_memcmp = 
+            std::same_as<Cmp, std::ranges::equal_to> &&
+            contiguous_sequence<Seq1> && contiguous_sequence<Seq2> &&
+            sized_sequence<Seq1> && sized_sequence<Seq2> &&
+            std::same_as<value_t<Seq1>, value_t<Seq2>> &&
+            (std::integral<value_t<Seq1>> || std::is_pointer_v<value_t<Seq1>>) &&
+            std::has_unique_object_representations_v<value_t<Seq1>>;
+
+        if constexpr (can_memcmp) {
+            if (std::is_constant_evaluated()) {
+                return impl(seq1, seq2, cmp); // LCOV_EXCL_LINE
+            } else {
+                auto size = flux::usize(seq1);
+                if(size == 0) {
+                    return true;
+                }
+
+                auto data1 = flux::data(seq1);
+                auto data2 = flux::data(seq2);
+                FLUX_ASSERT(data1 != nullptr);
+                FLUX_ASSERT(data2 != nullptr);
+
+                auto result = std::memcmp(data1, data2, size * sizeof(value_t<Seq1>));
+                return result == 0;
+            }
+        } else {
+            return impl(seq1, seq2, cmp);
+        }
+    }
+
+    template <sequence Seq1, sequence Seq2>
+        requires (sequence<element_t<Seq1>> &&
+                 sequence<element_t<Seq2>> &&
+                 !std::equality_comparable_with<element_t<Seq1>, element_t<Seq2>> &&
+                 std::is_invocable_v<equal_fn&, Seq1&, Seq2&, equal_fn&>)
+    constexpr auto operator()(Seq1&& seq1, Seq2&& seq2) const -> bool
+    {
+        if constexpr (sized_sequence<Seq1> && sized_sequence<Seq2>) {
+            if (flux::size(seq1) != flux::size(seq2)) {
+                return false;
+            }
+        }
+
+        return (*this)(seq1, seq2, *this);
+    }
+};
+
+} // namespace detail
+
+FLUX_EXPORT inline constexpr auto equal = detail::equal_fn{};
+
+} // namespace flux
+
+#endif // FLUX_ALGORITHM_EQUAL_HPP_INCLUDED
+
+
+namespace flux {
+
+namespace detail {
+
+struct ends_with_fn {
+private:
+    template <typename H, typename N>
+    static constexpr auto bidir_impl(H& h, N& n, auto& cmp) -> bool
+    {
+        if constexpr (sized_sequence<H> && sized_sequence<N>) {
+            if (flux::size(h) < flux::size(n)) {
+                return false;
+            }
+        }
+
+        auto cur1 = flux::last(h);
+        auto cur2 = flux::last(n);
+
+        auto const f1 = flux::first(h);
+        auto const f2 = flux::first(n);
+
+        if (cur2 == f2) {
+            return true;
+        } else if (cur1 == f1) {
+            return false;
+        }
+
+        while (true) {
+            flux::dec(h, cur1);
+            flux::dec(n, cur2);
+
+            if (!std::invoke(cmp, flux::read_at(h, cur1), flux::read_at(n, cur2))) {
+                return false;
+            }
+
+            if (cur2 == f2) {
+                return true;
+            } else if (cur1 == f1) {
+                return false;
+            }
+        }
+    }
+
+public:
+    template <sequence Haystack, sequence Needle, typename Cmp = std::ranges::equal_to>
+        requires std::predicate<Cmp&, element_t<Haystack>, element_t<Needle>> &&
+                 (multipass_sequence<Haystack> || sized_sequence<Haystack>) &&
+                 (multipass_sequence<Needle> || sized_sequence<Needle>)
+    constexpr auto operator()(Haystack&& haystack, Needle&& needle, Cmp cmp = Cmp{}) const
+        -> bool
+    {
+        if constexpr(bidirectional_sequence<Haystack> &&
+                     bounded_sequence<Haystack> &&
+                     bidirectional_sequence<Needle> &&
+                     bounded_sequence<Needle>) {
+            return bidir_impl(haystack, needle, cmp);
+        } else {
+            distance_t len1 = flux::count(haystack);
+            distance_t len2 = flux::count(needle);
+
+            if (len1 < len2) {
+                return false;
+            }
+
+            auto cur1 = flux::first(haystack);
+            detail::advance(haystack, cur1, len1 - len2);
+
+            return flux::equal(flux::slice(haystack, std::move(cur1), flux::last),
+                               needle, std::move(cmp));
+        }
+    }
+};
+
+} // namespace detail
+
+FLUX_EXPORT inline constexpr auto ends_with = detail::ends_with_fn{};
+
+template <typename Derived>
+template <sequence Needle, typename Cmp>
+    requires std::predicate<Cmp&, element_t<Derived>, element_t<Needle>> &&
+             (multipass_sequence<Derived> || sized_sequence<Derived>) &&
+             (multipass_sequence<Needle> || sized_sequence<Needle>)
+constexpr auto inline_sequence_base<Derived>::ends_with(Needle&& needle, Cmp cmp) -> bool
+{
+    return flux::ends_with(derived(), FLUX_FWD(needle), std::move(cmp));
+}
+
+
+} // namespace flux
+
+#endif // FLUX_ALGORITHM_ENDS_WITH_HPP_INCLUDED
+
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_ALGORITHM_FILL_HPP_INCLUDED
+#define FLUX_ALGORITHM_FILL_HPP_INCLUDED
+
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_ALGORITHM_FOR_EACH_HPP_INCLUDED
+#define FLUX_ALGORITHM_FOR_EACH_HPP_INCLUDED
+
+
+
+namespace flux {
+
+namespace detail {
+
+struct for_each_fn {
+
+    template <sequence Seq, typename Func>
+        requires (std::invocable<Func&, element_t<Seq>> &&
+                  !infinite_sequence<Seq>)
+    constexpr auto operator()(Seq&& seq, Func func) const -> Func
+    {
+        (void) flux::for_each_while(FLUX_FWD(seq), [&](auto&& elem) {
+            std::invoke(func, FLUX_FWD(elem));
+            return true;
+        });
+        return func;
+    }
+};
+
+} // namespace detail
+
+FLUX_EXPORT inline constexpr auto for_each = detail::for_each_fn{};
+
+template <typename D>
+template <typename Func>
+    requires std::invocable<Func&, element_t<D>>
+constexpr auto inline_sequence_base<D>::for_each(Func func) -> Func
+{
+    return flux::for_each(derived(), std::move(func));
+}
+
+} // namespace flux
+
+#endif // FLUX_ALGORITHM_FOR_EACH_HPP_INCLUDED
+
+#include <type_traits>
+#include <cstring>
+
+namespace flux {
+
+namespace detail {
+
+struct fill_fn {
+private:
+    template <typename Seq, typename Value>
+    static constexpr auto impl(Seq& seq, Value const& value)
+    {
+        flux::for_each(seq, [&value](auto&& elem) { FLUX_FWD(elem) = value; });
+    }
+
+public:
+    template <typename Value, writable_sequence_of<Value> Seq>
+    constexpr void operator()(Seq&& seq, Value const& value) const
+    {
+        constexpr bool can_memset = 
+            contiguous_sequence<Seq> &&
+            sized_sequence<Seq> &&
+            std::same_as<Value, value_t<Seq>> &&
+            // only allow memset on single byte types
+            sizeof(value_t<Seq>) == 1 &&
+            std::is_trivially_copyable_v<value_t<Seq>>;
+
+        if constexpr (can_memset) {
+            if (std::is_constant_evaluated()) {
+                impl(seq, value); // LCOV_EXCL_LINE
+            } else {
+                auto size = flux::usize(seq);
+                if(size == 0) {
+                    return;
+                }
+                
+                FLUX_ASSERT(flux::data(seq) != nullptr);
+                
+                std::memset(flux::data(seq), value,
+                    size * sizeof(value_t<Seq>));
+            }
+        } else {
+            impl(seq, value);
+        }
+    }
+};
+
+} // namespace detail
+
+FLUX_EXPORT inline constexpr auto fill = detail::fill_fn{};
+
+template <typename D>
+template <typename Value>
+    requires writable_sequence_of<D, Value const&>
+constexpr void inline_sequence_base<D>::fill(Value const& value)
+{
+    flux::fill(derived(), value);
+}
+
+} // namespace flux
+
+#endif // FLUX_ALGORITHM_FILL_HPP_INCLUDED
+
+
+
+// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_ALGORITHM_FIND_MIN_MAX_HPP_INCLUDED
+#define FLUX_ALGORITHM_FIND_MIN_MAX_HPP_INCLUDED
+
+
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_ALGORITHM_MINMAX_HPP_INCLUDED
+#define FLUX_ALGORITHM_MINMAX_HPP_INCLUDED
+
+
+
+
+
+namespace flux {
+
+FLUX_EXPORT
+template <typename T>
+struct minmax_result {
+    T min;
+    T max;
+};
+
+namespace detail {
+
+struct min_op {
+    template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
+        -> flux::optional<value_t<Seq>>
+    {
+        return flux::fold_first(FLUX_FWD(seq), [&](auto min, auto&& elem) -> value_t<Seq> {
+            if (std::invoke(cmp, elem, min) < 0) {
+                return value_t<Seq>(FLUX_FWD(elem));
+            } else {
+                return min;
+            }
+        });
+    }
+};
+
+struct max_op {
+    template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
+        -> flux::optional<value_t<Seq>>
+    {
+        return flux::fold_first(FLUX_FWD(seq), [&](auto max, auto&& elem) -> value_t<Seq> {
+            if (!(std::invoke(cmp, elem, max) < 0)) {
+                return value_t<Seq>(FLUX_FWD(elem));
+            } else {
+                return max;
+            }
+        });
+    }
+};
+
+struct minmax_op {
+    template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
+        -> flux::optional<minmax_result<value_t<Seq>>>
+    {
+        using R = minmax_result<value_t<Seq>>;
+
+        auto cur = flux::first(seq);
+        if (flux::is_last(seq, cur)) {
+            return std::nullopt;
+        }
+
+        R init = R{value_t<Seq>(flux::read_at(seq, cur)),
+                   value_t<Seq>(flux::read_at(seq, cur))};
+
+        auto fold_fn = [&](R mm, auto&& elem) -> R {
+            if (std::invoke(cmp, elem, mm.min) < 0) {
+                mm.min = value_t<Seq>(elem);
+            }
+            if (!(std::invoke(cmp, elem, mm.max) < 0)) {
+                mm.max = value_t<Seq>(FLUX_FWD(elem));
+            }
+            return mm;
+        };
+
+        return flux::optional<R>(std::in_place,
+                                flux::fold(flux::slice(seq, std::move(cur), flux::last), fold_fn, std::move(init)));
+    }
+};
+
+} // namespace detail
+
+FLUX_EXPORT inline constexpr auto min = detail::min_op{};
+FLUX_EXPORT inline constexpr auto max = detail::max_op{};
+FLUX_EXPORT inline constexpr auto minmax = detail::minmax_op{};
+
+template <typename Derived>
+template <typename Cmp>
+    requires weak_ordering_for<Cmp, Derived>
+constexpr auto inline_sequence_base<Derived>::max(Cmp cmp)
+{
+    return flux::max(derived(), std::move(cmp));
+}
+
+template <typename Derived>
+template <typename Cmp>
+    requires weak_ordering_for<Cmp, Derived>
+constexpr auto inline_sequence_base<Derived>::min(Cmp cmp)
+{
+    return flux::min(derived(), std::move(cmp));
+}
+
+template <typename Derived>
+template <typename Cmp>
+    requires weak_ordering_for<Cmp, Derived>
+constexpr auto inline_sequence_base<Derived>::minmax(Cmp cmp)
+{
+    return flux::minmax(derived(), std::move(cmp));
+}
+
+} // namespace flux
+
+#endif // FLUX_ALGORITHM_MINMAX_HPP_INCLUDED
+
+
+namespace flux {
+
+namespace detail {
+
+struct find_min_fn {
+    template <multipass_sequence Seq,
+              weak_ordering_for<Seq> Cmp = std::compare_three_way>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq, Cmp cmp = {}) const -> cursor_t<Seq>
+    {
+        auto min = first(seq);
+        if (!is_last(seq, min)) {
+            for (auto cur = next(seq, min); !is_last(seq, cur); inc(seq, cur)) {
+                if (std::invoke(cmp, read_at(seq, cur), read_at(seq, min)) < 0) {
+                    min = cur;
+                }
+            }
+        }
+
+        return min;
+    }
+};
+
+struct find_max_fn {
+    template <multipass_sequence Seq,
+              weak_ordering_for<Seq> Cmp = std::compare_three_way>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq, Cmp cmp = {}) const -> cursor_t<Seq>
+    {
+        auto max = first(seq);
+        if (!is_last(seq, max)) {
+            for (auto cur = next(seq, max); !is_last(seq, cur); inc(seq, cur)) {
+                if (!(std::invoke(cmp, read_at(seq, cur), read_at(seq, max)) < 0)) {
+                    max = cur;
+                }
+            }
+        }
+
+        return max;
+    }
+};
+
+struct find_minmax_fn {
+    template <multipass_sequence Seq,
+              weak_ordering_for<Seq> Cmp = std::compare_three_way>
+    [[nodiscard]]
+    constexpr auto operator()(Seq&& seq, Cmp cmp = {}) const
+        -> minmax_result<cursor_t<Seq>>
+    {
+        auto min = first(seq);
+        auto max = min;
+        if (!is_last(seq, min)) {
+            for (auto cur = next(seq, min); !is_last(seq, cur); inc(seq, cur)) {
+                auto&& elem = read_at(seq, cur);
+
+                if (std::invoke(cmp, elem, read_at(seq, min)) < 0) {
+                    min = cur;
+                }
+                if (!(std::invoke(cmp, elem, read_at(seq, max)) < 0)) {
+                    max = cur;
+                }
+            }
+        }
+
+        return {std::move(min), std::move(max)};
+    }
+};
+
+} // namespace detail
+
+FLUX_EXPORT inline constexpr auto find_min = detail::find_min_fn{};
+FLUX_EXPORT inline constexpr auto find_max = detail::find_max_fn{};
+FLUX_EXPORT inline constexpr auto find_minmax = detail::find_minmax_fn{};
+
+template <typename D>
+template <typename Cmp>
+    requires weak_ordering_for<Cmp, D>
+constexpr auto inline_sequence_base<D>::find_min(Cmp cmp)
+{
+    return flux::find_min(derived(), std::move(cmp));
+}
+
+template <typename D>
+template <typename Cmp>
+    requires weak_ordering_for<Cmp, D>
+constexpr auto inline_sequence_base<D>::find_max(Cmp cmp)
+{
+    return flux::find_max(derived(), std::move(cmp));
+}
+
+template <typename D>
+template <typename Cmp>
+    requires weak_ordering_for<Cmp, D>
+constexpr auto inline_sequence_base<D>::find_minmax(Cmp cmp)
+{
+    return flux::find_minmax(derived(), std::move(cmp));
+}
+
+} // namespace flux
+
+#endif // FLUX_ALGORITHM_FIND_MIN_MAX_HPP_INCLUDED
+
+
+
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_ALGORITHM_INPLACE_REVERSE_HPP_INCLUDED
+#define FLUX_ALGORITHM_INPLACE_REVERSE_HPP_INCLUDED
+
+
+
+namespace flux {
+
+namespace detail {
+
+struct inplace_reverse_fn {
+    template <bidirectional_sequence Seq>
+        requires bounded_sequence<Seq> &&
+                 element_swappable_with<Seq, Seq>
+    constexpr void operator()(Seq&& seq) const
+    {
+        auto first = flux::first(seq);
+        auto last = flux::last(seq);
+
+        while (first != last && first != flux::dec(seq, last)) {
+            flux::swap_at(seq, first, last);
+            flux::inc(seq, first);
+        }
+    }
+};
+
+} // namespace detail
+
+FLUX_EXPORT inline constexpr auto inplace_reverse = detail::inplace_reverse_fn{};
+
+template <typename D>
+constexpr auto inline_sequence_base<D>::inplace_reverse()
+    requires bounded_sequence<D> && detail::element_swappable_with<D, D>
+{
+    return flux::inplace_reverse(derived());
+}
+
+} // namespace flux
+
+#endif // FLUX_ALGORITHM_INPLACE_REVERSE_HPP_INCLUDED
+
+
+
+// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_ALGORITHM_OUTPUT_TO_HPP_INCLUDED
+#define FLUX_ALGORITHM_OUTPUT_TO_HPP_INCLUDED
+
+
+
+#include <cstring>
+#include <iterator>
+
+namespace flux {
+
+namespace detail {
+
+struct output_to_fn {
+private:
+    template <typename Seq, typename Iter>
+    static constexpr auto impl(Seq& seq, Iter& iter) -> Iter
+    {
+        flux::for_each(seq, [&iter](auto&& elem) {
+            *iter = FLUX_FWD(elem);
+            ++iter;
+        });
+        return iter;
+    }
+
+public:
+    template <sequence Seq, std::weakly_incrementable Iter>
+        requires std::indirectly_writable<Iter, element_t<Seq>>
+    constexpr auto operator()(Seq&& seq, Iter iter) const -> Iter
+    {
+        constexpr bool can_memcpy =
+            contiguous_sequence<Seq> &&
+            sized_sequence<Seq> &&
+            std::contiguous_iterator<Iter> &&
+            std::is_trivially_copyable_v<value_t<Seq>>;
+
+        if constexpr (can_memcpy) {
+            if (std::is_constant_evaluated()) {
+                return impl(seq, iter); // LCOV_EXCL_LINE
+            } else {
+                auto size = flux::usize(seq);
+                if (size == 0) {
+                    return iter;
+                }
+                FLUX_ASSERT(flux::data(seq) != nullptr);
+                std::memmove(std::to_address(iter), flux::data(seq),
+                             size * sizeof(value_t<Seq>));
+                return iter + num::checked_cast<std::iter_difference_t<Iter>>(flux::size(seq));
+            }
+        } else {
+            return impl(seq, iter);
+        }
+    }
+};
+
+}
+
+FLUX_EXPORT inline constexpr auto output_to = detail::output_to_fn{};
+
+template <typename D>
+template <typename Iter>
+    requires std::weakly_incrementable<Iter> &&
+             std::indirectly_writable<Iter, element_t<D>>
+constexpr auto inline_sequence_base<D>::output_to(Iter iter) -> Iter
+{
+    return flux::output_to(derived(), std::move(iter));
+}
+
+}
+
+#endif // FLUX_ALGORITHM_OUTPUT_TO_HPP_INCLUDED
+
+
+
+#ifndef FLUX_ALGORITHM_SORT_HPP_INCLUDED
+#define FLUX_ALGORITHM_SORT_HPP_INCLUDED
 
 
 // flux/op/detail/pqdsort.hpp
@@ -11670,9 +12227,8 @@ constexpr auto inline_sequence_base<D>::slide(num::integral auto win_sz) &&
 // Modified from Boost.Sort by Orson Peters
 // https://github.com/boostorg/sort/blob/develop/include/boost/sort/pdqsort/pdqsort.hpp
 
-#ifndef FLUX_OP_DETAIL_PDQSORT_HPP_INCLUDED
-#define FLUX_OP_DETAIL_PDQSORT_HPP_INCLUDED
-
+#ifndef FLUX_ALGORITHM_DETAIL_PDQSORT_HPP_INCLUDED
+#define FLUX_ALGORITHM_DETAIL_PDQSORT_HPP_INCLUDED
 
 
 
@@ -11703,8 +12259,8 @@ constexpr auto inline_sequence_base<D>::slide(num::integral auto win_sz) &&
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef FLUX_OP_DETAIL_HEAP_OPS_HPP_INCLUDED
-#define FLUX_OP_DETAIL_HEAP_OPS_HPP_INCLUDED
+#ifndef FLUX_ALGORITHM_DETAIL_HEAP_OPS_HPP_INCLUDED
+#define FLUX_ALGORITHM_DETAIL_HEAP_OPS_HPP_INCLUDED
 
 
 
@@ -11834,12 +12390,10 @@ constexpr void sort_heap(Seq& seq, Comp& comp)
 
 }
 
-#endif
+#endif // FLUX_ALGORITHM_DETAIL_HEAP_OPS_INCLUDED_HPP
 
 
-namespace flux {
-
-namespace detail {
+namespace flux::detail {
 
 // Partitions below this size are sorted using insertion sort.
 inline constexpr int pdqsort_insertion_sort_threshold = 24;
@@ -12448,76 +13002,10 @@ constexpr void pdqsort(Seq& seq, Comp& comp)
                                      detail::log2(size(seq)));
 }
 
-} // namespace detail
+} // namespace flux::detail
 
-} // namespace flux
+#endif // FLUX_ALGORITHM_DETAIL_PDQSORT_HPP_INCLUDED
 
-#endif
-
-
-// Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_UNCHECKED_HPP_INCLUDED
-#define FLUX_OP_UNCHECKED_HPP_INCLUDED
-
-
-
-namespace flux {
-
-namespace detail {
-
-template <sequence Base>
-struct unchecked_adaptor : inline_sequence_base<unchecked_adaptor<Base>> {
-private:
-    Base base_;
-
-public:
-    constexpr explicit unchecked_adaptor(decays_to<Base> auto&& base)
-        : base_(FLUX_FWD(base))
-    {}
-
-    constexpr auto base() & -> Base& { return base_; }
-    constexpr auto base() const& -> Base const& { return base_; }
-
-    struct flux_sequence_traits : passthrough_traits_base<Base> {
-
-        using value_type = value_t<Base>;
-        static constexpr bool disable_multipass = !multipass_sequence<Base>;
-        static constexpr bool is_infinite = infinite_sequence<Base>;
-
-        static constexpr auto read_at(auto& self, auto const& cur)
-            -> element_t<Base>
-        {
-            return flux::read_at_unchecked(self.base(), cur);
-        }
-
-        static constexpr auto move_at(auto& self, auto const& cur)
-            -> rvalue_element_t<Base>
-        {
-            return flux::move_at_unchecked(self.base(), cur);
-        }
-    };
-};
-
-struct unchecked_fn {
-    template <adaptable_sequence Seq>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const
-        -> unchecked_adaptor<std::decay_t<Seq>>
-    {
-        return unchecked_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq));
-    }
-};
-
-} // namespace detail
-
-FLUX_EXPORT inline constexpr auto unchecked = detail::unchecked_fn{};
-
-} // namespace flux
-
-#endif // FLUX_OP_UNCHECKED_HPP_INCLUDED
 
 
 namespace flux {
@@ -12553,388 +13041,15 @@ constexpr void inline_sequence_base<D>::sort(Cmp cmp)
 
 } // namespace flux
 
-#endif // FLUX_OP_SORT_HPP_INCLUDED
-
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_SPLIT_HPP_INCLUDED
-#define FLUX_OP_SPLIT_HPP_INCLUDED
-
-
-
-
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_SEARCH_HPP_INCLUDED
-#define FLUX_OP_SEARCH_HPP_INCLUDED
-
-
-
-namespace flux {
-
-namespace detail {
-
-struct search_fn {
-    template <multipass_sequence Haystack, multipass_sequence Needle,
-              typename Cmp = std::ranges::equal_to>
-        requires std::predicate<Cmp&, element_t<Haystack>, element_t<Needle>>
-    constexpr auto operator()(Haystack&& h, Needle&& n, Cmp cmp = {}) const
-        -> bounds_t<Haystack>
-    {
-        auto hfirst = flux::first(h);
-
-        while(true) {
-            auto cur1 = hfirst;
-            auto cur2 = flux::first(n);
-
-            while (true) {
-                if (is_last(n, cur2)) {
-                    return {std::move(hfirst), std::move(cur1)};
-                }
-
-                if (is_last(h, cur1)) {
-                    return {cur1, cur1};
-                }
-
-                if (!std::invoke(cmp, read_at(h, cur1), read_at(n, cur2))) {
-                    break;
-                }
-
-                inc(h, cur1);
-                inc(n, cur2);
-            }
-
-            inc(h, hfirst);
-        }
-    }
-
-};
-
-} // namespace detail
-
-FLUX_EXPORT inline constexpr auto search = detail::search_fn{};
-
-} // namespace flux
-
-#endif
-
-
-
-
-
-namespace flux {
-
-namespace detail {
-
-template <typename Splitter, typename Seq>
-concept splitter_for = requires(Splitter& splitter, Seq& seq, cursor_t<Seq> const& cur) {
-    { splitter(flux::slice(seq, cur, flux::last)) } -> std::same_as<bounds_t<Seq>>;
-};
-
-template <multipass_sequence Base, splitter_for<Base> Splitter>
-struct split_adaptor : inline_sequence_base<split_adaptor<Base, Splitter>> {
-private:
-    FLUX_NO_UNIQUE_ADDRESS Base base_;
-    FLUX_NO_UNIQUE_ADDRESS Splitter splitter_;
-
-public:
-    constexpr split_adaptor(decays_to<Base> auto&& base, decays_to<Splitter> auto&& splitter)
-        : base_(FLUX_FWD(base)),
-          splitter_(FLUX_FWD(splitter))
-    {}
-
-    struct flux_sequence_traits : default_sequence_traits {
-    private:
-        struct cursor_type {
-            cursor_t<Base> cur{};
-            bounds_t<Base> next{};
-            bool trailing_empty = false;
-
-            friend constexpr bool operator==(cursor_type const& lhs, cursor_type const& rhs)
-            {
-                return lhs.cur == rhs.cur && lhs.trailing_empty == rhs.trailing_empty;
-            }
-        };
-
-    public:
-        static constexpr bool is_infinite = infinite_sequence<Base>;
-
-        static constexpr auto first(auto& self) -> cursor_type
-            requires sequence<decltype((self.base_))> &&
-                     splitter_for<decltype((self.splitter_)), decltype((self.base_))>
-        {
-            auto fst = flux::first(self.base_);
-            auto bounds = self.splitter_(flux::slice(self.base_, fst, flux::last));
-            return cursor_type{.cur = std::move(fst),
-                               .next = std::move(bounds)};
-        }
-
-        static constexpr auto is_last(auto& self, cursor_type const& cur)
-            -> bool
-        {
-            return flux::is_last(self.base_, cur.cur) && !cur.trailing_empty;
-        }
-
-        static constexpr auto read_at(auto& self, cursor_type const& cur)
-        {
-            return flux::slice(self.base_, cur.cur, cur.next.from);
-        }
-
-        static constexpr auto inc(auto& self, cursor_type& cur) -> void
-        {
-            cur.cur = cur.next.from;
-            if (!flux::is_last(self.base_, cur.cur)) {
-                cur.cur = cur.next.to;
-                if (flux::is_last(self.base_, cur.cur)) {
-                    cur.trailing_empty = true;
-                    cur.next = {cur.cur, cur.cur};
-                } else {
-                    cur.next = self.splitter_(flux::slice(self.base_, cur.cur, flux::last));
-                }
-            } else {
-                cur.trailing_empty = false;
-            }
-        }
-
-        static constexpr auto last(auto& self) -> cursor_type
-            requires bounded_sequence<decltype(self.base_)>
-        {
-            return cursor_type{.cur = flux::last(self.base_)};
-        }
-    };
-};
-
-template <multipass_sequence Pattern>
-struct pattern_splitter {
-private:
-    FLUX_NO_UNIQUE_ADDRESS Pattern pattern_;
-
-public:
-    constexpr explicit pattern_splitter(decays_to<Pattern> auto&& pattern)
-        : pattern_(FLUX_FWD(pattern))
-    {}
-
-    template <multipass_sequence Seq>
-        requires std::equality_comparable_with<element_t<Seq>, element_t<Pattern>>
-    constexpr auto operator()(Seq&& seq) -> bounds_t<Seq>
-    {
-        return flux::search(seq, pattern_);
-    }
-
-    template <multipass_sequence Seq>
-        requires multipass_sequence<Pattern const> &&
-                 std::equality_comparable_with<element_t<Seq>, element_t<Pattern const>>
-    constexpr auto operator()(Seq&& seq) const -> bounds_t<Seq>
-    {
-        return flux::search(seq, pattern_);
-    }
-};
-
-template <typename Delim>
-struct delim_splitter {
-private:
-    FLUX_NO_UNIQUE_ADDRESS Delim delim_;
-
-public:
-    constexpr explicit delim_splitter(decays_to<Delim> auto&& delim)
-        : delim_(FLUX_FWD(delim))
-    {}
-
-    template <multipass_sequence Seq>
-        requires std::equality_comparable_with<element_t<Seq>, Delim const&>
-    constexpr auto operator()(Seq&& seq) const -> bounds_t<Seq>
-    {
-        auto nxt = flux::find(seq, delim_);
-        if (!flux::is_last(seq, nxt)) {
-            return bounds{nxt, flux::next(seq, nxt)};
-        } else {
-            return bounds{nxt, nxt};
-        }
-    }
-};
-
-template <typename Pred>
-struct predicate_splitter {
-private:
-    FLUX_NO_UNIQUE_ADDRESS Pred pred_;
-
-public:
-    constexpr explicit predicate_splitter(decays_to<Pred> auto&& pred)
-        : pred_(FLUX_FWD(pred))
-    {}
-
-    template <multipass_sequence Seq>
-        requires std::predicate<Pred const&, element_t<Seq>>
-    constexpr auto operator()(Seq&& seq) const -> bounds_t<Seq>
-    {
-        auto nxt = flux::find_if(seq, pred_);
-        if (!flux::is_last(seq, nxt)) {
-            return bounds{nxt, flux::next(seq, nxt)};
-        } else {
-            return bounds{nxt, nxt};
-        }
-    }
-};
-
-struct split_fn {
-    template <adaptable_sequence Seq, adaptable_sequence Pattern>
-        requires multipass_sequence<Seq> &&
-                 multipass_sequence<Pattern> &&
-                 std::equality_comparable_with<element_t<Seq>, element_t<Pattern>>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Pattern&& pattern) const
-    {
-        using splitter_t = pattern_splitter<std::decay_t<Pattern>>;
-        return split_adaptor<std::decay_t<Seq>, splitter_t>(
-            FLUX_FWD(seq), splitter_t(FLUX_FWD(pattern)));
-    }
-
-    template <adaptable_sequence Seq, typename Delim>
-        requires multipass_sequence<Seq> &&
-                 std::equality_comparable_with<element_t<Seq>, Delim const&>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Delim&& delim) const
-    {
-        using splitter_t = delim_splitter<std::decay_t<Delim>>;
-        return split_adaptor<std::decay_t<Seq>, splitter_t>(
-            FLUX_FWD(seq), splitter_t(FLUX_FWD(delim)));
-    }
-
-    template <adaptable_sequence Seq, typename Pred>
-        requires multipass_sequence<Seq> &&
-                 std::predicate<Pred const&, element_t<Seq>>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Pred pred) const
-    {
-        using splitter_t = predicate_splitter<Pred>;
-        return split_adaptor<std::decay_t<Seq>, splitter_t>(
-            FLUX_FWD(seq), splitter_t(std::move(pred)));
-    }
-};
-
-} // namespace detail
-
-FLUX_EXPORT inline constexpr auto split = detail::split_fn{};
-
-template <typename Derived>
-template <typename Pattern>
-    requires multipass_sequence<Derived> &&
-             multipass_sequence<Pattern> &&
-             std::equality_comparable_with<element_t<Derived>, element_t<Pattern>>
-constexpr auto inline_sequence_base<Derived>::split(Pattern&& pattern) &&
-{
-    return flux::split(std::move(derived()), FLUX_FWD(pattern));
-}
-
-template <typename Derived>
-template <typename Delim>
-    requires multipass_sequence<Derived> &&
-             std::equality_comparable_with<element_t<Derived>, Delim const&>
-constexpr auto inline_sequence_base<Derived>::split(Delim&& delim) &&
-{
-    return flux::split(std::move(derived()), FLUX_FWD(delim));
-}
-
-template <typename Derived>
-template <typename Pred>
-    requires multipass_sequence<Derived> &&
-             std::predicate<Pred const&, element_t<Derived>>
-constexpr auto inline_sequence_base<Derived>::split(Pred pred) &&
-{
-    return flux::split(std::move(derived()), std::move(pred));
-}
-
-
-} // namespace flux
-
-#endif
-
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_STRING_SPLIT_HPP_INCLUDED
-#define FLUX_STRING_SPLIT_HPP_INCLUDED
-
-
-
-
-#include <string_view>
-
-namespace flux {
-
-namespace detail {
-
-template <typename C>
-concept character = any_of<C, char, wchar_t, char8_t, char16_t, char32_t>;
-
-struct to_string_view_fn {
-    template <contiguous_sequence Seq>
-        requires sized_sequence<Seq> && character<value_t<Seq>>
-    constexpr auto operator()(Seq&& seq) const
-    {
-        return std::basic_string_view<value_t<Seq>>(flux::data(seq), flux::usize(seq));
-    }
-};
-
-inline constexpr auto to_string_view = to_string_view_fn{};
-
-struct split_string_fn {
-
-    template <contiguous_sequence Seq, multipass_sequence Pattern>
-        requires character<value_t<Seq>> &&
-                std::equality_comparable_with<element_t<Seq>, element_t<Pattern>>
-    constexpr auto operator()(Seq&& seq, Pattern&& pattern) const
-    {
-        return flux::split(FLUX_FWD(seq), FLUX_FWD(pattern)).map(to_string_view);
-    }
-
-    // Attempt to hijack string literal patterns to do the right thing
-    template <contiguous_sequence Seq, std::size_t N>
-        requires character<value_t<Seq>>
-    constexpr auto operator()(Seq&& seq, value_t<Seq> const (&pattern)[N]) const
-    {
-        return flux::split(FLUX_FWD(seq), std::basic_string_view(pattern))
-                    .map(to_string_view);
-    }
-
-    template <contiguous_sequence Seq>
-        requires character<value_t<Seq>>
-    constexpr auto operator()(Seq&& seq, value_t<Seq> delim) const
-    {
-        return flux::split(FLUX_FWD(seq), delim).map(to_string_view);
-    }
-};
-
-} // namespace detail
-
-FLUX_EXPORT inline constexpr auto split_string = detail::split_string_fn{};
-
-template <typename D>
-constexpr auto inline_sequence_base<D>::split_string(auto&& pattern) &&
-{
-    return flux::split_string(std::move(derived()), FLUX_FWD(pattern));
-}
-
-
-} // namespace flux
-
-#endif
+#endif // FLUX_ALGORITHM_SORT_HPP_INCLUDED
 
 
 // Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_STARTS_WITH_HPP_INCLUDED
-#define FLUX_OP_STARTS_WITH_HPP_INCLUDED
+#ifndef FLUX_ALGORITHM_STARTS_WITH_HPP_INCLUDED
+#define FLUX_ALGORITHM_STARTS_WITH_HPP_INCLUDED
 
 
 
@@ -12983,16 +13098,15 @@ constexpr auto inline_sequence_base<Derived>::starts_with(Needle&& needle, Cmp c
 
 } // namespace flux
 
-#endif // FLUX_OP_STARTS_WITH_HPP_INCLUDED
-
+#endif // FLUX_ALGORITHM_STARTS_WITH_HPP_INCLUDED
 
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_SWAP_ELEMENTS_HPP_INCLUDED
-#define FLUX_OP_SWAP_ELEMENTS_HPP_INCLUDED
+#ifndef FLUX_ALGORITHM_SWAP_ELEMENTS_HPP_INCLUDED
+#define FLUX_ALGORITHM_SWAP_ELEMENTS_HPP_INCLUDED
 
 
 
@@ -13022,194 +13136,18 @@ FLUX_EXPORT inline constexpr auto swap_elements = detail::swap_elements_fn{};
 
 }
 
-#endif
-
-
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_TAKE_WHILE_HPP_INCLUDED
-#define FLUX_OP_TAKE_WHILE_HPP_INCLUDED
-
-
-
-
-namespace flux {
-
-namespace detail {
-
-template <sequence Base, typename Pred>
-struct take_while_adaptor : inline_sequence_base<take_while_adaptor<Base, Pred>> {
-private:
-    Base base_;
-    Pred pred_;
-
-    constexpr auto base() & -> Base& { return base_; }
-
-    friend struct sequence_traits<take_while_adaptor>;
-    friend struct passthrough_traits_base<Base>;
-
-public:
-    constexpr take_while_adaptor(decays_to<Base> auto&& base, decays_to<Pred> auto&& pred)
-        : base_(FLUX_FWD(base)),
-          pred_(FLUX_FWD(pred))
-    {}
-
-    [[nodiscard]] constexpr auto base() const& -> Base const& { return base_; }
-    [[nodiscard]] constexpr auto base() && -> Base { return std::move(base_); }
-};
-
-struct take_while_fn {
-    template <adaptable_sequence Seq, std::move_constructible Pred>
-        requires std::predicate<Pred&, element_t<Seq>>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Pred pred) const
-    {
-        return take_while_adaptor<std::decay_t<Seq>, Pred>(
-                    FLUX_FWD(seq), std::move(pred));
-    }
-};
-
-} // namespace detail
-
-template <typename Base, typename Pred>
-struct sequence_traits<detail::take_while_adaptor<Base, Pred>>
-    : detail::passthrough_traits_base<Base>
-{
-    using self_t = detail::take_while_adaptor<Base, Pred>;
-
-    using value_type = value_t<Base>;
-
-    static constexpr bool is_infinite = false;
-
-    template <typename Self>
-    static constexpr bool is_last(Self& self, cursor_t<Self> const& cur)
-        requires std::predicate<decltype((self.pred_)), element_t<decltype(self.base_)>>
-    {
-        if (flux::is_last(self.base_, cur) ||
-            !std::invoke(self.pred_, flux::read_at(self.base_, cur))) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    void last() = delete;
-    void size() = delete;
-
-    static constexpr auto for_each_while(auto& self, auto&& func)
-    {
-        return flux::for_each_while(self.base_, [&](auto&& elem) {
-            if (!std::invoke(self.pred_, elem)) {
-                return false;
-            } else {
-                return std::invoke(func, FLUX_FWD(elem));
-            }
-        });
-    }
-};
-
-FLUX_EXPORT inline constexpr auto take_while = detail::take_while_fn{};
-
-template <typename D>
-template <typename Pred>
-    requires std::predicate<Pred&, element_t<D>>
-constexpr auto inline_sequence_base<D>::take_while(Pred pred) &&
-{
-    return flux::take_while(std::move(derived()), std::move(pred));
-}
-
-} // namespace flux
-
-#endif
+#endif // FLUX_ALGORITHM_SWAP_ELEMENTS_HPP_INCLUDED
 
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_TO_HPP_INCLUDED
-#define FLUX_OP_TO_HPP_INCLUDED
+#ifndef FLUX_ALGORITHM_TO_HPP_INCLUDED
+#define FLUX_ALGORITHM_TO_HPP_INCLUDED
 
 
 
-
-// Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-
-#ifndef FLUX_OP_OUTPUT_TO_HPP_INCLUDED
-#define FLUX_OP_OUTPUT_TO_HPP_INCLUDED
-
-
-
-#include <cstring>
-#include <iterator>
-
-namespace flux {
-
-namespace detail {
-
-struct output_to_fn {
-private:
-    template <typename Seq, typename Iter>
-    static constexpr auto impl(Seq& seq, Iter& iter) -> Iter
-    {
-        flux::for_each(seq, [&iter](auto&& elem) {
-            *iter = FLUX_FWD(elem);
-            ++iter;
-        });
-        return iter;
-    }
-
-public:
-    template <sequence Seq, std::weakly_incrementable Iter>
-        requires std::indirectly_writable<Iter, element_t<Seq>>
-    constexpr auto operator()(Seq&& seq, Iter iter) const -> Iter
-    {
-        constexpr bool can_memcpy =
-            contiguous_sequence<Seq> &&
-            sized_sequence<Seq> &&
-            std::contiguous_iterator<Iter> &&
-            std::is_trivially_copyable_v<value_t<Seq>>;
-
-        if constexpr (can_memcpy) {
-            if (std::is_constant_evaluated()) {
-                return impl(seq, iter); // LCOV_EXCL_LINE
-            } else {
-                auto size = flux::usize(seq);
-                if (size == 0) {
-                    return iter;
-                }
-                FLUX_ASSERT(flux::data(seq) != nullptr);
-                std::memmove(std::to_address(iter), flux::data(seq),
-                             size * sizeof(value_t<Seq>));
-                return iter + num::checked_cast<std::iter_difference_t<Iter>>(flux::size(seq));
-            }
-        } else {
-            return impl(seq, iter);
-        }
-    }
-};
-
-}
-
-FLUX_EXPORT inline constexpr auto output_to = detail::output_to_fn{};
-
-template <typename D>
-template <typename Iter>
-    requires std::weakly_incrementable<Iter> &&
-             std::indirectly_writable<Iter, element_t<D>>
-constexpr auto inline_sequence_base<D>::output_to(Iter iter) -> Iter
-{
-    return flux::output_to(derived(), std::move(iter));
-}
-
-}
-
-#endif
 
 
 namespace flux {
@@ -13379,16 +13317,15 @@ constexpr auto inline_sequence_base<D>::to(Args&&... args)
 
 } // namespace flux
 
-#endif // FLUX_OP_TO_HPP_INCLUDED
-
+#endif // FLUX_ALGORITHM_TO_HPP_INCLUDED
 
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_WRITE_TO_HPP_INCLUDED
-#define FLUX_OP_WRITE_TO_HPP_INCLUDED
+#ifndef FLUX_ALGORITHM_WRITE_TO_HPP_INCLUDED
+#define FLUX_ALGORITHM_WRITE_TO_HPP_INCLUDED
 
 
 
@@ -13439,17 +13376,14 @@ auto inline_sequence_base<Derived>::write_to(std::ostream& os) -> std::ostream&
 
 } // namespace flux
 
-#endif // FLUX_OP_WRITE_TO_HPP_INCLUDED
-
+#endif // FLUX_ALGORITHM_WRITE_TO_HPP_INCLUDED
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_OP_ZIP_ALGORITHMS_HPP_INCLUDED
-#define FLUX_OP_ZIP_ALGORITHMS_HPP_INCLUDED
-
-
+#ifndef FLUX_ALGORITHM_ZIP_ALGORITHMS_HPP_INCLUDED
+#define FLUX_ALGORITHM_ZIP_ALGORITHMS_HPP_INCLUDED
 
 
 
@@ -13543,18 +13477,27 @@ FLUX_EXPORT inline constexpr auto zip_fold = detail::zip_fold_fn{};
 
 } // namespace pred
 
-#endif
+#endif // FLUX_ALGORITHM_ZIP_ALGORITHMS_HPP_INCLUDED
 
+
+#endif // FLUX_ALGORITHM_HPP_INCLUDED
+
+
+
+// Copyright (c) 2024 Tristan Brindle (tcbrindle at gmail dot com)
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#ifndef FLUX_SEQUENCE_HPP_INCLUDED
+#define FLUX_SEQUENCE_HPP_INCLUDED
 
 
 // Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_SOURCE_ARRAY_PTR_HPP_INCLUDED
-#define FLUX_SOURCE_ARRAY_PTR_HPP_INCLUDED
-
-
+#ifndef FLUX_SEQUENCE_ARRAY_PTR_HPP_INCLUDED
+#define FLUX_SEQUENCE_ARRAY_PTR_HPP_INCLUDED
 
 
 
@@ -13719,15 +13662,15 @@ FLUX_EXPORT inline constexpr auto make_array_ptr_unchecked =
 
 } // namespace flux
 
-#endif
+#endif // FLUX_SEQUENCE_ARRAY_PTR_HPP_INCLUDED
 
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_SOURCE_BITSET_HPP_INCLUDED
-#define FLUX_SOURCE_BITSET_HPP_INCLUDED
+#ifndef FLUX_SEQUENCE_BITSET_HPP_INCLUDED
+#define FLUX_SEQUENCE_BITSET_HPP_INCLUDED
 
 
 
@@ -13793,7 +13736,7 @@ struct sequence_traits<std::bitset<N>> : default_sequence_traits {
 
 } // namespace flux
 
-#endif
+#endif // FLUX_SEQUENCE_BITSET_HPP_INCLUDED
 
 
 
@@ -13801,8 +13744,8 @@ struct sequence_traits<std::bitset<N>> : default_sequence_traits {
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_SOURCE_GENERATOR_HPP_INCLUDED
-#define FLUX_SOURCE_GENERATOR_HPP_INCLUDED
+#ifndef FLUX_SEQUENCE_GENERATOR_HPP_INCLUDED
+#define FLUX_SEQUENCE_GENERATOR_HPP_INCLUDED
 
 
 
@@ -13909,14 +13852,14 @@ public:
 
 } // namespace flux
 
-#endif // FLUX_SOURCE_GENERATOR_HPP_INCLUDED
+#endif // FLUX_SEQUENCE_GENERATOR_HPP_INCLUDED
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_SOURCE_GETLINES_HPP_INCLUDED
-#define FLUX_SOURCE_GETLINES_HPP_INCLUDED
+#ifndef FLUX_SEQUENCE_GETLINES_HPP_INCLUDED
+#define FLUX_SEQUENCE_GETLINES_HPP_INCLUDED
 
 
 
@@ -14009,7 +13952,7 @@ FLUX_EXPORT inline constexpr auto getlines = detail::getlines_fn{};
 
 } // namespace flux
 
-#endif // FLUX_SOURCE_GETLINES_HPP_INCLUDED
+#endif // FLUX_SEQUENCE_GETLINES_HPP_INCLUDED
 
 
 
@@ -14017,8 +13960,8 @@ FLUX_EXPORT inline constexpr auto getlines = detail::getlines_fn{};
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_SOURCE_FROM_ISTREAM_HPP_INCLUDED
-#define FLUX_SOURCE_FROM_ISTREAM_HPP_INCLUDED
+#ifndef FLUX_SEQUENCE_FROM_ISTREAM_HPP_INCLUDED
+#define FLUX_SEQUENCE_FROM_ISTREAM_HPP_INCLUDED
 
 
 
@@ -14105,17 +14048,15 @@ inline constexpr auto from_istream = detail::from_istream_fn<T>{};
 
 } // namespace flux
 
-#endif
+#endif // FLUX_SEQUENCE_ISTREAM_HPP_INCLUDED
 
 
 // Copyright (c) 2022 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_SOURCE_ISTREAMBUF_HPP_INCLUDED
-#define FLUX_SOURCE_ISTREAMBUF_HPP_INCLUDED
-
-
+#ifndef FLUX_SEQUENCE_ISTREAMBUF_HPP_INCLUDED
+#define FLUX_SEQUENCE_ISTREAMBUF_HPP_INCLUDED
 
 
 
@@ -14190,15 +14131,15 @@ inline constexpr auto from_istreambuf = detail::from_istreambuf_fn{};
 
 } // namespace flux
 
-#endif
+#endif // FLUX_SEQUENCE_ISTREAMBUF_HPP_INCLUDED
 
 
 // Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_RANGES_SOURCE_RANGE_HPP_INCLUDED
-#define FLUX_RANGES_SOURCE_RANGE_HPP_INCLUDED
+#ifndef FLUX_SEQUENCE_RANGE_HPP_INCLUDED
+#define FLUX_SEQUENCE_RANGE_HPP_INCLUDED
 
 
 
@@ -14434,15 +14375,15 @@ FLUX_EXPORT inline constexpr auto from_crange = detail::from_crange_fn{};
 
 } // namespace flux
 
-#endif
+#endif // FLUX_SEQUENCE_RANGE_HPP_INCLUDED
 
 
 // Copyright (c) 2023 Tristan Brindle (tcbrindle at gmail dot com)
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_SOURCE_REPEAT_HPP_INCLUDED
-#define FLUX_SOURCE_REPEAT_HPP_INCLUDED
+#ifndef FLUX_SEQUENCE_REPEAT_HPP_INCLUDED
+#define FLUX_SEQUENCE_REPEAT_HPP_INCLUDED
 
 
 
@@ -14580,7 +14521,7 @@ FLUX_EXPORT inline constexpr auto repeat = detail::repeat_fn{};
 
 } // namespace flux
 
-#endif
+#endif // FLUX_SEQUENCE_REPEAT_HPP_INCLUDED
 
 
 
@@ -14588,8 +14529,8 @@ FLUX_EXPORT inline constexpr auto repeat = detail::repeat_fn{};
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_SOURCE_UNFOLD_HPP_INCLUDED
-#define FLUX_SOURCE_UNFOLD_HPP_INCLUDED
+#ifndef FLUX_SEQUENCE_UNFOLD_HPP_INCLUDED
+#define FLUX_SEQUENCE_UNFOLD_HPP_INCLUDED
 
 
 
@@ -14673,7 +14614,10 @@ FLUX_EXPORT inline constexpr auto unfold = detail::unfold_fn{};
 
 } // namespace flux
 
-#endif // FLUX_SOURCE_UNFOLD_INCLUDED
+#endif // FLUX_SEQUENCE_UNFOLD_INCLUDED
+
+
+#endif // FLUX_SEQUENCE_HPP_INCLUDED
 
 
 #endif
