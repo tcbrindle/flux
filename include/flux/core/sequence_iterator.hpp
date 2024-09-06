@@ -5,7 +5,8 @@
 #ifndef FLUX_CORE_SEQUENCE_ITERATOR_HPP_INCLUDED
 #define FLUX_CORE_SEQUENCE_ITERATOR_HPP_INCLUDED
 
-#include <flux/core.hpp>
+#include <flux/core/concepts.hpp>
+#include <flux/core/sequence_access.hpp>
 
 namespace flux {
 
