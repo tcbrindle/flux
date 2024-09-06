@@ -7,8 +7,7 @@
 #define FLUX_CORE_INLINE_SEQUENCE_BASE_HPP_INCLUDED
 
 #include <flux/core/sequence_access.hpp>
-
-#include <flux/op/requirements.hpp>
+#include <flux/core/operation_requirements.hpp>
 
 namespace flux {
 
@@ -121,6 +120,14 @@ public:
 
     [[nodiscard]]
     constexpr auto usize() const requires sized_sequence<Derived const> { return flux::usize(derived()); }
+
+    template <typename Pred>
+        requires std::invocable<Pred&, element_t<Derived>> &&
+        detail::boolean_testable<std::invoke_result_t<Pred&, element_t<Derived>>>
+    constexpr auto for_each_while(Pred pred)
+    {
+        return flux::for_each_while(derived(), std::ref(pred));
+    }
 
     /// Returns true if the sequence contains no elements
     [[nodiscard]]
@@ -460,11 +467,6 @@ public:
     template <typename Func>
         requires std::invocable<Func&, element_t<Derived>>
     constexpr auto for_each(Func func) -> Func;
-
-    template <typename Pred>
-        requires std::invocable<Pred&, element_t<Derived>> &&
-                 detail::boolean_testable<std::invoke_result_t<Pred&, element_t<Derived>>>
-    constexpr auto for_each_while(Pred pred);
 
     constexpr auto inplace_reverse()
         requires bounded_sequence<Derived> &&

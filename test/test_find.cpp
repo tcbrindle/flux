@@ -3,6 +3,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
+#include <doctest/doctest.h>
+
 #include <array>
 #include <concepts>
 #include <string>
@@ -13,8 +15,7 @@
 import flux;
 #else
 #include <flux/core/default_impls.hpp>
-#include <flux/op/find.hpp>
-#include <flux/op/from.hpp>
+#include <flux/algorithm/find.hpp>
 #endif
 
 namespace {
