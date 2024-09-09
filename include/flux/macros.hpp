@@ -23,10 +23,12 @@
 
 #define FLUX_DECLVAL(...)  ((static_cast<__VA_ARGS__(*)()noexcept>(nullptr))())
 
-#ifdef __GNUC__
-#define FLUX_ALWAYS_INLINE [[gnu::always_inline]]
+#if defined(__GNUC__)
+#  define FLUX_ALWAYS_INLINE [[gnu::always_inline]] inline
+#elif defined(_MSC_VER)
+#  define FLUX_ALWAYS_INLINE __forceinline
 #else
-#define FLUX_ALWAYS_INLINE
+#  define FLUX_ALWAYS_INLINE inline
 #endif
 
 #define FLUX_NO_UNIQUE_ADDRESS [[no_unique_address]]

@@ -35,7 +35,8 @@ namespace detail {
 struct runtime_error_fn {
 private:
     [[noreturn]]
-    static inline void fail_fast()
+    FLUX_ALWAYS_INLINE
+    static void fail_fast()
     {
 #if FLUX_HAS_BUILTIN_TRAP
         __builtin_trap();
@@ -67,8 +68,9 @@ private:
 
 public:
     [[noreturn]]
-    inline void operator()(char const* msg,
-                           std::source_location loc = std::source_location::current()) const
+    FLUX_ALWAYS_INLINE
+    void operator()(char const* msg,
+                    std::source_location loc = std::source_location::current()) const
     {
         if constexpr (config::on_error == error_policy::fail_fast) {
             fail_fast();
@@ -125,8 +127,7 @@ struct indexed_bounds_check_fn {
                 }
             }
 #endif
-            assert_fn{}(idx >= T{0}, "index cannot be negative", loc);
-            assert_fn{}(idx < limit, "out-of-bounds sequence access", loc);
+            assert_fn{}(idx >= T{0} && idx < limit, "out-of-bounds sequence access", loc);
         }
     }
 };
