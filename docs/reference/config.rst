@@ -17,20 +17,29 @@ These must be set before ``#include`` -ing any Flux headers.
 Runtime Error Policy
 =====================
 
-When normal execution of a program cannot continue, Flux will raise a *runtime error*. Typically this happens because the library has detected a situation that would otherwise lead to undefined behaviour -- for example, an out-of-bounds read of a sequence or a dereference of an empty :type:`flux::optional`. The library can be configured to handle runtime errors in one of two ways: either by terminating, or by unwinding.
+When normal execution of a program cannot continue, Flux will raise a *runtime error*. Typically this happens because the library has detected a situation that would otherwise lead to undefined behaviour -- for example, an out-of-bounds read of a sequence or a dereference of an empty :type:`flux::optional`. A runtime error will be handled according to the configured error policy: one of *terminate*, *fail fast* or *unwind*. The default error policy is *terminate*.
 
-Termination
------------
+Terminate
+---------
 
 ..  c:macro:: FLUX_TERMINATE_ON_ERROR
 ..  c:macro:: FLUX_PRINT_ERROR_ON_TERMINATE
 
-If :c:macro:`FLUX_TERMINATE_ON_ERROR` is defined, a Flux runtime error will result in a call to :func:`std::terminate`.
+If :c:macro:`FLUX_TERMINATE_ON_ERROR` is defined, a Flux runtime error will result in a call to :func:`std::terminate`. This will in turn run the currently set terminate handler before halting the process.
 
 By default, the library will attempt to print a short message to ``stdout`` describing the error before terminating. This can be disabled by setting :c:macro:`FLUX_PRINT_ERROR_ON_TERMINATE` to ``0``.
 
-Unwinding
+Fail Fast
 ---------
+
+..  c:macro:: FLUX_FAIL_FAST_ON_ERROR
+
+Alternatively :c:macro:`FLUX_FAIL_FAST_ON_ERROR` is defined, the library will attempt to halt the running process in the fastest way possible, typically by executing an illegal CPU instruction. No cleanup will occur, no debug info will be printed to the console, and no exit handlers will be called.
+
+Using the fail fast policy typically results in the smallest binary code size.
+
+Unwind
+------
 
 ..  c:macro:: FLUX_UNWIND_ON_ERROR
 
@@ -46,7 +55,7 @@ If :c:macro:`FLUX_UNWIND_ON_ERROR` is defined, a runtime error will result in an
 
 ..  note::
 
-    According to the C++ standard, it is unspecified whether stack unwinding will occur if an exception is not caught -- an implementation may choose to immediately call :func:`std::terminate` without performing unwinding.
+    According to the C++ standard, it is unspecified whether stack unwinding occurs if an exception is not caught -- an implementation may choose to immediately call :func:`std::terminate` without performing unwinding if there is no matching catch clause anywhere in the call stack.
 
     If using the "unwind" policy, you may also wish to wrap your :func:`main` in an appropriate try-catch block to ensure unwinding occurs on all platforms.
 
@@ -86,7 +95,7 @@ A custom :c:macro:`FLUX_INT_TYPE` must be a built-in signed integer type at leas
 Numeric Error Policies
 ======================
 
-Flux provides a selection of checked integer functions, which are used internally by the library when performing operations on signed ints. The behaviour of these functions can be customised by setting the overflow policy and divide by zero policies as desired.
+Flux provides a selection of checked integer functions, which are used internally by the library when performing operations on ints. The behaviour of these functions can be customised by setting the overflow, divide by zero and integer cast policies as desired.
 
 Overflow policy
 ---------------
@@ -95,9 +104,9 @@ Overflow policy
 ..  c:macro:: FLUX_WRAP_ON_OVERFLOW
 ..  c:macro:: FLUX_IGNORE_OVERFLOW
 
-If :c:macro:`FLUX_ERROR_ON_OVERFLOW` is set, a signed integer operation which would overflow will instead raise a runtime error. This is the default in debug builds (i.e. ``NDEBUG`` is not set).
+If :c:macro:`FLUX_ERROR_ON_OVERFLOW` is set, an integer operation which would overflow will instead raise a runtime error. This is the default in debug builds (i.e. ``NDEBUG`` is not set).
 
-Alternatively, if :c:macro:`FLUX_WRAP_ON_OVERFLOW` is set, signed integer operations are performed as if by casting to the equivalent unsigned type, performing the operation, and then casting back to the original signed type. This avoids undefined behaviour (since overflow is well defined on unsigned ints) and avoids needing to generate error handing code, at the cost of giving numerically incorrect answers if overflow occurs. This is the default in release builds (i.e. ``NDEBUG`` is set).
+Alternatively, if :c:macro:`FLUX_WRAP_ON_OVERFLOW` is set, integer operations are performed as if by casting to the equivalent unsigned type, performing the operation, and then casting back to the original type. This avoids undefined behaviour (since overflow is well defined on unsigned ints) and avoids needing to generate error handing code, at the cost of giving numerically incorrect answers if overflow occurs. This is the default in release builds (i.e. ``NDEBUG`` is set).
 
 Finally, if :c:macro:`FLUX_IGNORE_OVERFLOW` is set, the standard built-in integer operations will be used. This means that an operation which overflows will result in undefined behaviour. Use this setting if you are already handling signed integer UB by some other means (for example compiling with ``-ftrapv`` or using UB Sanitizer) and wish to avoid "double checking".
 
@@ -107,6 +116,16 @@ Divide by zero policy
 ..  c:macro:: FLUX_ERROR_ON_DIVIDE_BY_ZERO
 ..  c:macro:: FLUX_IGNORE_DIVIDE_BY_ZERO
 
-If :c:macro:`FLUX_ERROR_ON_DIVIDE_BY_ZERO` is set then a runtime error will be raised if zero is passed as the second argument to :func:`flux::checked_div` or :func:`flux::checked_mod`. This is the default in debug builds.
+If :c:macro:`FLUX_ERROR_ON_DIVIDE_BY_ZERO` is set then a runtime error will be raised if zero is passed as the second argument to :func:`flux::num::div` or :func:`flux::num::mod`. This is the default in debug builds.
 
-Alternatively, if :c:macro:`FLUX_IGNORE_DIVIDE_BY_ZERO` is set then no extra zero check will be used in :func:`flux::checked_div` or :func:`flux::checked_mod`. This is the default for release builds.
+Alternatively, if :c:macro:`FLUX_IGNORE_DIVIDE_BY_ZERO` is set then no extra zero check will be used in :func:`flux::num::div` or :func:`flux::num::mod`. This is the default for release builds.
+
+Integer cast policy
+-------------------
+
+..  c:macro:: FLUX_INTEGER_CAST_POLICY_CHECKED
+..  c:macro:: FLUX_INTEGER_CAST_POLICY_UNCHECKED
+
+If :c:macro:`FLUX_INTEGER_CAST_POLICY_CHECKED` is defined, then :expr:`flux::num::cast<To>(from)`  will (if necessary) perform a runtime check to ensure that the source value is within the bounds of the destination type -- that is, that the cast is not lossy. This is the default for debug builds.
+
+Alternatively :c:macro:`FLUX_INTEGER_CAST_POLICY_UNCHECKED` is defined then no runtime check will occur, and :expr:`flux::num::cast<To>(from)` is equivalent to a plain :expr:`static_cast<To>(from)`. This is the default in release builds.
