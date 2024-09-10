@@ -14,6 +14,15 @@
 #include <stdexcept>
 #include <type_traits>
 
+#if defined(__has_builtin)
+#  if __has_builtin(__builtin_trap)
+#    define FLUX_HAS_BUILTIN_TRAP 1
+#  endif
+#elif defined(_MSC_VER)
+#  include <intrin.h>
+#  define FLUX_HAS_FASTFAIL 1
+#endif
+
 namespace flux {
 
 FLUX_EXPORT
@@ -24,21 +33,51 @@ struct unrecoverable_error : std::logic_error {
 namespace detail {
 
 struct runtime_error_fn {
+private:
     [[noreturn]]
+    FLUX_ALWAYS_INLINE
+    static void fail_fast()
+    {
+#if FLUX_HAS_BUILTIN_TRAP
+        __builtin_trap();
+#elif FLUX_HAS_FASTFAIL
+        __fastfail(7); // FAST_FAIL_FATAL_APP_EXIT
+#else
+        std::abort();
+#endif
+    }
+
+    [[noreturn]]
+    static void unwind(const char* msg, std::source_location loc)
+    {
+        char buf[1024];
+        std::snprintf(buf, 1024, "%s:%u: Fatal error: %s",
+                      loc.file_name(), loc.line(), msg);
+        throw unrecoverable_error(buf);
+    }
+
+    [[noreturn]]
+    static void terminate(const char* msg, std::source_location loc)
+    {
+        if constexpr (config::print_error_on_terminate) {
+            std::fprintf(stderr, "%s:%u: Fatal error: %s\n",
+                         loc.file_name(), loc.line(), msg);
+        }
+        std::terminate();
+    }
+
+public:
+    [[noreturn]]
+    FLUX_ALWAYS_INLINE
     void operator()(char const* msg,
                     std::source_location loc = std::source_location::current()) const
     {
-        if constexpr (config::on_error == error_policy::unwind) {
-            char buf[1024];
-            std::snprintf(buf, 1024, "%s:%u: Fatal error: %s",
-                          loc.file_name(), loc.line(), msg);
-            throw unrecoverable_error(buf);
+        if constexpr (config::on_error == error_policy::fail_fast) {
+            fail_fast();
+        } else if constexpr (config::on_error == error_policy::unwind) {
+            unwind(msg, loc);
         } else {
-            if constexpr (config::print_error_on_terminate) {
-                std::fprintf(stderr, "%s:%u: Fatal error: %s\n",
-                             loc.file_name(), loc.line(), msg);
-            }
-            std::terminate();
+            terminate(msg, loc);
         }
     }
 };
@@ -88,8 +127,7 @@ struct indexed_bounds_check_fn {
                 }
             }
 #endif
-            assert_fn{}(idx >= T{0}, "index cannot be negative", loc);
-            assert_fn{}(idx < limit, "out-of-bounds sequence access", loc);
+            assert_fn{}(idx >= T{0} && idx < limit, "out-of-bounds sequence access", loc);
         }
     }
 };
