@@ -13,13 +13,12 @@ namespace flux {
 namespace detail {
 
 struct for_each_fn {
-
-    template <sequence Seq, typename Func>
-        requires (std::invocable<Func&, element_t<Seq>> &&
-                  !infinite_sequence<Seq>)
-    constexpr auto operator()(Seq&& seq, Func func) const -> Func
+    template <iterable It, typename Func>
+        requires (std::invocable<Func&, element_t<It>> &&
+                  !infinite_sequence<It>)
+    constexpr auto operator()(It&& it, Func func) const -> Func
     {
-        (void) flux::for_each_while(FLUX_FWD(seq), [&](auto&& elem) {
+        (void) iterate(it, [&](auto&& elem) {
             std::invoke(func, FLUX_FWD(elem));
             return true;
         });
