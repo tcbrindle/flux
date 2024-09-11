@@ -38,7 +38,7 @@ public:
           data_(count)
     {}
 
-    struct flux_sequence_traits {
+    struct flux_sequence_traits : default_sequence_traits {
     private:
         struct cursor_type {
             cursor_t<Base> base_cur;

@@ -46,9 +46,9 @@ public:
     struct flux_sequence_traits : default_sequence_traits {
     private:
         using self_t = flatten_with_adaptor;
-        using element_type =
+        using element_type_t =
             std::common_reference_t<element_t<InnerSeq>, element_t<Pattern>>;
-        using rvalue_element_type =
+        using rvalue_element_type_t =
             std::common_reference_t<rvalue_element_t<InnerSeq>, rvalue_element_t<Pattern>>;
 
         struct cursor_type {
@@ -120,27 +120,27 @@ public:
         }
 
         static constexpr auto read_at(self_t& self, cursor_type const& cur)
-            -> element_type
+            -> element_type_t
         {
             if (cur.inner_cur.index() == 0) {
-                return static_cast<element_type>(
+                return static_cast<element_type_t>(
                     flux::read_at(self.pattern_, std::get<0>(cur.inner_cur)));
             } else {
                 FLUX_ASSERT(self.inner_.has_value());
-                return static_cast<element_type>(
+                return static_cast<element_type_t>(
                     flux::read_at(*self.inner_, std::get<1>(cur.inner_cur)));
             }
         }
 
         static constexpr auto move_at(self_t& self, cursor_type const& cur)
-            -> rvalue_element_type
+            -> rvalue_element_type_t
         {
             if (cur.inner_cur.index() == 0) {
-                return static_cast<rvalue_element_type>(
+                return static_cast<rvalue_element_type_t>(
                     flux::move_at(self.pattern_, std::get<0>(cur.inner_cur)));
             } else {
                 FLUX_ASSERT(self.inner_.has_value());
-                return static_cast<rvalue_element_type>(
+                return static_cast<rvalue_element_type_t>(
                     flux::move_at(*self.inner_, std::get<1>(cur.inner_cur)));
             }
         }

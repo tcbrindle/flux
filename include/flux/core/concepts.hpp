@@ -70,7 +70,7 @@ using cursor_t = decltype(detail::traits_t<Seq>::first(FLUX_DECLVAL(Seq&)));
 
 FLUX_EXPORT
 template <typename Seq>
-using element_t = decltype(detail::traits_t<Seq>::read_at(FLUX_DECLVAL(Seq&), FLUX_DECLVAL(cursor_t<Seq> const&)));
+using element_t = decltype(detail::traits_t<Seq>::element_type(FLUX_DECLVAL(Seq&)));
 
 namespace detail {
 
@@ -123,6 +123,23 @@ using with_ref = T&;
 template <typename T>
 concept can_reference = requires { typename with_ref<T>; };
 
+template <typename E>
+using predicate_archetype = bool (*)(E);
+
+template <typename T, typename Traits = sequence_traits<std::remove_cvref_t<T>>>
+concept iterable_concept =
+    requires (T& self) {
+        { Traits::element_type(self) } -> can_reference;
+    } && requires (T& self, predicate_archetype<element_t<T>> pred) {
+        { Traits::iterate(self, pred) } -> std::same_as<bool>;
+    } && requires {
+        typename value_t<T>;
+    }
+#ifdef FLUX_HAVE_CPP23_TUPLE_COMMON_REF
+    && std::common_reference_with<element_t<T>&&, value_t<T>&>
+#endif
+    ;
+
 template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
 concept sequence_requirements =
     requires (Seq& seq) {
@@ -158,8 +175,12 @@ concept sequence_concept =
 } // namespace detail
 
 FLUX_EXPORT
+template <typename I>
+concept iterable = detail::iterable_concept<I>;
+
+FLUX_EXPORT
 template <typename Seq>
-concept sequence = detail::sequence_concept<Seq>;
+concept sequence = iterable<Seq> && detail::sequence_concept<Seq>;
 
 namespace detail {
 
@@ -368,6 +389,39 @@ concept derived_from_inline_sequence_base = requires(T t) {
  */
 
 struct default_sequence_traits {
+
+    template <typename Self>
+        requires detail::sequence_requirements<Self>
+    static consteval auto element_type(Self& self)
+        -> decltype(detail::traits_t<Self>::read_at(FLUX_DECLVAL(Self&), FLUX_DECLVAL(cursor_t<Self> const&)));
+
+    template <typename Self, typename Pred>
+        requires detail::sequence_requirements<Self>
+    static constexpr auto iterate(Self& self, Pred&& pred) -> bool
+    {
+        using Traits = detail::traits_t<Self>;
+
+        auto cur = Traits::first(self);
+
+        if constexpr (bounded_sequence<Self> && regular_cursor<cursor_t<Self>>) {
+            auto const last = Traits::last(self);
+            while (cur != last) {
+                if (!std::invoke(pred, Traits::read_at(self, cur))) {
+                    return false;
+                }
+                Traits::inc(self, cur);
+            }
+        } else {
+            while (!Traits::is_last(self, cur)) {
+                if (!std::invoke(pred, Traits::read_at(self, cur))) {
+                    return false;
+                }
+                Traits::inc(self, cur);
+            }
+        }
+
+        return true;
+    }
 
     template <typename Self>
         requires detail::sequence_requirements<Self>

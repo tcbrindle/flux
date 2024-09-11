@@ -14,6 +14,16 @@ namespace flux {
 
 namespace detail {
 
+struct iterate_fn {
+    template <iterable It, typename Pred>
+        requires std::invocable<Pred&, element_t<It>> &&
+                 boolean_testable<std::invoke_result_t<Pred&, element_t<It>>>
+    constexpr auto operator()(It&& iter, Pred pred) const -> bool
+    {
+        return traits_t<It>::iterate(iter, pred);
+    }
+};
+
 struct first_fn {
     template <sequence Seq>
     [[nodiscard]]
@@ -173,6 +183,7 @@ struct for_each_while_fn {
 
 } // namespace detail
 
+FLUX_EXPORT inline constexpr auto iterate = detail::iterate_fn{};
 FLUX_EXPORT inline constexpr auto first = detail::first_fn{};
 FLUX_EXPORT inline constexpr auto is_last = detail::is_last_fn{};
 FLUX_EXPORT inline constexpr auto read_at = detail::read_at_fn{};
