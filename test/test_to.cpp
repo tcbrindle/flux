@@ -41,13 +41,13 @@ struct test_vector {
     test_vector() = default;
 
     template <flux::sequence Seq>
-    test_vector(flux::from_sequence_t, Seq&& seq)
+    test_vector(flux::from_iterable_t, Seq&& seq)
     {
         flux::output_to(seq, std::back_inserter(vec_));
     }
 
     template <flux::sequence Seq>
-    test_vector(flux::from_sequence_t, Seq&& seq, A const& alloc)
+    test_vector(flux::from_iterable_t, Seq&& seq, A const& alloc)
         : vec_(alloc)
     {
         flux::output_to(seq, std::back_inserter(vec_));
@@ -61,7 +61,26 @@ private:
 };
 
 template <flux::sequence Seq, typename A>
-test_vector(flux::from_sequence_t, Seq&&, A const&) -> test_vector<flux::value_t<Seq>, A>;
+test_vector(flux::from_iterable_t, Seq&&, A const&) -> test_vector<flux::value_t<Seq>, A>;
+
+struct test_iterable {
+    int arr[5] = {1, 2, 3, 4, 5};
+
+    struct flux_sequence_traits : flux::default_sequence_traits {
+
+        static consteval auto element_type(test_iterable const&) -> int const&;
+
+        static constexpr auto iterate(test_iterable const& self, auto&& pred) -> bool
+        {
+            for (int const& i : self.arr) {
+                if (!pred(i)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    };
+};
 
 }
 
@@ -142,7 +161,7 @@ TEST_CASE("to")
             SUBCASE("...to vector")
             {
                 std::vector<int> vec1{1, 2, 3, 4, 5};
-                auto vec2 = single_pass_only(flux::ref(vec1)).to<std::vector<int>>();
+                auto vec2 = flux::to<std::vector<int>>(single_pass_only(flux::ref(vec1)));
                 CHECK(vec1 == vec2);
             }
 
@@ -215,6 +234,13 @@ TEST_CASE("to")
             auto vec = flux::to<std::vector<int>>(union_seq);
 
             CHECK(check_equal(vec, {1,2,3,4,5}));
+        }
+
+        SUBCASE("from non-sequence iterable")
+        {
+            auto vec = flux::to<std::vector<int>>(test_iterable{});
+
+            CHECK(check_equal(vec, {1, 2, 3, 4, 5}));
         }
     }
 
@@ -317,13 +343,12 @@ TEST_CASE("to")
 
         SUBCASE("insert construction")
         {
-            SUBCASE("...to vector")
+            SUBCASE("...to vector from non-sequence iterable")
             {
-                std::vector<int> vec1{1, 2, 3, 4, 5};
-                auto vec2 = single_pass_only(flux::ref(vec1)).to<std::vector>();
-                using V = decltype(vec2);
+                auto vec = flux::to<std::vector>(test_iterable{});
+                using V = decltype(vec);
                 static_assert(std::same_as<typename V::value_type, int>);
-                CHECK(vec1 == vec2);
+                CHECK(vec == std::vector{1, 2, 3, 4, 5});
             }
 
             SUBCASE("...to list")

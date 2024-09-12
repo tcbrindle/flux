@@ -13,33 +13,32 @@
 namespace flux {
 
 FLUX_EXPORT
-struct from_sequence_t {
-    explicit from_sequence_t() = default;
+struct from_iterable_t {
+    explicit from_iterable_t() = default;
 };
 
-FLUX_EXPORT inline constexpr auto from_sequence = from_sequence_t{};
+FLUX_EXPORT inline constexpr auto from_iterable = from_iterable_t{};
 
 namespace detail {
 
-template <typename C, typename Seq, typename... Args>
-concept direct_sequence_constructible =
-    std::constructible_from<C, Seq, Args...>;
+template <typename C, typename It, typename... Args>
+concept direct_iterable_constructible =
+    std::constructible_from<C, It, Args...>;
 
-template <typename C, typename Seq, typename... Args>
-concept from_sequence_constructible =
-    std::constructible_from<C, from_sequence_t, Seq, Args...>;
+template <typename C, typename It, typename... Args>
+concept from_iterable_constructible =
+    std::constructible_from<C, from_iterable_t, It, Args...>;
 
 template <typename C>
 using container_value_t = typename C::value_type; // Let's just assume it exists
 
-template <sequence Seq>
+template <std::ranges::input_range Rng>
 using common_iterator_t =
-    std::ranges::iterator_t<decltype(std::views::common(FLUX_DECLVAL(Seq)))>;
+    std::ranges::iterator_t<decltype(std::views::common(FLUX_DECLVAL(Rng)))>;
 
-
-template <typename C, typename Seq, typename... Args>
+template <typename C, typename Rng, typename... Args>
 concept cpp17_range_constructible =
-    std::constructible_from<C, common_iterator_t<Seq>, common_iterator_t<Seq>, Args...>;
+    std::constructible_from<C, common_iterator_t<Rng>, common_iterator_t<Rng>, Args...>;
 
 template <typename C, typename Elem>
 concept container_insertable =
@@ -50,11 +49,10 @@ concept container_insertable =
 
 template <typename C, typename Seq, typename... Args>
 concept container_convertible =
-    direct_sequence_constructible<C, Seq, Args...> ||
-    from_sequence_constructible<C, Seq, Args...> ||
+    direct_iterable_constructible<C, Seq, Args...> ||
+    from_iterable_constructible<C, Seq, Args...> ||
     cpp17_range_constructible<C, Seq, Args...> ||
-    (  std::constructible_from<C, Args...> &&
-        container_insertable<C, element_t<Seq>>);
+    (std::constructible_from<C, Args...> && container_insertable<C, element_t<Seq>>);
 
 template <typename C>
 concept reservable_container =
@@ -75,89 +73,89 @@ constexpr auto make_inserter(C& c)
     }
 }
 
-template <template <typename...> typename C, typename Seq, typename... Args>
-using ctad_direct_seq = decltype(C(FLUX_DECLVAL(Seq), FLUX_DECLVAL(Args)...));
+template <template <typename...> typename C, typename It, typename... Args>
+using ctad_direct_iterable = decltype(C(FLUX_DECLVAL(It), FLUX_DECLVAL(Args)...));
 
-template <template <typename...> typename C, typename Seq, typename... Args>
-using ctad_from_seq = decltype((C(from_sequence, FLUX_DECLVAL(Seq), FLUX_DECLVAL(Args)...)));
+template <template <typename...> typename C, typename It, typename... Args>
+using ctad_from_iterable = decltype((C(from_iterable, FLUX_DECLVAL(It), FLUX_DECLVAL(Args)...)));
 
-template <template <typename...> typename C, typename Seq, typename... Args>
-using ctad_from_iters = decltype(C(FLUX_DECLVAL(common_iterator_t<Seq>), FLUX_DECLVAL(common_iterator_t<Seq>), FLUX_DECLVAL(Args)...));
+template <template <typename...> typename C, typename Rng, typename... Args>
+using ctad_from_iters = decltype(C(FLUX_DECLVAL(common_iterator_t<Rng>), FLUX_DECLVAL(common_iterator_t<Rng>), FLUX_DECLVAL(Args)...));
 
-template <template <typename...> typename C, typename Seq, typename... Args>
+template <template <typename...> typename C, typename It, typename... Args>
 concept can_deduce_container_type =
-    requires { typename ctad_direct_seq<C, Seq, Args...>; } ||
-    requires { typename ctad_from_seq<C, Seq, Args...>; } ||
-    requires { typename ctad_from_iters<C, Seq, Args...>; } ||
-    ( sizeof...(Args) == 0 && requires { typename C<value_t<Seq>>; });
+    requires { typename ctad_direct_iterable<C, It, Args...>; } ||
+    requires { typename ctad_from_iterable<C, It, Args...>; } ||
+    requires { typename ctad_from_iters<C, It, Args...>; } ||
+    ( sizeof...(Args) == 0 && requires { typename C<value_t<It>>; });
 
 template <typename T>
 struct type_t { using type = T; };
 
-template <template <typename...> typename C, typename Seq, typename... Args>
-    requires can_deduce_container_type<C, Seq, Args...>
+template <template <typename...> typename C, typename It, typename... Args>
+    requires can_deduce_container_type<C, It, Args...>
 consteval auto deduce_container_type()
 {
-    if constexpr (requires { typename ctad_direct_seq<C, Seq, Args...>; }) {
-        return type_t<decltype(C(FLUX_DECLVAL(Seq), FLUX_DECLVAL(Args)...))>{};
-    } else if constexpr (requires { typename ctad_from_seq<C, Seq, Args...>; }) {
-        return type_t<decltype((C(from_sequence, FLUX_DECLVAL(Seq), FLUX_DECLVAL(Args)...)))>{};
-    } else if constexpr (requires { typename ctad_from_iters<C, Seq, Args...>; }) {
-        using I = common_iterator_t<Seq>;
-        return type_t<decltype(C(FLUX_DECLVAL(I), FLUX_DECLVAL(I), FLUX_DECLVAL(Args)...))>{};
+    if constexpr (requires { typename ctad_direct_iterable<C, It, Args...>; }) {
+        return type_t<decltype(C(FLUX_DECLVAL(It), FLUX_DECLVAL(Args)...))>{};
+    } else if constexpr (requires { typename ctad_from_iterable<C, It, Args...>; }) {
+        return type_t<decltype((C(from_iterable, FLUX_DECLVAL(It), FLUX_DECLVAL(Args)...)))>{};
+    } else if constexpr (requires { typename ctad_from_iters<C, It, Args...>; }) {
+        using CI = common_iterator_t<It>;
+        return type_t<decltype(C(FLUX_DECLVAL(CI), FLUX_DECLVAL(CI), FLUX_DECLVAL(Args)...))>{};
     } else {
-        static_assert(requires { typename C<value_t<Seq>>; });
-        return type_t<C<value_t<Seq>>>{};
+        static_assert(requires { typename C<value_t<It>>; });
+        return type_t<C<value_t<It>>>{};
     }
 }
 
-template <template <typename...> typename C, typename Seq, typename... Args>
-    requires can_deduce_container_type<C, Seq, Args...>
-using deduced_container_t = typename decltype(deduce_container_type<C, Seq, Args...>())::type;
+template <template <typename...> typename C, typename It, typename... Args>
+    requires can_deduce_container_type<C, It, Args...>
+using deduced_container_t = typename decltype(deduce_container_type<C, It, Args...>())::type;
 
 
 } // namespace detail
 
 FLUX_EXPORT
-template <typename Container, sequence Seq, typename... Args>
-    requires (std::convertible_to<element_t<Seq>, detail::container_value_t<Container>> &&
-                 detail::container_convertible<Container, Seq, Args...>) ||
-             sequence<element_t<Seq>>
-constexpr auto to(Seq&& seq, Args&&... args) -> Container
+template <typename Container, iterable It, typename... Args>
+    requires (std::convertible_to<element_t<It>, detail::container_value_t<Container>> &&
+                 detail::container_convertible<Container, It, Args...>) ||
+             iterable<element_t<It>>
+constexpr auto to(It&& it, Args&&... args) -> Container
 {
-    if constexpr (std::convertible_to<element_t<Seq>, detail::container_value_t<Container>>) {
-        if constexpr (detail::direct_sequence_constructible<Container, Seq, Args...>) {
-            return Container(FLUX_FWD(seq), FLUX_FWD(args)...);
-        } else if constexpr (detail::from_sequence_constructible<Container, Seq, Args...>) {
-            return Container(from_sequence, FLUX_FWD(seq), FLUX_FWD(args)...);
-        } else if constexpr (detail::cpp17_range_constructible<Container, Seq, Args...>) {
-            auto view_ = std::views::common(FLUX_FWD(seq));
+    if constexpr (std::convertible_to<element_t<It>, detail::container_value_t<Container>>) {
+        if constexpr (detail::direct_iterable_constructible<Container, It, Args...>) {
+            return Container(FLUX_FWD(it), FLUX_FWD(args)...);
+        } else if constexpr (detail::from_iterable_constructible<Container, It, Args...>) {
+            return Container(from_iterable, FLUX_FWD(it), FLUX_FWD(args)...);
+        } else if constexpr (std::ranges::input_range<It> && detail::cpp17_range_constructible<Container, It, Args...>) {
+            auto view_ = std::views::common(FLUX_FWD(it));
             return Container(view_.begin(), view_.end(), FLUX_FWD(args)...);
         } else {
             auto c = Container(FLUX_FWD(args)...);
-            if constexpr (sized_sequence<Seq> && detail::reservable_container<Container>) {
-                c.reserve(flux::usize(seq));
+            if constexpr (sized_sequence<It> && detail::reservable_container<Container>) {
+                c.reserve(flux::usize(it));
             }
-            flux::output_to(seq, detail::make_inserter<element_t<Seq>>(c));
+            flux::output_to(it, detail::make_inserter<element_t<It>>(c));
             return c;
         }
     } else {
-        static_assert(sequence<element_t<Seq>>);
-        return flux::to<Container>(flux::map(flux::from_fwd_ref(FLUX_FWD(seq)), [](auto&& elem) {
+        static_assert(iterable<element_t<It>>);
+        return flux::to<Container>(flux::map(flux::from_fwd_ref(FLUX_FWD(it)), [](auto&& elem) {
             return flux::to<detail::container_value_t<Container>>(FLUX_FWD(elem));
         }), FLUX_FWD(args)...);
     }
 }
 
 FLUX_EXPORT
-template <template <typename...> typename Container, sequence Seq, typename... Args>
-    requires detail::can_deduce_container_type<Container, Seq, Args...> &&
+template <template <typename...> typename Container, iterable It, typename... Args>
+    requires detail::can_deduce_container_type<Container, It, Args...> &&
              detail::container_convertible<
-                 detail::deduced_container_t<Container, Seq, Args...>, Seq, Args...>
-constexpr auto to(Seq&& seq, Args&&... args)
+                 detail::deduced_container_t<Container, It, Args...>, It, Args...>
+constexpr auto to(It&& it, Args&&... args)
 {
-    using C_ = detail::deduced_container_t<Container, Seq, Args...>;
-    return flux::to<C_>(FLUX_FWD(seq), FLUX_FWD(args)...);
+    using C_ = detail::deduced_container_t<Container, It, Args...>;
+    return flux::to<C_>(FLUX_FWD(it), FLUX_FWD(args)...);
 }
 
 
