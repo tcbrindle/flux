@@ -4,6 +4,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <array>
+#include <ranges>
 
 #include "test_utils.hpp"
 
@@ -42,6 +43,18 @@ constexpr bool test_min()
         STATIC_CHECK(flux::min(arr, flux::proj(flux::cmp::compare, &IntPair::a))->b == 2);
     }
 
+    // Can find the min of a non-sequence iterable...
+    {
+        int arr[] = {1, 2, 3, 0, 1};
+        STATIC_CHECK(flux::min(arr | std::views::filter(flux::pred::true_)).value() == 0);
+    }
+
+    // ...including an empty one
+    {
+        int arr[] = {1, 2, 3, 0, 1};
+        STATIC_CHECK(not flux::min(arr | std::views::filter(flux::pred::false_)).has_value());
+    }
+
     return true;
 }
 static_assert(test_min());
@@ -71,6 +84,18 @@ constexpr bool test_max()
     {
         IntPair arr[] = { {1, 2}, {1, 3}, {1, 4}};
         STATIC_CHECK(flux::max(arr, flux::proj(flux::cmp::compare, &IntPair::a))->b == 4);
+    }
+
+    // Can find the max of a non-sequence iterable...
+    {
+        int arr[] = {1, 2, 3, 0, 1};
+        STATIC_CHECK(flux::max(arr | std::views::filter(flux::pred::true_)).value() == 3);
+    }
+
+    // ...including an empty one
+    {
+        int arr[] = {1, 2, 3, 0, 1};
+        STATIC_CHECK(not flux::max(arr | std::views::filter(flux::pred::false_)).has_value());
     }
 
     return true;
@@ -110,6 +135,20 @@ constexpr bool test_minmax()
         auto result = flux::minmax(arr, flux::proj(flux::cmp::compare, &IntPair::a)).value();
         STATIC_CHECK(result.min == IntPair{1, 2});
         STATIC_CHECK(result.max == IntPair{1, 4});
+    }
+
+    // Can find the min and max of a non-sequence iterable...
+    {
+        int arr[] = {1, 2, 3, 0, 1};
+        auto [min, max] = flux::minmax(arr | std::views::filter(flux::pred::true_)).value();
+        STATIC_CHECK(min == 0);
+        STATIC_CHECK(max == 3);
+    }
+
+    // ...including an empty one
+    {
+        int arr[] = {1, 2, 3, 0, 1};
+        STATIC_CHECK(not flux::minmax(arr | std::views::filter(flux::pred::false_)).has_value());
     }
 
     return true;

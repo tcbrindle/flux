@@ -13,13 +13,13 @@ namespace flux {
 namespace all_detail {
 
 struct fn {
-    template <sequence Seq, typename Pred>
-        requires std::predicate<Pred&, element_t<Seq>>
-    constexpr bool operator()(Seq&& seq, Pred pred) const
+    template <iterable It, typename Pred>
+        requires std::predicate<Pred&, element_t<It>>
+    constexpr bool operator()(It&& it, Pred pred) const
     {
-        return is_last(seq, for_each_while(seq, [&](auto&& elem) {
+        return iterate(it, [&](auto&& elem) {
             return std::invoke(pred, FLUX_FWD(elem));
-        }));
+        });
     }
 };
 
@@ -30,13 +30,13 @@ FLUX_EXPORT inline constexpr auto all = all_detail::fn{};
 namespace none_detail {
 
 struct fn {
-    template <sequence Seq, typename Pred>
-        requires std::predicate<Pred&, element_t<Seq>>
-    constexpr bool operator()(Seq&& seq, Pred pred) const
+    template <iterable It, typename Pred>
+        requires std::predicate<Pred&, element_t<It>>
+    constexpr bool operator()(It&& it, Pred pred) const
     {
-        return is_last(seq, for_each_while(seq, [&](auto&& elem) {
+        return iterate(it, [&](auto&& elem) {
             return !std::invoke(pred, FLUX_FWD(elem));
-        }));
+        });
     }
 };
 
@@ -47,13 +47,13 @@ FLUX_EXPORT inline constexpr auto none = none_detail::fn{};
 namespace any_detail {
 
 struct fn {
-    template <sequence Seq, typename Pred>
-        requires std::predicate<Pred&, element_t<Seq>>
-    constexpr bool operator()(Seq&& seq, Pred pred) const
+    template <iterable It, typename Pred>
+        requires std::predicate<Pred&, element_t<It>>
+    constexpr bool operator()(It&& it, Pred pred) const
     {
-        return !is_last(seq, for_each_while(seq, [&](auto&& elem) {
+        return !iterate(it, [&](auto&& elem) {
             return !std::invoke(pred, FLUX_FWD(elem));
-        }));
+        });
     }
 };
 

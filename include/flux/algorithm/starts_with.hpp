@@ -23,18 +23,33 @@ struct starts_with_fn {
             }
         }
 
-        auto h = flux::first(haystack);
-        auto n = flux::first(needle);
+        auto n_cur = flux::first(needle);
+        if (flux::is_last(needle, n_cur)) {
+            return true; // trivially start with an empty sequence
+        }
+        bool matched = false;
 
-        while (!flux::is_last(haystack, h) && !flux::is_last(needle, n)) {
-            if (!std::invoke(cmp, flux::read_at(haystack, h), flux::read_at(needle, n))) {
-                return false;
+        bool haystack_completed = iterate(haystack, [&](auto&& h_elem) -> bool {
+            if (flux::is_last(needle, n_cur)) {
+                matched = true;
+                return false; // break;
             }
-            flux::inc(haystack, h);
-            flux::inc(needle, n);
+
+            if (!std::invoke(cmp, FLUX_FWD(h_elem), flux::read_at(needle, n_cur))) {
+                flux::inc(needle, n_cur);
+                return false; // break
+            }
+
+            flux::inc(needle, n_cur);
+
+            return true;
+        });
+
+        if (haystack_completed && flux::is_last(needle, n_cur)) {
+            matched = true;
         }
 
-        return flux::is_last(needle, n);
+        return matched;
     }
 };
 

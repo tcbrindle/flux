@@ -267,8 +267,8 @@ struct is_empty_fn {
 template <typename Seq1, typename Seq2>
 concept element_swappable_with_ =
     std::constructible_from<value_t<Seq1>, rvalue_element_t<Seq1>> &&
-    writable_sequence_of<Seq1, rvalue_element_t<Seq2>> &&
-    writable_sequence_of<Seq2, value_t<Seq1>&&>;
+    writable_iterable_of<Seq1, rvalue_element_t<Seq2>> &&
+    writable_iterable_of<Seq2, value_t<Seq1>&&>;
 
 template <typename Seq1, typename Seq2>
 concept element_swappable_with =

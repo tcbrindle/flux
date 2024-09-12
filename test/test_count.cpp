@@ -3,6 +3,9 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
+#include <array>
+#include <ranges>
+
 #include "test_utils.hpp"
 
 namespace {
@@ -46,6 +49,16 @@ constexpr bool test_count()
         auto seq = flux::ref(arr);
         STATIC_CHECK(seq.count_eq(2) == 3);
         STATIC_CHECK(seq.count_eq(99) == 0);
+    }
+
+    // Test with non-sequence iterable
+    {
+        auto view = std::array{1, 2, 2, 2, 3, 4, 5} | std::views::filter(flux::pred::even);
+
+        STATIC_CHECK(flux::count(view) == 4);
+
+        STATIC_CHECK(flux::count_eq(view, 2) == 3);
+
     }
 
     return true;

@@ -28,7 +28,7 @@ private:
     }
 
 public:
-    template <sequence Seq, std::weakly_incrementable Iter>
+    template <iterable Seq, std::weakly_incrementable Iter>
         requires std::indirectly_writable<Iter, element_t<Seq>>
     constexpr auto operator()(Seq&& seq, Iter iter) const -> Iter
     {

@@ -282,11 +282,11 @@ template <typename Seq>
 concept sized_sequence = sequence<Seq> && detail::sized_sequence_requirements<Seq>;
 
 FLUX_EXPORT
-template <typename Seq, typename T>
-concept writable_sequence_of =
-    sequence<Seq> &&
-    requires (element_t<Seq> elem, T&& item) {
-        { elem = FLUX_FWD(item) } -> std::same_as<element_t<Seq>&>;
+template <typename It, typename T>
+concept writable_iterable_of =
+    iterable<It> &&
+    requires (element_t<It> (*elem)(), T&& item) {
+        { elem() = FLUX_FWD(item) } -> std::same_as<element_t<It>&>;
     };
 
 namespace detail {

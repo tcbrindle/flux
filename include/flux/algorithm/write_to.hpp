@@ -16,22 +16,22 @@ namespace detail {
 
 struct write_to_fn {
 
-    template <sequence Seq, typename OStream>
+    template <iterable It, typename OStream>
         requires std::derived_from<OStream, std::ostream>
-    auto operator()(Seq&& seq, OStream& os) const
+    auto operator()(It&& it, OStream& os) const
         -> std::ostream&
     {
         bool first = true;
         os << '[';
 
-        flux::for_each(FLUX_FWD(seq), [&os, &first](auto&& elem) {
+        flux::for_each(it, [&os, &first](auto&& elem) {
             if (first) {
                 first = false;
             } else {
                 os << ", ";
             }
 
-            if constexpr (sequence<element_t<Seq>>) {
+            if constexpr (iterable<element_t<It>>) {
                 write_to_fn{}(FLUX_FWD(elem), os);
             } else {
                 os << FLUX_FWD(elem);

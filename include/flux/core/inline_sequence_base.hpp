@@ -419,7 +419,7 @@ public:
     constexpr auto ends_with(Needle&& needle, Cmp cmp = {}) -> bool;
 
     template <typename Value>
-        requires writable_sequence_of<Derived, Value const&>
+        requires writable_iterable_of<Derived, Value const&>
     constexpr auto fill(Value const& value) -> void;
 
     /// Returns a cursor pointing to the first occurrence of `value` in the sequence

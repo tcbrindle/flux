@@ -5,6 +5,7 @@
 
 #include <array>
 #include <chrono>
+#include <ranges>
 #include <vector>
 
 #include "test_utils.hpp"
@@ -45,6 +46,21 @@ constexpr bool test_fold()
         STATIC_CHECK(prod == 122'880);
     }
 
+    // Fold with non-sequence iterable
+    {
+        std::array arr{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+
+        auto view = arr
+                  | std::views::filter([](int i) { return i % 2 == 0; })
+                  | std::views::transform([](int i) { return i + i; });
+
+        auto prod = flux::fold(view, std::multiplies{}, int64_t{1});
+
+        static_assert(std::same_as<decltype(prod), int64_t>);
+
+        STATIC_CHECK(prod == 122'880);
+    }
+
     return true;
 }
 static_assert(test_fold());
@@ -79,6 +95,22 @@ constexpr bool test_fold_first()
         STATIC_CHECK(min.value() == -1);
     }
 
+    // can fold_first over a non-sequence iterable...
+    {
+        auto view = std::array{1, 2, 3, 4, 5} | std::views::filter(flux::pred::true_);
+        auto opt = flux::fold_first(view, std::plus{});
+        STATIC_CHECK(opt.has_value());
+        STATIC_CHECK(*opt == 15);
+    }
+
+    // including an empty one
+    {
+        auto view = std::array{1, 2, 3, 4, 5} | std::views::filter(flux::pred::false_);
+        auto opt = flux::fold_first(view, std::plus{});
+        STATIC_CHECK(not opt.has_value());
+    }
+
+
     return true;
 }
 static_assert(test_fold_first());
@@ -108,6 +140,14 @@ constexpr bool test_sum()
         STATIC_CHECK(s == 15s);
     }
 
+    // sum non-sequence iterable
+    {
+        auto s = flux::sum(std::array{1, 2, 3, 4, 5} | std::views::filter(flux::pred::odd));
+
+        static_assert(std::same_as<decltype(s), int>);
+        STATIC_CHECK(s == 9);
+    }
+
     return true;
 }
 static_assert(test_sum());
@@ -126,6 +166,14 @@ constexpr bool test_product()
 
         static_assert(std::same_as<decltype(p), double>);
         STATIC_CHECK(p == 2.0 * 3.5 * -1.0);
+    }
+
+    // product of non-sequence iterable
+    {
+        auto s = flux::product(std::array{1, 2, 3, 4, 5} | std::views::filter(flux::pred::odd));
+
+        static_assert(std::same_as<decltype(s), int>);
+        STATIC_CHECK(s == 15);
     }
 
     return true;
@@ -159,5 +207,11 @@ TEST_CASE("fold_first")
 TEST_CASE("sum")
 {
     bool result = test_sum();
+    REQUIRE(result);
+}
+
+TEST_CASE("product")
+{
+    bool result = test_product();
     REQUIRE(result);
 }
