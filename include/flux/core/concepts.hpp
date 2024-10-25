@@ -308,33 +308,35 @@ concept infinite_sequence =
     detail::is_infinite_seq<detail::traits_t<Seq>>;
 
 FLUX_EXPORT
-template <typename Seq>
-concept read_only_sequence =
-    sequence<Seq> &&
-    std::same_as<element_t<Seq>, const_element_t<Seq>>;
+template <typename It>
+concept read_only_iterable =
+    iterable<It> &&
+    std::same_as<element_t<It>, const_element_t<It>>;
 
 FLUX_EXPORT
-template <typename Seq>
-concept const_iterable_sequence =
-    // Seq and Seq const must both be sequences
-    sequence<Seq> && sequence<Seq const> &&
-    // Seq and Seq const must have the same cursor and value types
-    std::same_as<cursor_t<Seq>, cursor_t<Seq const>> &&
-    std::same_as<value_t<Seq>, value_t<Seq const>> &&
-    // Seq and Seq const must have the same const_element type
+template <typename It>
+concept const_iterable =
+    // It and It const must both be iterable
+    iterable<It> && iterable<It const> &&
+    // It and It const must have the same value type
+    std::same_as<value_t<It>, value_t<It const>> &&
+    // It and It const must have the same const_element type
 #ifdef FLUX_HAVE_CPP23_TUPLE_COMMON_REF
-    std::same_as<const_element_t<Seq>, const_element_t<Seq const>> &&
+    std::same_as<const_element_t<It>, const_element_t<It const>> &&
 #endif
-    // Seq and Seq const must model the same extended sequence concepts
-    (multipass_sequence<Seq> == multipass_sequence<Seq const>) &&
-    (bidirectional_sequence<Seq> == bidirectional_sequence<Seq const>) &&
-    (random_access_sequence<Seq> == random_access_sequence<Seq const>) &&
-    (contiguous_sequence<Seq> == contiguous_sequence<Seq const>) &&
-    (bounded_sequence<Seq> == bounded_sequence<Seq const>) &&
-    (sized_sequence<Seq> == sized_sequence<Seq const>) &&
-    (infinite_sequence<Seq> == infinite_sequence<Seq const>) &&
+    // It and It const must model the same extended sequence concepts,
+    // and if they are sequences they must have the same cursor type
+    (sequence<It> == sequence<It const>) &&
+    (!sequence<It> || (std::same_as<cursor_t<It>, cursor_t<It const>>)) &&
+    (multipass_sequence<It> == multipass_sequence<It const>) &&
+    (bidirectional_sequence<It> == bidirectional_sequence<It const>) &&
+    (random_access_sequence<It> == random_access_sequence<It const>) &&
+    (contiguous_sequence<It> == contiguous_sequence<It const>) &&
+    (bounded_sequence<It> == bounded_sequence<It const>) &&
+    (sized_sequence<It> == sized_sequence<It const>) &&
+    (infinite_sequence<It> == infinite_sequence<It const>) &&
     // If Seq is read-only, Seq const must be read-only as well
-    (!read_only_sequence<Seq> || read_only_sequence<Seq const>);
+    (!read_only_iterable<It> || read_only_iterable<It const>);
 
 namespace detail {
 

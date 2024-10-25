@@ -260,8 +260,8 @@ namespace {
             static int const& read_at(const_iter const&, int);
         };
     };
-    static_assert(flux::const_iterable_sequence<const_iter>);
-    static_assert(flux::const_iterable_sequence<const_iter const>);
+    static_assert(flux::const_iterable<const_iter>);
+    static_assert(flux::const_iterable<const_iter const>);
 
     // read_at(S const&) is not defined
     struct not_const_iter1 {
@@ -272,7 +272,7 @@ namespace {
             static int read_at(not_const_iter1&, int);
         };
     };
-    static_assert(not flux::const_iterable_sequence<not_const_iter1>);
+    static_assert(not flux::const_iterable<not_const_iter1>);
 
     // read_at(S) and read_at(S const) yield different types
     struct not_const_iter2 {
@@ -284,8 +284,8 @@ namespace {
             static double read_at(not_const_iter2 const&, int);
         };
     };
-    static_assert(not flux::const_iterable_sequence<not_const_iter2>);
-    static_assert(flux::const_iterable_sequence<not_const_iter2 const>);
+    static_assert(not flux::const_iterable<not_const_iter2>);
+    static_assert(flux::const_iterable<not_const_iter2 const>);
 
     // read_at(S const) weakens const qualification
     struct not_const_iter3 {
@@ -297,8 +297,8 @@ namespace {
             static int& read_at(not_const_iter3 const&, int);
         };
     };
-    static_assert(not flux::const_iterable_sequence<not_const_iter3>);
-    static_assert(flux::const_iterable_sequence<not_const_iter3 const>);
+    static_assert(not flux::const_iterable<not_const_iter3>);
+    static_assert(flux::const_iterable<not_const_iter3 const>);
 
     // S is bounded but S const is not
     struct not_const_iter4 {
@@ -311,8 +311,8 @@ namespace {
             static int last(not_const_iter4&);
         };
     };
-    static_assert(not flux::const_iterable_sequence<not_const_iter4>);
-    static_assert(flux::const_iterable_sequence<not_const_iter4 const>);
+    static_assert(not flux::const_iterable<not_const_iter4>);
+    static_assert(flux::const_iterable<not_const_iter4 const>);
 
     // S const is sized but S is not
     struct not_const_iter5 {
@@ -326,8 +326,8 @@ namespace {
             static int size(not_const_iter5 const&);
         };
     };
-    static_assert(not flux::const_iterable_sequence<not_const_iter5>);
-    static_assert(flux::const_iterable_sequence<not_const_iter5 const>);
+    static_assert(not flux::const_iterable<not_const_iter5>);
+    static_assert(flux::const_iterable<not_const_iter5 const>);
 
 }
 

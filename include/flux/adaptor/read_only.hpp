@@ -19,7 +19,7 @@ struct cast_to_const {
 };
 
 template <sequence Base>
-    requires (not read_only_sequence<Base>)
+    requires (not read_only_iterable<Base>)
 struct read_only_adaptor : map_adaptor<Base, cast_to_const<const_element_t<Base>>> {
 private:
     using map = map_adaptor<Base, cast_to_const<const_element_t<Base>>>;
@@ -61,9 +61,9 @@ public:
 struct read_only_fn {
     template <adaptable_sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const -> read_only_sequence auto
+    constexpr auto operator()(Seq&& seq) const -> read_only_iterable auto
     {
-        if constexpr (read_only_sequence<Seq>) {
+        if constexpr (read_only_iterable<Seq>) {
             return FLUX_FWD(seq);
         } else {
             return read_only_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq));

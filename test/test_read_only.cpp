@@ -19,7 +19,7 @@ constexpr bool test_read_only() {
         using S = decltype(seq);
 
         static_assert(flux::contiguous_sequence<S>);
-        static_assert(flux::read_only_sequence<S>);
+        static_assert(flux::read_only_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(flux::sized_sequence<S>);
         static_assert(std::same_as<flux::element_t<S>, int const&>);
@@ -38,7 +38,7 @@ constexpr bool test_read_only() {
         using S = decltype(seq);
 
         static_assert(flux::contiguous_sequence<S>);
-        static_assert(flux::read_only_sequence<S>);
+        static_assert(flux::read_only_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(flux::sized_sequence<S>);
         static_assert(std::same_as<flux::element_t<S>, int const&>);
@@ -59,7 +59,7 @@ constexpr bool test_read_only() {
         using S = decltype(seq);
 
         static_assert(flux::random_access_sequence<S>);
-        static_assert(flux::read_only_sequence<S>);
+        static_assert(flux::read_only_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(flux::sized_sequence<S>);
         static_assert(std::same_as<flux::element_t<S>, int const&&>);
@@ -81,10 +81,10 @@ constexpr bool test_read_only() {
         using S = decltype(seq);
 
         static_assert(flux::random_access_sequence<S>);
-        static_assert(flux::read_only_sequence<S>);
+        static_assert(flux::read_only_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(flux::sized_sequence<S>);
-        static_assert(flux::read_only_sequence<S>);
+        static_assert(flux::read_only_iterable<S>);
         static_assert(std::same_as<flux::element_t<S>, int const&&>);
         static_assert(std::same_as<flux::rvalue_element_t<S>, int const&&>);
         static_assert(std::same_as<flux::value_t<S>, int>);
@@ -102,7 +102,7 @@ constexpr bool test_read_only() {
         using S = decltype(seq);
 
         static_assert(flux::random_access_sequence<S>);
-        static_assert(flux::read_only_sequence<S>);
+        static_assert(flux::read_only_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(flux::sized_sequence<S>);
         static_assert(std::same_as<flux::element_t<S>, int>);
@@ -120,7 +120,7 @@ constexpr bool test_read_only() {
         using S = decltype(seq);
 
         static_assert(flux::random_access_sequence<S>);
-        static_assert(flux::read_only_sequence<S>);
+        static_assert(flux::read_only_iterable<S>);
         // This needs the C++23 tuple/pair converting constructors and
         // basic_common_reference specialisations to work properly
 #ifdef FLUX_HAVE_CPP23_TUPLE_COMMON_REF

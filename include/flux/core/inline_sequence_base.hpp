@@ -200,7 +200,7 @@ public:
         return std::invoke(FLUX_FWD(func), std::move(derived()), FLUX_FWD(args)...);
     }
 
-    constexpr auto ref() const& requires const_iterable_sequence<Derived>;
+    constexpr auto ref() const& requires const_iterable<Derived>;
 
     auto ref() const&& -> void = delete;
 

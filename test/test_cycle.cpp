@@ -22,7 +22,7 @@ constexpr bool test_cycle() {
         static_assert(flux::sequence<C>);
         static_assert(flux::multipass_sequence<C>);
         static_assert(flux::infinite_sequence<C>);
-        static_assert(flux::read_only_sequence<C>);
+        static_assert(flux::read_only_iterable<C>);
         static_assert(not flux::sized_sequence<C>); // infinite
         static_assert(not flux::bounded_sequence<C>); // infinite
         static_assert(flux::bidirectional_sequence<C>);
@@ -66,7 +66,7 @@ constexpr bool test_cycle() {
 
         static_assert(flux::sequence<C>);
         static_assert(flux::multipass_sequence<C>);
-        static_assert(flux::read_only_sequence<C>);
+        static_assert(flux::read_only_iterable<C>);
         static_assert(not flux::infinite_sequence<C>);
         static_assert(flux::sized_sequence<C>); // not infinite
         static_assert(flux::bounded_sequence<C>);
@@ -97,7 +97,7 @@ constexpr bool test_cycle() {
 
         static_assert(flux::sequence<C>);
         static_assert(flux::multipass_sequence<C>);
-        static_assert(flux::read_only_sequence<C>);
+        static_assert(flux::read_only_iterable<C>);
         static_assert(not flux::infinite_sequence<C>);
         static_assert(flux::sized_sequence<C>); // not infinite
         static_assert(flux::bounded_sequence<C>);
@@ -130,7 +130,7 @@ constexpr bool test_cycle() {
         static_assert(flux::sequence<C>);
         static_assert(flux::multipass_sequence<C>);
         static_assert(flux::infinite_sequence<C>);
-        static_assert(flux::read_only_sequence<C>);
+        static_assert(flux::read_only_iterable<C>);
         static_assert(not flux::sized_sequence<C>); // infinite
         static_assert(not flux::bounded_sequence<C>); // infinite
         static_assert(flux::bidirectional_sequence<C>);
@@ -157,7 +157,7 @@ constexpr bool test_cycle() {
         static_assert(flux::sequence<C>);
         static_assert(flux::multipass_sequence<C>);
         static_assert(flux::infinite_sequence<C>);
-        static_assert(flux::read_only_sequence<C>);
+        static_assert(flux::read_only_iterable<C>);
         static_assert(not flux::sized_sequence<C>); // infinite
         static_assert(not flux::bounded_sequence<C>); // infinite
         static_assert(flux::bidirectional_sequence<C>);
@@ -228,7 +228,7 @@ constexpr bool test_bounded_cycle()
         static_assert(flux::sequence<C>);
         static_assert(flux::multipass_sequence<C>);
         static_assert(not flux::infinite_sequence<C>);
-        static_assert(flux::read_only_sequence<C>);
+        static_assert(flux::read_only_iterable<C>);
         static_assert(flux::sized_sequence<C>);
         static_assert(flux::bounded_sequence<C>);
         static_assert(flux::bidirectional_sequence<C>);

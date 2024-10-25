@@ -111,7 +111,7 @@ struct passthrough_traits_base : default_sequence_traits {
     }
 };
 
-template <sequence Base>
+template <iterable Base>
 struct ref_adaptor : inline_sequence_base<ref_adaptor<Base>> {
 private:
     Base* base_;
@@ -155,7 +155,7 @@ template <typename T>
 inline constexpr bool is_ref_adaptor<ref_adaptor<T>> = true;
 
 struct mut_ref_fn {
-    template <sequence Seq>
+    template <iterable Seq>
         requires (!std::is_const_v<Seq>)
     [[nodiscard]]
     constexpr auto operator()(Seq& seq) const
@@ -169,7 +169,7 @@ struct mut_ref_fn {
 };
 
 struct ref_fn {
-    template <const_iterable_sequence Seq>
+    template <const_iterable Seq>
         requires (!is_ref_adaptor<Seq>)
     [[nodiscard]]
     constexpr auto operator()(Seq const& seq) const
@@ -177,7 +177,7 @@ struct ref_fn {
         return ref_adaptor<Seq const>(seq);
     }
 
-    template <const_iterable_sequence Seq>
+    template <const_iterable Seq>
     [[nodiscard]]
     constexpr auto operator()(ref_adaptor<Seq> ref) const
     {
@@ -250,7 +250,7 @@ FLUX_EXPORT inline constexpr auto from_fwd_ref = detail::from_fwd_ref_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::ref() const&
-    requires const_iterable_sequence<D>
+    requires const_iterable<D>
 {
     return flux::ref(derived());
 }
