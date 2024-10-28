@@ -386,13 +386,11 @@ public:
      */
 
     /// Returns `true` if every element of the sequence satisfies the predicate
-    template <typename Pred>
-        requires std::predicate<Pred&, element_t<Derived>>
+    template <predicate_for<Derived> Pred>
     [[nodiscard]]
     constexpr auto all(Pred pred);
 
-    template <typename Pred>
-        requires std::predicate<Pred&, element_t<Derived>>
+    template <predicate_for<Derived> Pred>
     [[nodiscard]]
     constexpr auto any(Pred pred);
 
@@ -484,8 +482,7 @@ public:
         requires weak_ordering_for<Cmp, Derived>
     constexpr auto minmax(Cmp cmp = Cmp{});
 
-    template <typename Pred>
-        requires std::predicate<Pred&, element_t<Derived>>
+    template <predicate_for<Derived> Pred>
     [[nodiscard]]
     constexpr auto none(Pred pred);
 

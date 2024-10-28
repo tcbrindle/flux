@@ -84,6 +84,10 @@ FLUX_EXPORT
 template <typename Fn, typename Sig>
 concept func = detail::func_<Fn const&, Sig> && func_mut<Fn, Sig>;
 
+FLUX_EXPORT
+template <typename Fn, typename It>
+concept predicate_for = func<Fn, auto(element_t<It>) -> bool>;
+
 } // namespace flux
 
 #endif // FLUX_CORE_OPERATION_REQUIREMENTS_HPP_INCLUDED

@@ -13,8 +13,7 @@ namespace flux {
 namespace all_detail {
 
 struct fn {
-    template <iterable It, typename Pred>
-        requires std::predicate<Pred&, element_t<It>>
+    template <iterable It, predicate_for<It> Pred>
     constexpr bool operator()(It&& it, Pred pred) const
     {
         return iterate(it, [&](auto&& elem) {
@@ -30,8 +29,7 @@ FLUX_EXPORT inline constexpr auto all = all_detail::fn{};
 namespace none_detail {
 
 struct fn {
-    template <iterable It, typename Pred>
-        requires std::predicate<Pred&, element_t<It>>
+    template <iterable It, predicate_for<It> Pred>
     constexpr bool operator()(It&& it, Pred pred) const
     {
         return iterate(it, [&](auto&& elem) {
@@ -47,8 +45,7 @@ FLUX_EXPORT inline constexpr auto none = none_detail::fn{};
 namespace any_detail {
 
 struct fn {
-    template <iterable It, typename Pred>
-        requires std::predicate<Pred&, element_t<It>>
+    template <iterable It, predicate_for<It> Pred>
     constexpr bool operator()(It&& it, Pred pred) const
     {
         return !iterate(it, [&](auto&& elem) {
@@ -62,24 +59,21 @@ struct fn {
 FLUX_EXPORT inline constexpr auto any = any_detail::fn{};
 
 template <typename D>
-template <typename Pred>
-    requires std::predicate<Pred&, element_t<D>>
+template <predicate_for<D> Pred>
 constexpr auto inline_sequence_base<D>::all(Pred pred)
 {
     return flux::all(derived(), std::move(pred));
 }
 
 template <typename D>
-template <typename Pred>
-    requires std::predicate<Pred&, element_t<D>>
+template <predicate_for<D> Pred>
 constexpr auto inline_sequence_base<D>::any(Pred pred)
 {
     return flux::any(derived(), std::move(pred));
 }
 
 template <typename D>
-template <typename Pred>
-    requires std::predicate<Pred&, element_t<D>>
+template <predicate_for<D> Pred>
 constexpr auto inline_sequence_base<D>::none(Pred pred)
 {
     return flux::none(derived(), std::move(pred));
