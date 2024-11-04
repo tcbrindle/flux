@@ -36,10 +36,6 @@ static_assert(std::invocable<find_if_fn, int[10], const_int_comp>);
 using const_int_ref_comp = auto(const int& x) -> bool;
 static_assert(std::invocable<find_if_fn, int[10], const_int_ref_comp>);
 
-// Potential modification during find not allowed
-using int_ref_comp = auto(int& x) -> bool;
-// static_assert(not std::invocable<find_if_fn, int[10], int_ref_comp>);
-
 // Incompatible predicate type
 using S_comp = auto(S x) -> bool;
 static_assert(not std::invocable<find_if_fn, int[10], S_comp>);
