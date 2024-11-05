@@ -44,7 +44,7 @@ static_assert(not std::invocable<find_if_not_fn, int[10], S_comp>);
 using not_a_predicate = auto(int x) -> S;
 static_assert(not std::invocable<find_if_not_fn, int[10], not_a_predicate>);
 
-constexpr bool test_find_if()
+constexpr bool test_find_if_not()
 {
     {
         int const ints[] = {0, 1, 2, 3, 4, 5};
@@ -99,12 +99,14 @@ constexpr bool test_find_if()
 
     return true;
 }
-static_assert(test_find_if());
+static_assert(test_find_if_not());
 
 } // namespace
 
 TEST_CASE("find_if_not")
 {
+    REQUIRE(test_find_if_not());
+
     {
         std::vector<int> vec {1, 2, 3, 4, 5};
         auto is_odd = [](int x) { return x % 2 == 1; };

@@ -105,6 +105,8 @@ static_assert(test_find_if());
 
 TEST_CASE("find_if")
 {
+    REQUIRE(test_find_if());
+
     {
         std::vector<int> vec {1, 2, 3, 4, 5};
         auto is_greater_than_3 = [](int x) { return x > 3; };
