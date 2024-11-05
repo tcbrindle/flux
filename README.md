@@ -80,8 +80,7 @@ Flux requires a recent compiler with good support for the C++20 standard. It is 
 * GCC 11.3 and newer
 * LLVM Clang 16 and newer
 * MSVC 2022
-
-AppleClang is currently not usable due to missing C++20 support.
+* AppleClang/Xcode 16
 
 ## The Flux difference ##
 
