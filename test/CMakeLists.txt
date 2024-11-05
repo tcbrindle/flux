@@ -51,6 +51,8 @@ add_executable(test-flux
     test_filter.cpp
     test_filter_map.cpp
     test_find.cpp
+    test_find_if.cpp
+    test_find_if_not.cpp
     test_find_min_max.cpp
     test_flatten.cpp
     test_flatten_with.cpp
