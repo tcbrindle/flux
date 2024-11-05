@@ -8859,14 +8859,10 @@ namespace detail {
 template <std::size_t N>
 inline constexpr auto variant_emplace =
 []<typename... Types>(std::variant<Types...>& variant, auto&&... args) {
-    if constexpr (__cpp_lib_variant >= 202106L) {
-        variant.template emplace<N>(FLUX_FWD(args)...);
+    if (std::is_constant_evaluated()) {
+        variant = std::variant<Types...>(std::in_place_index<N>, FLUX_FWD(args)...); // LCOV_EXCL_LINE
     } else {
-        if (std::is_constant_evaluated()) {
-            variant = std::variant<Types...>(std::in_place_index<N>, FLUX_FWD(args)...); // LCOV_EXCL_LINE
-        } else {
-            variant.template emplace<N>(FLUX_FWD(args)...);
-        }
+        variant.template emplace<N>(FLUX_FWD(args)...);
     }
 };
 
