@@ -358,7 +358,26 @@ concept trivially_copyable_sequence =
     std::is_trivially_copyable_v<Seq> &&
     sequence<Seq>;
 
+template <typename It>
+concept rvalue_iterable =
+    std::is_object_v<It> &&
+    std::move_constructible<It> &&
+    iterable<It>;
+
+template <typename It>
+concept trivially_copyable_lvalue_iterable =
+    std::is_lvalue_reference_v<It> &&
+    std::copyable<std::decay_t<It>> &&
+    std::is_trivially_copyable_v<std::decay_t<It>> &&
+    iterable<std::decay_t<It>>;
+
 }
+
+FLUX_EXPORT
+template <typename It>
+concept sink_iterable =
+    (detail::rvalue_iterable<It> || detail::trivially_copyable_lvalue_iterable<It>)
+    && !detail::is_ilist<It>;
 
 FLUX_EXPORT
 template <typename Seq>
