@@ -269,17 +269,17 @@ concept contiguous_sequence =
 
 namespace detail {
 
-template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
-concept sized_sequence_requirements =
-    requires (Seq& seq) {
-        { Traits::size(seq) } -> std::convertible_to<distance_t>;
+template <typename It, typename Traits = sequence_traits<std::remove_cvref_t<It>>>
+concept sized_iterable_requirements =
+    requires (It& it) {
+        { Traits::size(it) } -> std::convertible_to<distance_t>;
     };
 
 } // namespace detail
 
 FLUX_EXPORT
-template <typename Seq>
-concept sized_sequence = sequence<Seq> && detail::sized_sequence_requirements<Seq>;
+template <typename It>
+concept sized_iterable = iterable<It> && detail::sized_iterable_requirements<It>;
 
 FLUX_EXPORT
 template <typename It, typename T>
@@ -333,7 +333,7 @@ concept const_iterable =
     (random_access_sequence<It> == random_access_sequence<It const>) &&
     (contiguous_sequence<It> == contiguous_sequence<It const>) &&
     (bounded_sequence<It> == bounded_sequence<It const>) &&
-    (sized_sequence<It> == sized_sequence<It const>) &&
+    (sized_iterable<It> == sized_iterable<It const>) &&
     (infinite_sequence<It> == infinite_sequence<It const>) &&
     // If Seq is read-only, Seq const must be read-only as well
     (!read_only_iterable<It> || read_only_iterable<It const>);

@@ -184,7 +184,7 @@ public:
                                        cursor_type const& from,
                                        cursor_type const& to) -> distance_t
             requires random_access_sequence<decltype(self.base_)> &&
-                     sized_sequence<decltype(self.base_)>
+                     sized_iterable<decltype(self.base_)>
         {
             auto dist = num::cast<distance_t>(to.n) - num::cast<distance_t>(from.n);
             dist = num::mul(dist, flux::size(self.base_));
@@ -201,7 +201,7 @@ public:
         }
 
         static constexpr auto size(auto& self) -> distance_t
-            requires (!IsInfinite && sized_sequence<Base>)
+            requires (!IsInfinite && sized_iterable<Base>)
         {
             return num::mul(flux::size(self.base_),
                             num::cast<flux::distance_t>(self.data_.count));

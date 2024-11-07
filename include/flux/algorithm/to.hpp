@@ -133,7 +133,7 @@ constexpr auto to(It&& it, Args&&... args) -> Container
             return Container(view_.begin(), view_.end(), FLUX_FWD(args)...);
         } else {
             auto c = Container(FLUX_FWD(args)...);
-            if constexpr (sized_sequence<It> && detail::reservable_container<Container>) {
+            if constexpr (sized_iterable<It> && detail::reservable_container<Container>) {
                 c.reserve(flux::usize(it));
             }
             flux::output_to(it, detail::make_inserter<element_t<It>>(c));

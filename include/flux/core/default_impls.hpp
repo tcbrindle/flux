@@ -153,7 +153,7 @@ struct sequence_traits<std::reference_wrapper<Seq>> : default_sequence_traits {
     }
 
     static constexpr auto size(self_t self) -> distance_t
-        requires sized_sequence<Seq>
+        requires sized_iterable<Seq>
     {
         return flux::size(self.get());
     }

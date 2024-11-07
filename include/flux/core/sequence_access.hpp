@@ -124,20 +124,20 @@ struct last_fn {
 };
 
 struct size_fn {
-    template <sized_sequence Seq>
+    template <sized_iterable It>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const -> distance_t
+    constexpr auto operator()(It&& it) const -> distance_t
     {
-        return traits_t<Seq>::size(seq);
+        return traits_t<It>::size(it);
     }
 };
 
 struct usize_fn {
-    template <sized_sequence Seq>
+    template <sized_iterable It>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const -> std::size_t
+    constexpr auto operator()(It&& it) const -> std::size_t
     {
-        return num::unchecked_cast<std::size_t>(size_fn{}(seq));
+        return num::unchecked_cast<std::size_t>(size_fn{}(it));
     }
 };
 
@@ -252,11 +252,11 @@ struct prev_fn {
 
 struct is_empty_fn {
     template <sequence Seq>
-        requires (multipass_sequence<Seq> || sized_sequence<Seq>)
+        requires (multipass_sequence<Seq> || sized_iterable<Seq>)
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const -> bool
     {
-        if constexpr (sized_sequence<Seq>) {
+        if constexpr (sized_iterable<Seq>) {
             return flux::size(seq) == 0;
         } else {
             return is_last(seq, first(seq));

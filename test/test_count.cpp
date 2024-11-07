@@ -26,7 +26,7 @@ constexpr bool test_count()
         STATIC_CHECK(flux::count(arr) == 5);
 
         auto seq = flux::take_while(flux::ref(arr), [](int) { return true; });
-        static_assert(not flux::sized_sequence<decltype(seq)>);
+        static_assert(not flux::sized_iterable<decltype(seq)>);
 
         STATIC_CHECK(flux::count(seq) == 5);
     }
@@ -36,7 +36,7 @@ constexpr bool test_count()
         STATIC_CHECK(flux::ref(arr).count() == 5);
 
         auto seq = flux::take_while(flux::ref(arr), [](int) { return true; });
-        static_assert(not flux::sized_sequence<decltype(seq)>);
+        static_assert(not flux::sized_iterable<decltype(seq)>);
 
         STATIC_CHECK(seq.count() == 5);
     }

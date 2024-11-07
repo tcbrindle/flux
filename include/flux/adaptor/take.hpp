@@ -112,7 +112,7 @@ public:
         }
 
         static constexpr auto size(auto& self)
-            requires sized_sequence<Base> || infinite_sequence<Base>
+            requires sized_iterable<Base> || infinite_sequence<Base>
         {
             if constexpr (infinite_sequence<Base>) {
                 return self.count_;
@@ -122,7 +122,7 @@ public:
         }
 
         static constexpr auto last(auto& self) -> cursor_type
-            requires (random_access_sequence<Base> && sized_sequence<Base>) ||
+            requires (random_access_sequence<Base> && sized_iterable<Base>) ||
                       infinite_sequence<Base>
         {
             return cursor_type{

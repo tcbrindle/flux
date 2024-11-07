@@ -24,11 +24,11 @@ constexpr bool test_drop() {
         using D = decltype(dropped);
 
         static_assert(flux::contiguous_sequence<D>);
-        static_assert(flux::sized_sequence<D>);
+        static_assert(flux::sized_iterable<D>);
         static_assert(flux::bounded_sequence<D>);
 
         static_assert(flux::contiguous_sequence<D const>);
-        static_assert(flux::sized_sequence<D const>);
+        static_assert(flux::sized_iterable<D const>);
         static_assert(flux::bounded_sequence<D const>);
 
         STATIC_CHECK(flux::size(dropped) == 5);
@@ -48,11 +48,11 @@ constexpr bool test_drop() {
         using D = decltype(dropped);
 
         static_assert(flux::contiguous_sequence<D>);
-        static_assert(flux::sized_sequence<D>);
+        static_assert(flux::sized_iterable<D>);
         static_assert(flux::bounded_sequence<D>);
 
         static_assert(flux::contiguous_sequence<D const>);
-        static_assert(flux::sized_sequence<D const>);
+        static_assert(flux::sized_iterable<D const>);
         static_assert(flux::bounded_sequence<D const>);
 
         STATIC_CHECK(flux::size(dropped) == 5);
@@ -71,7 +71,7 @@ constexpr bool test_drop() {
 
         static_assert(flux::sequence<D>);
         static_assert(not flux::multipass_sequence<D>);
-        static_assert(flux::sized_sequence<D>);
+        static_assert(flux::sized_iterable<D>);
         static_assert(flux::bounded_sequence<D>);
 
         STATIC_CHECK(flux::size(dropped) == 5);

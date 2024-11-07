@@ -21,7 +21,7 @@ constexpr bool test_read_only() {
         static_assert(flux::contiguous_sequence<S>);
         static_assert(flux::read_only_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
         static_assert(std::same_as<flux::element_t<S>, int const&>);
         static_assert(std::same_as<flux::rvalue_element_t<S>, int const&&>);
         static_assert(std::same_as<flux::value_t<S>, int>);
@@ -40,7 +40,7 @@ constexpr bool test_read_only() {
         static_assert(flux::contiguous_sequence<S>);
         static_assert(flux::read_only_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
         static_assert(std::same_as<flux::element_t<S>, int const&>);
         static_assert(std::same_as<flux::rvalue_element_t<S>, int const&&>);
         static_assert(std::same_as<flux::value_t<S>, int>);
@@ -61,7 +61,7 @@ constexpr bool test_read_only() {
         static_assert(flux::random_access_sequence<S>);
         static_assert(flux::read_only_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
         static_assert(std::same_as<flux::element_t<S>, int const&&>);
         static_assert(std::same_as<flux::rvalue_element_t<S>, int const&&>);
         static_assert(std::same_as<flux::value_t<S>, int>);
@@ -83,7 +83,7 @@ constexpr bool test_read_only() {
         static_assert(flux::random_access_sequence<S>);
         static_assert(flux::read_only_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
         static_assert(flux::read_only_iterable<S>);
         static_assert(std::same_as<flux::element_t<S>, int const&&>);
         static_assert(std::same_as<flux::rvalue_element_t<S>, int const&&>);
@@ -104,7 +104,7 @@ constexpr bool test_read_only() {
         static_assert(flux::random_access_sequence<S>);
         static_assert(flux::read_only_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
         static_assert(std::same_as<flux::element_t<S>, int>);
         static_assert(std::same_as<flux::rvalue_element_t<S>, int>);
         static_assert(std::same_as<flux::value_t<S>, int>);

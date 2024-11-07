@@ -26,14 +26,14 @@ constexpr bool test_chain()
 
         static_assert(flux::random_access_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
         static_assert(std::same_as<flux::element_t<S>, int&>);
         static_assert(std::same_as<flux::value_t<S>, int>);
         static_assert(std::same_as<flux::rvalue_element_t<S>, int&&>);
 
         static_assert(flux::random_access_sequence<S const>);
         static_assert(flux::bounded_sequence<S const>);
-        static_assert(flux::sized_sequence<S const>);
+        static_assert(flux::sized_iterable<S const>);
         static_assert(std::same_as<flux::element_t<S const>, int&>);
         static_assert(std::same_as<flux::value_t<S const>, int>);
         static_assert(std::same_as<flux::rvalue_element_t<S const>, int&&>);
@@ -60,14 +60,14 @@ constexpr bool test_chain()
 
         static_assert(flux::random_access_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
         static_assert(std::same_as<flux::element_t<S>, int&>);
         static_assert(std::same_as<flux::value_t<S>, int>);
         static_assert(std::same_as<flux::rvalue_element_t<S>, int&&>);
 
         static_assert(flux::random_access_sequence<S const>);
         static_assert(flux::bounded_sequence<S const>);
-        static_assert(flux::sized_sequence<S const>);
+        static_assert(flux::sized_iterable<S const>);
         static_assert(std::same_as<flux::element_t<S const>, int const&>);
         static_assert(std::same_as<flux::value_t<S const>, int>);
         static_assert(std::same_as<flux::rvalue_element_t<S const>, int const&&>);

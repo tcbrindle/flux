@@ -34,7 +34,7 @@ constexpr bool test_cartesian_power()
         static_assert(flux::random_access_sequence<C>);
         static_assert(not flux::contiguous_sequence<C>);
         static_assert(flux::bounded_sequence<C>);
-        static_assert(flux::sized_sequence<C>);
+        static_assert(flux::sized_iterable<C>);
 
         static_assert(flux::sequence<C const>);
         static_assert(flux::multipass_sequence<C const>);
@@ -42,7 +42,7 @@ constexpr bool test_cartesian_power()
         static_assert(flux::random_access_sequence<C const>);
         static_assert(not flux::contiguous_sequence<C const>);
         static_assert(flux::bounded_sequence<C const>);
-        static_assert(flux::sized_sequence<C const>);
+        static_assert(flux::sized_iterable<C const>);
 
         static_assert(std::same_as<flux::element_t<C>, std::tuple<int&>>);
         static_assert(std::same_as<flux::value_t<C>, std::tuple<int>>);
@@ -90,7 +90,7 @@ constexpr bool test_cartesian_power()
         static_assert(flux::random_access_sequence<C>);
         static_assert(not flux::contiguous_sequence<C>);
         static_assert(flux::bounded_sequence<C>);
-        static_assert(flux::sized_sequence<C>);
+        static_assert(flux::sized_iterable<C>);
 
         static_assert(flux::sequence<C const>);
         static_assert(flux::multipass_sequence<C const>);
@@ -98,7 +98,7 @@ constexpr bool test_cartesian_power()
         static_assert(flux::random_access_sequence<C const>);
         static_assert(not flux::contiguous_sequence<C const>);
         static_assert(flux::bounded_sequence<C const>);
-        static_assert(flux::sized_sequence<C const>);
+        static_assert(flux::sized_iterable<C const>);
 
         static_assert(std::same_as<flux::element_t<C>, std::tuple<int&, int&>>);
         static_assert(std::same_as<flux::value_t<C>, std::tuple<int, int>>);
@@ -157,7 +157,7 @@ constexpr bool test_cartesian_power()
         static_assert(flux::random_access_sequence<C>);
         static_assert(not flux::contiguous_sequence<C>);
         static_assert(flux::bounded_sequence<C>);
-        static_assert(flux::sized_sequence<C>);
+        static_assert(flux::sized_iterable<C>);
 
         static_assert(flux::sequence<C const>);
         static_assert(flux::multipass_sequence<C const>);
@@ -165,7 +165,7 @@ constexpr bool test_cartesian_power()
         static_assert(flux::random_access_sequence<C const>);
         static_assert(not flux::contiguous_sequence<C const>);
         static_assert(flux::bounded_sequence<C const>);
-        static_assert(flux::sized_sequence<C const>);
+        static_assert(flux::sized_iterable<C const>);
 
         static_assert(std::same_as<flux::element_t<C>, std::tuple<char&, char&, char&>>);
         static_assert(std::same_as<flux::value_t<C>, std::tuple<char, char, char>>);

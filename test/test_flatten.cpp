@@ -46,7 +46,7 @@ constexpr bool test_flatten_single_pass()
         using S = decltype(seq);
         static_assert(flux::sequence<S>);
         static_assert(not flux::multipass_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
 
         STATIC_CHECK(check_equal(seq, {1, 2, 3, 4, 5, 6, 7, 8, 9}));
@@ -65,7 +65,7 @@ constexpr bool test_flatten_single_pass()
         using S = decltype(seq);
         static_assert(flux::sequence<S>);
         static_assert(not flux::multipass_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
 
         STATIC_CHECK(check_equal(seq, {1, 2, 3, 4, 5, 6, 7, 8, 9}));
@@ -84,7 +84,7 @@ constexpr bool test_flatten_single_pass()
         using S = decltype(seq);
         static_assert(flux::sequence<S>);
         static_assert(not flux::multipass_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
 
         STATIC_CHECK(check_equal(seq, {1, 2, 3}));
@@ -110,7 +110,7 @@ constexpr bool test_flatten_single_pass()
         using S = decltype(seq);
         static_assert(flux::sequence<S>);
         static_assert(not flux::multipass_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
 
         STATIC_CHECK(seq.count() == 0);
@@ -128,7 +128,7 @@ constexpr bool test_flatten_single_pass()
         using S = decltype(seq);
         static_assert(flux::sequence<S>);
         static_assert(not flux::multipass_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
 
         STATIC_CHECK(check_equal(seq, {1, 2, 3, 4, 5, 6, 7, 8, 9}));
@@ -203,7 +203,7 @@ constexpr bool test_flatten_multipass()
 
         using S = decltype(seq);
         static_assert(flux::bidirectional_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
 
         STATIC_CHECK(seq.is_empty());
@@ -220,7 +220,7 @@ constexpr bool test_flatten_multipass()
 
         using S = decltype(seq);
         static_assert(flux::bidirectional_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
 
         STATIC_CHECK(check_equal(seq, {1, 2, 3, 4, 5, 6, 7, 8, 9}));

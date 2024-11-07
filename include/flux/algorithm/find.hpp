@@ -31,7 +31,7 @@ public:
     constexpr auto operator()(Seq&& seq, Value const& value) const -> cursor_t<Seq>
     {
         constexpr auto can_memchr = 
-            contiguous_sequence<Seq> && sized_sequence<Seq> && 
+            contiguous_sequence<Seq> && sized_iterable<Seq> &&
             std::same_as<Value, value_t<Seq>> &&
             flux::detail::any_of<value_t<Seq>, char, signed char, unsigned char, char8_t, std::byte>;
 

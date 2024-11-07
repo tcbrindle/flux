@@ -129,7 +129,7 @@ public:
         }
 
         static constexpr auto size(self_t& self) -> distance_t
-            requires sized_sequence<Base>
+            requires sized_iterable<Base>
         {
             if constexpr (Mode == scan_mode::exclusive) {
                 return num::add(flux::size(self.base_), distance_t{1});

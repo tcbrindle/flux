@@ -26,7 +26,7 @@ constexpr bool test_pairwise_map() {
         static_assert(flux::bidirectional_sequence<S>);
         static_assert(flux::random_access_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
 
         STATIC_CHECK(seq.size() ==  4);
 
@@ -45,7 +45,7 @@ constexpr bool test_pairwise_map() {
         static_assert(flux::bidirectional_sequence<S>);
         static_assert(flux::random_access_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
 
         STATIC_CHECK(flux::size(seq) ==  4);
 
@@ -109,7 +109,7 @@ constexpr bool test_adjacent_map()
         static_assert(flux::bidirectional_sequence<S>);
         static_assert(flux::random_access_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
 
         STATIC_CHECK(seq.size() ==  7);
 
@@ -128,7 +128,7 @@ constexpr bool test_adjacent_map()
         static_assert(flux::bidirectional_sequence<S>);
         static_assert(flux::random_access_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
 
         STATIC_CHECK(flux::size(seq) ==  7);
 

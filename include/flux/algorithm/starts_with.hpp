@@ -17,7 +17,7 @@ struct starts_with_fn {
         requires std::predicate<Cmp&, element_t<Haystack>, element_t<Needle>>
     constexpr auto operator()(Haystack&& haystack, Needle&& needle, Cmp cmp = Cmp{}) const -> bool
     {
-        if constexpr (sized_sequence<Haystack> && sized_sequence<Needle>) {
+        if constexpr (sized_iterable<Haystack> && sized_iterable<Needle>) {
             if (flux::size(haystack) < flux::size(needle)) {
                 return false;
             }

@@ -107,7 +107,7 @@ public:
     }
 
     static constexpr auto size(auto& self) -> distance_t
-        requires sized_sequence<Base>
+        requires sized_iterable<Base>
     {
         auto s = (flux::size(self.base_) - N) + 1;
         return (cmp::max)(s, distance_t{0});

@@ -34,7 +34,7 @@ public:
     {
         constexpr bool can_memcpy =
             contiguous_sequence<Seq> &&
-            sized_sequence<Seq> &&
+            sized_iterable<Seq> &&
             std::contiguous_iterator<Iter> &&
             std::is_trivially_copyable_v<value_t<Seq>>;
 

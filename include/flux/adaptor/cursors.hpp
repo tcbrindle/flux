@@ -73,7 +73,7 @@ public:
         }
 
         static constexpr auto size(auto& self) -> distance_t
-            requires sized_sequence<Base>
+            requires sized_iterable<Base>
         {
             return flux::size(self.base_);
         }

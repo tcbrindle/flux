@@ -287,7 +287,7 @@ public:
 
     template <typename Self>
     static constexpr auto size(Self& self)
-        requires (sized_sequence<const_like_t<Self, Bases>> && ...)
+        requires (sized_iterable<const_like_t<Self, Bases>> && ...)
     {
         return std::apply([](auto&... bases) { return (flux::size(bases) + ...); },
                           self.bases_);

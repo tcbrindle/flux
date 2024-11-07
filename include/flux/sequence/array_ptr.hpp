@@ -48,7 +48,7 @@ public:
     template <typename Seq>
         requires (!decays_to<Seq, array_ptr> &&
                   contiguous_sequence<Seq> &&
-                  sized_sequence<Seq> &&
+                  sized_iterable<Seq> &&
                   detail::non_slicing_ptr_convertible<std::remove_reference_t<element_t<Seq>>, T>)
     constexpr explicit array_ptr(Seq& seq)
         : data_(flux::data(seq)),
@@ -57,7 +57,7 @@ public:
 
     template <typename Seq>
         requires (contiguous_sequence<Seq> &&
-                  sized_sequence<Seq> &&
+                  sized_iterable<Seq> &&
                   detail::non_slicing_ptr_convertible<std::remove_reference_t<element_t<Seq>>, T>)
     constexpr array_ptr(detail::ref_adaptor<Seq> ref)
         : data_(flux::data(ref)),

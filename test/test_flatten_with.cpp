@@ -26,7 +26,7 @@ constexpr bool test_flatten_with_single_pass()
         using S = decltype(seq);
         static_assert(flux::sequence<S>);
         static_assert(not flux::multipass_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(std::same_as<flux::element_t<S>, char const&>);
         static_assert(std::same_as<flux::value_t<S>, char>);
@@ -43,7 +43,7 @@ constexpr bool test_flatten_with_single_pass()
         using S = decltype(seq);
         static_assert(flux::sequence<S>);
         static_assert(not flux::multipass_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
 
         STATIC_CHECK(check_equal(seq, "111-222-333"sv));
@@ -65,7 +65,7 @@ constexpr bool test_flatten_with_single_pass()
         using S = decltype(seq);
         static_assert(flux::sequence<S>);
         static_assert(not flux::multipass_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
 
         STATIC_CHECK(check_equal(seq, "111222333"sv));
@@ -82,7 +82,7 @@ constexpr bool test_flatten_with_single_pass()
         using S = decltype(seq);
         static_assert(flux::sequence<S>);
         static_assert(not flux::multipass_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
 
         STATIC_CHECK(check_equal(seq, "123--456--7-89"sv));
@@ -97,7 +97,7 @@ constexpr bool test_flatten_with_single_pass()
         using S = decltype(seq);
         static_assert(flux::sequence<S>);
         static_assert(not flux::multipass_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
 
         STATIC_CHECK(seq.count() == 0);
@@ -116,7 +116,7 @@ constexpr bool test_flatten_with_multipass()
 
         using S = decltype(seq);
         static_assert(flux::bidirectional_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(std::same_as<flux::element_t<S>, char const&>);
         static_assert(std::same_as<flux::value_t<S>, char>);

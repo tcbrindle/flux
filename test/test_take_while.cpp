@@ -31,7 +31,7 @@ constexpr bool test_take_while()
 
         static_assert(flux::random_access_sequence<S>);
         static_assert(not flux::bounded_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
 
         STATIC_CHECK(check_equal(
             seq, {10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24}));
@@ -45,7 +45,7 @@ constexpr bool test_take_while()
 
         static_assert(flux::random_access_sequence<S>);
         static_assert(not flux::bounded_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
 
         STATIC_CHECK(check_equal(seq, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}));
     }

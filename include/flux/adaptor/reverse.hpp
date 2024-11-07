@@ -112,7 +112,7 @@ public:
         }
 
         static constexpr auto size(auto& self) -> distance_t
-            requires sized_sequence<decltype((self.base_))>
+            requires sized_iterable<decltype((self.base_))>
         {
             return flux::size(self.base_);
         }

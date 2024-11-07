@@ -41,14 +41,14 @@ public:
         }
 
         static constexpr auto size(auto& self)
-            requires sized_sequence<Base>
+            requires sized_iterable<Base>
         {
             return (cmp::max)(num::sub(flux::size(self.base()), self.count_),
                               distance_t{0});
         }
 
         static constexpr auto data(auto& self)
-            requires contiguous_sequence<Base> && sized_sequence<Base>
+            requires contiguous_sequence<Base> && sized_iterable<Base>
         {
             return flux::data(self.base()) + (cmp::min)(self.count_, flux::size(self.base_));
         }

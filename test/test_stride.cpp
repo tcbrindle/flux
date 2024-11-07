@@ -54,7 +54,7 @@ constexpr bool test_stride_non_bidir()
         static_assert(flux::multipass_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(not flux::bidirectional_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
 
         STATIC_CHECK(check_equal(seq, {0, 2, 4}));
         STATIC_CHECK(seq.last() == flux::last(arr));
@@ -72,7 +72,7 @@ constexpr bool test_stride_non_bidir()
         static_assert(flux::multipass_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(not flux::bidirectional_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
 
         STATIC_CHECK(check_equal(seq, {0, 3, 6}));
         STATIC_CHECK(flux::last(seq) == flux::last(arr));
@@ -156,7 +156,7 @@ constexpr bool test_stride_bidir()
         static_assert(flux::bounded_sequence<S>);
         static_assert(flux::random_access_sequence<S>);
         static_assert(not flux::contiguous_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
 
         STATIC_CHECK(check_equal(seq, {0, 2, 4}));
         STATIC_CHECK(seq.last().cur == flux::last(arr));
@@ -176,7 +176,7 @@ constexpr bool test_stride_bidir()
         static_assert(flux::multipass_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(flux::random_access_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
 
         STATIC_CHECK(check_equal(seq, {0, 3, 6}));
         STATIC_CHECK(flux::last(seq).cur == flux::last(arr));

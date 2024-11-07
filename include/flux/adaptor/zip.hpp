@@ -114,7 +114,7 @@ public:
 
     template <typename Self>
         requires (random_access_sequence<const_like_t<Self, Bases>> && ...)
-                && (sized_sequence<const_like_t<Self, Bases>> && ...)
+                && (sized_iterable<const_like_t<Self, Bases>> && ...)
     static constexpr auto last(Self& self)
     {
         auto cur = first(self);
@@ -122,7 +122,7 @@ public:
     }
 
     template <typename Self>
-        requires (sized_sequence<const_like_t<Self, Bases>> && ...)
+        requires (sized_iterable<const_like_t<Self, Bases>> && ...)
     static constexpr auto size(Self& self)
     {
         return std::apply([&](auto&... args) {

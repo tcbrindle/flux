@@ -20,7 +20,7 @@ concept character = any_of<C, char, wchar_t, char8_t, char16_t, char32_t>;
 
 struct to_string_view_fn {
     template <contiguous_sequence Seq>
-        requires sized_sequence<Seq> && character<value_t<Seq>>
+        requires sized_iterable<Seq> && character<value_t<Seq>>
     constexpr auto operator()(Seq&& seq) const
     {
         return std::basic_string_view<value_t<Seq>>(flux::data(seq), flux::usize(seq));

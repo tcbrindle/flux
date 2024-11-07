@@ -109,17 +109,17 @@ public:
 
     /// Returns the number of elements in the sequence
     [[nodiscard]]
-    constexpr auto size() requires sized_sequence<Derived> { return flux::size(derived()); }
+    constexpr auto size() requires sized_iterable<Derived> { return flux::size(derived()); }
 
     [[nodiscard]]
-    constexpr auto size() const requires sized_sequence<Derived const> { return flux::size(derived()); }
+    constexpr auto size() const requires sized_iterable<Derived const> { return flux::size(derived()); }
 
     /// Returns the number of elements in the sequence as a size_t
     [[nodiscard]]
-    constexpr auto usize() requires sized_sequence<Derived> { return flux::usize(derived()); }
+    constexpr auto usize() requires sized_iterable<Derived> { return flux::usize(derived()); }
 
     [[nodiscard]]
-    constexpr auto usize() const requires sized_sequence<Derived const> { return flux::usize(derived()); }
+    constexpr auto usize() const requires sized_iterable<Derived const> { return flux::usize(derived()); }
 
     template <typename Pred>
         requires std::invocable<Pred&, element_t<Derived>> &&
@@ -132,7 +132,7 @@ public:
     /// Returns true if the sequence contains no elements
     [[nodiscard]]
     constexpr auto is_empty()
-        requires (multipass_sequence<Derived> || sized_sequence<Derived>)
+        requires (multipass_sequence<Derived> || sized_iterable<Derived>)
     {
         return flux::is_empty(derived());
     }
@@ -412,8 +412,8 @@ public:
 
     template <sequence Needle, typename Cmp = std::ranges::equal_to>
         requires std::predicate<Cmp&, element_t<Derived>, element_t<Needle>> &&
-                 (multipass_sequence<Derived> || sized_sequence<Derived>) &&
-                 (multipass_sequence<Needle> || sized_sequence<Needle>)
+                 (multipass_sequence<Derived> || sized_iterable<Derived>) &&
+                 (multipass_sequence<Needle> || sized_iterable<Needle>)
     constexpr auto ends_with(Needle&& needle, Cmp cmp = {}) -> bool;
 
     template <typename Value>

@@ -132,7 +132,7 @@ struct flux::sequence_traits<single_pass_only<Base>> : flux::default_sequence_tr
     }
 
     static constexpr auto size(self_t& self)
-        requires sized_sequence<Base>
+        requires sized_iterable<Base>
     {
         return flux::size(self.base_);
     }

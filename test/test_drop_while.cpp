@@ -20,11 +20,11 @@ constexpr bool test_drop_while()
 
         static_assert(flux::contiguous_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>); // because bounded + RA
+        static_assert(flux::sized_iterable<S>); // because bounded + RA
 
         static_assert(flux::contiguous_sequence<S const>);
         static_assert(flux::bounded_sequence<S const>);
-        static_assert(flux::sized_sequence<S const>);
+        static_assert(flux::sized_iterable<S const>);
 
         STATIC_CHECK(seq.size() == 5);
         STATIC_CHECK(seq.data() == arr + 5);

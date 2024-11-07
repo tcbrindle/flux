@@ -32,7 +32,7 @@ constexpr bool test_cartesian_power_map()
         static_assert(flux::bounded_sequence<C>);
         static_assert(flux::bidirectional_sequence<C>);
         static_assert(flux::random_access_sequence<C>);
-        static_assert(flux::sized_sequence<C>);
+        static_assert(flux::sized_iterable<C>);
 
         STATIC_CHECK(flux::size(cart) == 2);
 
@@ -64,7 +64,7 @@ constexpr bool test_cartesian_power_map()
         static_assert(flux::bounded_sequence<C>);
         static_assert(flux::bidirectional_sequence<C>);
         static_assert(flux::random_access_sequence<C>);
-        static_assert(flux::sized_sequence<C>);
+        static_assert(flux::sized_iterable<C>);
 
         STATIC_CHECK(flux::size(cart) == 2 * 2);
 
@@ -95,7 +95,7 @@ constexpr bool test_cartesian_power_map()
         static_assert(flux::bidirectional_sequence<C>);
         static_assert(flux::bounded_sequence<C>);
         static_assert(flux::random_access_sequence<C>);
-        static_assert(flux::sized_sequence<C>);
+        static_assert(flux::sized_iterable<C>);
 
         STATIC_CHECK(flux::size(cart) == 2 * 2 * 2);
 

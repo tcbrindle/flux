@@ -17,7 +17,7 @@ struct count_fn {
     [[nodiscard]]
     constexpr auto operator()(It&& it) const -> distance_t
     {
-        if constexpr (sized_sequence<It>) {
+        if constexpr (sized_iterable<It>) {
             return flux::size(it);
         } else {
             distance_t counter = 0;

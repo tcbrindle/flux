@@ -24,7 +24,7 @@ constexpr bool test_mask()
         static_assert(flux::bidirectional_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(not flux::infinite_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(std::same_as<flux::element_t<S>, int&>);
         static_assert(std::same_as<flux::rvalue_element_t<S>, int&&>);
         static_assert(std::same_as<flux::const_element_t<S>, int const&>);
@@ -45,7 +45,7 @@ constexpr bool test_mask()
         static_assert(flux::bidirectional_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(not flux::infinite_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(std::same_as<flux::element_t<S>, int const&>);
         static_assert(std::same_as<flux::rvalue_element_t<S>, int const&&>);
         static_assert(std::same_as<flux::const_element_t<S>, int const&>);
@@ -67,7 +67,7 @@ constexpr bool test_mask()
         static_assert(not flux::bidirectional_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(not flux::infinite_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(std::same_as<flux::element_t<S>, int const&>);
         static_assert(std::same_as<flux::rvalue_element_t<S>, int const&&>);
         static_assert(std::same_as<flux::const_element_t<S>, int const&>);
@@ -88,7 +88,7 @@ constexpr bool test_mask()
         static_assert(not flux::bidirectional_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(not flux::infinite_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(std::same_as<flux::element_t<S>, int&>);
         static_assert(std::same_as<flux::rvalue_element_t<S>, int&&>);
         static_assert(std::same_as<flux::const_element_t<S>, int const&>);

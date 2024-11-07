@@ -90,7 +90,7 @@ public:
         static void dec(...) = delete;
 
         static constexpr auto size(auto& self) -> distance_t
-            requires sized_sequence<Base>
+            requires sized_iterable<Base>
         {
             auto s = flux::size(self.base_);
             return s/self.stride_ + (s % self.stride_ == 0 ? 0 : 1);
@@ -191,7 +191,7 @@ public:
         }
 
         static constexpr auto last(auto& self) -> cursor_type
-            requires bounded_sequence<Base> && sized_sequence<Base>
+            requires bounded_sequence<Base> && sized_iterable<Base>
         {
             distance_t missing =
                 (self.stride_ - flux::size(self.base_) % self.stride_) % self.stride_;
@@ -209,7 +209,7 @@ public:
         }
 
         static constexpr auto size(auto& self) -> distance_t
-            requires sized_sequence<Base>
+            requires sized_iterable<Base>
         {
             auto s = flux::size(self.base_);
             return s/self.stride_ + (s % self.stride_ == 0 ? 0 : 1);

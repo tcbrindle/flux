@@ -27,7 +27,7 @@ public:
     {
         constexpr bool can_memset = 
             contiguous_sequence<It> &&
-            sized_sequence<It> &&
+            sized_iterable<It> &&
             std::same_as<Value, value_t<It>> &&
             // only allow memset on single byte types
             sizeof(value_t<It>) == 1 &&

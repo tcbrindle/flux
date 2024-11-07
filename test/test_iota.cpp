@@ -21,7 +21,7 @@ constexpr bool test_iota_basic()
     static_assert(flux::random_access_sequence<F>);
     static_assert(flux::infinite_sequence<F>);
     static_assert(not flux::bounded_sequence<F>);
-    static_assert(not flux::sized_sequence<F>);
+    static_assert(not flux::sized_iterable<F>);
 
     STATIC_CHECK(check_equal(flux::take(f, 5), {0, 1, 2, 3, 4}));
 
@@ -41,7 +41,7 @@ constexpr bool test_iota_from()
     static_assert(flux::random_access_sequence<F>);
     static_assert(flux::infinite_sequence<F>);
     static_assert(not flux::bounded_sequence<F>);
-    static_assert(not flux::sized_sequence<F>);
+    static_assert(not flux::sized_iterable<F>);
 
     STATIC_CHECK(check_equal(flux::take(f, 5), {1u, 2u, 3u, 4u, 5u}));
 
@@ -60,7 +60,7 @@ constexpr bool test_iota_bounded()
     static_assert(flux::random_access_sequence<F>);
     static_assert(not flux::infinite_sequence<F>);
     static_assert(flux::bounded_sequence<F>);
-    static_assert(flux::sized_sequence<F>);
+    static_assert(flux::sized_iterable<F>);
 
     STATIC_CHECK(f.size() == 5);
     STATIC_CHECK(check_equal(f, {1u, 2u, 3u, 4u, 5u}));
@@ -82,7 +82,7 @@ constexpr bool test_iota_custom_type()
     static_assert(not flux::random_access_sequence<F>); // no iter_difference_t
     static_assert(not flux::infinite_sequence<F>);
     static_assert(flux::bounded_sequence<F>);
-    static_assert(not flux::sized_sequence<F>); // !
+    static_assert(not flux::sized_iterable<F>); // !
 
     STATIC_CHECK(f.count() == 5);
     STATIC_CHECK(check_equal(f, {1s, 2s, 3s, 4s, 5s}));
