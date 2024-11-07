@@ -5,6 +5,7 @@
 
 #include <array>
 #include <list>
+#include <ranges>
 #include <span>
 #include <string>
 #include <string_view>
@@ -76,6 +77,21 @@ constexpr bool test_drop() {
 
         STATIC_CHECK(flux::size(dropped) == 5);
         STATIC_CHECK(check_equal(dropped, {5, 6, 7, 8, 9}));
+    }
+
+    // test dropping non-sequence iterable
+    {
+        std::array arr{1, 2, 3, 4, 5};
+        auto view = arr | std::views::transform(std::identity{});
+
+        auto iter = flux::mut_ref(view).drop(2);
+
+        using I = decltype(iter);
+        static_assert(flux::iterable<I>);
+        static_assert(flux::sized_iterable<I>);
+        static_assert(not flux::sequence<I>);
+
+        STATIC_CHECK(iter.sum() == 3 + 4 + 5);
     }
 
     // test dropping zero items
