@@ -194,6 +194,12 @@ struct sequence_traits<R> : default_sequence_traits {
         return true;
     }
 
+    template <std::ranges::sized_range Self>
+    static constexpr auto size(Self& self) -> distance_t
+    {
+        return num::cast<distance_t>(std::ranges::ssize(self));
+    }
+
     template <detail::contiguous_sized_range Self>
     static constexpr auto first(Self&) -> index_t { return index_t{0}; }
 
@@ -247,12 +253,6 @@ struct sequence_traits<R> : default_sequence_traits {
     static constexpr auto distance(Self&, index_t from, index_t to) -> distance_t
     {
         return num::sub(to, from);
-    }
-
-    template <detail::contiguous_sized_range Self>
-    static constexpr auto size(Self& self) -> distance_t
-    {
-        return num::cast<distance_t>(std::ranges::ssize(self));
     }
 
     template <detail::contiguous_sized_range Self>
