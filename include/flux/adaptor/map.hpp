@@ -12,9 +12,7 @@ namespace flux {
 
 namespace detail {
 
-template <sequence Base, typename Func>
-    requires std::is_object_v<Func> &&
-             std::regular_invocable<Func&, element_t<Base>>
+template <iterable Base, typename Func>
 struct map_adaptor : inline_sequence_base<map_adaptor<Base, Func>>
 {
 private:
@@ -40,6 +38,16 @@ public:
 
         static constexpr bool disable_multipass = !multipass_sequence<Base>;
         static constexpr bool is_infinite = infinite_sequence<Base>;
+
+        static consteval auto element_type(auto& self)
+            -> std::invoke_result_t<Func const&, element_t<decltype((self.base_))>>;
+
+        static constexpr auto iterate(auto& self, auto&& pred) -> bool
+        {
+            return flux::iterate(self.base_, [&](auto&& elem) {
+                return std::invoke(pred, std::invoke(self.func_, FLUX_FWD(elem)));
+            });
+        }
 
         template <typename Self>
         static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
@@ -70,12 +78,12 @@ public:
 };
 
 struct map_fn {
-    template <adaptable_sequence Seq, typename Func>
-        requires std::regular_invocable<Func&, element_t<Seq>>
+    template <sink_iterable It, typename Func>
+        requires std::regular_invocable<Func&, element_t<It>>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Func func) const
+    constexpr auto operator()(It&& it, Func func) const
     {
-        return map_adaptor<std::decay_t<Seq>, Func>(FLUX_FWD(seq), std::move(func));
+        return map_adaptor<std::decay_t<It>, Func>(FLUX_FWD(it), std::move(func));
     }
 };
 

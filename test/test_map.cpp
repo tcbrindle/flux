@@ -60,6 +60,25 @@ constexpr bool test_map()
         STATIC_CHECK(mapped.size() == 5);
     }
 
+    // We can map non-sequence iterables
+    {
+        auto view = std::array{1, 2, 3, 4, 5} | std::views::transform(std::identity{});
+
+        auto mapped = flux::map(std::move(view), [](int i) { return i * 2; });
+
+        using M = decltype(mapped);
+
+        static_assert(flux::iterable<M>);
+        static_assert(flux::sized_iterable<M>);
+        static_assert(!flux::sequence<M>);
+
+        static_assert(flux::iterable<M const>);
+        static_assert(flux::sized_iterable<M>);
+        static_assert(!flux::sequence<M>);
+
+        STATIC_CHECK(check_equal(mapped, {2, 4, 6, 8, 10}));
+    }
+
     {
         int arr[] = {0, 1, 2, 3, 4};
 
