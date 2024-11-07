@@ -13,7 +13,7 @@ namespace flux {
 
 namespace detail {
 
-template <sequence Base, typename Pred>
+template <iterable Base, typename Pred>
 class filter_adaptor : public inline_sequence_base<filter_adaptor<Base, Pred>>
 {
     FLUX_NO_UNIQUE_ADDRESS Base base_;
@@ -45,7 +45,21 @@ public:
 
         static constexpr bool disable_multipass = !multipass_sequence<Base>;
 
+        static consteval auto element_type(auto& self) -> element_t<decltype((self.base_))>;
+
+        static constexpr auto iterate(auto& self, auto func) -> bool
+        {
+            return flux::iterate(self.base_, [&](auto&& elem) {
+                if (std::invoke(self.pred_, elem)) {
+                    return std::invoke(func, FLUX_FWD(elem));
+                } else {
+                    return true;
+                }
+            });
+        }
+
         static constexpr auto first(auto& self) -> cursor_type
+            requires sequence<decltype((self.base_))>
         {
             return cursor_type{flux::find_if(self.base_, std::ref(self.pred_))};
         }
@@ -56,25 +70,26 @@ public:
         }
 
         static constexpr auto read_at(auto& self, cursor_type const& cur)
-            -> decltype(flux::read_at(self.base_, cur.base_cur))
+            -> decltype(auto)
+            requires sequence<decltype((self.base_))>
         {
             return flux::read_at(self.base_, cur.base_cur);
         }
 
         static constexpr auto read_at_unchecked(auto& self, cursor_type const& cur)
-            -> decltype(flux::read_at_unchecked(self.base_, cur.base_cur))
+            -> decltype(auto)
         {
             return flux::read_at_unchecked(self.base_, cur.base_cur);
         }
 
         static constexpr auto move_at(auto& self, cursor_type const& cur)
-            -> decltype(flux::move_at(self.base_, cur.base_cur))
+            -> decltype(auto)
         {
             return flux::move_at(self.base_, cur.base_cur);
         }
 
         static constexpr auto move_at_unchecked(auto& self, cursor_type const& cur)
-            -> decltype(flux::move_at_unchecked(self.base_, cur.base_cur))
+            -> decltype(auto)
         {
             return flux::move_at_unchecked(self.base_, cur.base_cur);
         }
@@ -115,12 +130,11 @@ public:
 };
 
 struct filter_fn {
-    template <adaptable_sequence Seq, std::move_constructible Pred>
-        requires std::predicate<Pred&, element_t<Seq>>
+    template <sink_iterable It, predicate_for<It> Pred>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Pred pred) const
+    constexpr auto operator()(It&& seq, Pred pred) const
     {
-        return filter_adaptor<std::decay_t<Seq>, Pred>(FLUX_FWD(seq), std::move(pred));
+        return filter_adaptor<std::decay_t<It>, Pred>(FLUX_FWD(seq), std::move(pred));
     }
 };
 

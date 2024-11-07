@@ -4,6 +4,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <array>
+#include <ranges>
 #include <utility>
 
 #include "test_utils.hpp"
@@ -55,6 +56,19 @@ constexpr bool test_filter()
 
         STATIC_CHECK(check_equal(filtered, {0, 2, 4, 6, 8}));
         STATIC_CHECK(check_equal(std::as_const(filtered), {0, 2, 4, 6, 8}));
+    }
+
+    // Filtering non-sequence iterables works okay
+    {
+        auto view = std::array{1, 2, 3, 4, 5} | std::views::filter(flux::pred::true_);
+
+        auto filtered = flux::filter(std::move(view), is_even);
+        using F = decltype(filtered);
+
+        static_assert(flux::iterable<F>);
+        static_assert(!flux::sequence<F>);
+
+        STATIC_CHECK(check_equal(filtered, {2, 4}));
     }
 
     // Filtering single-pass sequences works okay

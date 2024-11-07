@@ -43,6 +43,16 @@ private:
 
 public:
     template <typename T>
+    constexpr bool operator()(flux::iterable auto&& it,
+                              std::initializer_list<T> ilist) const
+    {
+        auto iter = ilist.begin();
+        return flux::iterate(it, [&iter](auto&& elem) {
+            return *iter++ == elem;
+        });
+    }
+
+    template <typename T>
     constexpr bool operator()(flux::sequence auto&& seq,
                               std::initializer_list<T> ilist) const
     {
