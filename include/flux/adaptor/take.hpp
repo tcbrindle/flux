@@ -12,7 +12,7 @@ namespace flux {
 
 namespace detail {
 
-template <sequence Base>
+template <iterable Base>
 struct take_adaptor : inline_sequence_base<take_adaptor<Base>>
 {
 private:
@@ -41,7 +41,30 @@ public:
     public:
         using value_type = value_t<Base>;
 
+        static consteval auto element_type(auto& self) -> element_t<decltype((self.base_))>;
+
+        static constexpr auto iterate(auto& self, auto&& pred) -> bool
+        {
+            if constexpr (random_access_sequence<Base> && bounded_sequence<Base>)
+            {
+                auto cur = flux::first(self.base_);
+                flux::inc(self.base_, cur, self.count_);
+                return flux::iterate(flux::slice(self.base_, flux::first(self.base_), cur), FLUX_FWD(pred));
+            } else {
+                distance_t n = self.count_;
+                flux::iterate(self.base_, [&pred, &n](auto&& elem) {
+                    if (n-- > 0) {
+                        return std::invoke(pred, FLUX_FWD(elem));
+                    } else {
+                        return false;
+                    }
+                });
+                return n < 0;
+            }
+        }
+
         static constexpr auto first(auto& self) -> cursor_type
+            requires sequence<decltype((self.base_))>
         {
             return cursor_type{.base_cur = flux::first(self.base_),
                                .length = self.count_};
@@ -59,25 +82,25 @@ public:
         }
 
         static constexpr auto read_at(auto& self, cursor_type const& cur)
-            -> decltype(flux::read_at(self.base_, cur.base_cur))
+            -> decltype(auto)
         {
             return flux::read_at(self.base_, cur.base_cur);
         }
 
         static constexpr auto move_at(auto& self, cursor_type const& cur)
-            -> decltype(flux::move_at(self.base_, cur.base_cur))
+            -> decltype(auto)
         {
             return flux::move_at(self.base_, cur.base_cur);
         }
 
         static constexpr auto read_at_unchecked(auto& self, cursor_type const& cur)
-            -> decltype(flux::read_at_unchecked(self.base_, cur.base_cur))
+            -> decltype(auto)
         {
             return flux::read_at_unchecked(self.base_, cur.base_cur);
         }
 
         static constexpr auto move_at_unchecked(auto& self, cursor_type const& cur)
-            -> decltype(flux::move_at_unchecked(self.base_, cur.base_cur))
+            -> decltype(auto)
         {
             return flux::move_at_unchecked(self.base_, cur.base_cur);
         }
@@ -144,16 +167,16 @@ public:
 };
 
 struct take_fn {
-    template <adaptable_sequence Seq>
+    template <sink_iterable It>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, num::integral auto count) const
+    constexpr auto operator()(It&& it, num::integral auto count) const
     {
         auto count_ = num::checked_cast<distance_t>(count);
         if (count_ < 0) {
             runtime_error("Negative argument passed to take()");
         }
 
-        return take_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq), count_);
+        return take_adaptor<std::decay_t<It>>(FLUX_FWD(it), count_);
     }
 };
 
