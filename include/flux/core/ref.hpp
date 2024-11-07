@@ -188,7 +188,7 @@ struct ref_fn {
     auto operator()(T const&&) const -> void = delete;
 };
 
-template <sequence Base>
+template <iterable Base>
     requires std::movable<Base>
 struct owning_adaptor : inline_sequence_base<owning_adaptor<Base>> {
 private:
@@ -210,32 +210,32 @@ public:
 };
 
 struct from_fn {
-    template <adaptable_sequence Seq>
+    template <sink_iterable It>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const
+    constexpr auto operator()(It&& it) const
     {
-        if constexpr (derived_from_inline_sequence_base<Seq>) {
-            return FLUX_FWD(seq);
+        if constexpr (derived_from_inline_sequence_base<It>) {
+            return FLUX_FWD(it);
         } else {
-            return owning_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq));
+            return owning_adaptor<std::decay_t<It>>(FLUX_FWD(it));
         }
     }
 };
 
 struct from_fwd_ref_fn {
-    template <sequence Seq>
-        requires adaptable_sequence<Seq> || std::is_lvalue_reference_v<Seq>
+    template <iterable It>
+        requires sink_iterable<It> || std::is_lvalue_reference_v<It>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const
+    constexpr auto operator()(It&& it) const
     {
-        if constexpr (std::is_lvalue_reference_v<Seq>) {
-            if constexpr (std::is_const_v<std::remove_reference_t<Seq>>) {
-                return ref_fn{}(seq);
+        if constexpr (std::is_lvalue_reference_v<It>) {
+            if constexpr (std::is_const_v<std::remove_reference_t<It>>) {
+                return ref_fn{}(it);
             } else {
-                return mut_ref_fn{}(seq);
+                return mut_ref_fn{}(it);
             }
         } else {
-            return from_fn{}(seq);
+            return from_fn{}(FLUX_FWD(it));
         }
     }
 };
