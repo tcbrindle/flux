@@ -81,6 +81,8 @@ public:
         using value_type = value_t<Base>;
         static inline constexpr bool is_infinite = infinite_sequence<Base>;
 
+        using default_sequence_traits::iterate;
+
         static constexpr auto inc(auto& self, cursor_t<Base>& cur) -> void
         {
             advance(self.base(), cur, self.stride_);

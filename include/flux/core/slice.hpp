@@ -100,6 +100,9 @@ struct sequence_traits<subsequence<Base, Bounded>>
     using value_type = value_t<Base>;
     using self_t = subsequence<Base, Bounded>;
 
+    using default_sequence_traits::element_type;
+    using default_sequence_traits::iterate;
+
     static constexpr auto first(self_t& self) -> cursor_t<Base>
     {
         if constexpr (std::copy_constructible<decltype(self.data_.first)>) {

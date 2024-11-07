@@ -81,7 +81,7 @@ struct sequence_traits<T[N]> : default_sequence_traits {
 /*
  * Default implementation for std::reference_wrapper<T>
  */
-template <sequence Seq>
+template <iterable Seq>
 struct sequence_traits<std::reference_wrapper<Seq>> : default_sequence_traits {
 
     using self_t = std::reference_wrapper<Seq>;
@@ -89,6 +89,13 @@ struct sequence_traits<std::reference_wrapper<Seq>> : default_sequence_traits {
     using value_type = value_t<Seq>;
 
     static constexpr bool disable_multipass = !multipass_sequence<Seq>;
+
+    static consteval auto element_type(self_t) -> element_t<Seq>;
+
+    static constexpr auto iterate(self_t self, auto&& pred) -> bool
+    {
+        return flux::iterate(self.get(), FLUX_FWD(pred));
+    }
 
     static constexpr auto first(self_t self) -> cursor_t<Seq>
     {

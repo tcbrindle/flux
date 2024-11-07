@@ -56,6 +56,9 @@ struct sequence_traits<detail::take_while_adaptor<Base, Pred>>
 
     static constexpr bool is_infinite = false;
 
+    using default_sequence_traits::element_type;
+    using default_sequence_traits::iterate;
+
     template <typename Self>
     static constexpr bool is_last(Self& self, cursor_t<Self> const& cur)
         requires std::predicate<decltype((self.pred_)), element_t<decltype(self.base_)>>
