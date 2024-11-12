@@ -288,7 +288,7 @@ public:
     constexpr auto filter_deref() && requires detail::optional_like<value_t<Derived>>;
 
     [[nodiscard]]
-    constexpr auto flatten() && requires sequence<element_t<Derived>>;
+    constexpr auto flatten() && requires iterable<element_t<Derived>>;
 
     template <adaptable_sequence Pattern>
         requires sequence<element_t<Derived>> &&

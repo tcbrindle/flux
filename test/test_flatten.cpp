@@ -6,6 +6,7 @@
 #include <array>
 #include <string>
 #include <string_view>
+#include <ranges>
 #include <vector>
 
 #include "test_utils.hpp"
@@ -18,9 +19,9 @@
 #endif
 
 /*
- * We have two completely separate implementations of flatten.
- * The first is single-pass only while the second can go all the way to
- * bidirectional.
+ * We have three completely separate implementations of flatten.
+ * The first is iterable only. The second is single-pass sequence only,
+ * while the third can go all the way to bidirectional.
  *
  * The multipass version is used when all of the following are true:
  *  * the outer sequence is multipass
@@ -31,6 +32,31 @@
  */
 
 namespace {
+
+constexpr bool test_flatten_iterable()
+{
+    {
+        std::array<std::array<int, 3>, 3> arr{
+            std::array{1, 2, 3},
+            {4, 5, 6},
+            {7, 8, 9}
+        };
+
+        auto view = arr | std::views::transform(std::identity{});
+
+        auto flattened = flux::ref(view).flatten();
+
+        using F = decltype(flattened);
+        static_assert(flux::iterable<F>);
+        static_assert(flux::iterable<F const>);
+
+        STATIC_CHECK(flattened.all(flux::pred::positive));
+        STATIC_CHECK(check_equal(flattened, {1, 2, 3, 4, 5, 6, 7, 8, 9}));
+    }
+
+    return true;
+}
+static_assert(test_flatten_iterable());
 
 constexpr bool test_flatten_single_pass()
 {
@@ -264,6 +290,9 @@ static_assert(issue_150());
 
 TEST_CASE("flatten")
 {
+    bool it = test_flatten_iterable();
+    REQUIRE(it);
+
     bool sp = test_flatten_single_pass();
     REQUIRE(sp);
 
