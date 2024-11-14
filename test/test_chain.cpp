@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <array>
 #include <iostream>
+#include <ranges>
 #include <utility>
 
 #include "test_utils.hpp"
@@ -73,6 +74,23 @@ constexpr bool test_chain()
         static_assert(std::same_as<flux::rvalue_element_t<S const>, int const&&>);
 
         STATIC_CHECK(check_equal(std::as_const(seq), {1, 2, 3, 4, 5, 6}));
+    }
+
+    // Chaining non-sequence iterables works as expected
+    {
+        int arr1[] = {0, 1, 2};
+        int arr2[] = {3, 4, 5};
+
+        auto seq = flux::chain(arr1 | std::views::filter(flux::pred::true_),
+                               arr2 | std::views::filter(flux::pred::true_));
+
+        using S = decltype(seq);
+
+        static_assert(flux::iterable<S>);
+        static_assert(not flux::iterable<S const>); // views::filter is not const-iterable
+        static_assert(not flux::sequence<S>);
+
+        STATIC_CHECK(check_equal(seq, {0, 1, 2, 3, 4, 5}));
     }
 
     // Chaining single-pass sequences works as expected
