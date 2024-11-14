@@ -8,6 +8,7 @@
 
 #include <flux/core/assert.hpp>
 #include <flux/core/utils.hpp>
+#include <flux/core/detail/jtckdint.h>
 
 #include <climits>
 #include <cstdint>
@@ -209,39 +210,14 @@ struct wrapping_neg_fn {
     }
 };
 
-#if defined(__has_builtin)
-#  if __has_builtin(__builtin_add_overflow) && \
-      __has_builtin(__builtin_sub_overflow) && \
-      __has_builtin(__builtin_mul_overflow)
-#    define FLUX_HAVE_BUILTIN_OVERFLOW_OPS 1
-#  endif
-#endif
-
-#ifdef FLUX_HAVE_BUILTIN_OVERFLOW_OPS
-inline constexpr bool use_builtin_overflow_ops = true;
-#else
-inline constexpr bool use_builtin_overflow_ops = false;
-#endif
-
-#undef FLUX_HAVE_BUILTIN_OVERFLOW_OPS
-
 struct overflowing_add_fn {
     template <integral T>
     [[nodiscard]]
     constexpr auto operator()(T lhs, T rhs) const noexcept -> overflow_result<T>
     {
-        if constexpr (use_builtin_overflow_ops) {
-            bool o = __builtin_add_overflow(lhs, rhs, &lhs);
-            return {lhs, o};
-        } else {
-            T value = wrapping_add_fn{}(lhs, rhs);
-            if constexpr (signed_integral<T>) {
-                bool o = ((lhs < T{}) == (rhs < T{})) && ((lhs < T{}) != (value < T{}));
-                return {value, o};
-            } else {
-                return {value, value < lhs};
-            }
-        }
+        T r;
+        bool o = ckd_add(&r, lhs, rhs);
+        return {r, o};
     }
 };
 
@@ -250,64 +226,9 @@ struct overflowing_sub_fn {
     [[nodiscard]]
     constexpr auto operator()(T lhs, T rhs) const noexcept -> overflow_result<T>
     {
-        if constexpr (use_builtin_overflow_ops) {
-            bool o = __builtin_sub_overflow(lhs, rhs, &lhs);
-            return {lhs, o};
-        } else {
-            T value = wrapping_sub_fn{}(lhs, rhs);
-            if constexpr (signed_integral<T>) {
-                bool o = (lhs >= T{} && rhs < T{} && value < T{}) ||
-                         (lhs < T{} && rhs > T{} && value > T{});
-                return {value, o};
-            } else {
-                return {value, rhs > lhs};
-            }
-        }
-    }
-};
-
-template <std::size_t, bool> struct builtin_sized_int {};
-template <> struct builtin_sized_int<2, true> { using type = std::int16_t; };
-template <> struct builtin_sized_int<2, false> { using type = std::uint16_t; };
-template <> struct builtin_sized_int<4, true> { using type = std::int32_t; };
-template <> struct builtin_sized_int<4, false> { using type = std::uint32_t; };
-template <> struct builtin_sized_int<8, true> { using type = std::int64_t; };
-template <> struct builtin_sized_int<8, false> { using type = std::uint64_t; };
-
-template <std::size_t Sz, bool Signed>
-using builtin_sized_int_t = typename builtin_sized_int<Sz, Signed>::type;
-
-template <integral T>
-struct overflowing_mul_impl;
-
-// If we have a builtin that is big enough to hold the result of the
-// multiplication, use it
-template <integral T>
-    requires requires { typename builtin_sized_int_t<2 * sizeof(T), signed_integral<T>>; }
-struct overflowing_mul_impl<T> {
-    inline constexpr auto operator()(T lhs, T rhs) const -> overflow_result<T>
-    {
-        using U = builtin_sized_int_t<2 * sizeof(T), signed_integral<T>>;
-        auto result = static_cast<U>(lhs) * static_cast<U>(rhs);
-        return overflowing_cast_fn<T>{}(result);
-    }
-};
-
-// Otherwise, fall back to checking for overflow via a division operation
-template <integral T>
-struct overflowing_mul_impl {
-    inline constexpr auto operator()(T lhs, T rhs) const -> overflow_result<T>
-    {
-        constexpr T min = std::numeric_limits<T>::lowest();
-        T value =  wrapping_mul_fn{}(lhs, rhs);
-        if constexpr (signed_integral<T>) {
-            bool o = (lhs == T{-1} && rhs == min) ||
-                     (lhs != T{}  && unchecked_div_fn{}(value, lhs) != rhs);
-            return {value, o};
-        } else {
-            bool o = lhs != T{} && unchecked_div_fn{}(value, lhs) != rhs;
-            return {value, o};
-        }
+        T r;
+        bool o = ckd_sub(&r, lhs, rhs);
+        return {r, o};
     }
 };
 
@@ -316,12 +237,9 @@ struct overflowing_mul_fn {
     [[nodiscard]]
     constexpr auto operator()(T lhs, T rhs) const noexcept -> overflow_result<T>
     {
-        if constexpr (detail::use_builtin_overflow_ops) {
-            bool o = __builtin_mul_overflow(lhs, rhs, &lhs);
-            return {lhs, o};
-        } else {
-            return overflowing_mul_impl<T>{}(lhs, rhs);
-        }
+        T r;
+        bool o = ckd_mul(&r, lhs, rhs);
+        return {r, o};
     }
 };
 
@@ -330,12 +248,9 @@ struct overflowing_neg_fn {
     [[nodiscard]]
     constexpr auto operator()(T val) const noexcept -> overflow_result<T>
     {
-        if constexpr (use_builtin_overflow_ops) {
-            bool o = __builtin_sub_overflow(T{0}, val, &val);
-            return {val, o};
-        } else {
-            return {wrapping_neg_fn{}(val), val == std::numeric_limits<T>::lowest()};
-        }
+        T r;
+        bool o = ckd_sub(&r, T{0}, val);
+        return {r, o};
     }
 };
 
