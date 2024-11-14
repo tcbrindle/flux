@@ -15,6 +15,17 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
+/*
+ * Upstream repo: https://github.com/jart/jtckdint
+ *
+ * This file contains the following changes from upstream v0.2:
+ *  - All functions are constexpr
+ *  - `if` changed to `if constexpr` where appropriate
+ *  - #include <stdbool.h> before <stdckdint.h> to define the _Bool type for GCC in C++ mode
+ *  - Use GNU builtins even if __STRICT_ANSI__ is defined
+ *  - Use pragma to disable MSVC integer conversion warning
+ */
+
 /**
  * @fileoverview C23 Checked Arithmetic
  *
@@ -64,10 +75,16 @@
 #endif
 
 #if __ckd_has_include(<stdckdint.h>)
+#include <stdbool.h>
 #include <stdckdint.h>
 #else
 
 #define __STDC_VERSION_STDCKDINT_H__ 202311L
+
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable: 4146 4244)
+#endif
 
 #if ((defined(__llvm__) ||                                              \
       (defined(__GNUC__) && __GNUC__ * 100 + __GNUC_MINOR__ >= 406)) && \
@@ -90,11 +107,10 @@ typedef unsigned __ckd_intmax __ckd_uintmax_t;
 #define __ckd_has_builtin(x) 0
 #endif
 
-#if (!defined(__STRICT_ANSI__) &&                                       \
-     ((defined(__GNUC__) && __GNUC__ >= 5 && !defined(__ICC)) ||        \
+#if ((defined(__GNUC__) && __GNUC__ >= 5 && !defined(__ICC)) ||        \
       (__ckd_has_builtin(__builtin_add_overflow) &&                     \
        __ckd_has_builtin(__builtin_sub_overflow) &&                     \
-       __ckd_has_builtin(__builtin_mul_overflow))))
+       __ckd_has_builtin(__builtin_mul_overflow)))
 #define ckd_add(res, x, y) __builtin_add_overflow((x), (y), (res))
 #define ckd_sub(res, x, y) __builtin_sub_overflow((x), (y), (res))
 #define ckd_mul(res, x, y) __builtin_mul_overflow((x), (y), (res))
@@ -108,7 +124,7 @@ typedef unsigned __ckd_intmax __ckd_uintmax_t;
 #include <limits>
 
 template <typename __T, typename __U, typename __V>
-inline bool ckd_add(__T *__res, __U __a, __V __b) {
+inline constexpr bool ckd_add(__T *__res, __U __a, __V __b) {
   static_assert(std::is_integral<__T>::value &&
                 std::is_integral<__U>::value &&
                 std::is_integral<__V>::value,
@@ -125,8 +141,8 @@ inline bool ckd_add(__T *__res, __U __a, __V __b) {
   __ckd_uintmax_t __y = __b;
   __ckd_uintmax_t __z = __x + __y;
   *__res = __z;
-  if (sizeof(__z) > sizeof(__U) && sizeof(__z) > sizeof(__V)) {
-    if (sizeof(__z) > sizeof(__T) || std::is_signed<__T>::value) {
+  if constexpr (sizeof(__z) > sizeof(__U) && sizeof(__z) > sizeof(__V)) {
+    if constexpr (sizeof(__z) > sizeof(__T) || std::is_signed<__T>::value) {
       return static_cast<__ckd_intmax_t>(__z) != static_cast<__T>(__z);
     } else if (!std::is_same<__T, __ckd_uintmax_t>::value) {
       return (__z != static_cast<__T>(__z) ||
@@ -136,7 +152,7 @@ inline bool ckd_add(__T *__res, __U __a, __V __b) {
     }
   }
   bool __truncated = false;
-  if (sizeof(__T) < sizeof(__ckd_intmax_t)) {
+  if constexpr (sizeof(__T) < sizeof(__ckd_intmax_t)) {
     __truncated = __z != static_cast<__ckd_uintmax_t>(static_cast<__T>(__z));
   }
   switch (std::is_signed<__T>::value << 2 |  //
@@ -176,7 +192,7 @@ inline bool ckd_add(__T *__res, __U __a, __V __b) {
 }
 
 template <typename __T, typename __U, typename __V>
-inline bool ckd_sub(__T *__res, __U __a, __V __b) {
+inline constexpr bool ckd_sub(__T *__res, __U __a, __V __b) {
   static_assert(std::is_integral<__T>::value &&
                 std::is_integral<__U>::value &&
                 std::is_integral<__V>::value,
@@ -193,8 +209,8 @@ inline bool ckd_sub(__T *__res, __U __a, __V __b) {
   __ckd_uintmax_t __y = __b;
   __ckd_uintmax_t __z = __x - __y;
   *__res = __z;
-  if (sizeof(__z) > sizeof(__U) && sizeof(__z) > sizeof(__V)) {
-    if (sizeof(__z) > sizeof(__T) || std::is_signed<__T>::value) {
+  if constexpr (sizeof(__z) > sizeof(__U) && sizeof(__z) > sizeof(__V)) {
+    if constexpr (sizeof(__z) > sizeof(__T) || std::is_signed<__T>::value) {
       return static_cast<__ckd_intmax_t>(__z) != static_cast<__T>(__z);
     } else if (!std::is_same<__T, __ckd_uintmax_t>::value) {
       return (__z != static_cast<__T>(__z) ||
@@ -204,7 +220,7 @@ inline bool ckd_sub(__T *__res, __U __a, __V __b) {
     }
   }
   bool __truncated = false;
-  if (sizeof(__T) < sizeof(__ckd_intmax_t)) {
+  if constexpr (sizeof(__T) < sizeof(__ckd_intmax_t)) {
     __truncated = __z != static_cast<__ckd_uintmax_t>(static_cast<__T>(__z));
   }
   switch (std::is_signed<__T>::value << 2 |  //
@@ -242,7 +258,7 @@ inline bool ckd_sub(__T *__res, __U __a, __V __b) {
 }
 
 template <typename __T, typename __U, typename __V>
-inline bool ckd_mul(__T *__res, __U __a, __V __b) {
+inline constexpr bool ckd_mul(__T *__res, __U __a, __V __b) {
   static_assert(std::is_integral<__T>::value &&
                 std::is_integral<__U>::value &&
                 std::is_integral<__V>::value,
@@ -257,10 +273,10 @@ inline bool ckd_mul(__T *__res, __U __a, __V __b) {
                 "unqualified char type is ambiguous");
   __ckd_uintmax_t __x = __a;
   __ckd_uintmax_t __y = __b;
-  if ((sizeof(__U) * 8 - std::is_signed<__U>::value) +
+  if constexpr ((sizeof(__U) * 8 - std::is_signed<__U>::value) +
       (sizeof(__V) * 8 - std::is_signed<__V>::value) <=
       (sizeof(__T) * 8 - std::is_signed<__T>::value)) {
-    if (sizeof(__ckd_uintmax_t) > sizeof(__T) || std::is_signed<__T>::value) {
+    if constexpr (sizeof(__ckd_uintmax_t) > sizeof(__T) || std::is_signed<__T>::value) {
       __ckd_intmax_t __z = __x * __y;
       return __z != (*__res = __z);
     } else if (!std::is_same<__T, __ckd_uintmax_t>::value) {
@@ -659,5 +675,10 @@ __ckd_declare_mul(__ckd_mul_uint128, unsigned __int128)
 #define ckd_mul(res, x, y) (*(res) = (x) * (y), 0)
 
 #endif /* GNU */
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+
 #endif /* stdckdint.h */
 #endif /* JTCKDINT_H_ */
