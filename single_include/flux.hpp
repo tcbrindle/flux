@@ -965,6 +965,7 @@ concept optional_like =
 
 
 
+#include <flux/core/detail/jtckdint.h>
 
 #include <climits>
 #include <cstdint>
@@ -1000,6 +1001,7 @@ template <integral To>
 struct unchecked_cast_fn {
     template <integral From>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(From from) const noexcept -> To
     {
         return static_cast<To>(from);
@@ -1010,6 +1012,7 @@ template <integral To>
 struct overflowing_cast_fn {
     template <integral From>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(From from) const noexcept -> overflow_result<To>
     {
         if constexpr (requires { To{from}; }) {
@@ -1024,15 +1027,20 @@ template <integral To>
 struct checked_cast_fn {
     template <integral From>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(From from,
                               std::source_location loc = std::source_location::current()) const
         -> To
     {
-        auto r = overflowing_cast_fn<To>{}(from);
-        if (r.overflowed) {
-            runtime_error("checked_cast failed", loc);
+        if constexpr (requires { To{from}; }) {
+            return To{from};
+        } else {
+            if (std::in_range<To>(from)) {
+                return static_cast<To>(from);
+            } else {
+                runtime_error("checked_cast failed", loc);
+            }
         }
-        return r.value;
     }
 };
 
@@ -1040,6 +1048,7 @@ template <integral To>
 struct cast_fn {
     template <integral From>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(From from,
                               std::source_location loc = std::source_location::current()) const
         -> To
@@ -1055,6 +1064,7 @@ struct cast_fn {
 struct unchecked_add_fn {
     template <integral T>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(T lhs, T rhs) const noexcept -> T
     {
         return static_cast<T>(lhs + rhs);
@@ -1064,6 +1074,7 @@ struct unchecked_add_fn {
 struct unchecked_sub_fn {
     template <integral T>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(T lhs, T rhs) const noexcept -> T
     {
         return static_cast<T>(lhs - rhs);
@@ -1073,6 +1084,7 @@ struct unchecked_sub_fn {
 struct unchecked_mul_fn {
     template <integral T>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(T lhs, T rhs) const noexcept -> T
     {
         return static_cast<T>(lhs * rhs);
@@ -1082,6 +1094,7 @@ struct unchecked_mul_fn {
 struct unchecked_div_fn {
     template <integral T>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(T lhs, T rhs) const noexcept -> T
     {
         return static_cast<T>(lhs / rhs);
@@ -1091,6 +1104,7 @@ struct unchecked_div_fn {
 struct unchecked_mod_fn {
     template <integral T>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(T lhs, T rhs) const noexcept -> T
     {
         return static_cast<T>(lhs % rhs);
@@ -1100,6 +1114,7 @@ struct unchecked_mod_fn {
 struct unchecked_shl_fn {
     template <integral T, integral U>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(T lhs, U rhs) const noexcept -> T
     {
         return static_cast<T>(lhs << rhs);
@@ -1109,6 +1124,7 @@ struct unchecked_shl_fn {
 struct unchecked_shr_fn {
     template <integral T, integral U>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(T lhs, U rhs) const noexcept -> T
     {
         return static_cast<T>(lhs >> rhs);
@@ -1118,6 +1134,7 @@ struct unchecked_shr_fn {
 struct unchecked_neg_fn {
     template <signed_integral T>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(T val) const noexcept -> T
     {
         return static_cast<T>(-val);
@@ -1127,193 +1144,111 @@ struct unchecked_neg_fn {
 struct wrapping_add_fn {
     template <integral T>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(T lhs, T rhs) const noexcept -> T
     {
-        using U = std::make_unsigned_t<T>;
-        return static_cast<T>(static_cast<U>(lhs) + static_cast<U>(rhs));
+        T r;
+        (void) ckd_add(&r, lhs, rhs);
+        return r;
     }
 };
 
 struct wrapping_sub_fn {
     template <integral T>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(T lhs, T rhs) const noexcept -> T
     {
-        using U = std::make_unsigned_t<T>;
-        return static_cast<T>(static_cast<U>(lhs) - static_cast<U>(rhs));
+        T r;
+        (void) ckd_sub(&r, lhs, rhs);
+        return r;
     }
 };
 
 struct wrapping_mul_fn {
     template <integral T>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(T lhs, T rhs) const noexcept -> T
     {
-        using U = std::conditional_t<(sizeof(T) < sizeof(unsigned)),
-                                     unsigned,
-                                     std::make_unsigned_t<T>>;
-        return static_cast<T>(static_cast<U>(lhs) * static_cast<U>(rhs));
+        T r;
+        (void) ckd_mul(&r, lhs, rhs);
+        return r;
     }
 };
 
 struct wrapping_neg_fn {
     template <signed_integral T>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(T val) const noexcept -> T
     {
-        using U = std::make_unsigned_t<T>;
-        return static_cast<T>(static_cast<U>(0) - static_cast<U>(val));
+        T r;
+        (void) ckd_sub(&r, T{0}, val);
+        return r;
     }
 };
-
-#if defined(__has_builtin)
-#  if __has_builtin(__builtin_add_overflow) && \
-      __has_builtin(__builtin_sub_overflow) && \
-      __has_builtin(__builtin_mul_overflow)
-#    define FLUX_HAVE_BUILTIN_OVERFLOW_OPS 1
-#  endif
-#endif
-
-#ifdef FLUX_HAVE_BUILTIN_OVERFLOW_OPS
-inline constexpr bool use_builtin_overflow_ops = true;
-#else
-inline constexpr bool use_builtin_overflow_ops = false;
-#endif
-
-#undef FLUX_HAVE_BUILTIN_OVERFLOW_OPS
 
 struct overflowing_add_fn {
     template <integral T>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(T lhs, T rhs) const noexcept -> overflow_result<T>
     {
-        if constexpr (use_builtin_overflow_ops) {
-            bool o = __builtin_add_overflow(lhs, rhs, &lhs);
-            return {lhs, o};
-        } else {
-            T value = wrapping_add_fn{}(lhs, rhs);
-            if constexpr (signed_integral<T>) {
-                bool o = ((lhs < T{}) == (rhs < T{})) && ((lhs < T{}) != (value < T{}));
-                return {value, o};
-            } else {
-                return {value, value < lhs};
-            }
-        }
+        T r;
+        bool o = ckd_add(&r, lhs, rhs);
+        return {r, o};
     }
 };
 
 struct overflowing_sub_fn {
     template <integral T>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(T lhs, T rhs) const noexcept -> overflow_result<T>
     {
-        if constexpr (use_builtin_overflow_ops) {
-            bool o = __builtin_sub_overflow(lhs, rhs, &lhs);
-            return {lhs, o};
-        } else {
-            T value = wrapping_sub_fn{}(lhs, rhs);
-            if constexpr (signed_integral<T>) {
-                bool o = (lhs >= T{} && rhs < T{} && value < T{}) ||
-                         (lhs < T{} && rhs > T{} && value > T{});
-                return {value, o};
-            } else {
-                return {value, rhs > lhs};
-            }
-        }
-    }
-};
-
-template <std::size_t, bool> struct builtin_sized_int {};
-template <> struct builtin_sized_int<2, true> { using type = std::int16_t; };
-template <> struct builtin_sized_int<2, false> { using type = std::uint16_t; };
-template <> struct builtin_sized_int<4, true> { using type = std::int32_t; };
-template <> struct builtin_sized_int<4, false> { using type = std::uint32_t; };
-template <> struct builtin_sized_int<8, true> { using type = std::int64_t; };
-template <> struct builtin_sized_int<8, false> { using type = std::uint64_t; };
-
-template <std::size_t Sz, bool Signed>
-using builtin_sized_int_t = typename builtin_sized_int<Sz, Signed>::type;
-
-template <integral T>
-struct overflowing_mul_impl;
-
-// If we have a builtin that is big enough to hold the result of the
-// multiplication, use it
-template <integral T>
-    requires requires { typename builtin_sized_int_t<2 * sizeof(T), signed_integral<T>>; }
-struct overflowing_mul_impl<T> {
-    inline constexpr auto operator()(T lhs, T rhs) const -> overflow_result<T>
-    {
-        using U = builtin_sized_int_t<2 * sizeof(T), signed_integral<T>>;
-        auto result = static_cast<U>(lhs) * static_cast<U>(rhs);
-        return overflowing_cast_fn<T>{}(result);
-    }
-};
-
-// Otherwise, fall back to checking for overflow via a division operation
-template <integral T>
-struct overflowing_mul_impl {
-    inline constexpr auto operator()(T lhs, T rhs) const -> overflow_result<T>
-    {
-        constexpr T min = std::numeric_limits<T>::lowest();
-        T value =  wrapping_mul_fn{}(lhs, rhs);
-        if constexpr (signed_integral<T>) {
-            bool o = (lhs == T{-1} && rhs == min) ||
-                     (lhs != T{}  && unchecked_div_fn{}(value, lhs) != rhs);
-            return {value, o};
-        } else {
-            bool o = lhs != T{} && unchecked_div_fn{}(value, lhs) != rhs;
-            return {value, o};
-        }
+        T r;
+        bool o = ckd_sub(&r, lhs, rhs);
+        return {r, o};
     }
 };
 
 struct overflowing_mul_fn {
     template <integral T>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(T lhs, T rhs) const noexcept -> overflow_result<T>
     {
-        if constexpr (detail::use_builtin_overflow_ops) {
-            bool o = __builtin_mul_overflow(lhs, rhs, &lhs);
-            return {lhs, o};
-        } else {
-            return overflowing_mul_impl<T>{}(lhs, rhs);
-        }
+        T r;
+        bool o = ckd_mul(&r, lhs, rhs);
+        return {r, o};
     }
 };
 
 struct overflowing_neg_fn {
     template <signed_integral T>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(T val) const noexcept -> overflow_result<T>
     {
-        if constexpr (use_builtin_overflow_ops) {
-            bool o = __builtin_sub_overflow(T{0}, val, &val);
-            return {val, o};
-        } else {
-            return {wrapping_neg_fn{}(val), val == std::numeric_limits<T>::lowest()};
-        }
+        T r;
+        bool o = ckd_sub(&r, T{0}, val);
+        return {r, o};
     }
 };
 
 struct checked_add_fn {
     template <integral T>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(T lhs, T rhs,
                               std::source_location loc = std::source_location::current()) const
         -> T
     {
-        // For built-in signed types at least as large as int,
-        // constant evaluation already checks for overflow
-        if (signed_integral<T> && (sizeof(T) >= sizeof(int)) &&
-            std::is_constant_evaluated()) {
-            return unchecked_add_fn{}(lhs, rhs); // LCOV_EXCL_LINE
+        if (T r; !ckd_add(&r, lhs, rhs)) {
+            return r;
         } else {
-            auto result = overflowing_add_fn{}(lhs, rhs);
-            if (result.overflowed) {
-                runtime_error("overflow in addition", loc);
-            }
-            return result.value;
+            runtime_error("overflow in addition", loc);
         }
     }
 };
@@ -1321,19 +1256,15 @@ struct checked_add_fn {
 struct checked_sub_fn {
     template <integral T>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(T lhs, T rhs,
                               std::source_location loc = std::source_location::current()) const
         -> T
     {
-        if (signed_integral<T> && (sizeof(T) >= sizeof(int)) &&
-            std::is_constant_evaluated()) {
-            return unchecked_sub_fn{}(lhs, rhs); // LCOV_EXCL_LINE
+        if (T r; !ckd_sub(&r, lhs, rhs)) {
+            return r;
         } else {
-            auto result = overflowing_sub_fn{}(lhs, rhs);
-            if (result.overflowed) {
-                runtime_error("overflow in subtraction", loc);
-            }
-            return result.value;
+            runtime_error("overflow in subtraction", loc);
         }
     }
 };
@@ -1341,19 +1272,15 @@ struct checked_sub_fn {
 struct checked_mul_fn {
     template <integral T>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(T lhs, T rhs,
                               std::source_location loc = std::source_location::current()) const
         -> T
     {
-        if (signed_integral<T> && (sizeof(T) >= sizeof(int)) &&
-            std::is_constant_evaluated()) {
-            return unchecked_mul_fn{}(lhs, rhs); // LCOV_EXCL_LINE
+        if (T r; !ckd_mul(&r, lhs, rhs)) {
+            return r;
         } else {
-            auto result = overflowing_mul_fn{}(lhs, rhs);
-            if (result.overflowed) {
-                runtime_error("overflow in multiplication", loc);
-            }
-            return result.value;
+            runtime_error("overflow in multiplication", loc);
         }
     }
 };
@@ -1363,6 +1290,7 @@ template <overflow_policy OnOverflow = overflow_policy::error,
 struct checked_div_fn {
     template <integral T>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(T lhs, T rhs,
                               std::source_location loc = std::source_location::current()) const
         -> T
@@ -1392,6 +1320,7 @@ template <overflow_policy OnOverflow = overflow_policy::error,
 struct checked_mod_fn {
     template <integral T>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(T lhs, T rhs,
                               std::source_location loc = std::source_location::current()) const
         -> T
@@ -1417,6 +1346,7 @@ struct checked_mod_fn {
 struct checked_shl_fn {
     template <integral T, integral U>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(T lhs, U rhs,
                               std::source_location loc = std::source_location::current()) const
         -> T
@@ -1435,6 +1365,7 @@ struct checked_shl_fn {
 struct checked_shr_fn {
     template <integral T, integral U>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(T lhs, U rhs,
                std::source_location loc = std::source_location::current()) const
         -> T
@@ -1451,15 +1382,16 @@ struct checked_shr_fn {
 struct checked_neg_fn {
     template <signed_integral T>
     [[nodiscard]]
+    FLUX_ALWAYS_INLINE
     constexpr auto operator()(T val,
                               std::source_location loc = std::source_location::current()) const
         -> T
     {
-        auto [r, o] = overflowing_neg_fn{}(val);
-        if (o) {
-            flux::runtime_error("Overflow in signed negation", loc);
+        if (T r; !ckd_sub(&r, T{0}, val)) {
+            return r;
+        } else {
+            runtime_error("overflow in signed negation", loc);
         }
-        return r;
     }
 };
 
