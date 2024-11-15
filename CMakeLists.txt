@@ -45,6 +45,7 @@ target_compile_options(flux-internal INTERFACE
         /W4
         /wd4459 # local variable name hides global variable
         /wd4702 # unreachable code
+        /wd4100 # unreferenced formal parameter
     >
 )
 
