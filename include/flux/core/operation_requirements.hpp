@@ -39,7 +39,6 @@ concept repeated_invocable = repeated_invocable_helper<Func, E, N>::value;
 template <typename InnerSeq, typename Pattern>
 concept flatten_with_compatible =
     std::common_reference_with<element_t<InnerSeq>, element_t<Pattern>> &&
-    std::common_reference_with<rvalue_element_t<InnerSeq>, rvalue_element_t<Pattern>> &&
     std::common_with<value_t<InnerSeq>, value_t<Pattern>>;
 
 template <typename, typename>

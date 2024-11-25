@@ -26,8 +26,48 @@ inline constexpr auto variant_emplace =
     }
 };
 
+template <iterable Base, multipass_sequence Pattern>
+struct flatten_with_adaptor : inline_sequence_base<flatten_with_adaptor<Base, Pattern>> {
+private:
+    FLUX_NO_UNIQUE_ADDRESS Base base_;
+    FLUX_NO_UNIQUE_ADDRESS Pattern pattern_;
+
+public:
+    constexpr flatten_with_adaptor(decays_to<Base> auto&& base,
+                                   decays_to<Pattern> auto&& pattern)
+        : base_(FLUX_FWD(base)),
+          pattern_(FLUX_FWD(pattern))
+    {}
+
+    struct flux_sequence_traits : default_sequence_traits {
+
+        static consteval auto element_type(auto& self) -> std::common_reference_t<
+                element_t<element_t<decltype((self.base_))>>,
+                element_t<decltype((self.pattern_))>>;
+
+        static constexpr auto iterate(auto& self, auto&& pred) -> bool
+        {
+            using E = element_t<decltype(self)>;
+            auto as_common = [](auto&& elem) -> E { return static_cast<E>(FLUX_FWD(elem)); };
+            bool first = true;
+
+            return flux::iterate(self.base_, [&](auto&& inner) {
+                if (!first) {
+                    if (!flux::iterate(flux::map(self.pattern_, as_common), pred)) {
+                        return false;
+                    }
+                } else {
+                    first = false;
+                }
+                return flux::iterate(flux::map(flux::from_fwd_ref(FLUX_FWD(inner)), as_common), pred);
+            });
+        }
+    };
+};
+
 template <sequence Base, multipass_sequence Pattern>
-struct flatten_with_adaptor : inline_sequence_base<flatten_with_adaptor<Base, Pattern>>
+struct flatten_with_adaptor<Base, Pattern>
+    : inline_sequence_base<flatten_with_adaptor<Base, Pattern>>
 {
 private:
     using InnerSeq = element_t<Base>;
@@ -341,24 +381,24 @@ public:
 
 struct flatten_with_fn {
 
-    template <adaptable_sequence Seq, adaptable_sequence Pattern>
-        requires sequence<element_t<Seq>> &&
+    template <sink_iterable It, adaptable_sequence Pattern>
+        requires iterable<element_t<It>> &&
                  multipass_sequence<Pattern> &&
-                 flatten_with_compatible<element_t<Seq>, Pattern>
-    constexpr auto operator()(Seq&& seq, Pattern&& pattern) const
-        -> sequence auto
+                 flatten_with_compatible<element_t<It>, Pattern>
+    constexpr auto operator()(It&& it, Pattern&& pattern) const
+        -> iterable auto
     {
-        return flatten_with_adaptor<std::decay_t<Seq>, std::decay_t<Pattern>>(
-            FLUX_FWD(seq), FLUX_FWD(pattern));
+        return flatten_with_adaptor<std::decay_t<It>, std::decay_t<Pattern>>(
+            FLUX_FWD(it), FLUX_FWD(pattern));
     }
 
-    template <adaptable_sequence Seq>
-        requires sequence<element_t<Seq>> &&
-                 std::movable<value_t<element_t<Seq>>>
-    constexpr auto operator()(Seq&& seq, value_t<element_t<Seq>> value) const
+    template <sink_iterable It>
+        requires iterable<element_t<It>> &&
+                 std::movable<value_t<element_t<It>>>
+    constexpr auto operator()(It&& it, value_t<element_t<It>> value) const
         -> sequence auto
     {
-        return (*this)(FLUX_FWD(seq), flux::single(std::move(value)));
+        return (*this)(FLUX_FWD(it), flux::single(std::move(value)));
     }
 };
 

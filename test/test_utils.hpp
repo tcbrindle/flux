@@ -59,6 +59,17 @@ public:
         return impl(FLUX_FWD(seq), ilist);
     }
 
+    constexpr bool operator()(flux::iterable auto&& it,
+                              flux::sequence auto&& seq) const
+    {
+        auto cur = flux::first(seq);
+        return flux::iterate(it, [&](auto&& elem) {
+            bool r = (elem == flux::read_at(seq, cur));
+            flux::inc(seq, cur);
+            return r;
+        });
+    }
+
     constexpr bool operator()(flux::sequence auto&& seq1,
                               flux::sequence auto&& seq2) const
     {

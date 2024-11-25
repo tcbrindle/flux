@@ -16,6 +16,33 @@ namespace {
 
 using namespace std::string_view_literals;
 
+constexpr bool test_flatten_with_iterable()
+{
+    {
+        // Contrive a not-sequence-of-not-sequences
+        auto true_ = flux::pred::true_;
+        std::array arr{
+            std::views::filter("111"sv, true_),
+            std::views::filter("222"sv, true_),
+            std::views::filter("333"sv, true_)};
+        auto view = std::views::filter(std::move(arr), true_);
+
+        auto iter = flux::flatten_with(std::move(view), "-"sv);
+
+        using F = decltype(iter);
+        static_assert(flux::iterable<F>);
+        static_assert(not flux::sequence<F>);
+        static_assert(not flux::sized_iterable<F>);
+        static_assert(std::same_as<flux::element_t<F>, char const&>);
+        static_assert(std::same_as<flux::value_t<F>, char>);
+
+        STATIC_CHECK(check_equal(iter, "111-222-333"sv));
+    }
+
+    return true;
+}
+static_assert(test_flatten_with_iterable());
+
 constexpr bool test_flatten_with_single_pass()
 {
     // Single-pass outer, multipass inner, sequence pattern
@@ -187,7 +214,10 @@ static_assert(test_flatten_with_multipass());
 
 TEST_CASE("flatten_with")
 {
-    bool res = test_flatten_with_single_pass();
+    bool res = test_flatten_with_iterable();
+    REQUIRE(res);
+
+    res = test_flatten_with_single_pass();
     REQUIRE(res);
 
     res = test_flatten_with_multipass();
