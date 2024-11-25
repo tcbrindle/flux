@@ -36,6 +36,27 @@ constexpr bool test_drop_while()
         STATIC_CHECK(check_equal(seq, {5, 6, 7, 8, 9}));
     }
 
+    // Non-sequence iterables are okay
+    {
+        int arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+
+        auto rng = arr | std::views::filter(flux::pred::true_);
+
+        auto iter = flux::mut_ref(rng).drop_while([](int i) {
+            return i < 5;
+        });
+
+        using S = decltype(iter);
+
+        static_assert(flux::iterable<S>);
+        static_assert(flux::const_iterable<S>);
+        static_assert(not flux::sequence<S>);
+        static_assert(std::same_as<flux::element_t<S>, int&>);
+
+        STATIC_CHECK(check_equal(iter, {5, 6, 7, 8, 9}));
+
+    }
+
     // Single-pass sequences are okay
     {
         int arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
