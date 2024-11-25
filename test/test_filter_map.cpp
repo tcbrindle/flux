@@ -5,6 +5,7 @@
 
 #include <array>
 #include <optional>
+#include <ranges>
 #include <utility>
 
 #include "test_utils.hpp"
