@@ -4,6 +4,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <array>
+#include <ranges>
 
 #include "test_utils.hpp"
 
@@ -128,6 +129,22 @@ constexpr bool test_read_only() {
         static_assert(std::same_as<flux::rvalue_element_t<S>, std::pair<int const&&, double const&&>>);
 #endif
         static_assert(std::same_as<flux::value_t<S>, std::pair<int, double>>);
+    }
+
+    // Test read_only on plain iterables
+    {
+        auto view = std::views::filter(std::array{1, 2, 3, 4, 5}, flux::pred::true_);
+        auto read_only = flux::read_only(std::move(view));
+
+        using R = decltype(read_only);
+
+        static_assert(flux::iterable<R>);
+        static_assert(flux::read_only_iterable<R>);
+        static_assert(not flux::sequence<R>);
+        static_assert(std::same_as<flux::element_t<R>, int const&>);
+        static_assert(std::same_as<flux::value_t<R>, int>);
+
+        STATIC_CHECK(check_equal(read_only, {1, 2, 3, 4, 5}));
     }
 
     return true;

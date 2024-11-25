@@ -18,7 +18,7 @@ struct cast_to_const {
     constexpr auto operator()(auto&& elem) const -> T { return FLUX_FWD(elem); }
 };
 
-template <sequence Base>
+template <iterable Base>
     requires (not read_only_iterable<Base>)
 struct read_only_adaptor : map_adaptor<Base, cast_to_const<const_element_t<Base>>> {
 private:
@@ -31,22 +31,23 @@ public:
 
     struct flux_sequence_traits : map::flux_sequence_traits {
     private:
+        template <typename B = Base>
         using const_rvalue_element_t = std::common_reference_t<
-            value_t<Base> const&&, rvalue_element_t<Base>>;
+            value_t<B> const&&, rvalue_element_t<B>>;
 
     public:
         using value_type = value_t<Base>;
 
-        static constexpr auto move_at(auto& self, cursor_t<Base> const& cur)
-            -> const_rvalue_element_t
+        static constexpr auto move_at(auto& self, auto const& cur)
+            -> decltype(auto)
         {
-            return static_cast<const_rvalue_element_t>(flux::move_at(self.base(), cur));
+            return static_cast<const_rvalue_element_t<>>(flux::move_at(self.base(), cur));
         }
 
-        static constexpr auto move_at_unchecked(auto& self, cursor_t<Base> const& cur)
-            -> const_rvalue_element_t
+        static constexpr auto move_at_unchecked(auto& self, auto const& cur)
+            -> decltype(auto)
         {
-            return static_cast<const_rvalue_element_t>(flux::move_at_unchecked(self.base(), cur));
+            return static_cast<const_rvalue_element_t<>>(flux::move_at_unchecked(self.base(), cur));
         }
 
         static constexpr auto data(auto& self)
@@ -59,14 +60,14 @@ public:
 };
 
 struct read_only_fn {
-    template <adaptable_sequence Seq>
+    template <sink_iterable It>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const -> read_only_iterable auto
+    constexpr auto operator()(It&& it) const -> read_only_iterable auto
     {
-        if constexpr (read_only_iterable<Seq>) {
-            return FLUX_FWD(seq);
+        if constexpr (read_only_iterable<It>) {
+            return FLUX_FWD(it);
         } else {
-            return read_only_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq));
+            return read_only_adaptor<std::decay_t<It>>(FLUX_FWD(it));
         }
     }
 };
