@@ -5,6 +5,7 @@
 
 #include <array>
 #include <numeric>
+#include <ranges>
 #include <sstream>
 
 #include "test_utils.hpp"
@@ -67,6 +68,25 @@ constexpr bool test_inclusive_scan()
         STATIC_CHECK(seq[seq.inc(cur)] == 10);
         STATIC_CHECK(seq[seq.inc(cur)] == 15);
         STATIC_CHECK(seq.is_last(seq.inc(cur)));
+    }
+
+    // Scan works correctly on iterables
+    {
+        auto scanner = []{ return flux::scan(
+            std::views::transform(std::array{1, 2, 3, 4, 5}, std::identity{}),
+            flux::num::add); };
+
+        using S = decltype(scanner());
+
+        static_assert(flux::iterable<S>);
+        static_assert(flux::sized_iterable<S>);
+        static_assert(not flux::sequence<S>);
+        static_assert(std::same_as<flux::element_t<S>, int const&>);
+
+        STATIC_CHECK(flux::size(scanner()) == 5);
+        STATIC_CHECK(check_equal(scanner(), {1, 3, 6, 10, 15}));
+        STATIC_CHECK(flux::contains(scanner(), 10) == true);
+        STATIC_CHECK(flux::contains(scanner(), 99) == false);
     }
 
     return true;
@@ -137,6 +157,25 @@ constexpr bool test_prescan()
         STATIC_CHECK(seq[seq.inc(cur)] == 10);
         STATIC_CHECK(seq[seq.inc(cur)] == 15);
         STATIC_CHECK(seq.is_last(seq.inc(cur)));
+    }
+
+    // Prescan works correctly on iterables
+    {
+        auto scanner = []{ return flux::prescan(
+            std::views::transform(std::array{1, 2, 3, 4, 5}, std::identity{}),
+            flux::num::add, 0); };
+
+        using S = decltype(scanner());
+
+        static_assert(flux::iterable<S>);
+        static_assert(flux::sized_iterable<S>);
+        static_assert(not flux::sequence<S>);
+        static_assert(std::same_as<flux::element_t<S>, int const&>);
+
+        STATIC_CHECK(flux::size(scanner()) == 6);
+        STATIC_CHECK(check_equal(scanner(), {0, 1, 3, 6, 10, 15}));
+        STATIC_CHECK(flux::contains(scanner(), 10) == true);
+        STATIC_CHECK(flux::contains(scanner(), 99) == false);
     }
 
     return true;
