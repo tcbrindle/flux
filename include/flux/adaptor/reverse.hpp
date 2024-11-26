@@ -48,6 +48,7 @@ public:
         using value_type = value_t<Base>;
 
         static constexpr auto first(auto& self) -> cursor_type
+            requires bounded_sequence<decltype((self.base_))>
         {
             return cursor_type(flux::last(self.base_));
         }
@@ -64,28 +65,32 @@ public:
 
         template <typename Self>
         static constexpr auto read_at(Self& self, cursor_type const& cur)
-            -> element_t<decltype((self.base_))>
+            -> decltype(auto)
+            requires bidirectional_sequence<decltype((self.base_))>
         {
             return flux::read_at(self.base_, flux::prev(self.base_, cur.base_cur));
         }
 
         template <typename Self>
         static constexpr auto read_at_unchecked(Self& self, cursor_type const& cur)
-            -> element_t<decltype((self.base_))>
+            -> decltype(auto)
+            requires bidirectional_sequence<decltype((self.base_))>
         {
             return flux::read_at_unchecked(self.base_, flux::prev(self.base_, cur.base_cur));
         }
 
         template <typename Self>
         static constexpr auto move_at(Self& self, cursor_type const& cur)
-            -> rvalue_element_t<decltype((self.base_))>
+            -> decltype(auto)
+            requires bidirectional_sequence<decltype((self.base_))>
         {
             return flux::move_at(self.base_, flux::prev(self.base_, cur.base_cur));
         }
 
         template <typename Self>
         static constexpr auto move_at_unchecked(Self& self, cursor_type const& cur)
-            -> rvalue_element_t<decltype((self.base_))>
+            -> decltype(auto)
+            requires bidirectional_sequence<decltype((self.base_))>
         {
             return flux::move_at_unchecked(self.base_, flux::prev(self.base_, cur.base_cur));
         }
@@ -112,14 +117,12 @@ public:
         }
 
         static constexpr auto size(auto& self) -> distance_t
-            requires sized_iterable<decltype((self.base_))>
+            requires sized_iterable<Base>
         {
             return flux::size(self.base_);
         }
 
         static constexpr auto for_each_while(auto& self, auto&& pred) -> cursor_type
-            requires bidirectional_sequence<decltype((self.base_))> &&
-                     bounded_sequence<decltype((self.base_))>
         {
             auto cur = flux::last(self.base_);
             const auto end = flux::first(self.base_);
