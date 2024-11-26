@@ -74,7 +74,7 @@ constexpr bool test_inclusive_scan()
     {
         auto scanner = []{ return flux::scan(
             std::views::transform(std::array{1, 2, 3, 4, 5}, std::identity{}),
-            flux::num::add); };
+            std::plus{}); };
 
         using S = decltype(scanner());
 
@@ -163,7 +163,7 @@ constexpr bool test_prescan()
     {
         auto scanner = []{ return flux::prescan(
             std::views::transform(std::array{1, 2, 3, 4, 5}, std::identity{}),
-            flux::num::add, 0); };
+            std::plus{}, 0); };
 
         using S = decltype(scanner());
 
@@ -244,7 +244,7 @@ constexpr bool test_scan_first()
     {
         auto scanner = []{ return flux::scan_first(
             std::views::transform(std::array{1, 2, 3, 4, 5}, std::identity{}),
-            flux::num::add); };
+            std::plus{}); };
 
         using S = decltype(scanner());
 
