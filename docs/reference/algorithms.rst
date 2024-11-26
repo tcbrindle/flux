@@ -109,7 +109,7 @@ Algorithms
         :language: cpp
         :linenos:
         :dedent:
-        :lines: 21-52
+        :lines: 16-44
 
     :see also:
         * `std::lexicographical_compare_three_way() <https://en.cppreference.com/w/cpp/algorithm/lexicographical_compare_three_way>`_

@@ -77,7 +77,7 @@ See the vcpkg documentation for more details.
 
 Flux requires a recent compiler with good support for the C++20 standard. It is tested with:
 
-* GCC 11.3 and newer
+* GCC 12 and newer
 * LLVM Clang 16 and newer
 * MSVC 2022
 * AppleClang/Xcode 16
