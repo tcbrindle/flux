@@ -19,4 +19,5 @@ InsertBraces: true
 NamespaceIndentation: None
 PackConstructorInitializers: CurrentLine
 SortIncludes: Never
+SpaceBeforeCpp11BracedList: false
 TabWidth: 4
