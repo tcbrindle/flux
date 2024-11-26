@@ -18,7 +18,7 @@
 
 // clang-format off
 
-// Workaround GCC11/12 ICE in sequence concept definition below
+// Workaround GCC12 ICE in sequence concept definition below
 #if defined(__GNUC__) && !defined(__clang__) && (__GNUC__ < 13)
 #define FLUX_COMPILER_IS_GCC12
 #endif

@@ -11,11 +11,6 @@
 
 #include <flux.hpp>
 
-// GCC 11 doesn't support constexpr std::vector
-#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE < 12
-#define COMPILER_IS_GCC11
-#endif
-
 // std::abs is not constexpr in C++20
 auto const c_abs = [](std::signed_integral auto i) { return i < 0 ? -i : i; };
 
@@ -31,11 +26,9 @@ auto const max_gap_count = [](std::vector<int> nums)
     return diffs.count_eq(diffs.max().value_or(0));
 };
 
-#ifndef COMPILER_IS_GCC11
 static_assert(max_gap_count({2, 5, 8, 1}) == 2);
 static_assert(max_gap_count({3, 6, 9, 1}) == 2);
 static_assert(max_gap_count({10}) == 0);
-#endif
 
 }
 
@@ -63,27 +56,11 @@ auto const max_gap_count = [](std::vector<int> nums)
             .count;
 };
 
-#ifndef COMPILER_IS_GCC11
 static_assert(max_gap_count({2, 5, 8, 1}) == 2);
 static_assert(max_gap_count({3, 6, 9, 1}) == 2);
 static_assert(max_gap_count({10}) == 0);
-#endif
 
 }
 
 int main()
-{
-    {
-        using namespace version1;
-        FLUX_ASSERT(max_gap_count({2, 5, 8, 1}) == 2);
-        FLUX_ASSERT(max_gap_count({3, 6, 9, 1}) == 2);
-        FLUX_ASSERT(max_gap_count({10}) == 0);
-    }
-
-    {
-        using namespace version2;
-        FLUX_ASSERT(max_gap_count({2, 5, 8, 1}) == 2);
-        FLUX_ASSERT(max_gap_count({3, 6, 9, 1}) == 2);
-        FLUX_ASSERT(max_gap_count({10}) == 0);
-    }
-}
+{}

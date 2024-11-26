@@ -16,8 +16,8 @@
 
 namespace {
 
-// GCC11 std::string isn't usable in constexpr, so here's a quick and dirty
-// version instead
+// Constexpr use of std::string causes problems with some compiler/stdlib
+// combinations, so here's a quick-and-dirty constexpr string instead
 struct String {
 private:
     using Traits = std::char_traits<char>;
