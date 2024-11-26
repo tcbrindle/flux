@@ -4,6 +4,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <array>
+#include <ranges>
 
 #include "test_utils.hpp"
 
@@ -68,6 +69,23 @@ constexpr bool test_take_while()
                        .drop(1);
 
         STATIC_CHECK(check_equal(seq, {4, 16, 36, 64, 100}));
+    }
+
+    // Test with non-sequence iterables
+    {
+        auto view = std::views::filter(std::array{1, 2, 3, 4, 5}, flux::pred::true_);
+
+        auto taken = flux::take_while(std::move(view), flux::pred::lt(4));
+
+        using T = decltype(taken);
+
+        static_assert(flux::iterable<T>);
+        static_assert(not flux::sized_iterable<T>);
+        static_assert(not flux::sequence<T>);
+
+        STATIC_CHECK(flux::contains(taken, 2));
+        STATIC_CHECK(not flux::contains(taken, 4));
+        STATIC_CHECK(check_equal(taken, {1, 2, 3}));
     }
 
     return true;

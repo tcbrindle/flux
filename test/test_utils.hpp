@@ -47,9 +47,10 @@ public:
                               std::initializer_list<T> ilist) const
     {
         auto iter = ilist.begin();
-        return flux::iterate(it, [&iter](auto&& elem) {
+        bool r =  flux::iterate(it, [&iter](auto&& elem) {
             return *iter++ == elem;
         });
+        return r ? iter == ilist.end() : r;
     }
 
     template <typename T>
@@ -63,11 +64,12 @@ public:
                               flux::sequence auto&& seq) const
     {
         auto cur = flux::first(seq);
-        return flux::iterate(it, [&](auto&& elem) {
+        bool k = flux::iterate(it, [&](auto&& elem) {
             bool r = (elem == flux::read_at(seq, cur));
             flux::inc(seq, cur);
             return r;
         });
+        return k ? flux::is_last(seq, cur) : k;
     }
 
     constexpr bool operator()(flux::sequence auto&& seq1,
