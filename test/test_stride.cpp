@@ -6,6 +6,7 @@
 #include <array>
 #include <limits>
 #include <list>
+#include <ranges>
 
 #include "test_utils.hpp"
 
@@ -136,6 +137,25 @@ constexpr bool test_stride_non_bidir()
         auto cur = seq.find(4);
 
         STATIC_CHECK(&seq[cur] == arr.data() + 4);
+    }
+
+    // Stride works on non-sequence iterables
+    {
+        auto view = std::views::transform(std::array{0, 1, 2, 3, 4, 5}, std::identity{});
+
+        auto strided = flux::stride(std::move(view), 2);
+
+        using S = decltype(strided);
+        static_assert(flux::iterable<S>);
+        static_assert(flux::const_iterable<S>);
+        static_assert(flux::iterable<S const>);
+        static_assert(flux::sized_iterable<S>);
+        static_assert(not flux::sequence<S>);
+        static_assert(std::same_as<flux::element_t<S>, int&>);
+        static_assert(std::same_as<flux::element_t<S const>, int const&>);
+
+        STATIC_CHECK(flux::size(strided) == 3);
+        STATIC_CHECK(check_equal(strided, {0, 2, 4}));
     }
 
     return true;
