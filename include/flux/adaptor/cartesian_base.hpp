@@ -204,10 +204,36 @@ private:
         }
     }
 
+    template <std::size_t I, typename Self, typename Predicate,
+              typename... PartialElements>
+    static constexpr auto iterate_impl(Self& self, Predicate& pred,
+                                       PartialElements&&... partial_elements) -> bool
+    {
+        if constexpr (I == Arity - 1) {
+            return flux::iterate(get_base<I>(self), [&](auto&& elem) {
+                if constexpr (ReadKind == read_kind::tuple) {
+                    return std::invoke(pred, element_t<Self>(FLUX_FWD(partial_elements)..., FLUX_FWD(elem)));
+                } else {
+                    return std::invoke(pred, std::invoke(self.func_, FLUX_FWD(partial_elements)..., FLUX_FWD(elem)));
+                }
+            });
+        } else {
+            return flux::iterate(get_base<I>(self), [&](auto&& elem) {
+                return iterate_impl<I+1>(self, pred, FLUX_FWD(partial_elements)..., FLUX_FWD(elem));
+            });
+        }
+    }
+
 protected:
     using types = cartesian_traits_types<Arity, CartesianKind, ReadKind, Bases...>;
 
 public:
+
+    template <typename Self, typename Pred>
+    static constexpr auto iterate(Self& self, Pred&& pred) -> bool
+    {
+        return iterate_impl<0>(self, pred);
+    }
 
     template <typename Self>
     static constexpr auto first(Self& self)

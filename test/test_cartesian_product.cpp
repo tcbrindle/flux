@@ -451,12 +451,12 @@ constexpr bool test_cartesian_product()
         STATIC_CHECK(count_j == 4);
     }
 
-    // `cartesian_product` `for_each_while` short circuits.
+    // `cartesian_product` `iterate` short circuits.
     {
         auto cart = flux::cartesian_product(std::array{100, 200}, std::array{300, 0});
 
         int count = 0;
-        cart.for_each_while(flux::unpack([&] (auto, auto j) {
+        flux::iterate(cart, flux::unpack([&] (auto, auto j) {
                 ++count;
                 return j != 0;
             }));
