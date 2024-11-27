@@ -73,7 +73,7 @@ public:
 };
 
 template <typename T>
-struct iter_traits<generator<T>> : default_sequence_traits
+struct iter_traits<generator<T>> : default_iter_traits
 {
 private:
     struct cursor_type {

@@ -49,7 +49,7 @@ struct iota_traits {
 };
 
 template <incrementable T, iota_traits Traits>
-struct iota_sequence_traits : default_sequence_traits {
+struct iota_sequence_traits : default_iter_traits {
     using cursor_type = T;
 
     static constexpr bool is_infinite = !Traits.has_end;
@@ -116,8 +116,8 @@ struct iota_sequence_traits : default_sequence_traits {
 
 template <typename T>
 struct basic_iota_sequence : inline_sequence_base<basic_iota_sequence<T>> {
-    using flux_sequence_traits = iota_sequence_traits<T, iota_traits{}>;
-    friend flux_sequence_traits;
+    using flux_iter_traits = iota_sequence_traits<T, iota_traits{}>;
+    friend flux_iter_traits;
 };
 
 template <typename T>
@@ -132,8 +132,8 @@ public:
         : start_(std::move(from))
     {}
 
-    using flux_sequence_traits = iota_sequence_traits<T, traits>;
-    friend flux_sequence_traits;
+    using flux_iter_traits = iota_sequence_traits<T, traits>;
+    friend flux_iter_traits;
 };
 
 template <typename T>
@@ -149,8 +149,8 @@ public:
           end_(std::move(to))
     {}
 
-    using flux_sequence_traits = iota_sequence_traits<T, traits>;
-    friend flux_sequence_traits;
+    using flux_iter_traits = iota_sequence_traits<T, traits>;
+    friend flux_iter_traits;
 };
 
 struct iota_fn {

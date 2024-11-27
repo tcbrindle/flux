@@ -37,7 +37,7 @@ public:
           data_{count}
     {}
 
-    struct flux_sequence_traits : default_sequence_traits {
+    struct flux_iter_traits : default_iter_traits {
     private:
         using self_t = repeat_sequence;
 

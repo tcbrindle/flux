@@ -59,7 +59,7 @@ struct cartesian_traits_types<Arity, cartesian_kind::product, read_kind::tuple, 
 };
 
 template <std::size_t Arity, cartesian_kind CartesianKind, read_kind ReadKind, typename... Bases>
-struct cartesian_traits_base_impl : default_sequence_traits {
+struct cartesian_traits_base_impl : default_iter_traits {
 private:
 
     template<std::size_t I, typename Self>
@@ -368,7 +368,7 @@ public:
         -> decltype(auto)
         requires (ReadKind == read_kind::map)
     {
-        return default_sequence_traits::move_at(self, cur);
+        return default_iter_traits::move_at(self, cur);
     }
 
     template <typename Self>
@@ -376,7 +376,7 @@ public:
         -> decltype(auto)
         requires (ReadKind == read_kind::map)
     {
-        return default_sequence_traits::move_at_unchecked(self, cur);
+        return default_iter_traits::move_at_unchecked(self, cur);
     }
 
     template <typename Self>
@@ -415,7 +415,7 @@ public:
     static constexpr auto for_each_while(Self& self, Function&& func) -> cursor_t<Self>
         requires (ReadKind == read_kind::map)
     {
-        return default_sequence_traits::for_each_while(self, FLUX_FWD(func));
+        return default_iter_traits::for_each_while(self, FLUX_FWD(func));
     }
 
 };

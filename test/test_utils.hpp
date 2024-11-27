@@ -111,7 +111,7 @@ public:
 }
 
 template <typename Base>
-struct flux::iter_traits<single_pass_only<Base>> : flux::default_sequence_traits
+struct flux::iter_traits<single_pass_only<Base>> : flux::default_iter_traits
 {
     using self_t = single_pass_only<Base>;
     using cursor_t = typename single_pass_only<Base>::cursor_type;

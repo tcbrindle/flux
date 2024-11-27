@@ -66,7 +66,7 @@ test_vector(flux::from_iterable_t, Seq&&, A const&) -> test_vector<flux::value_t
 struct test_iterable {
     int arr[5] = {1, 2, 3, 4, 5};
 
-    struct flux_sequence_traits : flux::default_sequence_traits {
+    struct flux_iter_traits : flux::default_iter_traits {
 
         static consteval auto element_type(test_iterable const&) -> int const&;
 

@@ -29,13 +29,13 @@ public:
         : base_(FLUX_FWD(base))
     {}
 
-    using flux_sequence_traits = cartesian_traits_base<
+    using flux_iter_traits = cartesian_traits_base<
         PowN,
         cartesian_kind::power,
         read_kind::tuple,
         Base
     >;
-    friend flux_sequence_traits::impl;
+    friend flux_iter_traits::impl;
 };
 
 

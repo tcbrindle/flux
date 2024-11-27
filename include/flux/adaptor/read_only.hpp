@@ -29,7 +29,7 @@ public:
         : map(FLUX_FWD(base), cast_to_const<const_element_t<Base>>{})
     {}
 
-    struct flux_sequence_traits : map::flux_sequence_traits {
+    struct flux_iter_traits : map::flux_iter_traits {
     private:
         template <typename B = Base>
         using const_rvalue_element_t = std::common_reference_t<

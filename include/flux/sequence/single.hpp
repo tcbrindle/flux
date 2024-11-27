@@ -55,7 +55,7 @@ struct single_fn {
 } // namespace detail
 
 template <typename T>
-struct iter_traits<detail::single_sequence<T>> : default_sequence_traits
+struct iter_traits<detail::single_sequence<T>> : default_iter_traits
 {
 private:
     using self_t = detail::single_sequence<T>;

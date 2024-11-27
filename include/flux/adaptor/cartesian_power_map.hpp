@@ -25,13 +25,13 @@ public:
           func_(FLUX_FWD(func))
     {}
 
-    using flux_sequence_traits = cartesian_traits_base<
+    using flux_iter_traits = cartesian_traits_base<
         PowN,
         cartesian_kind::power,
         read_kind::map,
         Base
     >;
-    friend flux_sequence_traits::impl;
+    friend flux_iter_traits::impl;
 };
 
 template <std::size_t PowN>

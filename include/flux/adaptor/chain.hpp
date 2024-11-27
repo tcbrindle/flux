@@ -16,7 +16,7 @@ namespace flux {
 namespace detail {
 
 template <typename... Bases>
-struct chain_iterable_traits_base : default_sequence_traits {
+struct chain_iterable_traits_base : default_iter_traits {
 
     using value_type = std::common_type_t<value_t<Bases>...>;
 
@@ -331,7 +331,7 @@ public:
         : bases_(FLUX_FWD(bases)...)
     {}
 
-    struct flux_sequence_traits
+    struct flux_iter_traits
         : std::conditional_t<(sequence<Bases> && ...),
             chain_sequence_traits_base<Bases...>,
             chain_iterable_traits_base<Bases...>>

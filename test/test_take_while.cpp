@@ -13,7 +13,7 @@ namespace {
 struct ints {
     int from = 0;
 
-    struct flux_sequence_traits : flux::default_sequence_traits {
+    struct flux_iter_traits : flux::default_iter_traits {
         static constexpr int first(ints) { return 0; }
         static constexpr bool is_last(ints, int) { return false; }
         static constexpr int read_at(ints self, int cur){ return self.from + cur; }

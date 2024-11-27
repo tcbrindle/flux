@@ -48,7 +48,7 @@ struct take_while_fn {
 
 template <iterable Base, typename Pred>
 struct iter_traits<detail::take_while_adaptor<Base, Pred>>
-    : default_sequence_traits {
+    : default_iter_traits {
 
     template <typename Self>
     static consteval auto element_type(Self& self)
@@ -81,7 +81,7 @@ struct iter_traits<detail::take_while_adaptor<Base, Pred>>
 
     static constexpr bool is_infinite = false;
 
-    using default_sequence_traits::element_type;
+    using default_iter_traits::element_type;
 
     static constexpr auto iterate(auto& self, auto&& iter_pred) -> bool
     {

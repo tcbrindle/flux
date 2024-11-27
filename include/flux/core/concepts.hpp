@@ -55,7 +55,7 @@ template <typename T>
 struct iter_traits;
 
 FLUX_EXPORT
-struct default_sequence_traits;
+struct default_iter_traits;
 
 namespace detail {
 
@@ -409,7 +409,7 @@ concept derived_from_inline_sequence_base = requires(T t) {
  * Default sequence_traits implementation
  */
 
-struct default_sequence_traits {
+struct default_iter_traits {
 
     template <typename Self>
         requires detail::sequence_requirements<Self>
@@ -515,15 +515,15 @@ struct default_sequence_traits {
 namespace detail {
 
 template <typename T>
-concept has_nested_sequence_traits =
-    requires { typename T::flux_sequence_traits; } &&
-    std::is_class_v<typename T::flux_sequence_traits>;
+concept has_nested_iter_traits =
+    requires { typename T::flux_iter_traits; } &&
+    std::is_class_v<typename T::flux_iter_traits>;
 
 }
 
 template <typename T>
-    requires detail::has_nested_sequence_traits<T>
-struct iter_traits<T> : T::flux_sequence_traits {};
+    requires detail::has_nested_iter_traits<T>
+struct iter_traits<T> : T::flux_iter_traits {};
 
 namespace detail {
 

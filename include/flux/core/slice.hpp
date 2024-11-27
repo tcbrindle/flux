@@ -100,8 +100,8 @@ struct iter_traits<subsequence<Base, Bounded>>
     using value_type = value_t<Base>;
     using self_t = subsequence<Base, Bounded>;
 
-    using default_sequence_traits::element_type;
-    using default_sequence_traits::iterate;
+    using default_iter_traits::element_type;
+    using default_iter_traits::iterate;
 
     static constexpr auto first(self_t& self) -> cursor_t<Base>
     {
@@ -137,8 +137,8 @@ struct iter_traits<subsequence<Base, Bounded>>
                flux::distance(*self.base_, flux::first(*self.base_), self.data_.first);
     }
 
-    using default_sequence_traits::size;
-    using default_sequence_traits::for_each_while;
+    using default_iter_traits::size;
+    using default_iter_traits::for_each_while;
 };
 
 FLUX_EXPORT inline constexpr auto slice = detail::slice_fn{};

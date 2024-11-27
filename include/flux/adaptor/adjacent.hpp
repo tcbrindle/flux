@@ -20,7 +20,7 @@ namespace flux {
 namespace detail {
 
 template <typename Base, distance_t N>
-struct adjacent_sequence_traits_base : default_sequence_traits {
+struct adjacent_sequence_traits_base : default_iter_traits {
 protected:
     struct cursor_type {
         std::array<cursor_t<Base>, N> arr{};
@@ -126,7 +126,7 @@ public:
         : base_(FLUX_FWD(base))
     {}
 
-    struct flux_sequence_traits : adjacent_sequence_traits_base<Base, N> {
+    struct flux_iter_traits : adjacent_sequence_traits_base<Base, N> {
     private:
 
         using cursor_type = adjacent_sequence_traits_base<Base, N>::cursor_type;
@@ -189,7 +189,7 @@ public:
           func_(std::move(func))
     {}
 
-    struct flux_sequence_traits : adjacent_sequence_traits_base<Base, N> {
+    struct flux_iter_traits : adjacent_sequence_traits_base<Base, N> {
         template <typename Self>
         static constexpr auto read_at(Self& self, cursor_t<Self> const& cur)
             -> decltype(auto)

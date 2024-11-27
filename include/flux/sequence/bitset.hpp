@@ -13,7 +13,7 @@
 namespace flux {
 
 template <std::size_t N>
-struct iter_traits<std::bitset<N>> : default_sequence_traits {
+struct iter_traits<std::bitset<N>> : default_iter_traits {
 
     using value_type = bool;
 

@@ -22,7 +22,7 @@ public:
         : base_(FLUX_FWD(base))
     {}
 
-    struct flux_sequence_traits : default_sequence_traits {
+    struct flux_iter_traits : default_iter_traits {
 
         static inline constexpr bool is_infinite = infinite_sequence<Base>;
 

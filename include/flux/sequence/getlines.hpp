@@ -37,7 +37,7 @@ public:
     getlines_sequence(getlines_sequence&&) = default;
     getlines_sequence& operator=(getlines_sequence&&) = default;
 
-    struct flux_sequence_traits : default_sequence_traits {
+    struct flux_iter_traits : default_iter_traits {
     private:
         struct cursor_type {
             explicit cursor_type() = default;

@@ -18,7 +18,7 @@ namespace flux {
  * Default implementation for C arrays of known bound
  */
 template <typename T, index_t N>
-struct iter_traits<T[N]> : default_sequence_traits {
+struct iter_traits<T[N]> : default_iter_traits {
 
     static constexpr auto first(auto const&) -> index_t { return index_t{0}; }
 
@@ -82,7 +82,7 @@ struct iter_traits<T[N]> : default_sequence_traits {
  * Default implementation for std::reference_wrapper<T>
  */
 template <iterable Seq>
-struct iter_traits<std::reference_wrapper<Seq>> : default_sequence_traits {
+struct iter_traits<std::reference_wrapper<Seq>> : default_iter_traits {
 
     using self_t = std::reference_wrapper<Seq>;
 
@@ -183,7 +183,7 @@ concept contiguous_sized_range = std::ranges::contiguous_range<R> && std::ranges
 template <typename R>
     requires (!detail::derived_from_inline_sequence_base<R> &&
                std::ranges::input_range<R>)
-struct iter_traits<R> : default_sequence_traits {
+struct iter_traits<R> : default_iter_traits {
 
     using value_type = std::ranges::range_value_t<R>;
 

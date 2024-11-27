@@ -32,7 +32,7 @@ public:
     constexpr auto base() && -> Base&& { return std::move(base_); }
     constexpr auto base() const&& -> Base const&& { return std::move(base_); }
 
-    struct flux_sequence_traits  : detail::passthrough_traits_base
+    struct flux_iter_traits  : detail::passthrough_traits_base
     {
         using value_type = std::remove_cvref_t<std::invoke_result_t<Func&, element_t<Base>>>;
 
@@ -71,8 +71,8 @@ public:
             });
         }
 
-        using default_sequence_traits::move_at;
-        using default_sequence_traits::move_at_unchecked;
+        using default_iter_traits::move_at;
+        using default_iter_traits::move_at_unchecked;
 
         static void data() = delete; // we're not a contiguous sequence
     };

@@ -14,7 +14,7 @@ namespace flux {
 
 namespace detail {
 
-struct passthrough_traits_base : default_sequence_traits {
+struct passthrough_traits_base : default_iter_traits {
 
     template <typename Self>
     static consteval auto element_type(Self& self) -> element_t<decltype(self.base())>;
@@ -152,7 +152,7 @@ public:
 
     constexpr Base& base() const noexcept { return *base_; }
 
-    struct flux_sequence_traits : passthrough_traits_base {
+    struct flux_iter_traits : passthrough_traits_base {
         using value_type = value_t<Base>;
     };
 };
@@ -213,7 +213,7 @@ public:
     constexpr Base&& base() && noexcept { return std::move(base_); }
     constexpr Base const&& base() const&& noexcept { return std::move(base_); }
 
-    struct flux_sequence_traits : passthrough_traits_base {
+    struct flux_iter_traits : passthrough_traits_base {
         using value_type = value_t<Base>;
     };
 };

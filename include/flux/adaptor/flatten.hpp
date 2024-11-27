@@ -22,7 +22,7 @@ public:
         : base_(FLUX_FWD(base))
     {}
 
-    struct flux_sequence_traits {
+    struct flux_iter_traits {
         template <typename Self>
         static consteval auto element_type(Self& self)
             -> element_t<element_t<decltype((self.base_))>>;
@@ -49,7 +49,7 @@ public:
         : base_(FLUX_FWD(base))
     {}
 
-    struct flux_sequence_traits : default_sequence_traits {
+    struct flux_iter_traits : default_iter_traits {
     private:
         using self_t = flatten_adaptor;
 
@@ -129,7 +129,7 @@ public:
         : base_(FLUX_FWD(base))
     {}
 
-    struct flux_sequence_traits : default_sequence_traits {
+    struct flux_iter_traits : default_iter_traits {
     private:
         using InnerSeq = element_t<Base>;
 

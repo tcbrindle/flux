@@ -28,7 +28,7 @@ public:
         : base_(FLUX_FWD(base))
     {}
 
-    struct flux_sequence_traits : detail::passthrough_traits_base {
+    struct flux_iter_traits : detail::passthrough_traits_base {
 
         using value_type = value_t<Base>;
         using self_t = cache_last_adaptor;

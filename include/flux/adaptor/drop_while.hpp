@@ -29,7 +29,7 @@ public:
           pred_(FLUX_FWD(pred))
     {}
 
-    struct flux_sequence_traits : detail::passthrough_traits_base {
+    struct flux_iter_traits : detail::passthrough_traits_base {
         using value_type = value_t<Base>;
 
         static constexpr bool disable_multipass = !multipass_sequence<Base>;
@@ -62,8 +62,8 @@ public:
                    flux::distance(self.base_, flux::first(self.base_), first(self));
         }
 
-        using default_sequence_traits::size;
-        using default_sequence_traits::for_each_while;
+        using default_iter_traits::size;
+        using default_iter_traits::for_each_while;
     };
 };
 

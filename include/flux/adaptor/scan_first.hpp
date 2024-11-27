@@ -39,7 +39,7 @@ public:
 };
 
 template <typename Base, typename Func, typename R>
-struct scan_first_iterable_traits : default_sequence_traits {
+struct scan_first_iterable_traits : default_iter_traits {
 private:
     using self_t = scan_first_adaptor<Base, Func, R>;
 

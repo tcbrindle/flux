@@ -26,10 +26,10 @@ public:
           func_(std::move(func))
     {}
 
-    struct flux_sequence_traits : default_sequence_traits {
+    struct flux_iter_traits : default_iter_traits {
     private:
         struct cursor_type {
-            friend struct flux_sequence_traits;
+            friend struct flux_iter_traits;
             cursor_type(cursor_type&&) = default;
             cursor_type& operator=(cursor_type&&) = default;
         private:

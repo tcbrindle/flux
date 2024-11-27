@@ -27,13 +27,13 @@ private:
     using V = std::conditional_t<IsConst, R const, R>;
 
 public:
-    struct flux_sequence_traits : default_sequence_traits {
+    struct flux_iter_traits : default_iter_traits {
     private:
         class cursor_type {
 
             std::ranges::iterator_t<V> iter;
 
-            friend struct flux_sequence_traits;
+            friend struct flux_iter_traits;
 
             constexpr explicit cursor_type(std::ranges::iterator_t<V> iter) : iter(std::move(iter)) {}
         public:

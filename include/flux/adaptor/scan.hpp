@@ -69,7 +69,7 @@ struct prescan_fn {
 };
 
 template <typename Base, typename Func, typename R, scan_mode Mode>
-struct scan_iterable_traits : default_sequence_traits {
+struct scan_iterable_traits : default_iter_traits {
 private:
     using self_t = scan_adaptor<Base, Func, R, Mode>;
 
@@ -201,7 +201,7 @@ public:
         }));
     }
 
-    using default_sequence_traits::for_each_while; // when Mode == exclusive
+    using default_iter_traits::for_each_while; // when Mode == exclusive
 };
 
 } // namespace detail
