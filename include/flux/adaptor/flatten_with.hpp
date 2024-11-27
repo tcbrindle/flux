@@ -27,7 +27,7 @@ inline constexpr auto variant_emplace =
 };
 
 template <iterable Base, multipass_sequence Pattern>
-struct flatten_with_adaptor : inline_sequence_base<flatten_with_adaptor<Base, Pattern>> {
+struct flatten_with_adaptor : inline_iter_base<flatten_with_adaptor<Base, Pattern>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Pattern pattern_;
@@ -68,7 +68,7 @@ public:
 
 template <sequence Base, multipass_sequence Pattern>
 struct flatten_with_adaptor<Base, Pattern>
-    : inline_sequence_base<flatten_with_adaptor<Base, Pattern>>
+    : inline_iter_base<flatten_with_adaptor<Base, Pattern>>
 {
 private:
     using InnerSeq = element_t<Base>;
@@ -198,7 +198,7 @@ template <multipass_sequence Base, multipass_sequence Pattern>
     requires std::is_lvalue_reference_v<element_t<Base>> &&
              multipass_sequence<element_t<Base>>
 struct flatten_with_adaptor<Base, Pattern>
-    : inline_sequence_base<flatten_with_adaptor<Base, Pattern>> {
+    : inline_iter_base<flatten_with_adaptor<Base, Pattern>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Pattern pattern_;
@@ -412,7 +412,7 @@ template <adaptable_sequence Pattern>
     requires sequence<element_t<Derived>> &&
              multipass_sequence<Pattern> &&
              detail::flatten_with_compatible<element_t<Derived>, Pattern>
-constexpr auto inline_sequence_base<Derived>::flatten_with(Pattern&& pattern) &&
+constexpr auto inline_iter_base<Derived>::flatten_with(Pattern&& pattern) &&
 {
     return flux::flatten_with(std::move(derived()), FLUX_FWD(pattern));
 }
@@ -421,7 +421,7 @@ template <typename Derived>
 template <typename Value>
     requires sequence<element_t<Derived>> &&
              std::constructible_from<value_t<element_t<Derived>>, Value&&>
-constexpr auto inline_sequence_base<Derived>::flatten_with(Value value) &&
+constexpr auto inline_iter_base<Derived>::flatten_with(Value value) &&
 {
     return flux::flatten_with(std::move(derived()), std::move(value));
 }

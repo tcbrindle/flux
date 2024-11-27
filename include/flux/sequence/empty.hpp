@@ -13,7 +13,7 @@ namespace flux {
 namespace detail {
 
 template <typename T>
-struct empty_sequence : inline_sequence_base<empty_sequence<T>> {
+struct empty_sequence : inline_iter_base<empty_sequence<T>> {
     struct flux_iter_traits : default_iter_traits {
     private:
         struct cursor_type {

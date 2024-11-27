@@ -19,7 +19,7 @@ template <>
 struct repeat_data<false> { std::size_t count; };
 
 template <std::movable T, bool IsInfinite>
-struct repeat_sequence : inline_sequence_base<repeat_sequence<T, IsInfinite>>
+struct repeat_sequence : inline_iter_base<repeat_sequence<T, IsInfinite>>
 {
 private:
     T obj_;

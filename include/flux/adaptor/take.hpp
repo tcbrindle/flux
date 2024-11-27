@@ -13,7 +13,7 @@ namespace flux {
 namespace detail {
 
 template <iterable Base>
-struct take_adaptor : inline_sequence_base<take_adaptor<Base>>
+struct take_adaptor : inline_iter_base<take_adaptor<Base>>
 {
 private:
     Base base_;
@@ -186,7 +186,7 @@ struct take_fn {
 FLUX_EXPORT inline constexpr auto take = detail::take_fn{};
 
 template <typename Derived>
-constexpr auto inline_sequence_base<Derived>::take(num::integral auto count) &&
+constexpr auto inline_iter_base<Derived>::take(num::integral auto count) &&
 {
     return flux::take(std::move(derived()), count);
 }

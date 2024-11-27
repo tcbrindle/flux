@@ -135,7 +135,7 @@ public:
 namespace detail {
 
 template <sequence... Bases>
-struct zip_adaptor : inline_sequence_base<zip_adaptor<Bases...>> {
+struct zip_adaptor : inline_iter_base<zip_adaptor<Bases...>> {
 private:
     pair_or_tuple_t<Bases...> bases_;
 
@@ -162,7 +162,7 @@ struct zip_fn {
 };
 
 template <typename Func, sequence... Bases>
-struct zip_map_adaptor : inline_sequence_base<zip_map_adaptor<Func, Bases...>> {
+struct zip_map_adaptor : inline_iter_base<zip_map_adaptor<Func, Bases...>> {
 private:
     pair_or_tuple_t<Bases...> bases_;
     FLUX_NO_UNIQUE_ADDRESS Func func_;

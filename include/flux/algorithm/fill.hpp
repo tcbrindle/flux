@@ -59,7 +59,7 @@ FLUX_EXPORT inline constexpr auto fill = detail::fill_fn{};
 template <typename D>
 template <typename Value>
     requires writable_iterable_of<D, Value const&>
-constexpr void inline_sequence_base<D>::fill(Value const& value)
+constexpr void inline_iter_base<D>::fill(Value const& value)
 {
     flux::fill(derived(), value);
 }

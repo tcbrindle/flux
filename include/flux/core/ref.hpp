@@ -7,7 +7,7 @@
 #define FLUX_CORE_REF_HPP_INCLUDED
 
 #include <flux/core/concepts.hpp>
-#include <flux/core/inline_sequence_base.hpp>
+#include <flux/core/inline_iter_base.hpp>
 #include <flux/core/sequence_access.hpp>
 
 namespace flux {
@@ -121,7 +121,7 @@ struct passthrough_traits_base : default_iter_traits {
 };
 
 template <iterable Base>
-struct ref_adaptor : inline_sequence_base<ref_adaptor<Base>> {
+struct ref_adaptor : inline_iter_base<ref_adaptor<Base>> {
 private:
     Base* base_;
 
@@ -199,7 +199,7 @@ struct ref_fn {
 
 template <iterable Base>
     requires std::movable<Base>
-struct owning_adaptor : inline_sequence_base<owning_adaptor<Base>> {
+struct owning_adaptor : inline_iter_base<owning_adaptor<Base>> {
 private:
     Base base_;
 
@@ -258,14 +258,14 @@ FLUX_EXPORT inline constexpr auto from = detail::from_fn{};
 FLUX_EXPORT inline constexpr auto from_fwd_ref = detail::from_fwd_ref_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::ref() const&
+constexpr auto inline_iter_base<D>::ref() const&
     requires const_iterable<D>
 {
     return flux::ref(derived());
 }
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::mut_ref() &
+constexpr auto inline_iter_base<D>::mut_ref() &
 {
     return flux::mut_ref(derived());
 }

@@ -14,7 +14,7 @@ namespace detail {
 
 template <sequence Base, std::size_t PowN, typename Func>
 struct cartesian_power_map_adaptor
-    : inline_sequence_base<cartesian_power_map_adaptor<Base, PowN, Func>> {
+    : inline_iter_base<cartesian_power_map_adaptor<Base, PowN, Func>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Func func_;

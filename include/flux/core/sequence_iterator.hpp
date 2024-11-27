@@ -206,26 +206,26 @@ FLUX_EXPORT inline constexpr auto begin = detail::begin_fn{};
 FLUX_EXPORT inline constexpr auto end = detail::end_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::begin() &
+constexpr auto inline_iter_base<D>::begin() &
 {
     return flux::begin(derived());
 }
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::begin() const&
+constexpr auto inline_iter_base<D>::begin() const&
     requires sequence<D const>
 {
     return flux::begin(derived());
 };
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::end() &
+constexpr auto inline_iter_base<D>::end() &
 {
     return flux::end(derived());
 }
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::end() const&
+constexpr auto inline_iter_base<D>::end() const&
 requires sequence<D const>
 {
     return flux::end(derived());

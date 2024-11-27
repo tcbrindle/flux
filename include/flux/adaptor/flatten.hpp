@@ -13,7 +13,7 @@ namespace flux {
 namespace detail {
 
 template <iterable Base>
-struct flatten_adaptor : inline_sequence_base<flatten_adaptor<Base>> {
+struct flatten_adaptor : inline_iter_base<flatten_adaptor<Base>> {
 private:
     Base base_;
 
@@ -37,7 +37,7 @@ public:
 };
 
 template <sequence Base>
-struct flatten_adaptor<Base> : inline_sequence_base<flatten_adaptor<Base>> {
+struct flatten_adaptor<Base> : inline_iter_base<flatten_adaptor<Base>> {
 private:
     using InnerSeq = element_t<Base>;
 
@@ -120,7 +120,7 @@ public:
 template <multipass_sequence Base>
     requires std::is_reference_v<element_t<Base>> &&
              multipass_sequence<element_t<Base>>
-struct flatten_adaptor<Base> : inline_sequence_base<flatten_adaptor<Base>> {
+struct flatten_adaptor<Base> : inline_iter_base<flatten_adaptor<Base>> {
 private:
     Base base_;
 
@@ -269,7 +269,7 @@ struct flatten_fn {
 FLUX_EXPORT inline constexpr auto flatten = detail::flatten_fn{};
 
 template <typename Derived>
-constexpr auto inline_sequence_base<Derived>::flatten() &&
+constexpr auto inline_iter_base<Derived>::flatten() &&
         requires iterable<element_t<Derived>>
 {
     return flux::flatten(std::move(derived()));

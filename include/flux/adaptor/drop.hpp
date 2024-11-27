@@ -14,7 +14,7 @@ namespace flux {
 namespace detail {
 
 template <iterable Base>
-struct drop_adaptor : inline_sequence_base<drop_adaptor<Base>> {
+struct drop_adaptor : inline_iter_base<drop_adaptor<Base>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     distance_t count_;
@@ -95,7 +95,7 @@ struct drop_fn {
 FLUX_EXPORT inline constexpr auto drop = detail::drop_fn{};
 
 template <typename Derived>
-constexpr auto inline_sequence_base<Derived>::drop(num::integral auto count) &&
+constexpr auto inline_iter_base<Derived>::drop(num::integral auto count) &&
 {
     return flux::drop(std::move(derived()), count);
 }

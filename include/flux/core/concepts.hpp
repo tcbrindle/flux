@@ -389,13 +389,13 @@ concept adaptable_sequence =
 
 FLUX_EXPORT
 template <typename D>
-struct inline_sequence_base;
+struct inline_iter_base;
 
 namespace detail {
 
 template <typename T, typename U>
-    requires (!std::same_as<T, inline_sequence_base<U>>)
-void derived_from_inline_sequence_base_test(T const&, inline_sequence_base<U> const&);
+    requires (!std::same_as<T, inline_iter_base<U>>)
+void derived_from_inline_sequence_base_test(T const&, inline_iter_base<U> const&);
 
 template <typename T>
 concept derived_from_inline_sequence_base = requires(T t) {

@@ -14,7 +14,7 @@ namespace flux {
 namespace detail {
 
 template <iterable Base, typename Pred>
-class filter_adaptor : public inline_sequence_base<filter_adaptor<Base, Pred>>
+class filter_adaptor : public inline_iter_base<filter_adaptor<Base, Pred>>
 {
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Pred pred_;
@@ -146,7 +146,7 @@ FLUX_EXPORT inline constexpr auto filter = detail::filter_fn{};
 template <typename D>
 template <typename Pred>
     requires std::predicate<Pred&, element_t<D>>
-constexpr auto inline_sequence_base<D>::filter(Pred pred) &&
+constexpr auto inline_iter_base<D>::filter(Pred pred) &&
 {
     return detail::filter_adaptor<D, Pred>(std::move(derived()), std::move(pred));
 }

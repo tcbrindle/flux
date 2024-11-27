@@ -7,7 +7,7 @@
 #define FLUX_OP_SLICE_HPP_INCLUDED
 
 #include <flux/core/concepts.hpp>
-#include <flux/core/inline_sequence_base.hpp>
+#include <flux/core/inline_iter_base.hpp>
 
 namespace flux {
 
@@ -26,7 +26,7 @@ struct slice_data<Cur, false> {
 
 template <sequence Base, bool Bounded>
     requires (!Bounded || regular_cursor<cursor_t<Base>>)
-struct subsequence : inline_sequence_base<subsequence<Base, Bounded>>
+struct subsequence : inline_iter_base<subsequence<Base, Bounded>>
 {
 private:
     Base* base_;

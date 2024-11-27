@@ -91,7 +91,7 @@ template <sequence Needle, typename Cmp>
     requires std::predicate<Cmp&, element_t<Derived>, element_t<Needle>> &&
              (multipass_sequence<Derived> || sized_iterable<Derived>) &&
              (multipass_sequence<Needle> || sized_iterable<Needle>)
-constexpr auto inline_sequence_base<Derived>::ends_with(Needle&& needle, Cmp cmp) -> bool
+constexpr auto inline_iter_base<Derived>::ends_with(Needle&& needle, Cmp cmp) -> bool
 {
     return flux::ends_with(derived(), FLUX_FWD(needle), std::move(cmp));
 }

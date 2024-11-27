@@ -319,7 +319,7 @@ public:
 };
 
 template <iterable... Bases>
-struct chain_adaptor : inline_sequence_base<chain_adaptor<Bases...>> {
+struct chain_adaptor : inline_iter_base<chain_adaptor<Bases...>> {
 private:
     std::tuple<Bases...> bases_;
 

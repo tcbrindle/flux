@@ -65,7 +65,7 @@ template <typename D>
 template <typename Iter>
     requires std::weakly_incrementable<Iter> &&
              std::indirectly_writable<Iter, element_t<D>>
-constexpr auto inline_sequence_base<D>::output_to(Iter iter) -> Iter
+constexpr auto inline_iter_base<D>::output_to(Iter iter) -> Iter
 {
     return flux::output_to(derived(), std::move(iter));
 }

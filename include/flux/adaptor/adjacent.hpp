@@ -115,7 +115,7 @@ public:
 };
 
 template <typename Base, distance_t N>
-struct adjacent_adaptor : inline_sequence_base<adjacent_adaptor<Base, N>> {
+struct adjacent_adaptor : inline_iter_base<adjacent_adaptor<Base, N>> {
 private:
     Base base_;
 
@@ -176,7 +176,7 @@ public:
 };
 
 template <typename Base, distance_t N, typename Func>
-struct adjacent_map_adaptor : inline_sequence_base<adjacent_map_adaptor<Base, N, Func>> {
+struct adjacent_map_adaptor : inline_iter_base<adjacent_map_adaptor<Base, N, Func>> {
 private:
     Base base_;
     Func func_;
@@ -244,14 +244,14 @@ FLUX_EXPORT inline constexpr auto pairwise_map = adjacent_map<2>;
 
 template <typename D>
 template <distance_t N>
-constexpr auto inline_sequence_base<D>::adjacent() &&
+constexpr auto inline_iter_base<D>::adjacent() &&
     requires multipass_sequence<D>
 {
     return flux::adjacent<N>(std::move(derived()));
 }
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::pairwise() &&
+constexpr auto inline_iter_base<D>::pairwise() &&
     requires multipass_sequence<D>
 {
     return flux::pairwise(std::move(derived()));
@@ -260,7 +260,7 @@ constexpr auto inline_sequence_base<D>::pairwise() &&
 template <typename D>
 template <distance_t N, typename Func>
     requires multipass_sequence<D>
-constexpr auto inline_sequence_base<D>::adjacent_map(Func func) &&
+constexpr auto inline_iter_base<D>::adjacent_map(Func func) &&
 {
     return flux::adjacent_map<N>(std::move(derived()), std::move(func));
 }
@@ -268,7 +268,7 @@ constexpr auto inline_sequence_base<D>::adjacent_map(Func func) &&
 template <typename D>
 template <typename Func>
     requires multipass_sequence<D>
-constexpr auto inline_sequence_base<D>::pairwise_map(Func func) &&
+constexpr auto inline_iter_base<D>::pairwise_map(Func func) &&
 {
     return flux::pairwise_map(std::move(derived()), std::move(func));
 }

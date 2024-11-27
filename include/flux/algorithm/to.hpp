@@ -161,14 +161,14 @@ constexpr auto to(It&& it, Args&&... args)
 
 template <typename D>
 template <typename Container, typename... Args>
-constexpr auto inline_sequence_base<D>::to(Args&&... args) -> Container
+constexpr auto inline_iter_base<D>::to(Args&&... args) -> Container
 {
     return flux::to<Container>(derived(), FLUX_FWD(args)...);
 }
 
 template <typename D>
 template <template <typename...> typename Container, typename... Args>
-constexpr auto inline_sequence_base<D>::to(Args&&... args)
+constexpr auto inline_iter_base<D>::to(Args&&... args)
 {
     return flux::to<Container>(derived(), FLUX_FWD(args)...);
 }

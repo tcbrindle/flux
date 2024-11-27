@@ -20,7 +20,7 @@ concept can_const_iterate =
     std::same_as<std::ranges::iterator_t<R>, std::ranges::iterator_t<R const>>;
 
 template <typename R, bool IsConst>
-struct range_sequence : inline_sequence_base<range_sequence<R, IsConst>> {
+struct range_sequence : inline_iter_base<range_sequence<R, IsConst>> {
 private:
     R rng_;
 

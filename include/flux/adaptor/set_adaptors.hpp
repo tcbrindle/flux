@@ -14,7 +14,7 @@ namespace flux::detail {
 
 template <sequence Base1, sequence Base2, typename Cmp>
 struct set_union_adaptor
-    : flux::inline_sequence_base<set_union_adaptor<Base1, Base2, Cmp>>
+    : flux::inline_iter_base<set_union_adaptor<Base1, Base2, Cmp>>
 {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base1 base1_;
@@ -147,7 +147,7 @@ public:
 
 template <sequence Base1, sequence Base2, typename Cmp>
 struct set_difference_adaptor
-    : flux::inline_sequence_base<set_difference_adaptor<Base1, Base2, Cmp>>
+    : flux::inline_iter_base<set_difference_adaptor<Base1, Base2, Cmp>>
 {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base1 base1_;
@@ -250,7 +250,7 @@ public:
 
 template <sequence Base1, sequence Base2, typename Cmp>
 struct set_symmetric_difference_adaptor
-    : flux::inline_sequence_base<set_symmetric_difference_adaptor<Base1, Base2, Cmp>>
+    : flux::inline_iter_base<set_symmetric_difference_adaptor<Base1, Base2, Cmp>>
 {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base1 base1_;
@@ -395,7 +395,7 @@ public:
 
 template <sequence Base1, sequence Base2, typename Cmp>
 struct set_intersection_adaptor
-    : flux::inline_sequence_base<set_intersection_adaptor<Base1, Base2, Cmp>>
+    : flux::inline_iter_base<set_intersection_adaptor<Base1, Base2, Cmp>>
 {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base1 base1_;

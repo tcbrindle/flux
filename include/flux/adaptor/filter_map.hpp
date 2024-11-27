@@ -41,7 +41,7 @@ template <typename D>
 template <typename Func>
 requires std::invocable<Func&, element_t<D>> &&
          detail::optional_like<std::invoke_result_t<Func&, element_t<D>>>
-constexpr auto inline_sequence_base<D>::filter_map(Func func) &&
+constexpr auto inline_iter_base<D>::filter_map(Func func) &&
 {
     return flux::filter_map(derived(), std::move(func));
 }
@@ -63,7 +63,7 @@ struct filter_deref_fn {
 FLUX_EXPORT inline constexpr auto filter_deref = detail::filter_deref_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::filter_deref() && requires detail::optional_like<value_t<D>>
+constexpr auto inline_iter_base<D>::filter_deref() && requires detail::optional_like<value_t<D>>
 {
     return flux::filter_deref(derived());
 }

@@ -13,7 +13,7 @@ namespace flux {
 namespace detail {
 
 template <iterable Base, typename Func>
-struct map_adaptor : inline_sequence_base<map_adaptor<Base, Func>>
+struct map_adaptor : inline_iter_base<map_adaptor<Base, Func>>
 {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
@@ -95,7 +95,7 @@ FLUX_EXPORT inline constexpr auto map = detail::map_fn{};
 template <typename Derived>
 template <typename Func>
     requires std::invocable<Func&, element_t<Derived>>
-constexpr auto inline_sequence_base<Derived>::map(Func func) &&
+constexpr auto inline_iter_base<Derived>::map(Func func) &&
 {
     return detail::map_adaptor<Derived, Func>(std::move(derived()), std::move(func));
 }

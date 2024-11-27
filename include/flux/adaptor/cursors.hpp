@@ -13,7 +13,7 @@ namespace flux {
 namespace detail {
 
 template <typename Base>
-struct cursors_adaptor : inline_sequence_base<cursors_adaptor<Base>> {
+struct cursors_adaptor : inline_iter_base<cursors_adaptor<Base>> {
 private:
     Base base_;
 
@@ -95,7 +95,7 @@ struct cursors_fn {
 FLUX_EXPORT inline constexpr auto cursors = detail::cursors_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::cursors() &&
+constexpr auto inline_iter_base<D>::cursors() &&
     requires multipass_sequence<D>
 {
     return flux::cursors(std::move(derived()));

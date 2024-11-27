@@ -78,7 +78,7 @@ struct read_only_fn {
 FLUX_EXPORT inline constexpr auto read_only = detail::read_only_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::read_only() &&
+constexpr auto inline_iter_base<D>::read_only() &&
 {
     return flux::read_only(std::move(derived()));
 }

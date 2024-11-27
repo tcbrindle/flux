@@ -13,7 +13,7 @@ namespace flux {
 namespace detail {
 
 template <sequence Base, sequence Mask>
-struct mask_adaptor : inline_sequence_base<mask_adaptor<Base, Mask>>
+struct mask_adaptor : inline_iter_base<mask_adaptor<Base, Mask>>
 {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
@@ -158,7 +158,7 @@ FLUX_EXPORT inline constexpr auto mask = detail::mask_fn{};
 template <typename D>
 template <adaptable_sequence Mask>
     requires detail::boolean_testable<element_t<Mask>>
-constexpr auto inline_sequence_base<D>::mask(Mask&& mask_) &&
+constexpr auto inline_iter_base<D>::mask(Mask&& mask_) &&
 {
     return flux::mask(std::move(derived()), FLUX_FWD(mask_));
 }

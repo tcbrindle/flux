@@ -115,13 +115,13 @@ struct iota_sequence_traits : default_iter_traits {
 };
 
 template <typename T>
-struct basic_iota_sequence : inline_sequence_base<basic_iota_sequence<T>> {
+struct basic_iota_sequence : inline_iter_base<basic_iota_sequence<T>> {
     using flux_iter_traits = iota_sequence_traits<T, iota_traits{}>;
     friend flux_iter_traits;
 };
 
 template <typename T>
-struct iota_sequence : inline_sequence_base<iota_sequence<T>> {
+struct iota_sequence : inline_iter_base<iota_sequence<T>> {
 private:
     T start_;
 
@@ -137,7 +137,7 @@ public:
 };
 
 template <typename T>
-struct bounded_iota_sequence : inline_sequence_base<bounded_iota_sequence<T>> {
+struct bounded_iota_sequence : inline_iter_base<bounded_iota_sequence<T>> {
     T start_;
     T end_;
 

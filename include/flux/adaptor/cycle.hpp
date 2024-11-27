@@ -21,7 +21,7 @@ template <>
 struct cycle_data<true> {};
 
 template <multipass_sequence Base, bool IsInfinite>
-struct cycle_adaptor : inline_sequence_base<cycle_adaptor<Base, IsInfinite>> {
+struct cycle_adaptor : inline_iter_base<cycle_adaptor<Base, IsInfinite>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS cycle_data<IsInfinite> data_;
@@ -242,14 +242,14 @@ struct cycle_fn {
 FLUX_EXPORT inline constexpr auto cycle = detail::cycle_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::cycle() &&
+constexpr auto inline_iter_base<D>::cycle() &&
     requires infinite_sequence<D> || multipass_sequence<D>
 {
     return flux::cycle(std::move(derived()));
 }
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::cycle(num::integral auto count) &&
+constexpr auto inline_iter_base<D>::cycle(num::integral auto count) &&
     requires multipass_sequence<D>
 {
     return flux::cycle(std::move(derived()), count);

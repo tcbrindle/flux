@@ -14,7 +14,7 @@ namespace detail {
 
 template <bidirectional_sequence Base>
     requires bounded_sequence<Base>
-struct reverse_adaptor : inline_sequence_base<reverse_adaptor<Base>>
+struct reverse_adaptor : inline_iter_base<reverse_adaptor<Base>>
 {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
@@ -167,7 +167,7 @@ struct reverse_fn {
 FLUX_EXPORT inline constexpr auto reverse = detail::reverse_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::reverse() &&
+constexpr auto inline_iter_base<D>::reverse() &&
     requires bidirectional_sequence<D> && bounded_sequence<D>
 {
     return flux::reverse(std::move(derived()));

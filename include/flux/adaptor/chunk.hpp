@@ -16,7 +16,7 @@ namespace flux {
 namespace detail {
 
 template <typename Base>
-struct chunk_adaptor : inline_sequence_base<chunk_adaptor<Base>> {
+struct chunk_adaptor : inline_iter_base<chunk_adaptor<Base>> {
 private:
     Base base_;
     distance_t chunk_sz_;
@@ -47,7 +47,7 @@ public:
         using self_t = chunk_adaptor;
 
     public:
-        struct value_type : inline_sequence_base<value_type> {
+        struct value_type : inline_iter_base<value_type> {
         private:
             chunk_adaptor* parent_;
             constexpr explicit value_type(chunk_adaptor& parent)
@@ -134,7 +134,7 @@ public:
 };
 
 template <multipass_sequence Base>
-struct chunk_adaptor<Base> : inline_sequence_base<chunk_adaptor<Base>> {
+struct chunk_adaptor<Base> : inline_iter_base<chunk_adaptor<Base>> {
 private:
     Base base_;
     distance_t chunk_sz_;
@@ -186,7 +186,7 @@ public:
 };
 
 template <bidirectional_sequence Base>
-struct chunk_adaptor<Base> : inline_sequence_base<chunk_adaptor<Base>> {
+struct chunk_adaptor<Base> : inline_iter_base<chunk_adaptor<Base>> {
 private:
     Base base_;
     distance_t chunk_sz_;
@@ -311,7 +311,7 @@ struct chunk_fn {
 FLUX_EXPORT inline constexpr auto chunk = detail::chunk_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::chunk(num::integral auto chunk_sz) &&
+constexpr auto inline_iter_base<D>::chunk(num::integral auto chunk_sz) &&
 {
     return flux::chunk(std::move(derived()), chunk_sz);
 }

@@ -60,21 +60,21 @@ FLUX_EXPORT inline constexpr auto any = any_detail::fn{};
 
 template <typename D>
 template <predicate_for<D> Pred>
-constexpr auto inline_sequence_base<D>::all(Pred pred)
+constexpr auto inline_iter_base<D>::all(Pred pred)
 {
     return flux::all(derived(), std::move(pred));
 }
 
 template <typename D>
 template <predicate_for<D> Pred>
-constexpr auto inline_sequence_base<D>::any(Pred pred)
+constexpr auto inline_iter_base<D>::any(Pred pred)
 {
     return flux::any(derived(), std::move(pred));
 }
 
 template <typename D>
 template <predicate_for<D> Pred>
-constexpr auto inline_sequence_base<D>::none(Pred pred)
+constexpr auto inline_iter_base<D>::none(Pred pred)
 {
     return flux::none(derived(), std::move(pred));
 }

@@ -21,7 +21,7 @@ namespace {
 constexpr bool compiler_is_msvc = COMPILER_IS_MSVC;
 
 template <flux::sequence Base>
-struct NotBidir : flux::inline_sequence_base<NotBidir<Base>> {
+struct NotBidir : flux::inline_iter_base<NotBidir<Base>> {
     Base base_;
 
     constexpr explicit NotBidir(Base base) : base_(std::move(base)) {}

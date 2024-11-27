@@ -33,7 +33,7 @@ struct inplace_reverse_fn {
 FLUX_EXPORT inline constexpr auto inplace_reverse = detail::inplace_reverse_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::inplace_reverse()
+constexpr auto inline_iter_base<D>::inplace_reverse()
     requires bounded_sequence<D> && detail::element_swappable_with<D, D>
 {
     return flux::inplace_reverse(derived());

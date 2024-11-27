@@ -20,7 +20,7 @@ namespace detail {
 
 template <sequence... Bases>
 struct cartesian_product_adaptor
-    : inline_sequence_base<cartesian_product_adaptor<Bases...>> {
+    : inline_iter_base<cartesian_product_adaptor<Bases...>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS std::tuple<Bases...> bases_;
 

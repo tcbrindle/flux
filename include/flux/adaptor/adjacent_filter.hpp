@@ -14,7 +14,7 @@ namespace detail {
 
 template <multipass_sequence Base, typename Pred>
 struct adjacent_filter_adaptor
-    : inline_sequence_base<adjacent_filter_adaptor<Base, Pred>> {
+    : inline_iter_base<adjacent_filter_adaptor<Base, Pred>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Pred pred_;
@@ -145,13 +145,13 @@ template <typename D>
 template <typename Pred>
     requires multipass_sequence<D> &&
              std::predicate<Pred&, element_t<D>, element_t<D>>
-constexpr auto inline_sequence_base<D>::adjacent_filter(Pred pred) &&
+constexpr auto inline_iter_base<D>::adjacent_filter(Pred pred) &&
 {
     return flux::adjacent_filter(std::move(derived()), std::move(pred));
 }
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::dedup() &&
+constexpr auto inline_iter_base<D>::dedup() &&
     requires multipass_sequence<D> &&
              std::equality_comparable<element_t<D>>
 {

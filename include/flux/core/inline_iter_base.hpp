@@ -3,8 +3,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_CORE_INLINE_SEQUENCE_BASE_HPP_INCLUDED
-#define FLUX_CORE_INLINE_SEQUENCE_BASE_HPP_INCLUDED
+#ifndef FLUX_CORE_INLINE_ITER_BASE_HPP_INCLUDED
+#define FLUX_CORE_INLINE_ITER_BASE_HPP_INCLUDED
 
 #include <flux/core/sequence_access.hpp>
 #include <flux/core/operation_requirements.hpp>
@@ -28,7 +28,7 @@ template <sequence Seq>
 using bounds_t = bounds<cursor_t<Seq>>;
 
 template <typename Derived>
-struct inline_sequence_base {
+struct inline_iter_base {
 private:
     constexpr auto derived() -> Derived& { return static_cast<Derived&>(*this); }
     constexpr auto derived() const -> Derived const& { return static_cast<Derived const&>(*this); }
@@ -522,4 +522,4 @@ public:
 
 } // namespace flux
 
-#endif // FLUX_CORE_SEQUENCE_IFACE_HPP_INCLUDED
+#endif // FLUX_CORE_INLINE_ITER_BASE_HPP_INCLUDED

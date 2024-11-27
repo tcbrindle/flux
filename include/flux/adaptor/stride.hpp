@@ -63,7 +63,7 @@ inline constexpr struct advance_fn {
 } advance;
 
 template <typename Base>
-struct stride_adaptor : inline_sequence_base<stride_adaptor<Base>> {
+struct stride_adaptor : inline_iter_base<stride_adaptor<Base>> {
 private:
     Base base_;
     distance_t stride_;
@@ -280,7 +280,7 @@ struct iter_traits<detail::stride_adaptor<Base>>
 FLUX_EXPORT inline constexpr auto stride = detail::stride_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::stride(num::integral auto by) &&
+constexpr auto inline_iter_base<D>::stride(num::integral auto by) &&
 {
     return flux::stride(std::move(derived()), by);
 }

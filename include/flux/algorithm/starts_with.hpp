@@ -60,7 +60,7 @@ FLUX_EXPORT inline constexpr auto starts_with = detail::starts_with_fn{};
 template <typename Derived>
 template <sequence Needle, typename Cmp>
     requires std::predicate<Cmp&, element_t<Derived>, element_t<Needle>>
-constexpr auto inline_sequence_base<Derived>::starts_with(Needle&& needle, Cmp cmp) -> bool
+constexpr auto inline_iter_base<Derived>::starts_with(Needle&& needle, Cmp cmp) -> bool
 {
     return flux::starts_with(derived(), FLUX_FWD(needle), std::move(cmp));
 }

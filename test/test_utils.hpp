@@ -81,7 +81,7 @@ public:
 } check_equal;
 
 template <flux::sequence Base>
-struct single_pass_only : flux::inline_sequence_base<single_pass_only<Base>> {
+struct single_pass_only : flux::inline_iter_base<single_pass_only<Base>> {
 private:
     Base base_;
 

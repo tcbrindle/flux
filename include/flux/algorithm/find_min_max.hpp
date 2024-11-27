@@ -86,7 +86,7 @@ FLUX_EXPORT inline constexpr auto find_minmax = detail::find_minmax_fn{};
 template <typename D>
 template <typename Cmp>
     requires weak_ordering_for<Cmp, D>
-constexpr auto inline_sequence_base<D>::find_min(Cmp cmp)
+constexpr auto inline_iter_base<D>::find_min(Cmp cmp)
 {
     return flux::find_min(derived(), std::move(cmp));
 }
@@ -94,7 +94,7 @@ constexpr auto inline_sequence_base<D>::find_min(Cmp cmp)
 template <typename D>
 template <typename Cmp>
     requires weak_ordering_for<Cmp, D>
-constexpr auto inline_sequence_base<D>::find_max(Cmp cmp)
+constexpr auto inline_iter_base<D>::find_max(Cmp cmp)
 {
     return flux::find_max(derived(), std::move(cmp));
 }
@@ -102,7 +102,7 @@ constexpr auto inline_sequence_base<D>::find_max(Cmp cmp)
 template <typename D>
 template <typename Cmp>
     requires weak_ordering_for<Cmp, D>
-constexpr auto inline_sequence_base<D>::find_minmax(Cmp cmp)
+constexpr auto inline_iter_base<D>::find_minmax(Cmp cmp)
 {
     return flux::find_minmax(derived(), std::move(cmp));
 }

@@ -22,7 +22,7 @@ template <typename, typename, typename>
 struct scan_first_sequence_traits;
 
 template <typename Base, typename Func, typename R>
-struct scan_first_adaptor : inline_sequence_base<scan_first_adaptor<Base, Func, R>> {
+struct scan_first_adaptor : inline_iter_base<scan_first_adaptor<Base, Func, R>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Func func_;
@@ -173,7 +173,7 @@ FLUX_EXPORT inline constexpr auto scan_first = detail::scan_first_fn{};
 template <typename Derived>
 template <typename Func>
     requires foldable<Derived, Func, element_t<Derived>>
-constexpr auto inline_sequence_base<Derived>::scan_first(Func func) &&
+constexpr auto inline_iter_base<Derived>::scan_first(Func func) &&
 {
     return flux::scan_first(std::move(derived()), std::move(func));
 }

@@ -15,7 +15,7 @@ namespace flux {
 
 FLUX_EXPORT
 template <typename ElemT>
-struct generator : inline_sequence_base<generator<ElemT>> {
+struct generator : inline_iter_base<generator<ElemT>> {
 
     using yielded_type = std::conditional_t<std::is_reference_v<ElemT>,
                                             ElemT,

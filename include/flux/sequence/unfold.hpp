@@ -13,7 +13,7 @@ namespace flux {
 namespace detail {
 
 template <typename R, typename Func>
-struct unfold_sequence : inline_sequence_base<unfold_sequence<R, Func>> {
+struct unfold_sequence : inline_iter_base<unfold_sequence<R, Func>> {
 private:
     R state_;
     Func func_;

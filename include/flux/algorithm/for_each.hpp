@@ -33,7 +33,7 @@ FLUX_EXPORT inline constexpr auto for_each = detail::for_each_fn{};
 template <typename D>
 template <typename Func>
     requires std::invocable<Func&, element_t<D>>
-constexpr auto inline_sequence_base<D>::for_each(Func func) -> Func
+constexpr auto inline_iter_base<D>::for_each(Func func) -> Func
 {
     return flux::for_each(derived(), std::move(func));
 }

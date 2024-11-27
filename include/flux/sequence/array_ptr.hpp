@@ -22,7 +22,7 @@ struct make_array_ptr_unchecked_fn;
 FLUX_EXPORT
 template <typename T>
     requires (std::is_object_v<T> && !std::is_abstract_v<T>)
-struct array_ptr : inline_sequence_base<array_ptr<T>> {
+struct array_ptr : inline_iter_base<array_ptr<T>> {
 private:
     T* data_ = nullptr;
     distance_t sz_ = 0;

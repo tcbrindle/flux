@@ -13,7 +13,7 @@ namespace flux {
 namespace detail {
 
 template <sequence Base>
-struct unchecked_adaptor : inline_sequence_base<unchecked_adaptor<Base>> {
+struct unchecked_adaptor : inline_iter_base<unchecked_adaptor<Base>> {
 private:
     Base base_;
 

@@ -29,7 +29,7 @@ FLUX_EXPORT inline constexpr auto contains = detail::contains_fn{};
 template <typename D>
 template <typename Value>
     requires std::equality_comparable_with<element_t<D>, Value const&>
-constexpr auto inline_sequence_base<D>::contains(Value const& value) -> bool
+constexpr auto inline_iter_base<D>::contains(Value const& value) -> bool
 {
     return flux::contains(derived(), value);
 }

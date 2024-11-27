@@ -24,7 +24,7 @@ template <typename, typename, typename, scan_mode>
 struct scan_sequence_traits;
 
 template <typename Base, typename Func, typename R, scan_mode Mode>
-struct scan_adaptor : inline_sequence_base<scan_adaptor<Base, Func, R, Mode>> {
+struct scan_adaptor : inline_iter_base<scan_adaptor<Base, Func, R, Mode>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Func func_;
@@ -220,7 +220,7 @@ FLUX_EXPORT inline constexpr auto prescan = detail::prescan_fn{};
 template <typename Derived>
 template <typename D, typename Func, typename Init>
     requires foldable<Derived, Func, Init>
-constexpr auto inline_sequence_base<Derived>::scan(Func func, Init init) &&
+constexpr auto inline_iter_base<Derived>::scan(Func func, Init init) &&
 {
     return flux::scan(std::move(derived()), std::move(func), std::move(init));
 }
@@ -228,7 +228,7 @@ constexpr auto inline_sequence_base<Derived>::scan(Func func, Init init) &&
 template <typename Derived>
 template <typename Func, typename Init>
     requires foldable<Derived, Func, Init>
-constexpr auto inline_sequence_base<Derived>::prescan(Func func, Init init) &&
+constexpr auto inline_iter_base<Derived>::prescan(Func func, Init init) &&
 {
     return flux::prescan(std::move(derived()), std::move(func), std::move(init));
 }
