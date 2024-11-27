@@ -16,7 +16,8 @@ namespace detail {
 
 struct passthrough_traits_base : default_sequence_traits {
 
-    static consteval auto element_type(auto& self) -> element_t<decltype(self.base())>;
+    template <typename Self>
+    static consteval auto element_type(Self& self) -> element_t<decltype(self.base())>;
 
     static constexpr auto iterate(auto& self, auto&& pred)
         -> decltype(flux::iterate(self.base(), FLUX_FWD(pred)))

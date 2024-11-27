@@ -23,7 +23,8 @@ public:
     {}
 
     struct flux_sequence_traits {
-        static consteval auto element_type(auto& self)
+        template <typename Self>
+        static consteval auto element_type(Self& self)
             -> element_t<element_t<decltype((self.base_))>>;
 
         static constexpr auto iterate(auto& self, auto&& pred) -> bool

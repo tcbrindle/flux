@@ -41,7 +41,8 @@ public:
 
     struct flux_sequence_traits : default_sequence_traits {
 
-        static consteval auto element_type(auto& self) -> std::common_reference_t<
+        template <typename Self>
+        static consteval auto element_type(Self& self) -> std::common_reference_t<
                 element_t<element_t<decltype((self.base_))>>,
                 element_t<decltype((self.pattern_))>>;
 

@@ -50,7 +50,8 @@ template <iterable Base, typename Pred>
 struct sequence_traits<detail::take_while_adaptor<Base, Pred>>
     : default_sequence_traits {
 
-    static consteval auto element_type(auto& self)
+    template <typename Self>
+    static consteval auto element_type(Self& self)
         -> element_t<decltype((self.base_))>;
 
     static constexpr auto iterate(auto& self, auto&& iter_pred) -> bool

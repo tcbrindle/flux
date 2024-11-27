@@ -39,7 +39,8 @@ public:
         static constexpr bool disable_multipass = !multipass_sequence<Base>;
         static constexpr bool is_infinite = infinite_sequence<Base>;
 
-        static consteval auto element_type(auto& self)
+        template <typename Self>
+        static consteval auto element_type(Self& self)
             -> std::invoke_result_t<Func const&, element_t<decltype((self.base_))>>;
 
         static constexpr auto iterate(auto& self, auto&& pred) -> bool

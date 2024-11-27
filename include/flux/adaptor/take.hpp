@@ -40,8 +40,9 @@ public:
 
     public:
         using value_type = value_t<Base>;
-
-        static consteval auto element_type(auto& self) -> element_t<decltype((self.base_))>;
+        
+        template <typename Self>
+        static consteval auto element_type(Self& self) -> element_t<decltype((self.base_))>;
 
         static constexpr auto iterate(auto& self, auto&& pred) -> bool
         {

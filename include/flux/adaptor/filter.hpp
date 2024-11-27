@@ -45,7 +45,8 @@ public:
 
         static constexpr bool disable_multipass = !multipass_sequence<Base>;
 
-        static consteval auto element_type(auto& self) -> element_t<decltype((self.base_))>;
+        template <typename Self>
+        static consteval auto element_type(Self& self) -> element_t<decltype((self.base_))>;
 
         static constexpr auto iterate(auto& self, auto func) -> bool
         {
