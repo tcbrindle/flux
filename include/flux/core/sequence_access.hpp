@@ -14,6 +14,16 @@ namespace flux {
 
 namespace detail {
 
+struct iterate_fn {
+    template <iterable It, typename Pred>
+        requires std::invocable<Pred&, element_t<It>> &&
+                 boolean_testable<std::invoke_result_t<Pred&, element_t<It>>>
+    constexpr auto operator()(It&& iter, Pred pred) const -> bool
+    {
+        return traits_t<It>::iterate(iter, pred);
+    }
+};
+
 struct first_fn {
     template <sequence Seq>
     [[nodiscard]]
@@ -114,20 +124,20 @@ struct last_fn {
 };
 
 struct size_fn {
-    template <sized_sequence Seq>
+    template <sized_iterable It>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const -> distance_t
+    constexpr auto operator()(It&& it) const -> distance_t
     {
-        return traits_t<Seq>::size(seq);
+        return traits_t<It>::size(it);
     }
 };
 
 struct usize_fn {
-    template <sized_sequence Seq>
+    template <sized_iterable It>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const -> std::size_t
+    constexpr auto operator()(It&& it) const -> std::size_t
     {
-        return num::unchecked_cast<std::size_t>(size_fn{}(seq));
+        return num::unchecked_cast<std::size_t>(size_fn{}(it));
     }
 };
 
@@ -173,6 +183,7 @@ struct for_each_while_fn {
 
 } // namespace detail
 
+FLUX_EXPORT inline constexpr auto iterate = detail::iterate_fn{};
 FLUX_EXPORT inline constexpr auto first = detail::first_fn{};
 FLUX_EXPORT inline constexpr auto is_last = detail::is_last_fn{};
 FLUX_EXPORT inline constexpr auto read_at = detail::read_at_fn{};
@@ -241,11 +252,11 @@ struct prev_fn {
 
 struct is_empty_fn {
     template <sequence Seq>
-        requires (multipass_sequence<Seq> || sized_sequence<Seq>)
+        requires (multipass_sequence<Seq> || sized_iterable<Seq>)
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const -> bool
     {
-        if constexpr (sized_sequence<Seq>) {
+        if constexpr (sized_iterable<Seq>) {
             return flux::size(seq) == 0;
         } else {
             return is_last(seq, first(seq));
@@ -256,8 +267,8 @@ struct is_empty_fn {
 template <typename Seq1, typename Seq2>
 concept element_swappable_with_ =
     std::constructible_from<value_t<Seq1>, rvalue_element_t<Seq1>> &&
-    writable_sequence_of<Seq1, rvalue_element_t<Seq2>> &&
-    writable_sequence_of<Seq2, value_t<Seq1>&&>;
+    writable_iterable_of<Seq1, rvalue_element_t<Seq2>> &&
+    writable_iterable_of<Seq2, value_t<Seq1>&&>;
 
 template <typename Seq1, typename Seq2>
 concept element_swappable_with =

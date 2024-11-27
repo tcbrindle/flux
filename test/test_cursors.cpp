@@ -22,7 +22,7 @@ constexpr bool test_cursors()
 
         static_assert(flux::random_access_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
         static_assert(not flux::infinite_sequence<S>);
         static_assert(std::same_as<flux::element_t<S>, flux::index_t>);
         static_assert(std::same_as<flux::rvalue_element_t<S>, flux::index_t>);
@@ -51,7 +51,7 @@ constexpr bool test_cursors()
 
         static_assert(flux::random_access_sequence<S>);
         static_assert(not flux::bounded_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(flux::infinite_sequence<S>);
         static_assert(std::same_as<flux::element_t<S>, std::size_t>);
         static_assert(std::same_as<flux::rvalue_element_t<S>, std::size_t>);

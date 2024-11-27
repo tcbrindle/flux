@@ -50,7 +50,7 @@ constexpr bool test_chunk_by() {
         static_assert(flux::bidirectional_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(not flux::random_access_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
 
         STATIC_CHECK(seq.count() == 3);
 

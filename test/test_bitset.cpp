@@ -22,7 +22,7 @@ constexpr bool test_bitset()
 
         static_assert(flux::random_access_sequence<B>);
         static_assert(flux::bounded_sequence<B>);
-        static_assert(flux::sized_sequence<B>);
+        static_assert(flux::sized_iterable<B>);
 
         static_assert(std::same_as<flux::element_t<B>, std::bitset<32>::reference>);
         static_assert(std::same_as<flux::element_t<B const>, bool>);

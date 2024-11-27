@@ -40,14 +40,14 @@ struct from_istreambuf_fn {
 } // namespace detail
 
 template <detail::derives_from_streambuf Streambuf>
-struct sequence_traits<Streambuf> : default_sequence_traits
+struct iter_traits<Streambuf> : default_iter_traits
 {
 private:
     struct cursor_type {
         cursor_type(cursor_type&&) = default;
         cursor_type& operator=(cursor_type&&) = default;
     private:
-        friend struct sequence_traits;
+        friend struct iter_traits;
         cursor_type() = default;
     };
 

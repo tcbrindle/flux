@@ -22,7 +22,7 @@ constexpr bool test_slide()
         static_assert(flux::bidirectional_sequence<S>);
         static_assert(flux::random_access_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
 
         STATIC_CHECK(seq.size() == 4);
         STATIC_CHECK(seq.distance(seq.first(), seq.last()) == 4);
@@ -47,7 +47,7 @@ constexpr bool test_slide()
         static_assert(flux::bidirectional_sequence<S>);
         static_assert(flux::random_access_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
 
         STATIC_CHECK(flux::size(seq) == 4);
 
@@ -108,7 +108,7 @@ constexpr bool test_slide()
         static_assert(flux::bidirectional_sequence<S>);
         static_assert(flux::random_access_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
 
         auto cur = flux::first(seq);
         STATIC_CHECK(check_equal(seq[cur], {4, 5}));

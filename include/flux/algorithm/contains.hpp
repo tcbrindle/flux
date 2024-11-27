@@ -6,21 +6,18 @@
 #ifndef FLUX_ALGORITHM_CONTAINS_HPP_INCLUDED
 #define FLUX_ALGORITHM_CONTAINS_HPP_INCLUDED
 
-#include <flux/core.hpp>
+#include <flux/algorithm/all_any_none.hpp>
 
 namespace flux {
 
 namespace detail {
 
 struct contains_fn {
-    template <sequence Seq, typename Value>
-        requires std::equality_comparable_with<element_t<Seq>, Value const&>
-    constexpr auto operator()(Seq&& seq, Value const& value) const
-        -> bool
+    template <iterable It, typename Value>
+        requires std::equality_comparable_with<element_t<It>, Value const&>
+    constexpr auto operator()(It&& it, Value const& value) const -> bool
     {
-        return !flux::is_last(seq, flux::for_each_while(seq, [&](auto&& elem) {
-            return FLUX_FWD(elem) != value;
-        }));
+        return any(it, [&](auto&& elem) { return FLUX_FWD(elem) == value; });
     }
 };
 
@@ -32,7 +29,7 @@ FLUX_EXPORT inline constexpr auto contains = detail::contains_fn{};
 template <typename D>
 template <typename Value>
     requires std::equality_comparable_with<element_t<D>, Value const&>
-constexpr auto inline_sequence_base<D>::contains(Value const& value) -> bool
+constexpr auto inline_iter_base<D>::contains(Value const& value) -> bool
 {
     return flux::contains(derived(), value);
 }

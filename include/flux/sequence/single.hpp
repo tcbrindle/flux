@@ -13,11 +13,11 @@ namespace flux {
 namespace detail {
 
 template <std::movable T>
-struct single_sequence : inline_sequence_base<single_sequence<T>> {
+struct single_sequence : inline_iter_base<single_sequence<T>> {
 private:
     T obj_;
 
-    friend struct sequence_traits<single_sequence>;
+    friend struct iter_traits<single_sequence>;
 
 public:
     constexpr single_sequence()
@@ -55,7 +55,7 @@ struct single_fn {
 } // namespace detail
 
 template <typename T>
-struct sequence_traits<detail::single_sequence<T>> : default_sequence_traits
+struct iter_traits<detail::single_sequence<T>> : default_iter_traits
 {
 private:
     using self_t = detail::single_sequence<T>;

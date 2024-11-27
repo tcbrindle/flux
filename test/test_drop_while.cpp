@@ -4,6 +4,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <array>
+#include <ranges>
 
 #include "test_utils.hpp"
 
@@ -20,11 +21,11 @@ constexpr bool test_drop_while()
 
         static_assert(flux::contiguous_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>); // because bounded + RA
+        static_assert(flux::sized_iterable<S>); // because bounded + RA
 
         static_assert(flux::contiguous_sequence<S const>);
         static_assert(flux::bounded_sequence<S const>);
-        static_assert(flux::sized_sequence<S const>);
+        static_assert(flux::sized_iterable<S const>);
 
         STATIC_CHECK(seq.size() == 5);
         STATIC_CHECK(seq.data() == arr + 5);
@@ -34,6 +35,27 @@ constexpr bool test_drop_while()
         STATIC_CHECK(c_seq.size() == 5);
         STATIC_CHECK(c_seq.data() == arr + 5);
         STATIC_CHECK(check_equal(seq, {5, 6, 7, 8, 9}));
+    }
+
+    // Non-sequence iterables are okay
+    {
+        int arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+
+        auto rng = arr | std::views::filter(flux::pred::true_);
+
+        auto iter = flux::mut_ref(rng).drop_while([](int i) {
+            return i < 5;
+        });
+
+        using S = decltype(iter);
+
+        static_assert(flux::iterable<S>);
+        static_assert(flux::const_iterable<S>);
+        static_assert(not flux::sequence<S>);
+        static_assert(std::same_as<flux::element_t<S>, int&>);
+
+        STATIC_CHECK(check_equal(iter, {5, 6, 7, 8, 9}));
+
     }
 
     // Single-pass sequences are okay

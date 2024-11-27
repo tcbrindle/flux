@@ -7,6 +7,7 @@
 #include <array>
 #include <iterator>
 #include <list>
+#include <ranges>
 #include <sstream>
 #include <vector>
 
@@ -87,5 +88,15 @@ TEST_CASE("output to")
 
         REQUIRE(iter == out.begin());
         REQUIRE(out.empty());
+    }
+
+    SUBCASE("...with a non-sequence iterable")
+    {
+        std::vector<int> const in{1, 2, 3, 4, 5};
+        std::vector<int> out;
+
+        flux::output_to(in | std::views::filter(flux::pred::odd), std::back_inserter(out));
+
+        REQUIRE(check_equal(out, {1, 3, 5}));
     }
 }

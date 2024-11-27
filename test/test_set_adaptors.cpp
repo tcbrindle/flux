@@ -20,7 +20,7 @@ constexpr bool test_set_union()
         using T = decltype(union_seq);
         static_assert(flux::sequence<T>);
         static_assert(flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
+        static_assert(not flux::sized_iterable<T>);
 
         STATIC_CHECK(check_equal(union_seq, {0, 1, 2, 3, 4, 5, 6}));
     }
@@ -35,7 +35,7 @@ constexpr bool test_set_union()
 
         static_assert(flux::sequence<Seq>);
         static_assert(flux::multipass_sequence<Seq>);
-        static_assert(not flux::sized_sequence<Seq>);
+        static_assert(not flux::sized_iterable<Seq>);
 
         static_assert(std::same_as<flux::element_t<Seq>, int&>);
         static_assert(std::same_as<flux::value_t<Seq>, int>);
@@ -64,7 +64,7 @@ constexpr bool test_set_union()
         using T = decltype(union_seq);
         static_assert(flux::sequence<T>);
         static_assert(flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
+        static_assert(not flux::sized_iterable<T>);
 
         STATIC_CHECK(check_equal(union_seq, {0, 1, 2, 3, 4, 5}));
     }
@@ -76,7 +76,7 @@ constexpr bool test_set_union()
         using T = decltype(union_seq);
         static_assert(flux::sequence<T>);
         static_assert(flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
+        static_assert(not flux::sized_iterable<T>);
 
         STATIC_CHECK(check_equal(union_seq, {1, 3, 5}));
     }
@@ -88,7 +88,7 @@ constexpr bool test_set_union()
         using T = decltype(union_seq);
         static_assert(flux::sequence<T>);
         static_assert(flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
+        static_assert(not flux::sized_iterable<T>);
 
         STATIC_CHECK(check_equal(union_seq, {1, 3, 5}));
     }
@@ -100,7 +100,7 @@ constexpr bool test_set_union()
         using T = decltype(union_seq);
         static_assert(flux::sequence<T>);
         static_assert(flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
+        static_assert(not flux::sized_iterable<T>);
 
         STATIC_CHECK(check_equal(union_seq, {5, 4, 3, 2, 1, 0 }));
     }
@@ -116,7 +116,7 @@ constexpr bool test_set_union()
         using T = decltype(union_seq);
         static_assert(flux::sequence<T>);
         static_assert(flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
+        static_assert(not flux::sized_iterable<T>);
 
         STATIC_CHECK(check_equal(union_seq, std::array<std::pair<int, char>, 6>{
                         {{0, 'a'}, {1, 'x'}, {2, 'b'}, {3, 'y'}, {4, 'c'}, {5, 'z'}}}));
@@ -176,7 +176,7 @@ constexpr bool test_set_difference()
         using T = decltype(diff_seq);
         static_assert(flux::sequence<T>);
         static_assert(flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
+        static_assert(not flux::sized_iterable<T>);
 
         STATIC_CHECK(check_equal(diff_seq, {0, 2, 4, 6}));
     }
@@ -191,7 +191,7 @@ constexpr bool test_set_difference()
 
         static_assert(flux::sequence<Seq>);
         static_assert(flux::multipass_sequence<Seq>);
-        static_assert(not flux::sized_sequence<Seq>);
+        static_assert(not flux::sized_iterable<Seq>);
 
         static_assert(std::same_as<flux::element_t<Seq>, int&>);
         static_assert(std::same_as<flux::value_t<Seq>, int>);
@@ -220,7 +220,7 @@ constexpr bool test_set_difference()
         using T = decltype(diff_seq);
         static_assert(flux::sequence<T>);
         static_assert(flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
+        static_assert(not flux::sized_iterable<T>);
 
         STATIC_CHECK(check_equal(diff_seq, {0, 2, 4, 6}));
     }
@@ -232,7 +232,7 @@ constexpr bool test_set_difference()
         using T = decltype(diff_seq);
         static_assert(flux::sequence<T>);
         static_assert(flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
+        static_assert(not flux::sized_iterable<T>);
 
         STATIC_CHECK(check_equal(diff_seq, flux::empty<int>));
     }
@@ -244,7 +244,7 @@ constexpr bool test_set_difference()
         using T = decltype(diff_seq);
         static_assert(flux::sequence<T>);
         static_assert(flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
+        static_assert(not flux::sized_iterable<T>);
 
         STATIC_CHECK(check_equal(diff_seq, {1, 3, 5}));
     }
@@ -257,7 +257,7 @@ constexpr bool test_set_difference()
         using T = decltype(diff_seq);
         static_assert(flux::sequence<T>);
         static_assert(flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
+        static_assert(not flux::sized_iterable<T>);
 
         STATIC_CHECK(check_equal(diff_seq, {5, 3, 1}));
     }
@@ -273,7 +273,7 @@ constexpr bool test_set_difference()
         using T = decltype(diff_seq);
         static_assert(flux::sequence<T>);
         static_assert(flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
+        static_assert(not flux::sized_iterable<T>);
 
         STATIC_CHECK(check_equal(diff_seq, std::array<std::pair<int, char>, 2>{{{0, 'a'}, {3, 'd'}}}));
     }
@@ -299,7 +299,7 @@ constexpr bool test_set_difference()
 
         static_assert(flux::sequence<Seq>);
         static_assert(flux::multipass_sequence<Seq>);
-        static_assert(not flux::sized_sequence<Seq>);
+        static_assert(not flux::sized_iterable<Seq>);
 
         static_assert(std::same_as<flux::element_t<Seq>, int&>);
         static_assert(std::same_as<flux::value_t<Seq>, int>);
@@ -321,7 +321,7 @@ constexpr bool test_set_symmetric_difference()
         using T = decltype(diff_seq);
         static_assert(flux::sequence<T>);
         static_assert(flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
+        static_assert(not flux::sized_iterable<T>);
 
         STATIC_CHECK(check_equal(diff_seq, {0, 2, 4, 6}));
     }
@@ -336,7 +336,7 @@ constexpr bool test_set_symmetric_difference()
 
         static_assert(flux::sequence<Seq>);
         static_assert(flux::multipass_sequence<Seq>);
-        static_assert(not flux::sized_sequence<Seq>);
+        static_assert(not flux::sized_iterable<Seq>);
 
         static_assert(std::same_as<flux::element_t<Seq>, int&>);
         static_assert(std::same_as<flux::value_t<Seq>, int>);
@@ -365,7 +365,7 @@ constexpr bool test_set_symmetric_difference()
         using T = decltype(diff_seq);
         static_assert(flux::sequence<T>);
         static_assert(flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
+        static_assert(not flux::sized_iterable<T>);
 
         STATIC_CHECK(check_equal(diff_seq, {0, 3, 4, 5}));
     }
@@ -377,7 +377,7 @@ constexpr bool test_set_symmetric_difference()
         using T = decltype(diff_seq);
         static_assert(flux::sequence<T>);
         static_assert(flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
+        static_assert(not flux::sized_iterable<T>);
 
         STATIC_CHECK(check_equal(diff_seq, {1, 3, 5}));
     }
@@ -389,7 +389,7 @@ constexpr bool test_set_symmetric_difference()
         using T = decltype(diff_seq);
         static_assert(flux::sequence<T>);
         static_assert(flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
+        static_assert(not flux::sized_iterable<T>);
 
         STATIC_CHECK(check_equal(diff_seq, {1, 3, 5}));
     }
@@ -402,7 +402,7 @@ constexpr bool test_set_symmetric_difference()
         using T = decltype(diff_seq);
         static_assert(flux::sequence<T>);
         static_assert(flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
+        static_assert(not flux::sized_iterable<T>);
 
         STATIC_CHECK(check_equal(diff_seq, {6, 5, 3, 1}));
     }
@@ -418,7 +418,7 @@ constexpr bool test_set_symmetric_difference()
         using T = decltype(diff_seq);
         static_assert(flux::sequence<T>);
         static_assert(flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
+        static_assert(not flux::sized_iterable<T>);
 
         STATIC_CHECK(check_equal(diff_seq, std::array<std::pair<int, char>, 3>{{{0, 'a'}, {3, 'd'}, {5, 'z'}}}));
     }
@@ -444,7 +444,7 @@ constexpr bool test_set_symmetric_difference()
 
         static_assert(flux::sequence<Seq>);
         static_assert(flux::multipass_sequence<Seq>);
-        static_assert(not flux::sized_sequence<Seq>);
+        static_assert(not flux::sized_iterable<Seq>);
 
         static_assert(std::same_as<flux::element_t<Seq>, long>);
         static_assert(std::same_as<flux::value_t<Seq>, long>);
@@ -467,7 +467,7 @@ constexpr bool test_set_intersection()
         using T = decltype(inter_seq);
         static_assert(flux::sequence<T>);
         static_assert(flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
+        static_assert(not flux::sized_iterable<T>);
 
         STATIC_CHECK(check_equal(inter_seq, {1, 3}));
     }
@@ -482,7 +482,7 @@ constexpr bool test_set_intersection()
 
         static_assert(flux::sequence<Seq>);
         static_assert(flux::multipass_sequence<Seq>);
-        static_assert(not flux::sized_sequence<Seq>);
+        static_assert(not flux::sized_iterable<Seq>);
 
         static_assert(std::same_as<flux::element_t<Seq>, int&>);
         static_assert(std::same_as<flux::value_t<Seq>, int>);
@@ -511,7 +511,7 @@ constexpr bool test_set_intersection()
         using T = decltype(inter_seq);
         static_assert(flux::sequence<T>);
         static_assert(flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
+        static_assert(not flux::sized_iterable<T>);
 
         STATIC_CHECK(check_equal(inter_seq, {1, 3}));
     }
@@ -523,7 +523,7 @@ constexpr bool test_set_intersection()
         using T = decltype(inter_seq);
         static_assert(flux::sequence<T>);
         static_assert(flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
+        static_assert(not flux::sized_iterable<T>);
 
         STATIC_CHECK(check_equal(inter_seq, flux::empty<int>));
     }
@@ -535,7 +535,7 @@ constexpr bool test_set_intersection()
         using T = decltype(inter_seq);
         static_assert(flux::sequence<T>);
         static_assert(flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
+        static_assert(not flux::sized_iterable<T>);
 
         STATIC_CHECK(check_equal(inter_seq, flux::empty<int>));
     }
@@ -548,7 +548,7 @@ constexpr bool test_set_intersection()
         using T = decltype(inter_seq);
         static_assert(flux::sequence<T>);
         static_assert(flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
+        static_assert(not flux::sized_iterable<T>);
 
         STATIC_CHECK(check_equal(inter_seq, {3, 1}));
     }
@@ -564,7 +564,7 @@ constexpr bool test_set_intersection()
         using T = decltype(inter_seq);
         static_assert(flux::sequence<T>);
         static_assert(flux::multipass_sequence<T>);
-        static_assert(not flux::sized_sequence<T>);
+        static_assert(not flux::sized_iterable<T>);
 
         STATIC_CHECK(check_equal(inter_seq, std::array<std::pair<int, char>, 2>{{{1, 'b'}, {2, 'c'}}}));
     }
@@ -590,7 +590,7 @@ constexpr bool test_set_intersection()
 
         static_assert(flux::sequence<Seq>);
         static_assert(flux::multipass_sequence<Seq>);
-        static_assert(not flux::sized_sequence<Seq>);
+        static_assert(not flux::sized_iterable<Seq>);
 
         static_assert(std::same_as<flux::element_t<Seq>, int&>);
         static_assert(std::same_as<flux::value_t<Seq>, int>);

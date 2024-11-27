@@ -67,7 +67,7 @@ TEST_CASE("generator")
 
         static_assert(flux::sequence<I>);
         static_assert(not flux::multipass_sequence<I>);
-        static_assert(not flux::sized_sequence<I>);
+        static_assert(not flux::sized_iterable<I>);
         static_assert(not flux::bounded_sequence<I>);
 
         static_assert(std::same_as<flux::element_t<I>, int const&>);

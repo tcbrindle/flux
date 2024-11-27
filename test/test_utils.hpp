@@ -43,10 +43,33 @@ private:
 
 public:
     template <typename T>
+    constexpr bool operator()(flux::iterable auto&& it,
+                              std::initializer_list<T> ilist) const
+    {
+        auto iter = ilist.begin();
+        bool r =  flux::iterate(it, [&iter](auto&& elem) {
+            return *iter++ == elem;
+        });
+        return r ? iter == ilist.end() : r;
+    }
+
+    template <typename T>
     constexpr bool operator()(flux::sequence auto&& seq,
                               std::initializer_list<T> ilist) const
     {
         return impl(FLUX_FWD(seq), ilist);
+    }
+
+    constexpr bool operator()(flux::iterable auto&& it,
+                              flux::sequence auto&& seq) const
+    {
+        auto cur = flux::first(seq);
+        bool k = flux::iterate(it, [&](auto&& elem) {
+            bool r = (elem == flux::read_at(seq, cur));
+            flux::inc(seq, cur);
+            return r;
+        });
+        return k ? flux::is_last(seq, cur) : k;
     }
 
     constexpr bool operator()(flux::sequence auto&& seq1,
@@ -58,7 +81,7 @@ public:
 } check_equal;
 
 template <flux::sequence Base>
-struct single_pass_only : flux::inline_sequence_base<single_pass_only<Base>> {
+struct single_pass_only : flux::inline_iter_base<single_pass_only<Base>> {
 private:
     Base base_;
 
@@ -74,7 +97,7 @@ private:
         cursor_type& operator=(cursor_type&&) = default;
     };
 
-    friend struct flux::sequence_traits<single_pass_only>;
+    friend struct flux::iter_traits<single_pass_only>;
 
 public:
     constexpr explicit single_pass_only(Base&& base)
@@ -88,7 +111,7 @@ public:
 }
 
 template <typename Base>
-struct flux::sequence_traits<single_pass_only<Base>> : flux::default_sequence_traits
+struct flux::iter_traits<single_pass_only<Base>> : flux::default_iter_traits
 {
     using self_t = single_pass_only<Base>;
     using cursor_t = typename single_pass_only<Base>::cursor_type;
@@ -122,7 +145,7 @@ struct flux::sequence_traits<single_pass_only<Base>> : flux::default_sequence_tr
     }
 
     static constexpr auto size(self_t& self)
-        requires sized_sequence<Base>
+        requires sized_iterable<Base>
     {
         return flux::size(self.base_);
     }
