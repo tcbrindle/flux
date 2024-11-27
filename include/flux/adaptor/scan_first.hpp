@@ -161,11 +161,11 @@ struct scan_first_fn {
 } // namespace detail
 
 template <iterable Base, typename Func, typename R>
-struct sequence_traits<detail::scan_first_adaptor<Base, Func, R>>
+struct iter_traits<detail::scan_first_adaptor<Base, Func, R>>
     : detail::scan_first_iterable_traits<Base, Func, R> {};
 
 template <sequence Base, typename Func, typename R>
-struct sequence_traits<detail::scan_first_adaptor<Base, Func, R>>
+struct iter_traits<detail::scan_first_adaptor<Base, Func, R>>
     : detail::scan_first_sequence_traits<Base, Func, R> {};
 
 FLUX_EXPORT inline constexpr auto scan_first = detail::scan_first_fn{};

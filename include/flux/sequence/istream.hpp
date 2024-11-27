@@ -21,7 +21,7 @@ class istream_adaptor : public inline_sequence_base<istream_adaptor<T, CharT, Tr
     istream_type* is_ = nullptr;
     T val_ = T();
 
-    friend struct sequence_traits<istream_adaptor>;
+    friend struct iter_traits<istream_adaptor>;
 
 public:
     explicit istream_adaptor(istream_type& is)
@@ -45,14 +45,14 @@ struct from_istream_fn {
 } // namespace detail
 
 template <typename T, typename CharT, typename Traits>
-struct sequence_traits<detail::istream_adaptor<T, CharT, Traits>> : default_sequence_traits
+struct iter_traits<detail::istream_adaptor<T, CharT, Traits>> : default_sequence_traits
 {
 private:
     struct cursor_type {
         cursor_type(cursor_type&&) = default;
         cursor_type& operator=(cursor_type&&) = default;
     private:
-        friend struct sequence_traits;
+        friend struct iter_traits;
         explicit cursor_type() = default;
     };
 

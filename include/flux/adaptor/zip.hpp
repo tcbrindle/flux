@@ -139,7 +139,7 @@ struct zip_adaptor : inline_sequence_base<zip_adaptor<Bases...>> {
 private:
     pair_or_tuple_t<Bases...> bases_;
 
-    friend struct sequence_traits<zip_adaptor>;
+    friend struct iter_traits<zip_adaptor>;
     friend struct zip_traits_base<Bases...>;
 
 public:
@@ -167,7 +167,7 @@ private:
     pair_or_tuple_t<Bases...> bases_;
     FLUX_NO_UNIQUE_ADDRESS Func func_;
 
-    friend struct sequence_traits<zip_map_adaptor>;
+    friend struct iter_traits<zip_map_adaptor>;
     friend struct zip_traits_base<Bases...>;
 
 public:
@@ -193,7 +193,7 @@ struct zip_map_fn {
 } // namespace detail
 
 template <typename... Bases>
-struct sequence_traits<detail::zip_adaptor<Bases...>> : zip_traits_base<Bases...>
+struct iter_traits<detail::zip_adaptor<Bases...>> : zip_traits_base<Bases...>
 {
 private:
     using base = zip_traits_base<Bases...>;
@@ -247,7 +247,7 @@ public:
 };
 
 template <typename Func, typename... Bases>
-struct sequence_traits<detail::zip_map_adaptor<Func, Bases...>> : zip_traits_base<Bases...>
+struct iter_traits<detail::zip_map_adaptor<Func, Bases...>> : zip_traits_base<Bases...>
 {
 private:
     using base = zip_traits_base<Bases...>;

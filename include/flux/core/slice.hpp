@@ -32,7 +32,7 @@ private:
     Base* base_;
     FLUX_NO_UNIQUE_ADDRESS slice_data<cursor_t<Base>, Bounded> data_;
 
-    friend struct sequence_traits<subsequence>;
+    friend struct iter_traits<subsequence>;
 
 public:
     constexpr subsequence(Base& base, cursor_t<Base>&& from,
@@ -94,7 +94,7 @@ struct slice_fn {
 using detail::subsequence;
 
 template <typename Base, bool Bounded>
-struct sequence_traits<subsequence<Base, Bounded>>
+struct iter_traits<subsequence<Base, Bounded>>
     : detail::passthrough_traits_base
 {
     using value_type = value_t<Base>;

@@ -20,7 +20,7 @@ private:
 
     constexpr auto base() & -> Base& { return base_; }
 
-    friend struct sequence_traits<take_while_adaptor>;
+    friend struct iter_traits<take_while_adaptor>;
     friend struct passthrough_traits_base;
 
 public:
@@ -47,7 +47,7 @@ struct take_while_fn {
 } // namespace detail
 
 template <iterable Base, typename Pred>
-struct sequence_traits<detail::take_while_adaptor<Base, Pred>>
+struct iter_traits<detail::take_while_adaptor<Base, Pred>>
     : default_sequence_traits {
 
     template <typename Self>
@@ -72,7 +72,7 @@ struct sequence_traits<detail::take_while_adaptor<Base, Pred>>
 };
 
 template <sequence Base, typename Pred>
-struct sequence_traits<detail::take_while_adaptor<Base, Pred>>
+struct iter_traits<detail::take_while_adaptor<Base, Pred>>
     : detail::passthrough_traits_base
 {
     using self_t = detail::take_while_adaptor<Base, Pred>;

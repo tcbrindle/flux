@@ -52,7 +52,7 @@ concept ordered_cursor =
 
 FLUX_EXPORT
 template <typename T>
-struct sequence_traits;
+struct iter_traits;
 
 FLUX_EXPORT
 struct default_sequence_traits;
@@ -60,7 +60,7 @@ struct default_sequence_traits;
 namespace detail {
 
 template <typename T>
-using traits_t = sequence_traits<std::remove_cvref_t<T>>;
+using traits_t = iter_traits<std::remove_cvref_t<T>>;
 
 } // namespace detail
 
@@ -126,7 +126,7 @@ concept can_reference = requires { typename with_ref<T>; };
 template <typename E>
 using predicate_archetype = bool (*)(E);
 
-template <typename T, typename Traits = sequence_traits<std::remove_cvref_t<T>>>
+template <typename T, typename Traits = iter_traits<std::remove_cvref_t<T>>>
 concept iterable_concept =
     requires (T& self) {
         { Traits::element_type(self) } -> can_reference;
@@ -140,7 +140,7 @@ concept iterable_concept =
 #endif
     ;
 
-template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+template <typename Seq, typename Traits = iter_traits<std::remove_cvref_t<Seq>>>
 concept sequence_requirements =
     requires (Seq& seq) {
         { Traits::first(seq) } -> cursor;
@@ -153,7 +153,7 @@ concept sequence_requirements =
         { Traits::inc(seq, cur) };
     };
 
-template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+template <typename Seq, typename Traits = iter_traits<std::remove_cvref_t<Seq>>>
 concept sequence_concept =
     sequence_requirements<Seq> &&
     requires (Seq& seq, cursor_t<Seq> const& cur) {
@@ -202,7 +202,7 @@ concept multipass_sequence =
 
 namespace detail {
 
-template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+template <typename Seq, typename Traits = iter_traits<std::remove_cvref_t<Seq>>>
 concept bidirectional_sequence_requirements =
     requires (Seq& seq, cursor_t<Seq>& cur) {
         { Traits::dec(seq, cur) };
@@ -216,7 +216,7 @@ concept bidirectional_sequence = multipass_sequence<Seq> && detail::bidirectiona
 
 namespace detail {
 
-template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+template <typename Seq, typename Traits = iter_traits<std::remove_cvref_t<Seq>>>
 concept random_access_sequence_requirements =
     ordered_cursor<cursor_t<Seq>> &&
     requires (Seq& seq, cursor_t<Seq>& cur, distance_t offset) {
@@ -236,7 +236,7 @@ concept random_access_sequence =
 
 namespace detail {
 
-template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+template <typename Seq, typename Traits = iter_traits<std::remove_cvref_t<Seq>>>
 concept bounded_sequence_requirements =
     requires (Seq& seq) {
         { Traits::last(seq) } -> std::same_as<cursor_t<Seq>>;
@@ -250,7 +250,7 @@ concept bounded_sequence = sequence<Seq> && detail::bounded_sequence_requirement
 
 namespace detail {
 
-template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+template <typename Seq, typename Traits = iter_traits<std::remove_cvref_t<Seq>>>
 concept contiguous_sequence_requirements =
     std::is_lvalue_reference_v<element_t<Seq>> &&
     std::same_as<value_t<Seq>, std::remove_cvref_t<element_t<Seq>>> &&
@@ -269,7 +269,7 @@ concept contiguous_sequence =
 
 namespace detail {
 
-template <typename It, typename Traits = sequence_traits<std::remove_cvref_t<It>>>
+template <typename It, typename Traits = iter_traits<std::remove_cvref_t<It>>>
 concept sized_iterable_requirements =
     requires (It& it) {
         { Traits::size(it) } -> std::convertible_to<distance_t>;
@@ -523,7 +523,7 @@ concept has_nested_sequence_traits =
 
 template <typename T>
     requires detail::has_nested_sequence_traits<T>
-struct sequence_traits<T> : T::flux_sequence_traits {};
+struct iter_traits<T> : T::flux_sequence_traits {};
 
 namespace detail {
 

@@ -266,15 +266,15 @@ struct stride_fn {
 } // namespace detail
 
 template <typename Base>
-struct sequence_traits<detail::stride_adaptor<Base>>
+struct iter_traits<detail::stride_adaptor<Base>>
     : detail::stride_iterable_traits<Base> {};
 
 template <sequence Base>
-struct sequence_traits<detail::stride_adaptor<Base>>
+struct iter_traits<detail::stride_adaptor<Base>>
     : detail::stride_sequence_traits<Base> {};
 
 template <bidirectional_sequence Base>
-struct sequence_traits<detail::stride_adaptor<Base>>
+struct iter_traits<detail::stride_adaptor<Base>>
     : detail::stride_bidir_traits<Base> {};
 
 FLUX_EXPORT inline constexpr auto stride = detail::stride_fn{};

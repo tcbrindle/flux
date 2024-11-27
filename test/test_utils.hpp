@@ -97,7 +97,7 @@ private:
         cursor_type& operator=(cursor_type&&) = default;
     };
 
-    friend struct flux::sequence_traits<single_pass_only>;
+    friend struct flux::iter_traits<single_pass_only>;
 
 public:
     constexpr explicit single_pass_only(Base&& base)
@@ -111,7 +111,7 @@ public:
 }
 
 template <typename Base>
-struct flux::sequence_traits<single_pass_only<Base>> : flux::default_sequence_traits
+struct flux::iter_traits<single_pass_only<Base>> : flux::default_sequence_traits
 {
     using self_t = single_pass_only<Base>;
     using cursor_t = typename single_pass_only<Base>::cursor_type;

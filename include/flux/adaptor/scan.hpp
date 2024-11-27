@@ -207,11 +207,11 @@ public:
 } // namespace detail
 
 template <iterable Base, typename Func, typename R, detail::scan_mode Mode>
-struct sequence_traits<detail::scan_adaptor<Base, Func, R, Mode>>
+struct iter_traits<detail::scan_adaptor<Base, Func, R, Mode>>
     : detail::scan_iterable_traits<Base, Func, R, Mode> {};
 
 template <sequence Base, typename Func, typename R, detail::scan_mode Mode>
-struct sequence_traits<detail::scan_adaptor<Base, Func, R, Mode>>
+struct iter_traits<detail::scan_adaptor<Base, Func, R, Mode>>
     : detail::scan_sequence_traits<Base, Func, R, Mode> {};
 
 FLUX_EXPORT inline constexpr auto scan = detail::scan_fn{};

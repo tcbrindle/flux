@@ -79,15 +79,15 @@ struct minimal_with_idx {
 } // end anon namespace
 
 template <>
-struct flux::sequence_traits<incomplete>
+struct flux::iter_traits<incomplete>
     : dummy_impl<incomplete> {};
 
 template <>
-struct flux::sequence_traits<indestructable>
+struct flux::iter_traits<indestructable>
     : dummy_impl<indestructable> {};
 
 template <>
-struct flux::sequence_traits<cant_instantiate<>>
+struct flux::iter_traits<cant_instantiate<>>
     : dummy_impl<cant_instantiate<>> {};
 
 static_assert(not flux::cursor<void>);
@@ -179,15 +179,15 @@ struct Derived2 : Base {};
 }
 
 template <>
-struct flux::sequence_traits<Base>
+struct flux::iter_traits<Base>
     : dummy_impl<Base> {};
 
 static_assert(flux::sequence<Base>);
 static_assert(not flux::sequence<Derived1>);
 
 template <>
-struct flux::sequence_traits<Derived2>
-    : flux::sequence_traits<Base> {};
+struct flux::iter_traits<Derived2>
+    : flux::iter_traits<Base> {};
 
 static_assert(flux::sequence<Derived2>);
 

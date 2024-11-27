@@ -19,7 +19,7 @@ private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Func func_;
 
-    friend struct sequence_traits<map_adaptor>;
+    friend struct iter_traits<map_adaptor>;
 
 public:
     constexpr map_adaptor(decays_to<Base> auto&& base, decays_to<Func> auto&& func)
