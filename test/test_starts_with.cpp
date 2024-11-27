@@ -101,7 +101,7 @@ constexpr bool test_starts_with()
 
     return true;
 }
-//static_assert(test_starts_with());
+static_assert(test_starts_with());
 
 }
 
