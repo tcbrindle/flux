@@ -37,6 +37,7 @@ public:
 };
 
 template <sequence Base>
+    requires sequence<element_t<Base>>
 struct flatten_adaptor<Base> : inline_iter_base<flatten_adaptor<Base>> {
 private:
     using InnerSeq = element_t<Base>;

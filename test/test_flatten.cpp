@@ -28,13 +28,16 @@
  *  * the element type of the outer sequence is a reference type
  *  * the inner sequence is multipass
  *
- * Otherwise, the single-pass version is used.
+ * Otherwise, the single-pass version is used when the outer and
+ * the inner are both sequences, else the basic iterable version
+ * is used.
  */
 
 namespace {
 
 constexpr bool test_flatten_iterable()
 {
+    // Outer is iterable only
     {
         std::array<std::array<int, 3>, 3> arr{
             std::array{1, 2, 3},
@@ -49,6 +52,30 @@ constexpr bool test_flatten_iterable()
         using F = decltype(flattened);
         static_assert(flux::iterable<F>);
         static_assert(flux::iterable<F const>);
+        static_assert(not flux::sequence<F>);
+
+        STATIC_CHECK(flattened.all(flux::pred::positive));
+        STATIC_CHECK(check_equal(flattened, {1, 2, 3, 4, 5, 6, 7, 8, 9}));
+    }
+
+    // Outer is multipass, inner is iterable only
+    {
+        std::array<std::array<int, 3>, 3> arr{
+            std::array{1, 2, 3},
+            {4, 5, 6},
+            {7, 8, 9}
+        };
+
+        auto views = flux::map(arr, [](auto inner) {
+            return std::views::transform(std::move(inner), std::identity{});
+        });
+
+        auto flattened = flux::ref(views).flatten();
+
+        using F = decltype(flattened);
+        static_assert(flux::iterable<F>);
+        static_assert(flux::iterable<F const>);
+        static_assert(not flux::sequence<F>);
 
         STATIC_CHECK(flattened.all(flux::pred::positive));
         STATIC_CHECK(check_equal(flattened, {1, 2, 3, 4, 5, 6, 7, 8, 9}));
