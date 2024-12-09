@@ -20,7 +20,7 @@ namespace detail {
 
 template <std::size_t PowN, sequence Base>
 struct cartesian_power_adaptor
-    : inline_sequence_base<cartesian_power_adaptor<PowN, Base>> {
+    : inline_iter_base<cartesian_power_adaptor<PowN, Base>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
 
@@ -29,13 +29,13 @@ public:
         : base_(FLUX_FWD(base))
     {}
 
-    using flux_sequence_traits = cartesian_traits_base<
+    using flux_iter_traits = cartesian_traits_base<
         PowN,
         cartesian_kind::power,
         read_kind::tuple,
         Base
     >;
-    friend flux_sequence_traits::impl;
+    friend flux_iter_traits::impl;
 };
 
 

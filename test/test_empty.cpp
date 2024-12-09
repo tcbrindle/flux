@@ -20,7 +20,7 @@ consteval auto empty_test() {
     auto e = flux::empty<T>;
     auto f = flux::empty<T>;
 
-    static_assert(flux::sized_sequence<decltype(e)>);
+    static_assert(flux::sized_iterable<decltype(e)>);
     static_assert(flux::bounded_sequence<decltype(e)>);
     static_assert(std::same_as<flux::element_t<decltype(e)>, T&>);
 

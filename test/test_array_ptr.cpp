@@ -324,7 +324,7 @@ constexpr bool test_array_ptr_sequence_impl()
     {
         using S = flux::array_ptr<int>;
         static_assert(flux::contiguous_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(not flux::infinite_sequence<S>);
         static_assert(std::same_as<flux::value_t<S>, int>);
@@ -332,7 +332,7 @@ constexpr bool test_array_ptr_sequence_impl()
         static_assert(std::same_as<flux::rvalue_element_t<S>, int&&>);
 
         static_assert(flux::contiguous_sequence<S const>);
-        static_assert(flux::sized_sequence<S const>);
+        static_assert(flux::sized_iterable<S const>);
         static_assert(flux::bounded_sequence<S const>);
         static_assert(not flux::infinite_sequence<S const>);
         static_assert(std::same_as<flux::value_t<S const>, int>);
@@ -341,7 +341,7 @@ constexpr bool test_array_ptr_sequence_impl()
 
         using C = flux::array_ptr<int const>;
         static_assert(flux::contiguous_sequence<C>);
-        static_assert(flux::sized_sequence<C>);
+        static_assert(flux::sized_iterable<C>);
         static_assert(flux::bounded_sequence<C>);
         static_assert(not flux::infinite_sequence<C>);
         static_assert(std::same_as<flux::value_t<C>, int>);
@@ -349,7 +349,7 @@ constexpr bool test_array_ptr_sequence_impl()
         static_assert(std::same_as<flux::rvalue_element_t<C>, int const&&>);
 
         static_assert(flux::contiguous_sequence<C const>);
-        static_assert(flux::sized_sequence<C const>);
+        static_assert(flux::sized_iterable<C const>);
         static_assert(flux::bounded_sequence<C const>);
         static_assert(not flux::infinite_sequence<C const>);
         static_assert(std::same_as<flux::value_t<C const>, int>);

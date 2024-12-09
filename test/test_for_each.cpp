@@ -4,6 +4,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <array>
+#include <ranges>
 
 #include "test_utils.hpp"
 
@@ -57,6 +58,17 @@ constexpr bool test_for_each()
         auto result = flux::for_each(ilist, counter{});
 
         STATIC_CHECK(result.sum == 12);
+    }
+
+    // Test flux::for_each with non-RA std range
+    {
+        auto rng = std::array{0, 1, 2, 3, 4} | std::views::filter(flux::pred::even);
+
+        int sum = 0;
+        auto fun = [&](int i) { sum += i; };
+        flux::for_each(rng, fun);
+
+        STATIC_CHECK(sum == 6);
     }
 
     return true;

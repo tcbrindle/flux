@@ -28,13 +28,13 @@ private:
     }
 
 public:
-    template <sequence Seq, std::weakly_incrementable Iter>
+    template <iterable Seq, std::weakly_incrementable Iter>
         requires std::indirectly_writable<Iter, element_t<Seq>>
     constexpr auto operator()(Seq&& seq, Iter iter) const -> Iter
     {
         constexpr bool can_memcpy =
             contiguous_sequence<Seq> &&
-            sized_sequence<Seq> &&
+            sized_iterable<Seq> &&
             std::contiguous_iterator<Iter> &&
             std::is_trivially_copyable_v<value_t<Seq>>;
 
@@ -65,7 +65,7 @@ template <typename D>
 template <typename Iter>
     requires std::weakly_incrementable<Iter> &&
              std::indirectly_writable<Iter, element_t<D>>
-constexpr auto inline_sequence_base<D>::output_to(Iter iter) -> Iter
+constexpr auto inline_iter_base<D>::output_to(Iter iter) -> Iter
 {
     return flux::output_to(derived(), std::move(iter));
 }

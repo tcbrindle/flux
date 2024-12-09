@@ -13,7 +13,7 @@ namespace flux {
 namespace detail {
 
 template <multipass_sequence Base, typename Pred>
-struct chunk_by_adaptor : inline_sequence_base<chunk_by_adaptor<Base, Pred>> {
+struct chunk_by_adaptor : inline_iter_base<chunk_by_adaptor<Base, Pred>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Pred pred_;
@@ -24,7 +24,7 @@ public:
           pred_(std::move(pred))
     {}
 
-    struct flux_sequence_traits : default_sequence_traits {
+    struct flux_iter_traits : default_iter_traits {
     private:
         struct cursor_type {
             cursor_t<Base> from;
@@ -138,7 +138,7 @@ template <typename Derived>
 template <typename Pred>
     requires multipass_sequence<Derived> &&
              std::predicate<Pred&, element_t<Derived>, element_t<Derived>>
-constexpr auto inline_sequence_base<Derived>::chunk_by(Pred pred) &&
+constexpr auto inline_iter_base<Derived>::chunk_by(Pred pred) &&
 {
     return flux::chunk_by(std::move(derived()), std::move(pred));
 }

@@ -7,7 +7,7 @@
 #define FLUX_OP_SLICE_HPP_INCLUDED
 
 #include <flux/core/concepts.hpp>
-#include <flux/core/inline_sequence_base.hpp>
+#include <flux/core/inline_iter_base.hpp>
 
 namespace flux {
 
@@ -26,13 +26,13 @@ struct slice_data<Cur, false> {
 
 template <sequence Base, bool Bounded>
     requires (!Bounded || regular_cursor<cursor_t<Base>>)
-struct subsequence : inline_sequence_base<subsequence<Base, Bounded>>
+struct subsequence : inline_iter_base<subsequence<Base, Bounded>>
 {
 private:
     Base* base_;
     FLUX_NO_UNIQUE_ADDRESS slice_data<cursor_t<Base>, Bounded> data_;
 
-    friend struct sequence_traits<subsequence>;
+    friend struct iter_traits<subsequence>;
 
 public:
     constexpr subsequence(Base& base, cursor_t<Base>&& from,
@@ -94,11 +94,14 @@ struct slice_fn {
 using detail::subsequence;
 
 template <typename Base, bool Bounded>
-struct sequence_traits<subsequence<Base, Bounded>>
+struct iter_traits<subsequence<Base, Bounded>>
     : detail::passthrough_traits_base
 {
     using value_type = value_t<Base>;
     using self_t = subsequence<Base, Bounded>;
+
+    using default_iter_traits::element_type;
+    using default_iter_traits::iterate;
 
     static constexpr auto first(self_t& self) -> cursor_t<Base>
     {
@@ -134,8 +137,8 @@ struct sequence_traits<subsequence<Base, Bounded>>
                flux::distance(*self.base_, flux::first(*self.base_), self.data_.first);
     }
 
-    using default_sequence_traits::size;
-    using default_sequence_traits::for_each_while;
+    using default_iter_traits::size;
+    using default_iter_traits::for_each_while;
 };
 
 FLUX_EXPORT inline constexpr auto slice = detail::slice_fn{};

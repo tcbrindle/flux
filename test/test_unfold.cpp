@@ -20,7 +20,7 @@ constexpr bool test_unfold()
         static_assert(flux::sequence<S>);
         static_assert(not flux::multipass_sequence<S>);
         static_assert(flux::infinite_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
 
         STATIC_CHECK(check_equal(flux::take(seq, 10), flux::ints().take(10)));
     }
@@ -33,7 +33,7 @@ constexpr bool test_unfold()
         static_assert(flux::sequence<S>);
         static_assert(not flux::multipass_sequence<S>);
         static_assert(not flux::infinite_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
 
         STATIC_CHECK(flux::size(seq) == 10);
         STATIC_CHECK(check_equal(seq, flux::ints().take(10)));

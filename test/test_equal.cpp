@@ -57,7 +57,7 @@ constexpr bool test_equal()
         auto seq1 = flux::take_while(std::array{1, 2, 3, 4, 5}, yes);
         auto seq2 = flux::take_while(std::array{1}, yes);
 
-        static_assert(not flux::sized_sequence<decltype(seq1)>);
+        static_assert(not flux::sized_iterable<decltype(seq1)>);
 
         STATIC_CHECK(not flux::equal(seq1, seq2));
         STATIC_CHECK(not flux::equal(seq2, seq1));

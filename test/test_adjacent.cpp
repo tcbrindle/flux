@@ -40,7 +40,7 @@ constexpr bool test_pairwise()
         static_assert(flux::bidirectional_sequence<S>);
         static_assert(flux::random_access_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
 
         static_assert(std::same_as<flux::element_t<S>, std::pair<int&, int&>>);
         static_assert(std::same_as<flux::rvalue_element_t<S>, std::pair<int&&, int&&>>);
@@ -70,7 +70,7 @@ constexpr bool test_pairwise()
         static_assert(flux::bidirectional_sequence<S>);
         static_assert(flux::random_access_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
 
         STATIC_CHECK(flux::size(seq) == 4);
 
@@ -111,7 +111,7 @@ constexpr bool test_pairwise()
         static_assert(flux::bidirectional_sequence<S>);
         static_assert(flux::random_access_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
 
         auto cur = flux::first(seq);
         STATIC_CHECK(tuple_equal(seq[cur], std::pair{4, 5}));
@@ -141,7 +141,7 @@ constexpr bool test_adjacent()
         static_assert(flux::bidirectional_sequence<S>);
         static_assert(flux::random_access_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
 
         STATIC_CHECK(seq.size() == 3);
         STATIC_CHECK(seq.distance(seq.first(), seq.last()) == 3);
@@ -165,7 +165,7 @@ constexpr bool test_adjacent()
         static_assert(flux::bidirectional_sequence<S>);
         static_assert(flux::random_access_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
 
         STATIC_CHECK(flux::size(seq) == 3);
 
@@ -232,7 +232,7 @@ constexpr bool test_adjacent()
         static_assert(flux::bidirectional_sequence<S>);
         static_assert(flux::random_access_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
 
         auto cur = flux::first(seq);
         STATIC_CHECK(tuple_equal(seq[cur], std::array{3, 4, 5}));

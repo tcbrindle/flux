@@ -14,7 +14,7 @@ namespace detail {
 
 template <sequence Base, std::size_t PowN, typename Func>
 struct cartesian_power_map_adaptor
-    : inline_sequence_base<cartesian_power_map_adaptor<Base, PowN, Func>> {
+    : inline_iter_base<cartesian_power_map_adaptor<Base, PowN, Func>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Func func_;
@@ -25,13 +25,13 @@ public:
           func_(FLUX_FWD(func))
     {}
 
-    using flux_sequence_traits = cartesian_traits_base<
+    using flux_iter_traits = cartesian_traits_base<
         PowN,
         cartesian_kind::power,
         read_kind::map,
         Base
     >;
-    friend flux_sequence_traits::impl;
+    friend flux_iter_traits::impl;
 };
 
 template <std::size_t PowN>
