@@ -312,6 +312,7 @@ FLUX_EXPORT inline constexpr auto chunk = detail::chunk_fn{};
 
 template <typename D>
 constexpr auto inline_iter_base<D>::chunk(num::integral auto chunk_sz) &&
+    requires sequence<D>
 {
     return flux::chunk(std::move(derived()), chunk_sz);
 }

@@ -8,6 +8,7 @@
 
 #include <flux/core.hpp>
 
+#include <flux/adaptor/map.hpp>
 #include <flux/sequence/single.hpp>
 
 namespace flux {
@@ -409,7 +410,7 @@ FLUX_EXPORT inline constexpr auto flatten_with = detail::flatten_with_fn{};
 
 template <typename Derived>
 template <adaptable_sequence Pattern>
-    requires sequence<element_t<Derived>> &&
+    requires iterable<element_t<Derived>> &&
              multipass_sequence<Pattern> &&
              detail::flatten_with_compatible<element_t<Derived>, Pattern>
 constexpr auto inline_iter_base<Derived>::flatten_with(Pattern&& pattern) &&
@@ -419,7 +420,7 @@ constexpr auto inline_iter_base<Derived>::flatten_with(Pattern&& pattern) &&
 
 template <typename Derived>
 template <typename Value>
-    requires sequence<element_t<Derived>> &&
+    requires iterable<element_t<Derived>> &&
              std::constructible_from<value_t<element_t<Derived>>, Value&&>
 constexpr auto inline_iter_base<Derived>::flatten_with(Value value) &&
 {

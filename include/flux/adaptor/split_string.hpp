@@ -6,6 +6,7 @@
 #ifndef FLUX_ADAPTOR_STRING_SPLIT_HPP_INCLUDED
 #define FLUX_ADAPTOR_STRING_SPLIT_HPP_INCLUDED
 
+#include "flux/core/concepts.hpp"
 #include <flux/adaptor/split.hpp>
 #include <flux/core/utils.hpp>
 
@@ -62,6 +63,7 @@ FLUX_EXPORT inline constexpr auto split_string = detail::split_string_fn{};
 
 template <typename D>
 constexpr auto inline_iter_base<D>::split_string(auto&& pattern) &&
+    requires multipass_sequence<D>
 {
     return flux::split_string(std::move(derived()), FLUX_FWD(pattern));
 }

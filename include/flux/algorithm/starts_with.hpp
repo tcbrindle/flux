@@ -13,7 +13,7 @@ namespace flux {
 namespace detail {
 
 struct starts_with_fn {
-    template <sequence Haystack, sequence Needle, typename Cmp = std::ranges::equal_to>
+    template <iterable Haystack, sequence Needle, typename Cmp = std::ranges::equal_to>
         requires std::predicate<Cmp&, element_t<Haystack>, element_t<Needle>>
     constexpr auto operator()(Haystack&& haystack, Needle&& needle, Cmp cmp = Cmp{}) const -> bool
     {

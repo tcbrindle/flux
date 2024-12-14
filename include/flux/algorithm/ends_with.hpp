@@ -6,6 +6,7 @@
 #ifndef FLUX_ALGORITHM_ENDS_WITH_HPP_INCLUDED
 #define FLUX_ALGORITHM_ENDS_WITH_HPP_INCLUDED
 
+#include <flux/adaptor/stride.hpp>
 #include <flux/algorithm/count.hpp>
 #include <flux/algorithm/equal.hpp>
 
@@ -88,7 +89,8 @@ FLUX_EXPORT inline constexpr auto ends_with = detail::ends_with_fn{};
 
 template <typename Derived>
 template <sequence Needle, typename Cmp>
-    requires std::predicate<Cmp&, element_t<Derived>, element_t<Needle>> &&
+    requires sequence<Derived> &&
+             std::predicate<Cmp&, element_t<Derived>, element_t<Needle>> &&
              (multipass_sequence<Derived> || sized_iterable<Derived>) &&
              (multipass_sequence<Needle> || sized_iterable<Needle>)
 constexpr auto inline_iter_base<Derived>::ends_with(Needle&& needle, Cmp cmp) -> bool

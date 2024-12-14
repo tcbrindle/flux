@@ -30,7 +30,7 @@ public:
         requires std::equality_comparable_with<element_t<Seq>, Value const&>
     constexpr auto operator()(Seq&& seq, Value const& value) const -> cursor_t<Seq>
     {
-        constexpr auto can_memchr = 
+        constexpr auto can_memchr =
             contiguous_sequence<Seq> && sized_iterable<Seq> &&
             std::same_as<Value, value_t<Seq>> &&
             flux::detail::any_of<value_t<Seq>, char, signed char, unsigned char, char8_t, std::byte>;
@@ -91,7 +91,8 @@ FLUX_EXPORT inline constexpr auto find_if_not = detail::find_if_not_fn{};
 
 template <typename D>
 template <typename Value>
-    requires std::equality_comparable_with<element_t<D>, Value const&>
+    requires sequence<D> &&
+             std::equality_comparable_with<element_t<D>, Value const&>
 constexpr auto inline_iter_base<D>::find(Value const& val)
 {
     return flux::find(derived(), val);
@@ -99,7 +100,8 @@ constexpr auto inline_iter_base<D>::find(Value const& val)
 
 template <typename D>
 template <typename Pred>
-    requires std::predicate<Pred&, element_t<D>>
+    requires sequence<D> &&
+             std::predicate<Pred&, element_t<D>>
 constexpr auto inline_iter_base<D>::find_if(Pred pred)
 {
     return flux::find_if(derived(), std::ref(pred));
@@ -107,7 +109,8 @@ constexpr auto inline_iter_base<D>::find_if(Pred pred)
 
 template <typename D>
 template <typename Pred>
-    requires std::predicate<Pred&, element_t<D>>
+    requires sequence<D> &&
+             std::predicate<Pred&, element_t<D>>
 constexpr auto inline_iter_base<D>::find_if_not(Pred pred)
 {
     return flux::find_if_not(derived(), std::ref(pred));
