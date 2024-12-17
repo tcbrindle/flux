@@ -16,7 +16,7 @@ namespace fs = std::filesystem;
 
 namespace {
 
-constexpr auto& include_regex = R"(#include <(flux(?:/\w*)+.hpp)>)";
+constexpr auto& include_regex = R"(#include <(flux(?:/\w*)+.h(?:pp)?)>)";
 
 template <typename Rng, typename Value>
 bool contains(const Rng& range, const Value& val)
