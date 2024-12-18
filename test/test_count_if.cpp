@@ -3,6 +3,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
+#include <ranges>
+
 #include "test_utils.hpp"
 
 
@@ -35,6 +37,15 @@ constexpr bool test_count_if()
         STATIC_CHECK(flux::count_if(arr, flux::proj(is_even, &S::i)));
 
         STATIC_CHECK(flux::ref(arr).count_if(flux::proj(is_even, &S::i)));
+    }
+
+    // Test with non-sequence iterable
+    {
+        int arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+        auto view = arr | std::views::filter(flux::pred::even);
+
+        STATIC_CHECK(flux::count_if(view, flux::pred::odd) == 0);
+        STATIC_CHECK(flux::count_if(view, flux::pred::even) == 5);
     }
 
     return true;

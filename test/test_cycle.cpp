@@ -22,8 +22,8 @@ constexpr bool test_cycle() {
         static_assert(flux::sequence<C>);
         static_assert(flux::multipass_sequence<C>);
         static_assert(flux::infinite_sequence<C>);
-        static_assert(flux::read_only_sequence<C>);
-        static_assert(not flux::sized_sequence<C>); // infinite
+        static_assert(flux::read_only_iterable<C>);
+        static_assert(not flux::sized_iterable<C>); // infinite
         static_assert(not flux::bounded_sequence<C>); // infinite
         static_assert(flux::bidirectional_sequence<C>);
         static_assert(flux::random_access_sequence<C>);
@@ -66,9 +66,9 @@ constexpr bool test_cycle() {
 
         static_assert(flux::sequence<C>);
         static_assert(flux::multipass_sequence<C>);
-        static_assert(flux::read_only_sequence<C>);
+        static_assert(flux::read_only_iterable<C>);
         static_assert(not flux::infinite_sequence<C>);
-        static_assert(flux::sized_sequence<C>); // not infinite
+        static_assert(flux::sized_iterable<C>); // not infinite
         static_assert(flux::bounded_sequence<C>);
         static_assert(flux::bidirectional_sequence<C>);
         static_assert(flux::random_access_sequence<C>);
@@ -97,9 +97,9 @@ constexpr bool test_cycle() {
 
         static_assert(flux::sequence<C>);
         static_assert(flux::multipass_sequence<C>);
-        static_assert(flux::read_only_sequence<C>);
+        static_assert(flux::read_only_iterable<C>);
         static_assert(not flux::infinite_sequence<C>);
-        static_assert(flux::sized_sequence<C>); // not infinite
+        static_assert(flux::sized_iterable<C>); // not infinite
         static_assert(flux::bounded_sequence<C>);
         static_assert(flux::bidirectional_sequence<C>);
         static_assert(flux::random_access_sequence<C>);
@@ -130,8 +130,8 @@ constexpr bool test_cycle() {
         static_assert(flux::sequence<C>);
         static_assert(flux::multipass_sequence<C>);
         static_assert(flux::infinite_sequence<C>);
-        static_assert(flux::read_only_sequence<C>);
-        static_assert(not flux::sized_sequence<C>); // infinite
+        static_assert(flux::read_only_iterable<C>);
+        static_assert(not flux::sized_iterable<C>); // infinite
         static_assert(not flux::bounded_sequence<C>); // infinite
         static_assert(flux::bidirectional_sequence<C>);
         static_assert(flux::random_access_sequence<C>);
@@ -157,8 +157,8 @@ constexpr bool test_cycle() {
         static_assert(flux::sequence<C>);
         static_assert(flux::multipass_sequence<C>);
         static_assert(flux::infinite_sequence<C>);
-        static_assert(flux::read_only_sequence<C>);
-        static_assert(not flux::sized_sequence<C>); // infinite
+        static_assert(flux::read_only_iterable<C>);
+        static_assert(not flux::sized_iterable<C>); // infinite
         static_assert(not flux::bounded_sequence<C>); // infinite
         static_assert(flux::bidirectional_sequence<C>);
         static_assert(flux::random_access_sequence<C>);
@@ -228,8 +228,8 @@ constexpr bool test_bounded_cycle()
         static_assert(flux::sequence<C>);
         static_assert(flux::multipass_sequence<C>);
         static_assert(not flux::infinite_sequence<C>);
-        static_assert(flux::read_only_sequence<C>);
-        static_assert(flux::sized_sequence<C>);
+        static_assert(flux::read_only_iterable<C>);
+        static_assert(flux::sized_iterable<C>);
         static_assert(flux::bounded_sequence<C>);
         static_assert(flux::bidirectional_sequence<C>);
         static_assert(flux::random_access_sequence<C>);
@@ -299,7 +299,7 @@ constexpr bool test_bounded_cycle()
         static_assert(flux::multipass_sequence<C>);
         static_assert(not flux::bidirectional_sequence<C>); // take_while is not bounded
         static_assert(not flux::infinite_sequence<C>);
-        static_assert(not flux::sized_sequence<C>);
+        static_assert(not flux::sized_iterable<C>);
         static_assert(flux::bounded_sequence<C>); // because we can form last()
 
         STATIC_CHECK(seq.is_last(seq.last()));

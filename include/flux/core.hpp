@@ -9,7 +9,7 @@
 #include <flux/core/concepts.hpp>
 #include <flux/core/default_impls.hpp>
 #include <flux/core/functional.hpp>
-#include <flux/core/inline_sequence_base.hpp>
+#include <flux/core/inline_iter_base.hpp>
 #include <flux/core/numeric.hpp>
 #include <flux/core/operation_requirements.hpp>
 #include <flux/core/optional.hpp>

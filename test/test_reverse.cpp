@@ -22,12 +22,12 @@ constexpr bool test_reverse()
         static_assert(flux::random_access_sequence<R>);
         static_assert(not flux::contiguous_sequence<R>);
         static_assert(flux::bounded_sequence<R>);
-        static_assert(flux::sized_sequence<R>);
+        static_assert(flux::sized_iterable<R>);
 
         static_assert(flux::random_access_sequence<R const>);
         static_assert(not flux::contiguous_sequence<R const>);
         static_assert(flux::bounded_sequence<R const>);
-        static_assert(flux::sized_sequence<R const>);
+        static_assert(flux::sized_iterable<R const>);
 
         STATIC_CHECK(flux::size(reversed) == 5);
         STATIC_CHECK(check_equal(reversed, {4, 3, 2, 1, 0}));
@@ -41,12 +41,12 @@ constexpr bool test_reverse()
         static_assert(flux::random_access_sequence<R>);
         static_assert(not flux::contiguous_sequence<R>);
         static_assert(flux::bounded_sequence<R>);
-        static_assert(flux::sized_sequence<R>);
+        static_assert(flux::sized_iterable<R>);
 
         static_assert(flux::random_access_sequence<R const>);
         static_assert(not flux::contiguous_sequence<R const>);
         static_assert(flux::bounded_sequence<R const>);
-        static_assert(flux::sized_sequence<R const>);
+        static_assert(flux::sized_iterable<R const>);
 
         STATIC_CHECK(flux::size(reversed) == 5);
         STATIC_CHECK(check_equal(reversed, {4, 3, 2, 1, 0}));
@@ -163,7 +163,7 @@ TEST_CASE("reverse")
         static_assert(flux::regular_cursor<flux::cursor_t<R>>);
         static_assert(flux::bidirectional_sequence<R>);
         static_assert(not flux::random_access_sequence<R>);
-        static_assert(flux::sized_sequence<R>);
+        static_assert(flux::sized_iterable<R>);
         static_assert(flux::bounded_sequence<R>);
 
         REQUIRE(check_equal(rlist, {4, 3, 2, 1, 0}));

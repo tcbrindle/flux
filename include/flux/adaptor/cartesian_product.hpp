@@ -20,7 +20,7 @@ namespace detail {
 
 template <sequence... Bases>
 struct cartesian_product_adaptor
-    : inline_sequence_base<cartesian_product_adaptor<Bases...>> {
+    : inline_iter_base<cartesian_product_adaptor<Bases...>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS std::tuple<Bases...> bases_;
 
@@ -29,13 +29,13 @@ public:
         : bases_(FLUX_FWD(bases)...)
     {}
     
-    using flux_sequence_traits = cartesian_traits_base<
+    using flux_iter_traits = cartesian_traits_base<
         sizeof...(Bases),
         cartesian_kind::product,
         read_kind::tuple,
         Bases...
     >;
-    friend flux_sequence_traits::impl;
+    friend flux_iter_traits::impl;
 };
 
 struct cartesian_product_fn {

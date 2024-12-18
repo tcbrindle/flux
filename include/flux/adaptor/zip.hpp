@@ -31,7 +31,7 @@ using pair_or_tuple_t = typename pair_or_tuple<Ts...>::type;
 }
 
 template <typename... Bases>
-struct zip_traits_base : default_sequence_traits {
+struct zip_traits_base : default_iter_traits {
 private:
     template <typename From, typename To>
     using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
@@ -114,7 +114,7 @@ public:
 
     template <typename Self>
         requires (random_access_sequence<const_like_t<Self, Bases>> && ...)
-                && (sized_sequence<const_like_t<Self, Bases>> && ...)
+                && (sized_iterable<const_like_t<Self, Bases>> && ...)
     static constexpr auto last(Self& self)
     {
         auto cur = first(self);
@@ -122,7 +122,7 @@ public:
     }
 
     template <typename Self>
-        requires (sized_sequence<const_like_t<Self, Bases>> && ...)
+        requires (sized_iterable<const_like_t<Self, Bases>> && ...)
     static constexpr auto size(Self& self)
     {
         return std::apply([&](auto&... args) {
@@ -135,11 +135,11 @@ public:
 namespace detail {
 
 template <sequence... Bases>
-struct zip_adaptor : inline_sequence_base<zip_adaptor<Bases...>> {
+struct zip_adaptor : inline_iter_base<zip_adaptor<Bases...>> {
 private:
     pair_or_tuple_t<Bases...> bases_;
 
-    friend struct sequence_traits<zip_adaptor>;
+    friend struct iter_traits<zip_adaptor>;
     friend struct zip_traits_base<Bases...>;
 
 public:
@@ -162,12 +162,12 @@ struct zip_fn {
 };
 
 template <typename Func, sequence... Bases>
-struct zip_map_adaptor : inline_sequence_base<zip_map_adaptor<Func, Bases...>> {
+struct zip_map_adaptor : inline_iter_base<zip_map_adaptor<Func, Bases...>> {
 private:
     pair_or_tuple_t<Bases...> bases_;
     FLUX_NO_UNIQUE_ADDRESS Func func_;
 
-    friend struct sequence_traits<zip_map_adaptor>;
+    friend struct iter_traits<zip_map_adaptor>;
     friend struct zip_traits_base<Bases...>;
 
 public:
@@ -193,7 +193,7 @@ struct zip_map_fn {
 } // namespace detail
 
 template <typename... Bases>
-struct sequence_traits<detail::zip_adaptor<Bases...>> : zip_traits_base<Bases...>
+struct iter_traits<detail::zip_adaptor<Bases...>> : zip_traits_base<Bases...>
 {
 private:
     using base = zip_traits_base<Bases...>;
@@ -247,7 +247,7 @@ public:
 };
 
 template <typename Func, typename... Bases>
-struct sequence_traits<detail::zip_map_adaptor<Func, Bases...>> : zip_traits_base<Bases...>
+struct iter_traits<detail::zip_map_adaptor<Func, Bases...>> : zip_traits_base<Bases...>
 {
 private:
     using base = zip_traits_base<Bases...>;
@@ -281,8 +281,8 @@ public:
         return read_(flux::read_at_unchecked, self, cur);
     }
 
-    using default_sequence_traits::move_at;
-    using default_sequence_traits::move_at_unchecked;
+    using default_iter_traits::move_at;
+    using default_iter_traits::move_at_unchecked;
 };
 
 FLUX_EXPORT inline constexpr auto zip = detail::zip_fn{};

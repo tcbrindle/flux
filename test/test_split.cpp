@@ -120,21 +120,21 @@ constexpr bool test_split_with_predicate()
         static_assert(flux::multipass_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(not flux::bidirectional_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
 
         static_assert(flux::sequence<S const>);
         static_assert(flux::multipass_sequence<S const>);
         static_assert(flux::bounded_sequence<S const>);
         static_assert(not flux::bidirectional_sequence<S const>);
-        static_assert(not flux::sized_sequence<S const>);
+        static_assert(not flux::sized_iterable<S const>);
 
         using E = flux::element_t<S>;
         static_assert(flux::contiguous_sequence<E>);
-        static_assert(flux::sized_sequence<E>);
+        static_assert(flux::sized_iterable<E>);
 
         using EC = flux::element_t<S const>;
         static_assert(flux::contiguous_sequence<EC>);
-        static_assert(flux::sized_sequence<EC>);
+        static_assert(flux::sized_iterable<EC>);
 
         auto cur = split.first();
         STATIC_CHECK(check_equal(split[cur], {1, 2}));

@@ -39,7 +39,7 @@ public:
     constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const
         -> bool
     {
-        if constexpr (sized_sequence<Seq1> && sized_sequence<Seq2>) {
+        if constexpr (sized_iterable<Seq1> && sized_iterable<Seq2>) {
             if (flux::size(seq1) != flux::size(seq2)) {
                 return false;
             }
@@ -48,7 +48,7 @@ public:
         constexpr bool can_memcmp = 
             std::same_as<Cmp, std::ranges::equal_to> &&
             contiguous_sequence<Seq1> && contiguous_sequence<Seq2> &&
-            sized_sequence<Seq1> && sized_sequence<Seq2> &&
+            sized_iterable<Seq1> && sized_iterable<Seq2> &&
             std::same_as<value_t<Seq1>, value_t<Seq2>> &&
             (std::integral<value_t<Seq1>> || std::is_pointer_v<value_t<Seq1>>) &&
             std::has_unique_object_representations_v<value_t<Seq1>>;
@@ -82,7 +82,7 @@ public:
                  std::is_invocable_v<equal_fn&, Seq1&, Seq2&, equal_fn&>)
     constexpr auto operator()(Seq1&& seq1, Seq2&& seq2) const -> bool
     {
-        if constexpr (sized_sequence<Seq1> && sized_sequence<Seq2>) {
+        if constexpr (sized_iterable<Seq1> && sized_iterable<Seq2>) {
             if (flux::size(seq1) != flux::size(seq2)) {
                 return false;
             }

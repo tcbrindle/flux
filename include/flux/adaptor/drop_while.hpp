@@ -12,8 +12,8 @@ namespace flux {
 
 namespace detail {
 
-template <sequence Base, typename Pred>
-struct drop_while_adaptor : inline_sequence_base<drop_while_adaptor<Base, Pred>> {
+template <iterable Base, typename Pred>
+struct drop_while_adaptor : inline_iter_base<drop_while_adaptor<Base, Pred>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Pred pred_;
@@ -29,12 +29,28 @@ public:
           pred_(FLUX_FWD(pred))
     {}
 
-    struct flux_sequence_traits : detail::passthrough_traits_base {
+    struct flux_iter_traits : detail::passthrough_traits_base {
         using value_type = value_t<Base>;
 
         static constexpr bool disable_multipass = !multipass_sequence<Base>;
 
+        static constexpr auto iterate(auto& self, auto&& iter_pred) -> bool
+        {
+            bool found_first = false;
+            return flux::iterate(self.base_, [&](auto&& elem) {
+                if (!found_first) {
+                    if (std::invoke(self.pred_, elem)) {
+                        return true; // continue
+                    } else {
+                        found_first = true;
+                    }
+                }
+                return std::invoke(iter_pred, FLUX_FWD(elem));
+            });
+        }
+
         static constexpr auto first(auto& self)
+            requires sequence<decltype((self.base_))>
         {
             return flux::for_each_while(self.base_, std::ref(self.pred_));
         }
@@ -46,18 +62,18 @@ public:
                    flux::distance(self.base_, flux::first(self.base_), first(self));
         }
 
-        using default_sequence_traits::size;
-        using default_sequence_traits::for_each_while;
+        using default_iter_traits::size;
+        using default_iter_traits::for_each_while;
     };
 };
 
 struct drop_while_fn {
-    template <adaptable_sequence Seq, std::move_constructible Pred>
-        requires std::predicate<Pred&, element_t<Seq>>
+    template <sink_iterable It, std::move_constructible Pred>
+        requires std::predicate<Pred&, element_t<It>>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Pred pred) const
+    constexpr auto operator()(It&& it, Pred pred) const
     {
-        return drop_while_adaptor<std::decay_t<Seq>, Pred>(FLUX_FWD(seq), std::move(pred));
+        return drop_while_adaptor<std::decay_t<It>, Pred>(FLUX_FWD(it), std::move(pred));
     }
 };
 
@@ -68,7 +84,7 @@ FLUX_EXPORT inline constexpr auto drop_while = detail::drop_while_fn{};
 template <typename D>
 template <typename Pred>
     requires std::predicate<Pred&, element_t<D>>
-constexpr auto inline_sequence_base<D>::drop_while(Pred pred) &&
+constexpr auto inline_iter_base<D>::drop_while(Pred pred) &&
 {
     return flux::drop_while(std::move(derived()), std::move(pred));
 };

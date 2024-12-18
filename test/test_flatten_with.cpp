@@ -4,6 +4,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <array>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -16,6 +17,33 @@ namespace {
 
 using namespace std::string_view_literals;
 
+constexpr bool test_flatten_with_iterable()
+{
+    {
+        // Contrive a not-sequence-of-not-sequences
+        auto true_ = flux::pred::true_;
+        std::array arr{
+            std::views::filter("111"sv, true_),
+            std::views::filter("222"sv, true_),
+            std::views::filter("333"sv, true_)};
+        auto view = std::views::filter(std::move(arr), true_);
+
+        auto iter = flux::flatten_with(std::move(view), "-"sv);
+
+        using F = decltype(iter);
+        static_assert(flux::iterable<F>);
+        static_assert(not flux::sequence<F>);
+        static_assert(not flux::sized_iterable<F>);
+        static_assert(std::same_as<flux::element_t<F>, char const&>);
+        static_assert(std::same_as<flux::value_t<F>, char>);
+
+        STATIC_CHECK(check_equal(iter, "111-222-333"sv));
+    }
+
+    return true;
+}
+static_assert(test_flatten_with_iterable());
+
 constexpr bool test_flatten_with_single_pass()
 {
     // Single-pass outer, multipass inner, sequence pattern
@@ -26,7 +54,7 @@ constexpr bool test_flatten_with_single_pass()
         using S = decltype(seq);
         static_assert(flux::sequence<S>);
         static_assert(not flux::multipass_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(std::same_as<flux::element_t<S>, char const&>);
         static_assert(std::same_as<flux::value_t<S>, char>);
@@ -43,7 +71,7 @@ constexpr bool test_flatten_with_single_pass()
         using S = decltype(seq);
         static_assert(flux::sequence<S>);
         static_assert(not flux::multipass_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
 
         STATIC_CHECK(check_equal(seq, "111-222-333"sv));
@@ -65,7 +93,7 @@ constexpr bool test_flatten_with_single_pass()
         using S = decltype(seq);
         static_assert(flux::sequence<S>);
         static_assert(not flux::multipass_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
 
         STATIC_CHECK(check_equal(seq, "111222333"sv));
@@ -82,7 +110,7 @@ constexpr bool test_flatten_with_single_pass()
         using S = decltype(seq);
         static_assert(flux::sequence<S>);
         static_assert(not flux::multipass_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
 
         STATIC_CHECK(check_equal(seq, "123--456--7-89"sv));
@@ -97,7 +125,7 @@ constexpr bool test_flatten_with_single_pass()
         using S = decltype(seq);
         static_assert(flux::sequence<S>);
         static_assert(not flux::multipass_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
 
         STATIC_CHECK(seq.count() == 0);
@@ -116,7 +144,7 @@ constexpr bool test_flatten_with_multipass()
 
         using S = decltype(seq);
         static_assert(flux::bidirectional_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(std::same_as<flux::element_t<S>, char const&>);
         static_assert(std::same_as<flux::value_t<S>, char>);
@@ -187,7 +215,10 @@ static_assert(test_flatten_with_multipass());
 
 TEST_CASE("flatten_with")
 {
-    bool res = test_flatten_with_single_pass();
+    bool res = test_flatten_with_iterable();
+    REQUIRE(res);
+
+    res = test_flatten_with_single_pass();
     REQUIRE(res);
 
     res = test_flatten_with_multipass();

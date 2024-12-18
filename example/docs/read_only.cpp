@@ -11,7 +11,7 @@
 
 // We can use the read_only_sequence concept to statically require a sequence
 // whose elements are immutable
-bool contains_a_two(flux::read_only_sequence auto&& seq)
+bool contains_a_two(flux::read_only_iterable auto&& seq)
 {
     for (auto&& elem : seq) {
         if (elem == 2) { // What if we wrote `elem = 2` (assignment) by mistake?
