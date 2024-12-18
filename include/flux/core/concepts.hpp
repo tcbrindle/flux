@@ -427,7 +427,7 @@ struct default_iter_traits {
         if constexpr (bounded_sequence<Self> && regular_cursor<cursor_t<Self>>) {
             auto const last = Traits::last(self);
             while (cur != last) {
-                if (!std::invoke(pred, Traits::read_at(self, cur))) {
+                if (!std::invoke(pred, Traits::read_at_unchecked(self, cur))) {
                     return false;
                 }
                 Traits::inc(self, cur);
