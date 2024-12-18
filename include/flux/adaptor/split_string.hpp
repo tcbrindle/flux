@@ -6,7 +6,6 @@
 #ifndef FLUX_ADAPTOR_STRING_SPLIT_HPP_INCLUDED
 #define FLUX_ADAPTOR_STRING_SPLIT_HPP_INCLUDED
 
-#include "flux/core/concepts.hpp"
 #include <flux/adaptor/split.hpp>
 #include <flux/core/utils.hpp>
 
