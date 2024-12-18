@@ -7,6 +7,7 @@
 #define FLUX_ADAPTOR_TAKE_HPP_INCLUDED
 
 #include <flux/core.hpp>
+#include <flux/adaptor/stride.hpp>
 
 namespace flux {
 
@@ -40,7 +41,7 @@ public:
 
     public:
         using value_type = value_t<Base>;
-        
+
         template <typename Self>
         static consteval auto element_type(Self& self) -> element_t<decltype((self.base_))>;
 
@@ -49,7 +50,7 @@ public:
             if constexpr (random_access_sequence<Base> && bounded_sequence<Base>)
             {
                 auto cur = flux::first(self.base_);
-                flux::inc(self.base_, cur, self.count_);
+                flux::detail::advance(self.base_, cur, self.count_);
                 return flux::iterate(flux::slice(self.base_, flux::first(self.base_), cur), FLUX_FWD(pred));
             } else {
                 distance_t n = self.count_;
