@@ -16,11 +16,7 @@ namespace flux {
 namespace detail {
 
 template <flux::sequence Base, std::size_t Length>
-    requires(Length > 0)
-    && flux::bounded_sequence<Base> // permutation of size 0 don't make sense and infinite sequences
-                                    // don't make sense either
-                                    struct permutations_adaptor
-    : inline_sequence_base<permutations_adaptor<Base, Length>> {
+struct permutations_adaptor : inline_sequence_base<permutations_adaptor<Base, Length>> {
 private:
     Base base_;
     inline static constexpr std::size_t length_
