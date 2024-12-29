@@ -5,6 +5,7 @@
 
 #include <array>
 #include <utility>
+#include <vector>
 
 #include "test_utils.hpp"
 
