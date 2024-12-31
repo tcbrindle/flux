@@ -5,6 +5,7 @@
 
 #include <array>
 #include <utility>
+#include <vector>
 
 #include "test_utils.hpp"
 
@@ -110,8 +111,9 @@ constexpr bool test_set_union()
         std::array<std::pair<int, char>, 3> arr1{{{0, 'a'}, {2, 'b'}, {4, 'c'}}};
         std::array<std::pair<int, char>, 3> arr2{{{1, 'x'}, {3, 'y'}, {5, 'z'}}};
 
-        auto union_seq = flux::set_union(flux::ref(arr1), flux::ref(arr2), 
-                                         flux::proj(flux::cmp::compare, [] (auto v) { return v.first; }));
+        auto union_seq
+            = flux::set_union(flux::ref(arr1), flux::ref(arr2),
+                              flux::proj(flux::cmp::compare, [](auto v) { return v.first; }));
 
         using T = decltype(union_seq);
         static_assert(flux::sequence<T>);
@@ -267,8 +269,9 @@ constexpr bool test_set_difference()
         std::array<std::pair<int, char>, 4> arr1{{{0, 'a'}, {1, 'b'}, {2, 'c'}, {3, 'd'}}};
         std::array<std::pair<int, char>, 3> arr2{{{1, 'x'}, {2, 'y'}, {5, 'z'}}};
 
-        auto diff_seq = flux::set_difference(flux::ref(arr1), flux::ref(arr2), 
-                                             flux::proj(flux::cmp::compare, [] (auto v) { return v.first; }));
+        auto diff_seq
+            = flux::set_difference(flux::ref(arr1), flux::ref(arr2),
+                                   flux::proj(flux::cmp::compare, [](auto v) { return v.first; }));
 
         using T = decltype(diff_seq);
         static_assert(flux::sequence<T>);
@@ -412,8 +415,9 @@ constexpr bool test_set_symmetric_difference()
         std::array<std::pair<int, char>, 4> arr1{{{0, 'a'}, {1, 'b'}, {2, 'c'}, {3, 'd'}}};
         std::array<std::pair<int, char>, 3> arr2{{{1, 'x'}, {2, 'y'}, {5, 'z'}}};
 
-        auto diff_seq = flux::set_symmetric_difference(flux::ref(arr1), flux::ref(arr2), 
-                                                       flux::proj(flux::cmp::compare, [] (auto v) { return v.first; }));
+        auto diff_seq = flux::set_symmetric_difference(
+            flux::ref(arr1), flux::ref(arr2),
+            flux::proj(flux::cmp::compare, [](auto v) { return v.first; }));
 
         using T = decltype(diff_seq);
         static_assert(flux::sequence<T>);
@@ -558,8 +562,9 @@ constexpr bool test_set_intersection()
         std::array<std::pair<int, char>, 4> arr1{{{0, 'a'}, {1, 'b'}, {2, 'c'}, {3, 'd'}}};
         std::array<std::pair<int, char>, 3> arr2{{{1, 'x'}, {2, 'y'}, {5, 'z'}}};
 
-        auto inter_seq = flux::set_intersection(flux::ref(arr1), flux::ref(arr2), 
-                                             flux::proj(flux::cmp::compare, [] (auto v) { return v.first; }));
+        auto inter_seq = flux::set_intersection(
+            flux::ref(arr1), flux::ref(arr2),
+            flux::proj(flux::cmp::compare, [](auto v) { return v.first; }));
 
         using T = decltype(inter_seq);
         static_assert(flux::sequence<T>);
@@ -607,6 +612,27 @@ static_assert(test_set_difference());
 static_assert(test_set_symmetric_difference());
 static_assert(test_set_intersection());
 
+// https://github.com/tcbrindle/flux/issues/228
+constexpr bool issue_228()
+{
+    std::array arr1 {0, 1, 2, 3, 4, 5};
+    std::array arr2 {1, 3, 5, 6, 7};
+    auto merged = flux::set_symmetric_difference(flux::ref(arr1), flux::ref(arr2));
+
+    STATIC_CHECK(flux::equal(merged, std::array {0, 2, 4, 6, 7}));
+
+    std::vector<int> out;
+
+    for (auto i : merged) {
+        // crashes here
+        out.push_back(i);
+    }
+
+    STATIC_CHECK(check_equal(out, merged));
+
+    return true;
+}
+static_assert(issue_228());
 }
 
 TEST_CASE("set_union")
@@ -624,6 +650,8 @@ TEST_CASE("set_difference")
 TEST_CASE("set_symmetric_difference")
 {
     bool result = test_set_symmetric_difference();
+    REQUIRE(result);
+    result = issue_228();
     REQUIRE(result);
 }
 
