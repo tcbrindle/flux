@@ -10676,7 +10676,7 @@ public:
     public:
         using value_type = std::common_type_t<value_t<Base1>, value_t<Base2>>;
 
-        inline static constexpr bool is_infinite = flux::infinite_sequence<Base1> || 
+        inline static constexpr bool is_infinite = flux::infinite_sequence<Base1> ||
                                                    flux::infinite_sequence<Base2>;
 
         template <typename Self>
@@ -10693,7 +10693,7 @@ public:
             requires maybe_const_iterable<Self>
         static constexpr auto is_last(Self& self, cursor_type const& cur) -> bool
         {
-            return flux::is_last(self.base1_, cur.base1_cursor) && 
+            return flux::is_last(self.base1_, cur.base1_cursor) &&
                    flux::is_last(self.base2_, cur.base2_cursor);
         }
 
@@ -10713,7 +10713,7 @@ public:
         template <typename Self>
             requires maybe_const_iterable<Self>
         static constexpr auto read_at(Self& self, cursor_type const& cur)
-            -> std::common_reference_t<decltype(flux::read_at(self.base1_, cur.base1_cursor)), 
+            -> std::common_reference_t<decltype(flux::read_at(self.base1_, cur.base1_cursor)),
                                        decltype(flux::read_at(self.base2_, cur.base2_cursor))>
         {
             if (cur.active_ == cursor_type::first) {
@@ -10724,7 +10724,7 @@ public:
         }
 
         template <typename Self>
-            requires maybe_const_iterable<Self> && 
+            requires maybe_const_iterable<Self> &&
                      bounded_sequence<Base1> && bounded_sequence<Base2>
         static constexpr auto last(Self& self) -> cursor_type
         {
@@ -10734,7 +10734,7 @@ public:
         template <typename Self>
             requires maybe_const_iterable<Self>
         static constexpr auto move_at(Self& self, cursor_type const& cur)
-            -> std::common_reference_t<decltype(flux::move_at(self.base1_, cur.base1_cursor)), 
+            -> std::common_reference_t<decltype(flux::move_at(self.base1_, cur.base1_cursor)),
                                        decltype(flux::move_at(self.base2_, cur.base2_cursor))>
         {
             if (cur.active_ == cursor_type::first) {
@@ -10743,7 +10743,7 @@ public:
                 return flux::move_at(self.base2_, cur.base2_cursor);
             }
         }
-        
+
     };
 };
 
@@ -10846,7 +10846,7 @@ public:
         {
             return flux::move_at(self.base1_, cur.base1_cursor);
         }
-        
+
     };
 };
 
@@ -10874,10 +10874,13 @@ public:
             cursor_t<Base2> base2_cursor;
             enum : char {first, second, first_done, second_done} state_ = first;
 
-            friend auto operator==(cursor_type const&, cursor_type const&) -> bool
+            friend constexpr auto operator==(cursor_type const& lhs, cursor_type const& rhs) -> bool
                 requires std::equality_comparable<cursor_t<Base1>> &&
                          std::equality_comparable<cursor_t<Base2>>
-                = default;
+                {
+                    return lhs.base1_cursor == rhs.base1_cursor &&
+                           lhs.base2_cursor == rhs.base2_cursor;
+                }
         };
 
         template <typename Self>
@@ -10913,7 +10916,7 @@ public:
     public:
         using value_type = std::common_type_t<value_t<Base1>, value_t<Base2>>;
 
-        inline static constexpr bool is_infinite = flux::infinite_sequence<Base1> || 
+        inline static constexpr bool is_infinite = flux::infinite_sequence<Base1> ||
                                                    flux::infinite_sequence<Base2>;
 
         template <typename Self>
@@ -10930,7 +10933,7 @@ public:
             requires maybe_const_iterable<Self>
         static constexpr auto is_last(Self& self, cursor_type const& cur) -> bool
         {
-            return flux::is_last(self.base1_, cur.base1_cursor) && 
+            return flux::is_last(self.base1_, cur.base1_cursor) &&
                    flux::is_last(self.base2_, cur.base2_cursor);
         }
 
@@ -10972,7 +10975,9 @@ public:
         }
 
         template <typename Self>
-            requires maybe_const_iterable<Self> && bounded_sequence<Base1>
+            requires maybe_const_iterable<Self> &&
+                     bounded_sequence<Base1> &&
+                     bounded_sequence<Base2>
         static constexpr auto last(Self& self) -> cursor_type
         {
             return cursor_type{flux::last(self.base1_), flux::last(self.base2_)};
@@ -11030,7 +11035,7 @@ public:
 
         template <typename Self>
         static constexpr void update(Self& self, cursor_type& cur) {
-            while(not flux::is_last(self.base1_, cur.base1_cursor) && 
+            while(not flux::is_last(self.base1_, cur.base1_cursor) &&
                   not flux::is_last(self.base2_, cur.base2_cursor))
             {
                 auto r = std::invoke(self.cmp_, flux::read_at(self.base1_, cur.base1_cursor),
@@ -11065,7 +11070,7 @@ public:
             requires maybe_const_iterable<Self>
         static constexpr auto is_last(Self& self, cursor_type const& cur) -> bool
         {
-            return flux::is_last(self.base1_, cur.base1_cursor) || 
+            return flux::is_last(self.base1_, cur.base1_cursor) ||
                    flux::is_last(self.base2_, cur.base2_cursor);
         }
 
@@ -11093,7 +11098,7 @@ public:
         {
             return flux::move_at(self.base1_, cur.base1_cursor);
         }
-        
+
     };
 };
 
@@ -11105,7 +11110,7 @@ concept set_op_compatible =
 
 struct set_union_fn {
     template <adaptable_sequence Seq1, adaptable_sequence Seq2, typename Cmp = std::compare_three_way>
-        requires set_op_compatible<Seq1, Seq2> && 
+        requires set_op_compatible<Seq1, Seq2> &&
                  weak_ordering_for<Cmp, Seq1> &&
                  weak_ordering_for<Cmp, Seq2>
     [[nodiscard]]
