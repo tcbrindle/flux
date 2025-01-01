@@ -16,7 +16,7 @@ namespace flux {
 namespace detail {
 
 template <typename CharT, typename Traits>
-struct getlines_sequence : inline_sequence_base<getlines_sequence<CharT, Traits>> {
+struct getlines_sequence : inline_iter_base<getlines_sequence<CharT, Traits>> {
 private:
     using istream_type = std::basic_istream<CharT, Traits>;
     using string_type = std::basic_string<CharT, Traits>;
@@ -37,7 +37,7 @@ public:
     getlines_sequence(getlines_sequence&&) = default;
     getlines_sequence& operator=(getlines_sequence&&) = default;
 
-    struct flux_sequence_traits : default_sequence_traits {
+    struct flux_iter_traits : default_iter_traits {
     private:
         struct cursor_type {
             explicit cursor_type() = default;

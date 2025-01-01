@@ -19,7 +19,7 @@ constexpr bool test_unchecked()
         using S = decltype(seq);
 
         static_assert(contiguous_sequence<S>);
-        static_assert(sized_sequence<S>);
+        static_assert(sized_iterable<S>);
         static_assert(bounded_sequence<S>);
 
         seq.sort();
@@ -37,7 +37,7 @@ constexpr bool test_unchecked()
 
         static_assert(random_access_sequence<S>);
         static_assert(bounded_sequence<S>);
-        static_assert(sized_sequence<S>);
+        static_assert(sized_iterable<S>);
         static_assert(std::same_as<value_t<S>, std::pair<int, double>>);
         static_assert(std::same_as<element_t<S>, std::pair<int&, double&>>);
         static_assert(std::same_as<rvalue_element_t<S>, std::pair<int&&, double&&>>);

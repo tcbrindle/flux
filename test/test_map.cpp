@@ -23,7 +23,7 @@ constexpr bool test_map()
         static_assert(flux::random_access_sequence<M>);
         static_assert(not flux::contiguous_sequence<M>);
         static_assert(flux::bounded_sequence<M>);
-        static_assert(flux::sized_sequence<M>);
+        static_assert(flux::sized_iterable<M>);
 
         static_assert(std::same_as<int, flux::element_t<M>>);
         static_assert(std::same_as<int, flux::rvalue_element_t<M>>);
@@ -31,7 +31,7 @@ constexpr bool test_map()
         static_assert(flux::random_access_sequence<M const>);
         static_assert(not flux::contiguous_sequence<M const>);
         static_assert(flux::bounded_sequence<M const>);
-        static_assert(flux::sized_sequence<M const>);
+        static_assert(flux::sized_iterable<M const>);
 
         STATIC_CHECK(check_equal(mapped, {0, 2, 4, 6, 8}));
         STATIC_CHECK(mapped.size() == 5);
@@ -45,7 +45,7 @@ constexpr bool test_map()
         static_assert(flux::random_access_sequence<M>);
         static_assert(not flux::contiguous_sequence<M>);
         static_assert(flux::bounded_sequence<M>);
-        static_assert(flux::sized_sequence<M>);
+        static_assert(flux::sized_iterable<M>);
 
         static_assert(std::same_as<int const&, flux::element_t<M>>);
         static_assert(std::same_as<int const&&, flux::rvalue_element_t<M>>);
@@ -54,10 +54,29 @@ constexpr bool test_map()
         static_assert(flux::random_access_sequence<M const>);
         static_assert(not flux::contiguous_sequence<M const>);
         static_assert(flux::bounded_sequence<M const>);
-        static_assert(flux::sized_sequence<M const>);
+        static_assert(flux::sized_iterable<M const>);
 
         STATIC_CHECK(check_equal(mapped, {0, 1, 2, 3, 4}));
         STATIC_CHECK(mapped.size() == 5);
+    }
+
+    // We can map non-sequence iterables
+    {
+        auto view = std::array{1, 2, 3, 4, 5} | std::views::transform(std::identity{});
+
+        auto mapped = flux::map(std::move(view), [](int i) { return i * 2; });
+
+        using M = decltype(mapped);
+
+        static_assert(flux::iterable<M>);
+        static_assert(flux::sized_iterable<M>);
+        static_assert(!flux::sequence<M>);
+
+        static_assert(flux::iterable<M const>);
+        static_assert(flux::sized_iterable<M>);
+        static_assert(!flux::sequence<M>);
+
+        STATIC_CHECK(check_equal(mapped, {2, 4, 6, 8, 10}));
     }
 
     {

@@ -21,7 +21,7 @@ template <>
 struct cycle_data<true> {};
 
 template <multipass_sequence Base, bool IsInfinite>
-struct cycle_adaptor : inline_sequence_base<cycle_adaptor<Base, IsInfinite>> {
+struct cycle_adaptor : inline_iter_base<cycle_adaptor<Base, IsInfinite>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS cycle_data<IsInfinite> data_;
@@ -38,7 +38,7 @@ public:
           data_(count)
     {}
 
-    struct flux_sequence_traits {
+    struct flux_iter_traits : default_iter_traits {
     private:
         struct cursor_type {
             cursor_t<Base> base_cur;
@@ -184,7 +184,7 @@ public:
                                        cursor_type const& from,
                                        cursor_type const& to) -> distance_t
             requires random_access_sequence<decltype(self.base_)> &&
-                     sized_sequence<decltype(self.base_)>
+                     sized_iterable<decltype(self.base_)>
         {
             auto dist = num::cast<distance_t>(to.n) - num::cast<distance_t>(from.n);
             dist = num::mul(dist, flux::size(self.base_));
@@ -201,7 +201,7 @@ public:
         }
 
         static constexpr auto size(auto& self) -> distance_t
-            requires (!IsInfinite && sized_sequence<Base>)
+            requires (!IsInfinite && sized_iterable<Base>)
         {
             return num::mul(flux::size(self.base_),
                             num::cast<flux::distance_t>(self.data_.count));
@@ -242,14 +242,14 @@ struct cycle_fn {
 FLUX_EXPORT inline constexpr auto cycle = detail::cycle_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::cycle() &&
+constexpr auto inline_iter_base<D>::cycle() &&
     requires infinite_sequence<D> || multipass_sequence<D>
 {
     return flux::cycle(std::move(derived()));
 }
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::cycle(num::integral auto count) &&
+constexpr auto inline_iter_base<D>::cycle(num::integral auto count) &&
     requires multipass_sequence<D>
 {
     return flux::cycle(std::move(derived()), count);
