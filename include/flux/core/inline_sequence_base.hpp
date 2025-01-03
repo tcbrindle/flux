@@ -6,6 +6,7 @@
 #ifndef FLUX_CORE_INLINE_SEQUENCE_BASE_HPP_INCLUDED
 #define FLUX_CORE_INLINE_SEQUENCE_BASE_HPP_INCLUDED
 
+#include "flux/core/concepts.hpp"
 #include <flux/core/sequence_access.hpp>
 #include <flux/core/operation_requirements.hpp>
 
@@ -313,6 +314,9 @@ public:
         requires detail::boolean_testable<element_t<Mask>>
     [[nodiscard]]
     constexpr auto mask(Mask&& mask_) &&;
+
+    [[nodiscard]]
+    constexpr auto permutations() && requires (not infinite_sequence<Derived>);
 
     [[nodiscard]]
     constexpr auto pairwise() && requires multipass_sequence<Derived>;
