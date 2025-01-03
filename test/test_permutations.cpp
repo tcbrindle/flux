@@ -80,26 +80,34 @@ constexpr auto test_permutations() -> bool
 
 constexpr auto compare_permutations_with_python_itertools() -> bool
 {
-    /*
-    # Python code to generate comparison output
-    from itertools import permutations
+    // "flux" string permutations
+    {
+        /*
+        # Python code to generate comparison output
+        from itertools import permutations
 
-    perms = [''.join(p) for p in permutations("flux", 4)]
-    formatted = '{' + ', '.join(f'"{x}"' for x in perms) + '}'
-    print(formatted)
-    */
+        perms = [''.join(p) for p in permutations("flux", 4)]
+        formatted = '{' + ', '.join(f'"{x}"' for x in perms) + '}'
+        print(formatted)
+        */
 
-    auto reference = std::array<std::string, 24> {"flux", "flxu", "fulx", "fuxl", "fxlu", "fxul",
-                                                  "lfux", "lfxu", "lufx", "luxf", "lxfu", "lxuf",
-                                                  "uflx", "ufxl", "ulfx", "ulxf", "uxfl", "uxlf",
-                                                  "xflu", "xful", "xlfu", "xluf", "xufl", "xulf"};
+        auto reference = std::array<std::string, 24> {
+            "flux", "flxu", "fulx", "fuxl", "fxlu", "fxul", "lfux", "lfxu",
+            "lufx", "luxf", "lxfu", "lxuf", "uflx", "ufxl", "ulfx", "ulxf",
+            "uxfl", "uxlf", "xflu", "xful", "xlfu", "xluf", "xufl", "xulf"};
 
-    auto flux_str = std::string("flux");
-    auto permutations = flux::permutations(flux::ref(flux_str));
-    auto first = flux::first(permutations);
+        auto str = std::string("flux");
+        auto permutations = flux::permutations(flux::ref(str));
+        auto first = flux::first(permutations);
 
-    for (auto i : flux::ints().take(24)) {
-        STATIC_CHECK(check_equal(flux::read_at(permutations, first), flux::ref(reference[i])));
+        for (auto i : flux::ints().take(24)) {
+            auto p = flux::read_at(permutations, first);
+            auto r = flux::ref(reference.at(static_cast<size_t>(i)));
+
+            STATIC_CHECK(check_equal(p, r));
+
+            flux::inc(permutations, first);
+        }
     }
     return true;
 }
@@ -113,4 +121,7 @@ TEST_CASE("permutations")
 
     bool functionality = test_permutations();
     REQUIRE(functionality);
+
+    bool comparison = compare_permutations_with_python_itertools();
+    REQUIRE(comparison);
 }
