@@ -29,6 +29,7 @@ auto test_permutations_types() -> bool
     static_assert(flux::sized_sequence<SeqType>);
     static_assert(not flux::infinite_sequence<SeqType>);
     static_assert(not flux::random_access_sequence<SeqType>);
+    static_assert(not flux::contiguous_sequence<SeqType>);
 
     // Cursors
     static_assert(flux::regular_cursor<CurType>);
@@ -37,6 +38,8 @@ auto test_permutations_types() -> bool
     // Elements
     static_assert(std::same_as<flux::element_t<SeqType>, std::vector<int>>);
     static_assert(std::same_as<flux::value_t<SeqType>, std::vector<int>>);
+    static_assert(flux::random_access_sequence<flux::element_t<SeqType>>);
+    static_assert(flux::random_access_sequence<flux::value_t<SeqType>>);
 
     return true;
 }
@@ -51,19 +54,53 @@ constexpr auto test_permutations() -> bool
         // Sizes
         STATIC_CHECK(seq.size() == 6);
 
-        // Values
         auto cur = flux::first(seq);
         auto test_comp = std::array {1, 2, 3};
 
+        // Forward Iteration Permutations
         while (not flux::is_last(seq, cur)) {
-            if (not check_equal(flux::read_at(seq, cur), test_comp)) {
-                return false;
-            }
+            STATIC_CHECK(check_equal(flux::read_at(seq, cur), test_comp));
+
             flux::inc(seq, cur);
             std::ranges::next_permutation(test_comp);
         }
+
+        // Reverse Iteration Permutations
+        auto first = flux::first(seq);
+        do {
+            flux::dec(seq, cur);
+            std::ranges::prev_permutation(test_comp);
+
+            STATIC_CHECK(check_equal(flux::read_at(seq, cur), test_comp));
+        } while (cur != first);
     }
 
+    return true;
+}
+
+constexpr auto compare_permutations_with_python_itertools() -> bool
+{
+    /*
+    # Python code to generate comparison output
+    from itertools import permutations
+
+    perms = [''.join(p) for p in permutations("flux", 4)]
+    formatted = '{' + ', '.join(f'"{x}"' for x in perms) + '}'
+    print(formatted)
+    */
+
+    auto reference = std::array<std::string, 24> {"flux", "flxu", "fulx", "fuxl", "fxlu", "fxul",
+                                                  "lfux", "lfxu", "lufx", "luxf", "lxfu", "lxuf",
+                                                  "uflx", "ufxl", "ulfx", "ulxf", "uxfl", "uxlf",
+                                                  "xflu", "xful", "xlfu", "xluf", "xufl", "xulf"};
+
+    auto flux_str = std::string("flux");
+    auto permutations = flux::permutations(flux::ref(flux_str));
+    auto first = flux::first(permutations);
+
+    for (auto i : flux::ints().take(24)) {
+        STATIC_CHECK(check_equal(flux::read_at(permutations, first), flux::ref(reference[i])));
+    }
     return true;
 }
 
