@@ -8,7 +8,6 @@
 #include "flux/core/inline_sequence_base.hpp"
 #include "flux/macros.hpp"
 #include "flux/adaptor/permutations_base.hpp"
-#include <concepts>
 #include <cstddef>
 #include <flux/core.hpp>
 #include <numeric>
