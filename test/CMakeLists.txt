@@ -65,7 +65,7 @@ add_executable(test-flux
     test_minmax.cpp
     test_output_to.cpp
     test_permutations.cpp
-    test_sized_permutations.cpp
+    test_permutations_sized.cpp
     test_range_iface.cpp
     test_read_only.cpp
     test_reverse.cpp

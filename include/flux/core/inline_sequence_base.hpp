@@ -321,7 +321,7 @@ public:
     template<std::size_t Size>
         requires(Size > 0)
     [[nodiscard]]
-    constexpr auto sized_permutations() && requires (not infinite_sequence<Derived>);
+    constexpr auto permutations_sized() && requires (not infinite_sequence<Derived>);
 
     [[nodiscard]]
     constexpr auto pairwise() && requires multipass_sequence<Derived>;
