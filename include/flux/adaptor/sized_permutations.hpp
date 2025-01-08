@@ -201,11 +201,13 @@ static_assert(flux::bounded_sequence<
 static_assert(flux::sized_sequence<
               sized_permutations_adaptor<flux::detail::ref_adaptor<const std::array<int, 3>>, 3>>);
 
+template <std::size_t Size>
+    requires(Size > 0)
 struct sized_permutations_fn {
-    template <sequence Seq, std::size_t Size>
+    template <sequence Seq>
         requires(not infinite_sequence<Seq>)
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const -> bidirectional_sequence auto
+    constexpr auto operator()(Seq&& seq) const -> sized_sequence auto
     {
         return sized_permutations_adaptor<std::decay_t<Seq>, Size>(FLUX_FWD(seq));
     }
@@ -213,7 +215,9 @@ struct sized_permutations_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto sized_permutations = detail::sized_permutations_fn {};
+FLUX_EXPORT
+template <std::size_t Size>
+inline constexpr auto sized_permutations = detail::sized_permutations_fn<Size> {};
 
 FLUX_EXPORT
 template <typename Derived>
@@ -221,7 +225,7 @@ template <std::size_t Size>
     requires(Size > 0)
 constexpr auto inline_sequence_base<Derived>::sized_permutations()
     && requires(not infinite_sequence<Derived>) {
-           return flux::sized_permutations(std::move(derived()));
+           return flux::sized_permutations<Size>(std::move(derived()));
        }
 } // namespace flux
 
