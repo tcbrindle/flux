@@ -318,6 +318,11 @@ public:
     [[nodiscard]]
     constexpr auto permutations() && requires (not infinite_sequence<Derived>);
 
+    template<std::size_t Size>
+        requires(Size > 0)
+    [[nodiscard]]
+    constexpr auto sized_permutations() && requires (not infinite_sequence<Derived>);
+
     [[nodiscard]]
     constexpr auto pairwise() && requires multipass_sequence<Derived>;
 
