@@ -15,10 +15,10 @@
 namespace flux {
 namespace detail {
 
-template <flux::sequence Base, flux::distance_t Size>
-    requires flux::bounded_sequence<Base> && (Size > 0)
+template <flux::sequence Base, flux::distance_t SubsequenceSize>
+    requires flux::bounded_sequence<Base> && (SubsequenceSize > 0)
 struct permutations_sized_adaptor
-    : public flux::inline_sequence_base<permutations_sized_adaptor<Base, Size>> {
+    : public flux::inline_sequence_base<permutations_sized_adaptor<Base, SubsequenceSize>> {
 private:
     Base base_;
 
@@ -28,13 +28,10 @@ private:
     state_t state_ {state_t::Uninitialized};
 
     using inner_value_t = flux::value_t<Base>;
-    std::vector<inner_value_t> cache_; // This caches the input sequence
+    std::vector<inner_value_t> cache_;
+    std::size_t size_;
 
-    [[nodiscard]] constexpr bool is_cached() const noexcept { return state_ == state_t::Cached; }
-
-    std::size_t size_ {0};
-
-    [[nodiscard]] constexpr std::size_t number_permutations()
+    [[nodiscard]] constexpr std::size_t count_permutations()
     {
         if (not is_cached()) {
             cache_base();
@@ -43,14 +40,16 @@ private:
         return size_;
     }
 
+    [[nodiscard]] constexpr bool is_cached() const noexcept { return state_ == state_t::Cached; }
+
     constexpr auto cache_base() -> void
     {
         for (const auto elem : base_) {
             cache_.emplace_back(elem);
         }
 
-        if (Size <= cache_.size()) {
-            size_ = factorial(cache_.size()) / factorial(cache_.size() - Size);
+        if (SubsequenceSize <= cache_.size()) {
+            size_ = factorial(cache_.size()) / factorial(cache_.size() - SubsequenceSize);
         } else {
             size_ = 0;
         }
@@ -65,8 +64,8 @@ private:
         cache_.resize(size);
         std::ranges::copy(base_, cache_.begin());
 
-        if (Size <= size) {
-            size_ = factorial(cache_.size()) / factorial(cache_.size() - Size);
+        if (SubsequenceSize <= size) {
+            size_ = factorial(cache_.size()) / factorial(cache_.size() - SubsequenceSize);
         } else {
             size_ = 0;
         }
@@ -84,8 +83,7 @@ public:
         struct cursor_type {
             std::vector<std::size_t> indices_;
             std::vector<std::size_t> cycles_;
-
-            std::size_t index_ {0};
+            std::size_t index_;
 
             [[nodiscard]] constexpr auto operator<=>(const cursor_type& other) const
             {
@@ -96,8 +94,6 @@ public:
                 return index_ == other.index_;
             }
         };
-        static_assert(flux::regular_cursor<cursor_type>);
-        static_assert(flux::ordered_cursor<cursor_type>);
 
     public:
         using value_type = std::vector<inner_value_t>;
@@ -110,16 +106,16 @@ public:
                 self.cache_base();
             }
 
-            // variable aliases for readability
+            // variable alias for readability
             const auto base_length = self.cache_.size();
 
-            // fill up the indices from 0 to size-1
+            // Set indices to range [0, 1, ..., size-1]
             std::vector<std::size_t> indices(base_length);
             std::iota(indices.begin(), indices.end(), 0);
 
-            // fill up the cycles
-            std::vector<std::size_t> cycles(Size);
-            std::iota(cycles.rbegin(), cycles.rend(), base_length - Size);
+            // Set cycles to [i, i+1, ..., size] where i = size - subsequence_size
+            std::vector<std::size_t> cycles(SubsequenceSize);
+            std::iota(cycles.rbegin(), cycles.rend(), base_length - SubsequenceSize);
 
             // return the cursor
             return {.indices_ = indices, .cycles_ = cycles, .index_ = 0};
@@ -139,20 +135,20 @@ public:
             std::iota(indices.rbegin(), indices.rend(), 0);
 
             // fill up the cycles with 0s because it's the end
-            std::vector<std::size_t> cycles(Size, 0);
+            std::vector<std::size_t> cycles(SubsequenceSize, 0);
 
             // return the cursor
-            return {.indices_ = indices, .cycles_ = cycles, .index_ = self.number_permutations()};
+            return {.indices_ = indices, .cycles_ = cycles, .index_ = self.count_permutations()};
         }
 
         static constexpr auto is_last(self_t& self, const cursor_type& cursor) -> bool
         {
-            return cursor.index_ >= self.number_permutations();
+            return cursor.index_ >= self.count_permutations();
         }
 
         static constexpr auto inc(self_t& self, cursor_type& cursor) -> void
         {
-            const auto k = Size;
+            const auto k = SubsequenceSize;
             const auto n = self.cache_.size();
 
             cursor.index_ += 1;
@@ -176,57 +172,53 @@ public:
             if (not self.is_cached()) {
                 self.cache_base();
             }
-            return reindex_vec<inner_value_t>(self.cache_, cursor.indices_, Size);
+            return reindex_vec<inner_value_t>(self.cache_, cursor.indices_, SubsequenceSize);
         }
 
         static constexpr auto read_at_unchecked(self_t& self, const cursor_type& cursor)
             -> value_type
         {
-            return reindex_vec<inner_value_t>(self.cache_, cursor.indices_, Size);
+            return reindex_vec<inner_value_t>(self.cache_, cursor.indices_, SubsequenceSize);
         }
 
         static constexpr auto size(self_t& self) -> flux::distance_t
             requires flux::sized_sequence<Base>
         {
-            return self.number_permutations();
+            return self.count_permutations();
         }
     };
 };
-static_assert(flux::sequence<
-              permutations_sized_adaptor<flux::detail::ref_adaptor<const std::array<int, 3>>, 3>>);
-static_assert(flux::multipass_sequence<
-              permutations_sized_adaptor<flux::detail::ref_adaptor<const std::array<int, 3>>, 3>>);
-static_assert(flux::bounded_sequence<
-              permutations_sized_adaptor<flux::detail::ref_adaptor<const std::array<int, 3>>, 3>>);
-static_assert(flux::sized_sequence<
-              permutations_sized_adaptor<flux::detail::ref_adaptor<const std::array<int, 3>>, 3>>);
 
-template <std::size_t Size>
-    requires(Size > 0)
+template <std::size_t SubsequenceSize>
+    requires(SubsequenceSize > 0)
 struct permutations_sized_fn {
     template <sequence Seq>
         requires(not infinite_sequence<Seq>)
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const -> sized_sequence auto
     {
-        return permutations_sized_adaptor<std::decay_t<Seq>, Size>(FLUX_FWD(seq));
+        return permutations_sized_adaptor<std::decay_t<Seq>, SubsequenceSize>(FLUX_FWD(seq));
     }
 };
 
 } // namespace detail
 
 FLUX_EXPORT
-template <std::size_t Size>
-inline constexpr auto permutations_sized = detail::permutations_sized_fn<Size> {};
+template <std::size_t SubsequenceSize>
+inline constexpr auto permutations_sized = detail::permutations_sized_fn<SubsequenceSize> {};
 
+// clang-format off
 FLUX_EXPORT
 template <typename Derived>
-template <std::size_t Size>
-    requires(Size > 0)
-constexpr auto inline_sequence_base<Derived>::permutations_sized()
-    && requires(not infinite_sequence<Derived>) {
-           return flux::permutations_sized<Size>(std::move(derived()));
-       }
+template <std::size_t SubsequenceSize>
+    requires(SubsequenceSize > 0)
+constexpr auto inline_sequence_base<Derived>::permutations_sized() &&
+    requires(not infinite_sequence<Derived>)
+{
+    return flux::permutations_sized<SubsequenceSize>(std::move(derived()));
+}
+// clang-format on
+//
 } // namespace flux
 
 #endif

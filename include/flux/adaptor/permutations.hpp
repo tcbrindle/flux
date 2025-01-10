@@ -22,16 +22,18 @@ private:
     Base base_;
 
     // Uninitialized: Input sequence is not cached, output can't be generated
-    // Cached: Input sequence is cached (copied) into the cache_ member variable
+    // Cached: Input sequence is cached (copied) into the cache_ member variable and output
+    // can be generated when a valid cursor is provided
     enum class state_t { Uninitialized, Cached };
     state_t state_ {state_t::Uninitialized};
 
     using inner_value_t = flux::value_t<Base>;
-    std::vector<inner_value_t> cache_; // This caches the input sequence
-
+    std::vector<inner_value_t> cache_;
     std::size_t size_;
 
-    [[nodiscard]] constexpr std::size_t number_permutations()
+    // Returns the total number of possible permutations of the input sequence. Requires that
+    // the input sequence is cached to do so.
+    [[nodiscard]] constexpr std::size_t count_permutations()
     {
         if (not is_cached()) {
             cache_base();
@@ -42,6 +44,7 @@ private:
 
     [[nodiscard]] constexpr bool is_cached() const noexcept { return state_ == state_t::Cached; }
 
+    // Caches the base sequence by copying it into the `cache_` member variable.
     constexpr auto cache_base() -> void
     {
         for (const auto elem : base_) {
@@ -53,6 +56,9 @@ private:
         state_ = state_t::Cached;
     }
 
+    // Caches the base sequence by copying it into the `cache_` member variable.
+    // Since this is a `sized_sequence` we can use pre-allocate the `cache_` and copy in the
+    // input using `std::copy`
     constexpr auto cache_base() -> void
         requires flux::sized_sequence<Base>
     {
@@ -73,17 +79,18 @@ public:
         using self_t = permutations_adaptor;
 
         struct cursor_type {
+            // `indices_` keeps track of the permuted indices of the input sequence
             std::vector<std::size_t> indices_;
-            std::size_t index_ {0};
+            std::size_t permutation_index_ {0};
 
             [[nodiscard]] constexpr auto operator<=>(const cursor_type& other) const
             {
-                return index_ <=> other.index_;
+                return permutation_index_ <=> other.permutation_index_;
             }
 
             [[nodiscard]] constexpr bool operator==(const cursor_type& other) const
             {
-                return index_ == other.index_;
+                return permutation_index_ == other.permutation_index_;
             }
         };
 
@@ -98,7 +105,7 @@ public:
                 self.cache_base();
             }
 
-            // variable aliases for readability
+            // variable alias for readability
             const auto base_length = self.cache_.size();
 
             // fill up the indices from 0 to size-1
@@ -118,30 +125,30 @@ public:
             // variable aliases for readability
             const auto base_length = self.cache_.size();
 
-            // fill up the indices from 0 to size-1 in reverse (as this is the last)
+            // fill up the indices from 0 to size-1 in reverse (as this is the last permutation)
             std::vector<std::size_t> indices(base_length);
             std::iota(indices.rbegin(), indices.rend(), 0);
 
             // return the cursor
-            return {.indices_ = indices, .index_ = self.number_permutations()};
+            return {.indices_ = indices, .index_ = self.count_permutations()};
         }
 
         static constexpr auto is_last([[maybe_unused]] self_t& self, const cursor_type& cursor)
             -> bool
         {
-            return cursor.index_ >= self.number_permutations();
+            return cursor.permutation_index_ >= self.count_permutations();
         }
 
         static constexpr auto inc([[maybe_unused]] self_t& self, cursor_type& cursor) -> void
         {
             std::next_permutation(cursor.indices_.begin(), cursor.indices_.end());
-            cursor.index_ += 1;
+            cursor.permutation_index_ += 1;
         }
 
         static constexpr auto dec([[maybe_unused]] self_t& self, cursor_type& cursor) -> void
         {
             std::prev_permutation(cursor.indices_.begin(), cursor.indices_.end());
-            cursor.index_ -= 1;
+            cursor.permutation_index_ -= 1;
         }
 
         static constexpr auto read_at(self_t& self, const cursor_type& cursor) -> value_type
@@ -160,7 +167,7 @@ public:
 
         static constexpr auto size(self_t& self) -> flux::distance_t
         {
-            return static_cast<flux::distance_t>(self.number_permutations());
+            return static_cast<flux::distance_t>(self.count_permutations());
         }
     };
 };
@@ -179,10 +186,15 @@ struct permutations_fn {
 
 FLUX_EXPORT inline constexpr auto permutations = detail::permutations_fn {};
 
+// clang-format off
 FLUX_EXPORT
 template <typename Derived>
-    constexpr auto inline_sequence_base<Derived>::permutations()
-    && requires(not infinite_sequence<Derived>) { return flux::permutations(std::move(derived())); }
+constexpr auto inline_sequence_base<Derived>::permutations() &&
+    requires(not infinite_sequence<Derived>)
+{
+    return flux::permutations(std::move(derived())); 
+}
+// clang-format on 
 
 } // namespace flux
 #endif
