@@ -113,7 +113,7 @@ public:
             std::iota(indices.begin(), indices.end(), 0);
 
             // return the cursor
-            return {.indices_ = indices, .index_ = 0};
+            return {.indices_ = indices, .permutation_index_ = 0};
         }
 
         static constexpr auto last(self_t& self) -> cursor_type
@@ -130,7 +130,7 @@ public:
             std::iota(indices.rbegin(), indices.rend(), 0);
 
             // return the cursor
-            return {.indices_ = indices, .index_ = self.count_permutations()};
+            return {.indices_ = indices, .permutation_index_ = self.count_permutations()};
         }
 
         static constexpr auto is_last([[maybe_unused]] self_t& self, const cursor_type& cursor)

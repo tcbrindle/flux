@@ -83,15 +83,15 @@ public:
         struct cursor_type {
             std::vector<std::size_t> indices_;
             std::vector<std::size_t> cycles_;
-            std::size_t index_;
+            std::size_t permutation_index_;
 
             [[nodiscard]] constexpr auto operator<=>(const cursor_type& other) const
             {
-                return index_ <=> other.index_;
+                return permutation_index_ <=> other.permutation_index_;
             }
             [[nodiscard]] constexpr bool operator==(const cursor_type& other) const
             {
-                return index_ == other.index_;
+                return permutation_index_ == other.permutation_index_;
             }
         };
 
@@ -118,7 +118,7 @@ public:
             std::iota(cycles.rbegin(), cycles.rend(), base_length - SubsequenceSize);
 
             // return the cursor
-            return {.indices_ = indices, .cycles_ = cycles, .index_ = 0};
+            return {.indices_ = indices, .cycles_ = cycles, .permutation_index_ = 0};
         }
 
         static constexpr auto last(self_t& self) -> cursor_type
@@ -138,12 +138,12 @@ public:
             std::vector<std::size_t> cycles(SubsequenceSize, 0);
 
             // return the cursor
-            return {.indices_ = indices, .cycles_ = cycles, .index_ = self.count_permutations()};
+            return {.indices_ = indices, .cycles_ = cycles, .permutation_index_ = self.count_permutations()};
         }
 
         static constexpr auto is_last(self_t& self, const cursor_type& cursor) -> bool
         {
-            return cursor.index_ >= self.count_permutations();
+            return cursor.permutation_index_ >= self.count_permutations();
         }
 
         static constexpr auto inc(self_t& self, cursor_type& cursor) -> void
@@ -151,7 +151,7 @@ public:
             const auto k = SubsequenceSize;
             const auto n = self.cache_.size();
 
-            cursor.index_ += 1;
+            cursor.permutation_index_ += 1;
 
             for (const auto i : flux::iota(std::size_t {0}, std::size_t {k}).reverse()) {
                 if (cursor.cycles_[i] == 0) {
