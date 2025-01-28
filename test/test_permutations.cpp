@@ -25,8 +25,8 @@ auto test_permutations_types() -> bool
     // Sequence
     static_assert(flux::sequence<SeqType>);
     static_assert(flux::multipass_sequence<SeqType>);
-    static_assert(flux::bounded_sequence<SeqType>);
-    static_assert(flux::sized_sequence<SeqType>);
+    // static_assert(flux::bounded_sequence<SeqType>);
+    // static_assert(flux::sized_sequence<SeqType>);
     static_assert(not flux::infinite_sequence<SeqType>);
     static_assert(not flux::random_access_sequence<SeqType>);
     static_assert(not flux::contiguous_sequence<SeqType>);
@@ -36,10 +36,10 @@ auto test_permutations_types() -> bool
     static_assert(flux::ordered_cursor<CurType>);
 
     // Elements
-    static_assert(std::same_as<flux::element_t<SeqType>, std::vector<int>>);
-    static_assert(std::same_as<flux::value_t<SeqType>, std::vector<int>>);
-    static_assert(flux::random_access_sequence<flux::element_t<SeqType>>);
-    static_assert(flux::random_access_sequence<flux::value_t<SeqType>>);
+    // static_assert(std::same_as<flux::element_t<SeqType>, std::vector<int>>);
+    // static_assert(std::same_as<flux::value_t<SeqType>, std::vector<int>>);
+    // static_assert(flux::random_access_sequence<flux::element_t<SeqType>>);
+    // static_assert(flux::random_access_sequence<flux::value_t<SeqType>>);
 
     return true;
 }
@@ -52,14 +52,14 @@ constexpr auto test_permutations() -> bool
         auto seq = flux::mut_ref(arr).permutations<3>();
 
         // Sizes
-        STATIC_CHECK(seq.size() == 6);
+        // STATIC_CHECK(seq.size() == 6);
 
         auto cur = flux::first(seq);
         auto test_comp = std::array {1, 2, 3};
 
         // Forward Iteration Permutations
         while (not flux::is_last(seq, cur)) {
-            STATIC_CHECK(check_equal(flux::read_at(seq, cur), test_comp));
+            // STATIC_CHECK(check_equal(flux::read_at(seq, cur), test_comp));
 
             flux::inc(seq, cur);
             std::ranges::next_permutation(test_comp);
@@ -95,7 +95,7 @@ constexpr auto compare_permutations_with_python_itertools() -> bool
             auto p = flux::read_at(permutations, first);
             auto r = flux::ref(reference.at(static_cast<size_t>(i)));
 
-            STATIC_CHECK(check_equal(p, r));
+            // STATIC_CHECK(check_equal(p, r));
 
             flux::inc(permutations, first);
         }
@@ -107,12 +107,6 @@ constexpr auto compare_permutations_with_python_itertools() -> bool
 
 TEST_CASE("permutations")
 {
-    bool types = test_permutations_types();
-    REQUIRE(types);
-
-    bool functionality = test_permutations();
-    REQUIRE(functionality);
-
-    bool comparison = compare_permutations_with_python_itertools();
-    REQUIRE(comparison);
+    auto implementation = false;
+    REQUIRE(implementation);
 }
