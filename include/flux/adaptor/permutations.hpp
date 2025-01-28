@@ -81,6 +81,7 @@ public:
         using self_t = permutations_adaptor;
 
         struct cursor_type {
+            // TODO: remove vector type
             std::vector<std::size_t> indices_;
             std::vector<std::size_t> cycles_;
             std::size_t permutation_index_;
@@ -96,6 +97,7 @@ public:
         };
 
     public:
+        // TODO: remove vector type
         using value_type = std::vector<inner_value_t>;
 
         inline static constexpr bool is_infinite = false;

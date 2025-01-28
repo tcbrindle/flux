@@ -14,6 +14,7 @@ namespace flux::detail {
     return x * factorial(x - 1);
 }
 
+// TODO: this will need to change to support something other than vectors.
 // Given an input vector and a range of indices, return a new vector with the same values
 // of `input`, ordered by `indices` up to the given `length`.
 template <typename T>
@@ -30,6 +31,7 @@ template <typename T>
     return output;
 }
 
+// TODO: this will need to change to support something other than vectors.
 // Given an input vector and a range of indices, return a new vector with the same values
 // of `input`, ordered by `indices`.
 template <typename T>

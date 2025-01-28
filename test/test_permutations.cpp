@@ -11,6 +11,8 @@ import flux;
 
 namespace {
 
+// TODO: will need to add a test that tests permutations of a sequence of references
+
 auto test_permutations_types() -> bool
 {
     auto arr = std::array {1, 2, 3};
