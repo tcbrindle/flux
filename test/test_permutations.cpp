@@ -6,7 +6,7 @@
 #ifdef USE_MODULES
 import flux;
 #else
-#    include <flux/adaptor/permutations_sized.hpp>
+#    include <flux/adaptor/permutations.hpp>
 #endif
 
 namespace {
