@@ -315,13 +315,10 @@ public:
     [[nodiscard]]
     constexpr auto mask(Mask&& mask_) &&;
 
-    [[nodiscard]]
-    constexpr auto permutations() && requires (not infinite_sequence<Derived>);
-
     template<std::size_t Size>
         requires(Size > 0)
     [[nodiscard]]
-    constexpr auto permutations_sized() && requires (not infinite_sequence<Derived>);
+    constexpr auto permutations() && requires (not infinite_sequence<Derived>);
 
     [[nodiscard]]
     constexpr auto pairwise() && requires multipass_sequence<Derived>;

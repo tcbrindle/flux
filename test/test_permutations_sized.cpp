@@ -15,7 +15,7 @@ auto test_permutations_types() -> bool
 {
     auto arr = std::array {1, 2, 3};
 
-    auto seq = flux::mut_ref(arr).permutations_sized<3>();
+    auto seq = flux::mut_ref(arr).permutations<3>();
 
     using SeqType = decltype(seq);
     using CurType = flux::cursor_t<SeqType>;
@@ -47,7 +47,7 @@ constexpr auto test_permutations() -> bool
     // Simple Array Comparison
     {
         auto arr = std::array {1, 2, 3};
-        auto seq = flux::mut_ref(arr).permutations_sized<3>();
+        auto seq = flux::mut_ref(arr).permutations<3>();
 
         // Sizes
         STATIC_CHECK(seq.size() == 6);
@@ -86,7 +86,7 @@ constexpr auto compare_permutations_with_python_itertools() -> bool
             "uxfl", "uxlf", "xflu", "xful", "xlfu", "xluf", "xufl", "xulf"};
 
         auto str = std::string("flux");
-        auto permutations = flux::permutations_sized<4>(flux::ref(str));
+        auto permutations = flux::permutations<4>(flux::ref(str));
         auto first = flux::first(permutations);
 
         for (auto i : flux::ints().take(24)) {

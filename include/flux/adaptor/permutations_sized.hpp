@@ -17,8 +17,8 @@ namespace detail {
 
 template <flux::sequence Base, flux::distance_t SubsequenceSize>
     requires flux::bounded_sequence<Base> && (SubsequenceSize > 0)
-struct permutations_sized_adaptor
-    : public flux::inline_sequence_base<permutations_sized_adaptor<Base, SubsequenceSize>> {
+struct permutations_adaptor
+    : public flux::inline_sequence_base<permutations_adaptor<Base, SubsequenceSize>> {
 private:
     Base base_;
 
@@ -74,11 +74,11 @@ private:
     }
 
 public:
-    constexpr permutations_sized_adaptor(Base&& base) : base_(std::move(base)) { }
+    constexpr permutations_adaptor(Base&& base) : base_(std::move(base)) { }
 
     struct flux_sequence_traits : flux::default_sequence_traits {
     private:
-        using self_t = permutations_sized_adaptor;
+        using self_t = permutations_adaptor;
 
         struct cursor_type {
             std::vector<std::size_t> indices_;
@@ -191,13 +191,13 @@ public:
 
 template <std::size_t SubsequenceSize>
     requires(SubsequenceSize > 0)
-struct permutations_sized_fn {
+struct permutations_fn {
     template <sequence Seq>
         requires(not infinite_sequence<Seq>)
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq) const -> sized_sequence auto
     {
-        return permutations_sized_adaptor<std::decay_t<Seq>, SubsequenceSize>(FLUX_FWD(seq));
+        return permutations_adaptor<std::decay_t<Seq>, SubsequenceSize>(FLUX_FWD(seq));
     }
 };
 
@@ -205,17 +205,17 @@ struct permutations_sized_fn {
 
 FLUX_EXPORT
 template <std::size_t SubsequenceSize>
-inline constexpr auto permutations_sized = detail::permutations_sized_fn<SubsequenceSize> {};
+inline constexpr auto permutations = detail::permutations_fn<SubsequenceSize> {};
 
 // clang-format off
 FLUX_EXPORT
 template <typename Derived>
 template <std::size_t SubsequenceSize>
     requires(SubsequenceSize > 0)
-constexpr auto inline_sequence_base<Derived>::permutations_sized() &&
+constexpr auto inline_sequence_base<Derived>::permutations() &&
     requires(not infinite_sequence<Derived>)
 {
-    return flux::permutations_sized<SubsequenceSize>(std::move(derived()));
+    return flux::permutations<SubsequenceSize>(std::move(derived()));
 }
 // clang-format on
 //
