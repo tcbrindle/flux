@@ -492,6 +492,19 @@ Algorithms
     template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way> \
     auto max(Seq&& seq, Cmp cmp = {}) -> optional<value_t<Seq>>;
 
+    Finds the maximum value of :var:`seq`, compared using :var:`cmp`.
+
+    If :var:`seq` is empty, returns `nullopt`.
+
+    :param seq: A multipass sequence
+    :param cmp: A comparator to use to find the maximum element, defaulting to :type:`std::compare_three_way`
+
+    :returns: An `optional` containing the maximum value of :var:`seq` if :var:`seq` is not empty.
+
+    :see also:
+      * :func:`flux::find_max`
+
+
 ``min``
 -------
 
@@ -499,6 +512,16 @@ Algorithms
     template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way> \
         requires std::predicate<Cmp&, value_t<Seq>, element_t<Seq>> \
     auto min(Seq&& seq, Cmp cmp = {}) -> optional<value_t<Seq>>;
+
+    Finds the minimum value of :var:`seq`, compared using :var:`cmp`. If :var:`seq` is empty, returns `nullopt`.
+
+    :param seq: A multipass sequence
+    :param cmp: A comparator to use to find the minimum element, defaulting to :type:`std::compare_three_way`
+
+    :returns: An `optional` containing the minimum value of :var:`seq` if :var:`seq` is not empty.
+
+    :see also:
+      * :func:`flux::find_min`
 
 ``minmax``
 ----------
@@ -509,6 +532,22 @@ Algorithms
     template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way> \
         requires std::predicate<Cmp&, value_t<Seq>, element_t<Seq>> \
     auto minmax(Seq&& seq, Cmp cmp = {}) -> optional<minmax_result<Seq>>;
+
+    Finds the minimum and maximum value of :var:`seq`, compared using :var:`cmp`, wrapped in an `optional`. If :var:`seq` is empty, returns `nullopt`.
+
+    Equivalent to::
+
+    minmax_element<element_t<Seq>>{.min = min(seq, cmp),
+                                   .max = max(seq, cmp)};
+
+    :param seq: A multipass sequence
+    :param cmp: A comparator to use to find the minmax elements, defaulting to :type:`std::compare_three_way`
+
+    :returns: An `optional` containing the minimum and maximum values of :var:`seq` if :var:`seq` is not empty.
+
+    :see also:
+      * :func:`flux::find_min`
+
 
 ``none``
 --------
