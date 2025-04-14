@@ -104,7 +104,10 @@ target_compile_definitions(test-flux PUBLIC
     FLUX_DISABLE_STATIC_BOUNDS_CHECKING
     DOCTEST_CONFIG_VOID_CAST_EXPRESSIONS
 )
-target_precompile_headers(test-flux PRIVATE <doctest/doctest.h>)
+
+if (NOT FLUX_BUILD_TESTS_USING_MODULE)
+    target_precompile_headers(test-flux PRIVATE <doctest/doctest.h>)
+endif()
 
 if(FLUX_ENABLE_ASAN)
     target_compile_options(test-flux PRIVATE -fsanitize=address)
