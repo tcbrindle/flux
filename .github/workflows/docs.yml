@@ -18,7 +18,7 @@ jobs:
           docs-folder: 'docs/'
       - name: Upload pages artifact
         if: github.ref_name == 'main'
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v3
         with:
           path: docs/html/
 
@@ -39,4 +39,4 @@ jobs:
     steps:
       - name: Deploy to Github Pages
         id: deployment
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v4
