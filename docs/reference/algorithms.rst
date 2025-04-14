@@ -537,8 +537,10 @@ Algorithms
 
     Equivalent to::
 
-    minmax_element<element_t<Seq>>{.min = min(seq, cmp),
-                                   .max = max(seq, cmp)};
+        minmax_element<element_t<Seq>>{.min = min(seq, cmp),
+                                       .max = max(seq, cmp)};
+
+    but only performs a single pass over the input sequence.
 
     :param seq: A multipass sequence
     :param cmp: A comparator to use to find the minmax elements, defaulting to :type:`std::compare_three_way`
