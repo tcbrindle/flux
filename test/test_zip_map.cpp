@@ -29,13 +29,13 @@ constexpr bool test_zip_map()
         static_assert(flux::sequence<Z>);
         static_assert(flux::bidirectional_sequence<Z>);
         static_assert(flux::random_access_sequence<Z>);
-        static_assert(flux::sized_sequence<Z>);
+        static_assert(flux::sized_iterable<Z>);
         static_assert(flux::bounded_sequence<Z>);
 
         static_assert(flux::sequence<Z const>);
         static_assert(flux::bidirectional_sequence<Z const>);
         static_assert(flux::random_access_sequence<Z const>);
-        static_assert(flux::sized_sequence<Z const>);
+        static_assert(flux::sized_iterable<Z const>);
         static_assert(flux::bounded_sequence<Z const>);
 
         static_assert(std::same_as<flux::element_t<Z>, int>);
@@ -81,13 +81,13 @@ constexpr bool test_zip_map()
         static_assert(flux::sequence<Z>);
         static_assert(flux::bidirectional_sequence<Z>);
         static_assert(flux::random_access_sequence<Z>);
-        static_assert(flux::sized_sequence<Z>);
+        static_assert(flux::sized_iterable<Z>);
         static_assert(flux::bounded_sequence<Z>);
 
         static_assert(flux::sequence<Z const>);
         static_assert(flux::bidirectional_sequence<Z const>);
         static_assert(flux::random_access_sequence<Z const>);
-        static_assert(flux::sized_sequence<Z const>);
+        static_assert(flux::sized_iterable<Z const>);
         static_assert(flux::bounded_sequence<Z const>);
 
         static_assert(std::same_as<flux::element_t<Z>, int>);
@@ -126,13 +126,13 @@ constexpr bool test_zip_map()
         static_assert(flux::sequence<Z>);
         static_assert(flux::bidirectional_sequence<Z>);
         static_assert(flux::random_access_sequence<Z>);
-        static_assert(flux::sized_sequence<Z>);
+        static_assert(flux::sized_iterable<Z>);
         static_assert(flux::bounded_sequence<Z>);
 
         static_assert(flux::sequence<Z const>);
         static_assert(flux::bidirectional_sequence<Z const>);
         static_assert(flux::random_access_sequence<Z const>);
-        static_assert(flux::sized_sequence<Z const>);
+        static_assert(flux::sized_iterable<Z const>);
         static_assert(flux::bounded_sequence<Z const>);
 
         static_assert(std::same_as<flux::element_t<Z>, int>);
@@ -162,13 +162,13 @@ constexpr bool test_zip_map()
         static_assert(flux::sequence<Z>);
         static_assert(flux::bidirectional_sequence<Z>);
         static_assert(flux::random_access_sequence<Z>);
-        static_assert(flux::sized_sequence<Z>);
+        static_assert(flux::sized_iterable<Z>);
         static_assert(flux::bounded_sequence<Z>);
 
         static_assert(flux::sequence<Z const>);
         static_assert(flux::bidirectional_sequence<Z const>);
         static_assert(flux::random_access_sequence<Z const>);
-        static_assert(flux::sized_sequence<Z const>);
+        static_assert(flux::sized_iterable<Z const>);
         static_assert(flux::bounded_sequence<Z const>);
 
         static_assert(std::same_as<flux::element_t<Z>, int const&>);
@@ -198,13 +198,13 @@ constexpr bool test_zip_map()
         static_assert(flux::sequence<Z>);
         static_assert(flux::bidirectional_sequence<Z>);
         static_assert(flux::random_access_sequence<Z>);
-        static_assert(flux::sized_sequence<Z>);
+        static_assert(flux::sized_iterable<Z>);
         static_assert(flux::bounded_sequence<Z>);
 
         static_assert(flux::sequence<Z const>);
         static_assert(flux::bidirectional_sequence<Z const>);
         static_assert(flux::random_access_sequence<Z const>);
-        static_assert(flux::sized_sequence<Z const>);
+        static_assert(flux::sized_iterable<Z const>);
         static_assert(flux::bounded_sequence<Z const>);
 
         static_assert(std::same_as<flux::element_t<Z>, int>);
@@ -232,13 +232,13 @@ constexpr bool test_zip_map()
         static_assert(flux::sequence<Z>);
         static_assert(flux::bidirectional_sequence<Z>);
         static_assert(flux::random_access_sequence<Z>);
-        static_assert(flux::sized_sequence<Z>);
+        static_assert(flux::sized_iterable<Z>);
         static_assert(flux::bounded_sequence<Z>);
 
         static_assert(flux::sequence<Z const>);
         static_assert(flux::bidirectional_sequence<Z const>);
         static_assert(flux::random_access_sequence<Z const>);
-        static_assert(flux::sized_sequence<Z const>);
+        static_assert(flux::sized_iterable<Z const>);
         static_assert(flux::bounded_sequence<Z const>);
 
         static_assert(std::same_as<flux::element_t<Z>, int&>);

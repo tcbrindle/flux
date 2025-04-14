@@ -18,11 +18,11 @@ constexpr bool test_single()
         using S = decltype(s);
 
         static_assert(flux::contiguous_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
 
         static_assert(flux::contiguous_sequence<S const>);
-        static_assert(flux::sized_sequence<S const>);
+        static_assert(flux::sized_iterable<S const>);
         static_assert(flux::bounded_sequence<S const>);
 
         static_assert(std::same_as<flux::element_t<S>, float&>);

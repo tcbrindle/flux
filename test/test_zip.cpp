@@ -24,13 +24,13 @@ constexpr bool test_zip()
         static_assert(flux::sequence<Z>);
         static_assert(flux::bidirectional_sequence<Z>);
         static_assert(flux::random_access_sequence<Z>);
-        static_assert(flux::sized_sequence<Z>);
+        static_assert(flux::sized_iterable<Z>);
         static_assert(flux::bounded_sequence<Z>);
 
         static_assert(flux::sequence<Z const>);
         static_assert(flux::bidirectional_sequence<Z const>);
         static_assert(flux::random_access_sequence<Z const>);
-        static_assert(flux::sized_sequence<Z const>);
+        static_assert(flux::sized_iterable<Z const>);
         static_assert(flux::bounded_sequence<Z const>);
 
         static_assert(std::same_as<flux::element_t<Z>, std::pair<int&, double&>>);
@@ -66,13 +66,13 @@ constexpr bool test_zip()
         static_assert(flux::sequence<Z>);
         static_assert(flux::bidirectional_sequence<Z>);
         static_assert(flux::random_access_sequence<Z>);
-        static_assert(flux::sized_sequence<Z>);
+        static_assert(flux::sized_iterable<Z>);
         static_assert(flux::bounded_sequence<Z>);
 
         static_assert(flux::sequence<Z const>);
         static_assert(flux::bidirectional_sequence<Z const>);
         static_assert(flux::random_access_sequence<Z const>);
-        static_assert(flux::sized_sequence<Z const>);
+        static_assert(flux::sized_iterable<Z const>);
         static_assert(flux::bounded_sequence<Z const>);
 
         static_assert(std::same_as<flux::element_t<Z>, std::pair<int&, double&>>);
@@ -112,7 +112,7 @@ constexpr bool test_zip()
 
         using Z = decltype(zipped);
         static_assert(flux::random_access_sequence<Z>);
-        static_assert(flux::sized_sequence<Z>);
+        static_assert(flux::sized_iterable<Z>);
 
         auto cur1 = flux::next(zipped, flux::first(zipped), 2);
         auto cur2 = flux::next(zipped, flux::first(zipped), 3);

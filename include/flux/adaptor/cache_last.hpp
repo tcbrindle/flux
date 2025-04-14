@@ -13,7 +13,7 @@ namespace flux {
 namespace detail {
 
 template <sequence Base>
-struct cache_last_adaptor : inline_sequence_base<cache_last_adaptor<Base>>
+struct cache_last_adaptor : inline_iter_base<cache_last_adaptor<Base>>
 {
 private:
     Base base_;
@@ -28,7 +28,7 @@ public:
         : base_(FLUX_FWD(base))
     {}
 
-    struct flux_sequence_traits : detail::passthrough_traits_base {
+    struct flux_iter_traits : detail::passthrough_traits_base {
 
         using value_type = value_t<Base>;
         using self_t = cache_last_adaptor;
@@ -79,7 +79,7 @@ struct cache_last_fn {
 FLUX_EXPORT inline constexpr auto cache_last = detail::cache_last_fn{};
 
 template <typename Derived>
-constexpr auto inline_sequence_base<Derived>::cache_last() &&
+constexpr auto inline_iter_base<Derived>::cache_last() &&
     requires bounded_sequence<Derived> ||
         (multipass_sequence<Derived> && not infinite_sequence<Derived>)
 {

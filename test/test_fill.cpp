@@ -4,6 +4,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <array>
+#include <ranges>
 
 #include "test_utils.hpp"
 
@@ -66,6 +67,13 @@ constexpr bool test_fill()
         std::array<std::uint8_t, 0> arr{};
         std::uint8_t c = 5;
         flux::fill(arr, c);
+    }
+
+    // fill with non-sequence iterable
+    {
+        std::array arr = {1, 2, 3, 4, 5};
+        flux::fill(arr | std::views::filter(flux::pred::even), 99);
+        STATIC_CHECK(check_equal(arr, {1, 99, 3, 99, 5}));
     }
 
     return true;

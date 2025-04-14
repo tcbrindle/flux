@@ -13,16 +13,13 @@ namespace flux {
 namespace detail {
 
 struct fold_op {
-    template <sequence Seq, typename Func, std::movable Init = value_t<Seq>,
-              typename R = fold_result_t<Seq, Func, Init>>
-        requires std::invocable<Func&,  Init, element_t<Seq>> &&
-                 std::invocable<Func&, R, element_t<Seq>> &&
-                 std::convertible_to<Init, R> &&
-                 std::assignable_from<Init&, std::invoke_result_t<Func&, R, element_t<Seq>>>
-    constexpr auto operator()(Seq&& seq, Func func, Init init = Init{}) const -> R
+    template <iterable It, typename Func, std::movable Init = value_t<It>,
+              typename R = fold_result_t<It, Func, Init>>
+        requires foldable<It, Func, Init>
+    constexpr auto operator()(It&& it, Func func, Init init = Init{}) const -> R
     {
         R init_ = R(std::move(init));
-        flux::for_each_while(seq, [&func, &init_](auto&& elem) {
+        iterate(it, [&func, &init_](auto&& elem) {
             init_ = std::invoke(func, std::move(init_), FLUX_FWD(elem));
             return true;
         });
@@ -31,27 +28,23 @@ struct fold_op {
 };
 
 struct fold_first_op {
-    template <sequence Seq, typename Func, typename V = value_t<Seq>>
-        requires std::invocable<Func&, V, element_t<Seq>> &&
-                 std::assignable_from<value_t<Seq>&, std::invoke_result_t<Func&, V&&, element_t<Seq>>>
+    template <iterable It, typename Func, typename V = value_t<It>>
+        requires std::invocable<Func&, V, element_t<It>> &&
+                 std::assignable_from<V&, std::invoke_result_t<Func&, V&&, element_t<It>>>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Func func) const -> flux::optional<V>
+    constexpr auto operator()(It&& it, Func func) const -> flux::optional<V>
     {
-        auto cur = flux::first(seq);
+        using Opt = optional<V>;
 
-        if (flux::is_last(seq, cur)) {
-            return std::nullopt;
-        }
-
-        V init(flux::read_at(seq, cur));
-        flux::inc(seq, cur);
-
-        while (!flux::is_last(seq, cur)) {
-            init = std::invoke(func, std::move(init), flux::read_at(seq, cur));
-            flux::inc(seq, cur);
-        }
-
-        return flux::optional<V>(std::in_place, std::move(init));
+        return fold_op{}(it, [&func](Opt&& opt, auto&& elem) -> Opt {
+            if (opt.has_value()) {
+                auto& acc = opt.value_unchecked();
+                acc = std::invoke(func, std::move(acc), FLUX_FWD(elem));
+            } else {
+                opt.emplace(FLUX_FWD(elem));
+            }
+            return opt;
+        }, Opt{});
     }
 };
 
@@ -66,41 +59,41 @@ consteval bool libcpp_fold_invoke_workaround_required()
 }
 
 struct sum_op {
-    template <sequence Seq>
-        requires std::default_initializable<value_t<Seq>> &&
-                 std::invocable<fold_op, Seq, std::plus<>>
+    template <iterable It>
+        requires foldable<It, std::plus<>, value_t<It>> &&
+                 requires { value_t<It>{0}; }
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const -> value_t<Seq>
+    constexpr auto operator()(It&& it) const -> value_t<It>
     {
-        if constexpr (num::integral<value_t<Seq>>) {
+        if constexpr (num::integral<value_t<It>>) {
             if constexpr (libcpp_fold_invoke_workaround_required()) {
                 auto add = []<typename T>(T lhs, T rhs) -> T { return num::add(lhs, rhs); };
-                return fold_op{}(FLUX_FWD(seq), add, value_t<Seq>(0));
+                return fold_op{}(FLUX_FWD(it), add, value_t<It>(0));
             } else {
-                return fold_op{}(FLUX_FWD(seq), num::add, value_t<Seq>(0));
+                return fold_op{}(FLUX_FWD(it), num::add, value_t<It>(0));
             }
         } else {
-            return fold_op{}(FLUX_FWD(seq), std::plus<>{}, value_t<Seq>(0));
+            return fold_op{}(FLUX_FWD(it), std::plus<>{}, value_t<It>(0));
         }
     }
 };
 
 struct product_op {
-    template <sequence Seq>
-        requires std::invocable<fold_op, Seq, std::multiplies<>> &&
-                 requires { value_t<Seq>(1); }
+    template <iterable It>
+        requires foldable<It, std::multiplies<>, value_t<It>> &&
+                 requires { value_t<It>{1}; }
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const -> value_t<Seq>
+    constexpr auto operator()(It&& it) const -> value_t<It>
     {
-        if constexpr (num::integral<value_t<Seq>>) {
+        if constexpr (num::integral<value_t<It>>) {
             if constexpr (libcpp_fold_invoke_workaround_required()) {
                 auto mul = []<typename T>(T lhs, T rhs) -> T { return num::mul(lhs, rhs); };
-                return fold_op{}(FLUX_FWD(seq), mul, value_t<Seq>(1));
+                return fold_op{}(FLUX_FWD(it), mul, value_t<It>(1));
             } else {
-                return fold_op{}(FLUX_FWD(seq), num::mul, value_t<Seq>(1));
+                return fold_op{}(FLUX_FWD(it), num::mul, value_t<It>(1));
             }
         } else {
-            return fold_op{}(FLUX_FWD(seq), std::multiplies<>{}, value_t<Seq>(1));
+            return fold_op{}(FLUX_FWD(it), std::multiplies<>{}, value_t<It>(1));
         }
     }
 };
@@ -116,7 +109,7 @@ template <typename Derived>
 template <typename D, typename Func, typename Init>
     requires foldable<Derived, Func, Init>
 [[nodiscard]]
-constexpr auto inline_sequence_base<Derived>::fold(Func func, Init init) -> fold_result_t<D, Func, Init>
+constexpr auto inline_iter_base<Derived>::fold(Func func, Init init) -> fold_result_t<D, Func, Init>
 {
     return flux::fold(derived(), std::move(func), std::move(init));
 }
@@ -125,13 +118,13 @@ template <typename Derived>
 template <typename D, typename Func>
     requires std::invocable<Func&, value_t<D>, element_t<D>> &&
              std::assignable_from<value_t<D>&, std::invoke_result_t<Func&, value_t<D>, element_t<D>>>
-constexpr auto inline_sequence_base<Derived>::fold_first(Func func)
+constexpr auto inline_iter_base<Derived>::fold_first(Func func)
 {
     return flux::fold_first(derived(), std::move(func));
 }
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::sum()
+constexpr auto inline_iter_base<D>::sum()
     requires foldable<D, std::plus<>, value_t<D>> &&
              std::default_initializable<value_t<D>>
 {
@@ -139,7 +132,7 @@ constexpr auto inline_sequence_base<D>::sum()
 }
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::product()
+constexpr auto inline_iter_base<D>::product()
     requires foldable<D, std::multiplies<>, value_t<D>> &&
              requires { value_t<D>(1); }
 {

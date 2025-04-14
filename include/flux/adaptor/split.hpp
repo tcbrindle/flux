@@ -21,7 +21,7 @@ concept splitter_for = requires(Splitter& splitter, Seq& seq, cursor_t<Seq> cons
 };
 
 template <multipass_sequence Base, splitter_for<Base> Splitter>
-struct split_adaptor : inline_sequence_base<split_adaptor<Base, Splitter>> {
+struct split_adaptor : inline_iter_base<split_adaptor<Base, Splitter>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Splitter splitter_;
@@ -32,7 +32,7 @@ public:
           splitter_(FLUX_FWD(splitter))
     {}
 
-    struct flux_sequence_traits : default_sequence_traits {
+    struct flux_iter_traits : default_iter_traits {
     private:
         struct cursor_type {
             cursor_t<Base> cur{};
@@ -210,7 +210,7 @@ template <typename Pattern>
     requires multipass_sequence<Derived> &&
              multipass_sequence<Pattern> &&
              std::equality_comparable_with<element_t<Derived>, element_t<Pattern>>
-constexpr auto inline_sequence_base<Derived>::split(Pattern&& pattern) &&
+constexpr auto inline_iter_base<Derived>::split(Pattern&& pattern) &&
 {
     return flux::split(std::move(derived()), FLUX_FWD(pattern));
 }
@@ -219,7 +219,7 @@ template <typename Derived>
 template <typename Delim>
     requires multipass_sequence<Derived> &&
              std::equality_comparable_with<element_t<Derived>, Delim const&>
-constexpr auto inline_sequence_base<Derived>::split(Delim&& delim) &&
+constexpr auto inline_iter_base<Derived>::split(Delim&& delim) &&
 {
     return flux::split(std::move(derived()), FLUX_FWD(delim));
 }
@@ -228,7 +228,7 @@ template <typename Derived>
 template <typename Pred>
     requires multipass_sequence<Derived> &&
              std::predicate<Pred const&, element_t<Derived>>
-constexpr auto inline_sequence_base<Derived>::split(Pred pred) &&
+constexpr auto inline_iter_base<Derived>::split(Pred pred) &&
 {
     return flux::split(std::move(derived()), std::move(pred));
 }

@@ -21,7 +21,7 @@ namespace {
 constexpr bool compiler_is_msvc = COMPILER_IS_MSVC;
 
 template <flux::sequence Base>
-struct NotBidir : flux::inline_sequence_base<NotBidir<Base>> {
+struct NotBidir : flux::inline_iter_base<NotBidir<Base>> {
     Base base_;
 
     constexpr explicit NotBidir(Base base) : base_(std::move(base)) {}
@@ -29,7 +29,7 @@ struct NotBidir : flux::inline_sequence_base<NotBidir<Base>> {
     constexpr Base& base() & { return base_; }
     constexpr Base const& base() const& { return base_; }
 
-    struct flux_sequence_traits : flux::default_sequence_traits {
+    struct flux_iter_traits : flux::default_iter_traits {
         static constexpr auto first(auto& self) { return flux::first(self.base_); }
 
         static constexpr bool is_last(auto& self, auto const& cur) {
@@ -62,7 +62,7 @@ constexpr bool test_chunk_single_pass()
         static_assert(flux::sequence<S>);
         static_assert(not flux::multipass_sequence<S>);
         static_assert(not flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
 
         auto cur = seq.first();
         STATIC_CHECK(check_equal(seq[cur], {1, 2}));
@@ -179,7 +179,7 @@ constexpr bool test_chunk_multipass()
         static_assert(flux::multipass_sequence<S>);
         static_assert(not flux::bidirectional_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
 
         auto cur = seq.first();
         STATIC_CHECK(check_equal(seq[cur], {1, 2}));
@@ -201,7 +201,7 @@ constexpr bool test_chunk_multipass()
         static_assert(flux::multipass_sequence<S>);
         static_assert(not flux::bidirectional_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
 
         auto cur = flux::first(seq);
         STATIC_CHECK(check_equal(flux::read_at(seq, cur), {1, 2}));
@@ -306,7 +306,7 @@ constexpr bool test_chunk_bidir()
         static_assert(flux::multipass_sequence<S>);
         static_assert(flux::bidirectional_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
         static_assert(flux::random_access_sequence<S>);
 
         auto cur = seq.first();
@@ -329,7 +329,7 @@ constexpr bool test_chunk_bidir()
         static_assert(flux::multipass_sequence<S>);
         static_assert(flux::bidirectional_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
         static_assert(flux::random_access_sequence<S>);
 
         auto cur = flux::first(seq);

@@ -14,7 +14,7 @@ namespace detail {
 
 template <typename Func, sequence... Bases>
 struct cartesian_product_map_adaptor
-    : inline_sequence_base<cartesian_product_map_adaptor<Func, Bases...>> {
+    : inline_iter_base<cartesian_product_map_adaptor<Func, Bases...>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS std::tuple<Bases...> bases_;
     FLUX_NO_UNIQUE_ADDRESS Func func_;
@@ -25,13 +25,13 @@ public:
           func_(FLUX_FWD(func))
     {}
 
-    using flux_sequence_traits = cartesian_traits_base<
+    using flux_iter_traits = cartesian_traits_base<
         sizeof...(Bases),
         cartesian_kind::product,
         read_kind::map,
         Bases...
     >;
-    friend flux_sequence_traits::impl;
+    friend flux_iter_traits::impl;
 };
 
 struct cartesian_product_map_fn

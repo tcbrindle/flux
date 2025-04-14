@@ -20,20 +20,20 @@ concept can_const_iterate =
     std::same_as<std::ranges::iterator_t<R>, std::ranges::iterator_t<R const>>;
 
 template <typename R, bool IsConst>
-struct range_sequence : inline_sequence_base<range_sequence<R, IsConst>> {
+struct range_sequence : inline_iter_base<range_sequence<R, IsConst>> {
 private:
     R rng_;
 
     using V = std::conditional_t<IsConst, R const, R>;
 
 public:
-    struct flux_sequence_traits : default_sequence_traits {
+    struct flux_iter_traits : default_iter_traits {
     private:
         class cursor_type {
 
             std::ranges::iterator_t<V> iter;
 
-            friend struct flux_sequence_traits;
+            friend struct flux_iter_traits;
 
             constexpr explicit cursor_type(std::ranges::iterator_t<V> iter) : iter(std::move(iter)) {}
         public:

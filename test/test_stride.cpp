@@ -6,13 +6,14 @@
 #include <array>
 #include <limits>
 #include <list>
+#include <ranges>
 
 #include "test_utils.hpp"
 
 namespace {
 
 template <flux::sequence Base>
-struct NotBidir : flux::inline_sequence_base<NotBidir<Base>> {
+struct NotBidir : flux::inline_iter_base<NotBidir<Base>> {
     Base base_;
 
     constexpr explicit NotBidir(Base base) : base_(std::move(base)) {}
@@ -20,7 +21,7 @@ struct NotBidir : flux::inline_sequence_base<NotBidir<Base>> {
     constexpr Base& base() & { return base_; }
     constexpr Base const& base() const& { return base_; }
 
-    struct flux_sequence_traits : flux::default_sequence_traits {
+    struct flux_iter_traits : flux::default_iter_traits {
         static constexpr auto first(auto& self) { return flux::first(self.base_); }
 
         static constexpr bool is_last(auto& self, auto const& cur) {
@@ -54,7 +55,7 @@ constexpr bool test_stride_non_bidir()
         static_assert(flux::multipass_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(not flux::bidirectional_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
 
         STATIC_CHECK(check_equal(seq, {0, 2, 4}));
         STATIC_CHECK(seq.last() == flux::last(arr));
@@ -72,7 +73,7 @@ constexpr bool test_stride_non_bidir()
         static_assert(flux::multipass_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(not flux::bidirectional_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
 
         STATIC_CHECK(check_equal(seq, {0, 3, 6}));
         STATIC_CHECK(flux::last(seq) == flux::last(arr));
@@ -138,6 +139,25 @@ constexpr bool test_stride_non_bidir()
         STATIC_CHECK(&seq[cur] == arr.data() + 4);
     }
 
+    // Stride works on non-sequence iterables
+    {
+        auto view = std::views::transform(std::array{0, 1, 2, 3, 4, 5}, std::identity{});
+
+        auto strided = flux::stride(std::move(view), 2);
+
+        using S = decltype(strided);
+        static_assert(flux::iterable<S>);
+        static_assert(flux::const_iterable<S>);
+        static_assert(flux::iterable<S const>);
+        static_assert(flux::sized_iterable<S>);
+        static_assert(not flux::sequence<S>);
+        static_assert(std::same_as<flux::element_t<S>, int&>);
+        static_assert(std::same_as<flux::element_t<S const>, int const&>);
+
+        STATIC_CHECK(flux::size(strided) == 3);
+        STATIC_CHECK(check_equal(strided, {0, 2, 4}));
+    }
+
     return true;
 }
 static_assert(test_stride_non_bidir());
@@ -156,7 +176,7 @@ constexpr bool test_stride_bidir()
         static_assert(flux::bounded_sequence<S>);
         static_assert(flux::random_access_sequence<S>);
         static_assert(not flux::contiguous_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
 
         STATIC_CHECK(check_equal(seq, {0, 2, 4}));
         STATIC_CHECK(seq.last().cur == flux::last(arr));
@@ -176,7 +196,7 @@ constexpr bool test_stride_bidir()
         static_assert(flux::multipass_sequence<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(flux::random_access_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
 
         STATIC_CHECK(check_equal(seq, {0, 3, 6}));
         STATIC_CHECK(flux::last(seq).cur == flux::last(arr));

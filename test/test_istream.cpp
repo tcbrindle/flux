@@ -18,7 +18,7 @@ TEST_CASE("istream")
 
         static_assert(flux::sequence<S>);
         static_assert(not flux::multipass_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(not flux::bounded_sequence<S>);
 
         static_assert(std::same_as<flux::element_t<S>, int const&>);

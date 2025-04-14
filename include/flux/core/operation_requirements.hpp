@@ -11,17 +11,17 @@
 namespace flux {
 
 FLUX_EXPORT
-template <typename Seq, typename Func, typename Init>
-using fold_result_t = std::decay_t<std::invoke_result_t<Func&, Init, element_t<Seq>>>;
+template <typename It, typename Func, typename Init>
+using fold_result_t = std::decay_t<std::invoke_result_t<Func&, Init, element_t<It>>>;
 
 namespace detail {
 
-template <typename Seq, typename Func, typename Init,
-          typename R = fold_result_t<Seq, Func, Init>>
+template <typename It, typename Func, typename Init,
+          typename R = fold_result_t<It, Func, Init>>
 concept foldable_ =
-    std::invocable<Func&, R, element_t<Seq>> &&
+    std::invocable<Func&, R, element_t<It>> &&
     std::convertible_to<Init, R> &&
-    std::assignable_from<R&, std::invoke_result_t<Func&, R, element_t<Seq>>>;
+    std::assignable_from<R&, std::invoke_result_t<Func&, R, element_t<It>>>;
 
 template <typename Func, typename E, distance_t N>
 struct repeated_invocable_helper {
@@ -39,28 +39,53 @@ concept repeated_invocable = repeated_invocable_helper<Func, E, N>::value;
 template <typename InnerSeq, typename Pattern>
 concept flatten_with_compatible =
     std::common_reference_with<element_t<InnerSeq>, element_t<Pattern>> &&
-    std::common_reference_with<rvalue_element_t<InnerSeq>, rvalue_element_t<Pattern>> &&
     std::common_with<value_t<InnerSeq>, value_t<Pattern>>;
+
+template <typename, typename>
+inline constexpr bool invocable_helper_v = false;
+
+template <typename F, typename R, typename... Args>
+inline constexpr bool invocable_helper_v<F, R(Args...)>
+    = std::is_invocable_r_v<R, F, Args...>;
+
+template <typename F, typename Sig>
+concept func_ = invocable_helper_v<F, Sig>;
 
 } // namespace detail
 
 FLUX_EXPORT
-template <typename Seq, typename Func, typename Init>
+template <typename It, typename Func, typename Init>
 concept foldable =
-    sequence<Seq> &&
-    std::invocable<Func&, Init, element_t<Seq>> &&
-    detail::foldable_<Seq, Func, Init>;
+    iterable<It> &&
+    std::invocable<Func&, Init, element_t<It>> &&
+    detail::foldable_<It, Func, Init>;
 
 FLUX_EXPORT
-template <typename Fn, typename Seq1, typename Seq2 = Seq1>
+template <typename Fn, typename It1, typename It2 = It1>
 concept weak_ordering_for =
-    sequence<Seq1> &&
-    sequence<Seq2> &&
-    ordering_invocable<Fn&, element_t<Seq1>, element_t<Seq2>, std::weak_ordering> &&
-    ordering_invocable<Fn&, value_t<Seq1>&, element_t<Seq2>, std::weak_ordering> &&
-    ordering_invocable<Fn&, element_t<Seq1>, value_t<Seq2>&, std::weak_ordering> &&
-    ordering_invocable<Fn&, value_t<Seq1>&, value_t<Seq2>&, std::weak_ordering> &&
-    ordering_invocable<Fn&, common_element_t<Seq1>, common_element_t<Seq2>, std::weak_ordering>;
+    iterable<It1> &&
+    iterable<It2> &&
+    ordering_invocable<Fn&, element_t<It1>, element_t<It2>, std::weak_ordering> &&
+    ordering_invocable<Fn&, value_t<It1>&, element_t<It2>, std::weak_ordering> &&
+    ordering_invocable<Fn&, element_t<It1>, value_t<It2>&, std::weak_ordering> &&
+    ordering_invocable<Fn&, value_t<It1>&, value_t<It2>&, std::weak_ordering> &&
+    ordering_invocable<Fn&, common_element_t<It1>, common_element_t<It2>, std::weak_ordering>;
+
+FLUX_EXPORT
+template <typename Fn, typename Sig>
+concept func_once = detail::func_<Fn&&, Sig>;
+
+FLUX_EXPORT
+template <typename Fn, typename Sig>
+concept func_mut = detail::func_<Fn&, Sig> && func_once<Fn, Sig>;
+
+FLUX_EXPORT
+template <typename Fn, typename Sig>
+concept func = detail::func_<Fn const&, Sig> && func_mut<Fn, Sig>;
+
+FLUX_EXPORT
+template <typename Fn, typename It>
+concept predicate_for = func<Fn, auto(element_t<It>) -> bool>;
 
 } // namespace flux
 

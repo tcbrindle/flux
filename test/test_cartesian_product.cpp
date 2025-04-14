@@ -28,7 +28,7 @@ constexpr bool test_cartesian_product()
         static_assert(flux::random_access_sequence<C>);
         static_assert(not flux::contiguous_sequence<C>);
         static_assert(flux::bounded_sequence<C>);
-        static_assert(flux::sized_sequence<C>);
+        static_assert(flux::sized_iterable<C>);
 
         static_assert(flux::sequence<C const>);
         static_assert(flux::multipass_sequence<C const>);
@@ -36,7 +36,7 @@ constexpr bool test_cartesian_product()
         static_assert(flux::random_access_sequence<C const>);
         static_assert(not flux::contiguous_sequence<C const>);
         static_assert(flux::bounded_sequence<C const>);
-        static_assert(flux::sized_sequence<C const>);
+        static_assert(flux::sized_iterable<C const>);
 
         static_assert(std::same_as<flux::element_t<C>, std::tuple<int&>>);
         static_assert(std::same_as<flux::value_t<C>, std::tuple<int>>);
@@ -79,7 +79,7 @@ constexpr bool test_cartesian_product()
         static_assert(flux::random_access_sequence<C>);
         static_assert(not flux::contiguous_sequence<C>);
         static_assert(flux::bounded_sequence<C>);
-        static_assert(flux::sized_sequence<C>);
+        static_assert(flux::sized_iterable<C>);
 
         static_assert(flux::sequence<C const>);
         static_assert(flux::multipass_sequence<C const>);
@@ -87,7 +87,7 @@ constexpr bool test_cartesian_product()
         static_assert(flux::random_access_sequence<C const>);
         static_assert(not flux::contiguous_sequence<C const>);
         static_assert(flux::bounded_sequence<C const>);
-        static_assert(flux::sized_sequence<C const>);
+        static_assert(flux::sized_iterable<C const>);
 
         static_assert(std::same_as<flux::element_t<C>, std::tuple<int&, bool&>>);
         static_assert(std::same_as<flux::value_t<C>, std::tuple<int, bool>>);
@@ -134,7 +134,7 @@ constexpr bool test_cartesian_product()
         static_assert(flux::random_access_sequence<C>);
         static_assert(not flux::contiguous_sequence<C>);
         static_assert(flux::bounded_sequence<C>);
-        static_assert(flux::sized_sequence<C>);
+        static_assert(flux::sized_iterable<C>);
 
         static_assert(flux::sequence<C const>);
         static_assert(flux::multipass_sequence<C const>);
@@ -142,7 +142,7 @@ constexpr bool test_cartesian_product()
         static_assert(flux::random_access_sequence<C const>);
         static_assert(not flux::contiguous_sequence<C const>);
         static_assert(flux::bounded_sequence<C const>);
-        static_assert(flux::sized_sequence<C const>);
+        static_assert(flux::sized_iterable<C const>);
 
         static_assert(std::same_as<flux::element_t<C>, std::tuple<int&, bool&>>);
         static_assert(std::same_as<flux::value_t<C>, std::tuple<int, bool>>);
@@ -193,7 +193,7 @@ constexpr bool test_cartesian_product()
         static_assert(flux::random_access_sequence<C>);
         static_assert(not flux::contiguous_sequence<C>);
         static_assert(flux::bounded_sequence<C>);
-        static_assert(flux::sized_sequence<C>);
+        static_assert(flux::sized_iterable<C>);
 
         static_assert(flux::sequence<C const>);
         static_assert(flux::multipass_sequence<C const>);
@@ -201,7 +201,7 @@ constexpr bool test_cartesian_product()
         static_assert(flux::random_access_sequence<C const>);
         static_assert(not flux::contiguous_sequence<C const>);
         static_assert(flux::bounded_sequence<C const>);
-        static_assert(flux::sized_sequence<C const>);
+        static_assert(flux::sized_iterable<C const>);
 
         static_assert(std::same_as<flux::element_t<C>, std::tuple<int&, bool&, unsigned long long&>>);
         static_assert(std::same_as<flux::value_t<C>, std::tuple<int, bool, unsigned long long>>);
@@ -283,7 +283,7 @@ constexpr bool test_cartesian_product()
         static_assert(flux::random_access_sequence<C>);
         static_assert(not flux::contiguous_sequence<C>);
         static_assert(flux::bounded_sequence<C>);
-        static_assert(flux::sized_sequence<C>);
+        static_assert(flux::sized_iterable<C>);
 
         static_assert(flux::sequence<C const>);
         static_assert(flux::multipass_sequence<C const>);
@@ -291,7 +291,7 @@ constexpr bool test_cartesian_product()
         static_assert(flux::random_access_sequence<C const>);
         static_assert(not flux::contiguous_sequence<C const>);
         static_assert(flux::bounded_sequence<C const>);
-        static_assert(flux::sized_sequence<C const>);
+        static_assert(flux::sized_iterable<C const>);
 
         static_assert(std::same_as<flux::element_t<C>, std::tuple<int&, int&, int&, int&, int&, int&>>);
         static_assert(std::same_as<flux::value_t<C>, std::tuple<int, int, int, int, int, int>>);
@@ -346,7 +346,7 @@ constexpr bool test_cartesian_product()
         static_assert(flux::random_access_sequence<C>);
         static_assert(not flux::contiguous_sequence<C>);
         static_assert(flux::bounded_sequence<C>);
-        static_assert(flux::sized_sequence<C>);
+        static_assert(flux::sized_iterable<C>);
 
         static_assert(flux::sequence<C const>);
         static_assert(flux::multipass_sequence<C const>);
@@ -354,7 +354,7 @@ constexpr bool test_cartesian_product()
         static_assert(flux::random_access_sequence<C const>);
         static_assert(not flux::contiguous_sequence<C const>);
         static_assert(flux::bounded_sequence<C const>);
-        static_assert(flux::sized_sequence<C const>);
+        static_assert(flux::sized_iterable<C const>);
 
         static_assert(std::same_as<flux::element_t<C>, std::tuple<flux::distance_t, flux::distance_t, flux::distance_t>>);
         static_assert(std::same_as<flux::value_t<C>, std::tuple<flux::distance_t, flux::distance_t, flux::distance_t>>);
@@ -451,12 +451,12 @@ constexpr bool test_cartesian_product()
         STATIC_CHECK(count_j == 4);
     }
 
-    // `cartesian_product` `for_each_while` short circuits.
+    // `cartesian_product` `iterate` short circuits.
     {
         auto cart = flux::cartesian_product(std::array{100, 200}, std::array{300, 0});
 
         int count = 0;
-        cart.for_each_while(flux::unpack([&] (auto, auto j) {
+        flux::iterate(cart, flux::unpack([&] (auto, auto j) {
                 ++count;
                 return j != 0;
             }));

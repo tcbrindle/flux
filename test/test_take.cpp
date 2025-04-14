@@ -6,6 +6,7 @@
 #include <array>
 #include <list>
 #include <optional>
+#include <ranges>
 
 #include "test_utils.hpp"
 
@@ -20,11 +21,11 @@ constexpr bool test_take()
         using T = decltype(taken);
         static_assert(flux::contiguous_sequence<T>);
         static_assert(flux::bounded_sequence<T>);
-        static_assert(flux::sized_sequence<T>);
+        static_assert(flux::sized_iterable<T>);
 
         static_assert(flux::contiguous_sequence<T const>);
         static_assert(flux::bounded_sequence<T const>);
-        static_assert(flux::sized_sequence<T const>);
+        static_assert(flux::sized_iterable<T const>);
 
         STATIC_CHECK(taken.size() == 3);
         STATIC_CHECK(taken.data() == arr);
@@ -37,14 +38,31 @@ constexpr bool test_take()
         using T = decltype(taken);
         static_assert(flux::contiguous_sequence<T>);
         static_assert(flux::bounded_sequence<T>);
-        static_assert(flux::sized_sequence<T>);
+        static_assert(flux::sized_iterable<T>);
 
         static_assert(flux::contiguous_sequence<T const>);
         static_assert(flux::bounded_sequence<T const>);
-        static_assert(flux::sized_sequence<T const>);
+        static_assert(flux::sized_iterable<T const>);
 
         STATIC_CHECK(taken.size() == 3);
         STATIC_CHECK(check_equal(taken, {0, 1, 2}));
+    }
+
+    // test take with non-sequence iterable
+    {
+        auto arr = std::array{1, 2, 3, 4, 5};
+        auto view = arr | std::views::transform(std::identity{});
+        auto iter = flux::take(view, 3);
+
+        using I = decltype(iter);
+        static_assert(flux::iterable<I>);
+        static_assert(flux::sized_iterable<I>);
+        static_assert(not flux::sequence<I>);
+        static_assert(flux::iterable<I const>);
+        static_assert(flux::sized_iterable<I const>);
+
+        STATIC_CHECK(iter.all(flux::pred::gt(0)));
+        STATIC_CHECK(iter.sum() == 1 + 2 + 3);
     }
 
     // test taking all the elements

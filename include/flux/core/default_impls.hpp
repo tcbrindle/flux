@@ -18,7 +18,7 @@ namespace flux {
  * Default implementation for C arrays of known bound
  */
 template <typename T, index_t N>
-struct sequence_traits<T[N]> : default_sequence_traits {
+struct iter_traits<T[N]> : default_iter_traits {
 
     static constexpr auto first(auto const&) -> index_t { return index_t{0}; }
 
@@ -81,14 +81,21 @@ struct sequence_traits<T[N]> : default_sequence_traits {
 /*
  * Default implementation for std::reference_wrapper<T>
  */
-template <sequence Seq>
-struct sequence_traits<std::reference_wrapper<Seq>> : default_sequence_traits {
+template <iterable Seq>
+struct iter_traits<std::reference_wrapper<Seq>> : default_iter_traits {
 
     using self_t = std::reference_wrapper<Seq>;
 
     using value_type = value_t<Seq>;
 
     static constexpr bool disable_multipass = !multipass_sequence<Seq>;
+
+    static consteval auto element_type(self_t) -> element_t<Seq>;
+
+    static constexpr auto iterate(self_t self, auto&& pred) -> bool
+    {
+        return flux::iterate(self.get(), FLUX_FWD(pred));
+    }
 
     static constexpr auto first(self_t self) -> cursor_t<Seq>
     {
@@ -153,7 +160,7 @@ struct sequence_traits<std::reference_wrapper<Seq>> : default_sequence_traits {
     }
 
     static constexpr auto size(self_t self) -> distance_t
-        requires sized_sequence<Seq>
+        requires sized_iterable<Seq>
     {
         return flux::size(self.get());
     }
@@ -165,72 +172,104 @@ struct sequence_traits<std::reference_wrapper<Seq>> : default_sequence_traits {
     }
 };
 
-// Default implementation for contiguous, sized ranges
+namespace detail {
+
+template <typename R>
+concept contiguous_sized_range = std::ranges::contiguous_range<R> && std::ranges::sized_range<R>;
+
+}
+
+// Default implementation for ranges
 template <typename R>
     requires (!detail::derived_from_inline_sequence_base<R> &&
-             std::ranges::contiguous_range<R> &&
-             std::ranges::sized_range<R> &&
-             std::ranges::contiguous_range<R const> &&
-             std::ranges::sized_range<R const>)
-struct sequence_traits<R> : default_sequence_traits {
+               std::ranges::input_range<R>)
+struct iter_traits<R> : default_iter_traits {
 
     using value_type = std::ranges::range_value_t<R>;
 
-    static constexpr auto first(auto&) -> index_t { return index_t{0}; }
+    template <std::ranges::input_range Self>
+    static consteval auto element_type(Self&) -> std::ranges::range_reference_t<Self>;
 
-    static constexpr auto is_last(auto& self, index_t idx)
+    template <std::ranges::input_range Self, typename Pred>
+    static constexpr auto iterate(Self& self, Pred&& pred) -> bool
+    {
+        for (auto&& elem : self) {
+            if (!std::invoke(pred, FLUX_FWD(elem))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    template <std::ranges::sized_range Self>
+    static constexpr auto size(Self& self) -> distance_t
+    {
+        return num::cast<distance_t>(std::ranges::ssize(self));
+    }
+
+    template <detail::contiguous_sized_range Self>
+    static constexpr auto first(Self&) -> index_t { return index_t{0}; }
+
+    template <detail::contiguous_sized_range Self>
+    static constexpr auto is_last(Self& self, index_t idx) -> bool
     {
         return idx >= size(self);
     }
 
-    static constexpr auto inc(auto& self, index_t& idx)
+    template <detail::contiguous_sized_range Self>
+    static constexpr auto inc(Self& self, index_t& idx) -> void
     {
         FLUX_DEBUG_ASSERT(idx < size(self));
         idx = num::add(idx, distance_t{1});
     }
 
-    static constexpr auto read_at(auto& self, index_t idx) -> decltype(auto)
+    template <detail::contiguous_sized_range Self>
+    static constexpr auto read_at(Self& self, index_t idx)
+        -> std::ranges::range_reference_t<Self>
     {
         indexed_bounds_check(idx, size(self));
         return data(self)[idx];
     }
 
-    static constexpr auto read_at_unchecked(auto& self, index_t idx) -> decltype(auto)
+    template <detail::contiguous_sized_range Self>
+    static constexpr auto read_at_unchecked(Self& self, index_t idx)
+        -> std::ranges::range_reference_t<Self>
     {
         return data(self)[idx];
     }
 
-    static constexpr auto dec(auto&, index_t& idx)
+    template <detail::contiguous_sized_range Self>
+    static constexpr auto dec(Self&, index_t& idx) -> void
     {
         FLUX_DEBUG_ASSERT(idx > 0);
         idx = num::sub(idx, distance_t{1});
     }
 
-    static constexpr auto last(auto& self) -> index_t { return size(self); }
+    template <detail::contiguous_sized_range Self>
+    static constexpr auto last(Self& self) -> index_t { return size(self); }
 
-    static constexpr auto inc(auto& self, index_t& idx, distance_t offset)
+    template <detail::contiguous_sized_range Self>
+    static constexpr auto inc(Self& self, index_t& idx, distance_t offset) -> void
     {
         FLUX_DEBUG_ASSERT(num::add(idx, offset) <= size(self));
         FLUX_DEBUG_ASSERT(num::add(idx, offset) >= 0);
         idx = num::add(idx, offset);
     }
 
-    static constexpr auto distance(auto&, index_t from, index_t to) -> distance_t
+    template <detail::contiguous_sized_range Self>
+    static constexpr auto distance(Self&, index_t from, index_t to) -> distance_t
     {
         return num::sub(to, from);
     }
 
-    static constexpr auto size(auto& self) -> distance_t
-    {
-        return num::cast<distance_t>(std::ranges::ssize(self));
-    }
-
-    static constexpr auto data(auto& self) -> auto*
+    template <detail::contiguous_sized_range Self>
+    static constexpr auto data(Self& self) -> auto*
     {
         return std::ranges::data(self);
     }
 
-    static constexpr auto for_each_while(auto& self, auto&& pred) -> index_t
+    template <detail::contiguous_sized_range Self>
+    static constexpr auto for_each_while(Self& self, auto&& pred) -> index_t
     {
         auto iter = std::ranges::begin(self);
         auto const end = std::ranges::end(self);

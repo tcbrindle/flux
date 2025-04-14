@@ -5,6 +5,7 @@
 
 #include <array>
 #include <optional>
+#include <ranges>
 #include <utility>
 
 #include "test_utils.hpp"
@@ -44,16 +45,30 @@ constexpr bool test_filter()
         static_assert(flux::bidirectional_sequence<F>);
         static_assert(flux::bounded_sequence<F>);
         static_assert(not flux::ordered_cursor<F>);
-        static_assert(not flux::sized_sequence<F>);
+        static_assert(not flux::sized_iterable<F>);
 
         static_assert(flux::sequence<F const>);
         static_assert(flux::bidirectional_sequence<F const>);
         static_assert(flux::bounded_sequence<F const>);
         static_assert(not flux::ordered_cursor<F const>);
-        static_assert(not flux::sized_sequence<F const>);
+        static_assert(not flux::sized_iterable<F const>);
 
         STATIC_CHECK(check_equal(filtered, {0, 2, 4, 6, 8}));
         STATIC_CHECK(check_equal(std::as_const(filtered), {0, 2, 4, 6, 8}));
+    }
+
+    // Basic filtering of non-sequence iterables
+    {
+        int arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+        auto rng = arr | std::views::transform(std::identity{});
+        auto filtered = flux::filter_map(std::move(rng), is_even_opt);
+
+        using F = decltype(filtered);
+        static_assert(flux::iterable<F>);
+        static_assert(flux::const_iterable<F>);
+        static_assert(not flux::sequence<F>);
+
+        STATIC_CHECK(check_equal(filtered, {0, 2, 4, 6, 8}));
     }
 
     // A predicate that always returns true returns what it was given

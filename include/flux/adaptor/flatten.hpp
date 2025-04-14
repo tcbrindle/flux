@@ -12,8 +12,33 @@ namespace flux {
 
 namespace detail {
 
+template <iterable Base>
+struct flatten_adaptor : inline_iter_base<flatten_adaptor<Base>> {
+private:
+    Base base_;
+
+public:
+    constexpr explicit flatten_adaptor(decays_to<Base> auto&& base)
+        : base_(FLUX_FWD(base))
+    {}
+
+    struct flux_iter_traits {
+        template <typename Self>
+        static consteval auto element_type(Self& self)
+            -> element_t<element_t<decltype((self.base_))>>;
+
+        static constexpr auto iterate(auto& self, auto&& pred) -> bool
+        {
+            return flux::iterate(self.base_, [&pred](auto&& inner) {
+                return flux::iterate(inner, pred);
+            });
+        }
+    };
+};
+
 template <sequence Base>
-struct flatten_adaptor : inline_sequence_base<flatten_adaptor<Base>> {
+    requires sequence<element_t<Base>>
+struct flatten_adaptor<Base> : inline_iter_base<flatten_adaptor<Base>> {
 private:
     using InnerSeq = element_t<Base>;
 
@@ -25,7 +50,7 @@ public:
         : base_(FLUX_FWD(base))
     {}
 
-    struct flux_sequence_traits : default_sequence_traits {
+    struct flux_iter_traits : default_iter_traits {
     private:
         using self_t = flatten_adaptor;
 
@@ -96,7 +121,7 @@ public:
 template <multipass_sequence Base>
     requires std::is_reference_v<element_t<Base>> &&
              multipass_sequence<element_t<Base>>
-struct flatten_adaptor<Base> : inline_sequence_base<flatten_adaptor<Base>> {
+struct flatten_adaptor<Base> : inline_iter_base<flatten_adaptor<Base>> {
 private:
     Base base_;
 
@@ -105,7 +130,7 @@ public:
         : base_(FLUX_FWD(base))
     {}
 
-    struct flux_sequence_traits : default_sequence_traits {
+    struct flux_iter_traits : default_iter_traits {
     private:
         using InnerSeq = element_t<Base>;
 
@@ -231,12 +256,12 @@ public:
 };
 
 struct flatten_fn {
-    template <adaptable_sequence Seq>
-        requires sequence<element_t<Seq>>
+    template <sink_iterable It>
+        requires iterable<element_t<It>>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const -> sequence auto
+    constexpr auto operator()(It&& it) const -> iterable auto
     {
-        return flatten_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq));
+        return flatten_adaptor<std::decay_t<It>>(FLUX_FWD(it));
     }
 };
 
@@ -245,8 +270,8 @@ struct flatten_fn {
 FLUX_EXPORT inline constexpr auto flatten = detail::flatten_fn{};
 
 template <typename Derived>
-constexpr auto inline_sequence_base<Derived>::flatten() &&
-        requires sequence<element_t<Derived>>
+constexpr auto inline_iter_base<Derived>::flatten() &&
+        requires iterable<element_t<Derived>>
 {
     return flux::flatten(std::move(derived()));
 }

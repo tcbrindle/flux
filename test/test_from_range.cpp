@@ -36,7 +36,7 @@ constexpr bool test_from_range()
         static_assert(flux::bidirectional_sequence<S>);
         static_assert(flux::random_access_sequence<S>);
         static_assert(flux::contiguous_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
 
         STATIC_CHECK(flux::read_at(seq, flux::first(seq)) == 10);
@@ -123,7 +123,7 @@ TEST_CASE("from range")
             static_assert(not flux::random_access_sequence<S>);
             static_assert(not flux::contiguous_sequence<S>);
             static_assert(flux::bounded_sequence<S>);
-            static_assert(flux::sized_sequence<S>);
+            static_assert(flux::sized_iterable<S>);
 
             static_assert(std::same_as<flux::value_t<S>, int>);
             static_assert(std::same_as<flux::element_t<S>, int&>);
@@ -143,7 +143,7 @@ TEST_CASE("from range")
             static_assert(not flux::random_access_sequence<S>);
             static_assert(not flux::contiguous_sequence<S>);
             static_assert(flux::bounded_sequence<S>);
-            static_assert(flux::sized_sequence<S>);
+            static_assert(flux::sized_iterable<S>);
 
             static_assert(std::same_as<flux::value_t<S>, int>);
             static_assert(std::same_as<flux::element_t<S>, int&>);
@@ -163,7 +163,7 @@ TEST_CASE("from range")
             static_assert(not flux::random_access_sequence<S>);
             static_assert(not flux::contiguous_sequence<S>);
             static_assert(flux::bounded_sequence<S>);
-            static_assert(flux::sized_sequence<S>);
+            static_assert(flux::sized_iterable<S>);
 
             static_assert(std::same_as<flux::value_t<S>, int>);
             static_assert(std::same_as<flux::element_t<S>, int const&>);
@@ -183,7 +183,7 @@ TEST_CASE("from range")
             static_assert(not flux::random_access_sequence<S>);
             static_assert(not flux::contiguous_sequence<S>);
             static_assert(flux::bounded_sequence<S>);
-            static_assert(flux::sized_sequence<S>);
+            static_assert(flux::sized_iterable<S>);
 
             static_assert(std::same_as<flux::value_t<S>, int>);
             static_assert(std::same_as<flux::element_t<S>, int const&>);
@@ -204,7 +204,7 @@ TEST_CASE("from range")
             static_assert(not flux::random_access_sequence<S>);
             static_assert(not flux::contiguous_sequence<S>);
             static_assert(flux::bounded_sequence<S>);
-            static_assert(flux::sized_sequence<S>);
+            static_assert(flux::sized_iterable<S>);
 
             static_assert(std::same_as<flux::value_t<S>, int>);
             static_assert(std::same_as<flux::element_t<S>, int&>);
@@ -227,7 +227,7 @@ TEST_CASE("from range")
             static_assert(not flux::random_access_sequence<S>);
             static_assert(not flux::contiguous_sequence<S>);
             static_assert(flux::bounded_sequence<S>);
-            static_assert(flux::sized_sequence<S>);
+            static_assert(flux::sized_iterable<S>);
 
             static_assert(std::same_as<flux::value_t<S>, int>);
             static_assert(std::same_as<flux::element_t<S>, int const&>);
@@ -247,7 +247,7 @@ TEST_CASE("from range")
             static_assert(not flux::random_access_sequence<S>);
             static_assert(not flux::contiguous_sequence<S>);
             static_assert(flux::bounded_sequence<S>);
-            static_assert(flux::sized_sequence<S>);
+            static_assert(flux::sized_iterable<S>);
 
             static_assert(std::same_as<flux::value_t<S>, int>);
             static_assert(std::same_as<flux::element_t<S>, int const&>);
@@ -267,7 +267,7 @@ TEST_CASE("from range")
             static_assert(not flux::random_access_sequence<S>);
             static_assert(not flux::contiguous_sequence<S>);
             static_assert(flux::bounded_sequence<S>);
-            static_assert(flux::sized_sequence<S>);
+            static_assert(flux::sized_iterable<S>);
 
             static_assert(std::same_as<flux::value_t<S>, int>);
             static_assert(std::same_as<flux::element_t<S>, int const&>);
@@ -287,7 +287,7 @@ TEST_CASE("from range")
             static_assert(not flux::random_access_sequence<S>);
             static_assert(not flux::contiguous_sequence<S>);
             static_assert(flux::bounded_sequence<S>);
-            static_assert(flux::sized_sequence<S>);
+            static_assert(flux::sized_iterable<S>);
 
             static_assert(std::same_as<flux::value_t<S>, int>);
             static_assert(std::same_as<flux::element_t<S>, int const&>);
@@ -308,7 +308,7 @@ TEST_CASE("from range")
             static_assert(not flux::random_access_sequence<S>);
             static_assert(not flux::contiguous_sequence<S>);
             static_assert(flux::bounded_sequence<S>);
-            static_assert(flux::sized_sequence<S>);
+            static_assert(flux::sized_iterable<S>);
 
             static_assert(std::same_as<flux::value_t<S>, int>);
             static_assert(std::same_as<flux::element_t<S>, int const&>);
@@ -328,7 +328,7 @@ TEST_CASE("from range")
             static_assert(not flux::random_access_sequence<S>);
             static_assert(not flux::contiguous_sequence<S>);
             static_assert(flux::bounded_sequence<S>);
-            static_assert(flux::sized_sequence<S>);
+            static_assert(flux::sized_iterable<S>);
 
             static_assert(std::same_as<flux::value_t<S>, int>);
             static_assert(std::same_as<flux::element_t<S>, int const&>);
@@ -353,7 +353,7 @@ TEST_CASE("from range")
             static_assert(not flux::random_access_sequence<S>);
             static_assert(not flux::contiguous_sequence<S>);
             static_assert(flux::bounded_sequence<S>);
-            static_assert(not flux::sized_sequence<S>);
+            static_assert(not flux::sized_iterable<S>);
 
             static_assert(std::same_as<flux::value_t<S>, int>);
             static_assert(std::same_as<flux::element_t<S>, int&>);
@@ -373,7 +373,7 @@ TEST_CASE("from range")
             static_assert(not flux::random_access_sequence<S>);
             static_assert(not flux::contiguous_sequence<S>);
             static_assert(flux::bounded_sequence<S>);
-            static_assert(not flux::sized_sequence<S>);
+            static_assert(not flux::sized_iterable<S>);
 
             static_assert(std::same_as<flux::value_t<S>, int>);
             static_assert(std::same_as<flux::element_t<S>, int&>);
@@ -393,7 +393,7 @@ TEST_CASE("from range")
             static_assert(not flux::random_access_sequence<S>);
             static_assert(not flux::contiguous_sequence<S>);
             static_assert(flux::bounded_sequence<S>);
-            static_assert(not flux::sized_sequence<S>);
+            static_assert(not flux::sized_iterable<S>);
 
             static_assert(std::same_as<flux::value_t<S>, int>);
             static_assert(std::same_as<flux::element_t<S>, int const&>);
@@ -413,7 +413,7 @@ TEST_CASE("from range")
             static_assert(not flux::random_access_sequence<S>);
             static_assert(not flux::contiguous_sequence<S>);
             static_assert(flux::bounded_sequence<S>);
-            static_assert(not flux::sized_sequence<S>);
+            static_assert(not flux::sized_iterable<S>);
 
             static_assert(std::same_as<flux::value_t<S>, int>);
             static_assert(std::same_as<flux::element_t<S>, int const&>);
@@ -434,7 +434,7 @@ TEST_CASE("from range")
             static_assert(not flux::random_access_sequence<S>);
             static_assert(not flux::contiguous_sequence<S>);
             static_assert(flux::bounded_sequence<S>);
-            static_assert(not flux::sized_sequence<S>);
+            static_assert(not flux::sized_iterable<S>);
 
             static_assert(std::same_as<flux::value_t<S>, int>);
             static_assert(std::same_as<flux::element_t<S>, int&>);
@@ -457,7 +457,7 @@ TEST_CASE("from range")
             static_assert(not flux::random_access_sequence<S>);
             static_assert(not flux::contiguous_sequence<S>);
             static_assert(flux::bounded_sequence<S>);
-            static_assert(not flux::sized_sequence<S>);
+            static_assert(not flux::sized_iterable<S>);
 
             static_assert(std::same_as<flux::value_t<S>, int>);
             static_assert(std::same_as<flux::element_t<S>, int const&>);
@@ -477,7 +477,7 @@ TEST_CASE("from range")
             static_assert(not flux::random_access_sequence<S>);
             static_assert(not flux::contiguous_sequence<S>);
             static_assert(flux::bounded_sequence<S>);
-            static_assert(not flux::sized_sequence<S>);
+            static_assert(not flux::sized_iterable<S>);
 
             static_assert(std::same_as<flux::value_t<S>, int>);
             static_assert(std::same_as<flux::element_t<S>, int const&>);
@@ -497,7 +497,7 @@ TEST_CASE("from range")
             static_assert(not flux::random_access_sequence<S>);
             static_assert(not flux::contiguous_sequence<S>);
             static_assert(flux::bounded_sequence<S>);
-            static_assert(not flux::sized_sequence<S>);
+            static_assert(not flux::sized_iterable<S>);
 
             static_assert(std::same_as<flux::value_t<S>, int>);
             static_assert(std::same_as<flux::element_t<S>, int const&>);
@@ -517,7 +517,7 @@ TEST_CASE("from range")
             static_assert(not flux::random_access_sequence<S>);
             static_assert(not flux::contiguous_sequence<S>);
             static_assert(flux::bounded_sequence<S>);
-            static_assert(not flux::sized_sequence<S>);
+            static_assert(not flux::sized_iterable<S>);
 
             static_assert(std::same_as<flux::value_t<S>, int>);
             static_assert(std::same_as<flux::element_t<S>, int const&>);
@@ -538,7 +538,7 @@ TEST_CASE("from range")
             static_assert(not flux::random_access_sequence<S>);
             static_assert(not flux::contiguous_sequence<S>);
             static_assert(flux::bounded_sequence<S>);
-            static_assert(not flux::sized_sequence<S>);
+            static_assert(not flux::sized_iterable<S>);
 
             static_assert(std::same_as<flux::value_t<S>, int>);
             static_assert(std::same_as<flux::element_t<S>, int const&>);
@@ -558,7 +558,7 @@ TEST_CASE("from range")
             static_assert(not flux::random_access_sequence<S>);
             static_assert(not flux::contiguous_sequence<S>);
             static_assert(flux::bounded_sequence<S>);
-            static_assert(not flux::sized_sequence<S>);
+            static_assert(not flux::sized_iterable<S>);
 
             static_assert(std::same_as<flux::value_t<S>, int>);
             static_assert(std::same_as<flux::element_t<S>, int const&>);
@@ -580,7 +580,7 @@ TEST_CASE("from range")
 
         static_assert(flux::sequence<S>);
         static_assert(not flux::multipass_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(not flux::bounded_sequence<S>);
 
         static_assert(not flux::sequence<S const>);

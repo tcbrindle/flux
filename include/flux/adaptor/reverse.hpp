@@ -14,7 +14,7 @@ namespace detail {
 
 template <bidirectional_sequence Base>
     requires bounded_sequence<Base>
-struct reverse_adaptor : inline_sequence_base<reverse_adaptor<Base>>
+struct reverse_adaptor : inline_iter_base<reverse_adaptor<Base>>
 {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
@@ -27,7 +27,7 @@ public:
     [[nodiscard]] constexpr auto base() const& -> Base const& { return base_; }
     [[nodiscard]] constexpr auto base() && -> Base&& { return std::move(base_); }
 
-    struct flux_sequence_traits {
+    struct flux_iter_traits : default_iter_traits {
     private:
         struct cursor_type {
             cursor_t<Base> base_cur;
@@ -48,6 +48,7 @@ public:
         using value_type = value_t<Base>;
 
         static constexpr auto first(auto& self) -> cursor_type
+            requires bounded_sequence<decltype((self.base_))>
         {
             return cursor_type(flux::last(self.base_));
         }
@@ -64,28 +65,32 @@ public:
 
         template <typename Self>
         static constexpr auto read_at(Self& self, cursor_type const& cur)
-            -> element_t<decltype((self.base_))>
+            -> decltype(auto)
+            requires bidirectional_sequence<decltype((self.base_))>
         {
             return flux::read_at(self.base_, flux::prev(self.base_, cur.base_cur));
         }
 
         template <typename Self>
         static constexpr auto read_at_unchecked(Self& self, cursor_type const& cur)
-            -> element_t<decltype((self.base_))>
+            -> decltype(auto)
+            requires bidirectional_sequence<decltype((self.base_))>
         {
             return flux::read_at_unchecked(self.base_, flux::prev(self.base_, cur.base_cur));
         }
 
         template <typename Self>
         static constexpr auto move_at(Self& self, cursor_type const& cur)
-            -> rvalue_element_t<decltype((self.base_))>
+            -> decltype(auto)
+            requires bidirectional_sequence<decltype((self.base_))>
         {
             return flux::move_at(self.base_, flux::prev(self.base_, cur.base_cur));
         }
 
         template <typename Self>
         static constexpr auto move_at_unchecked(Self& self, cursor_type const& cur)
-            -> rvalue_element_t<decltype((self.base_))>
+            -> decltype(auto)
+            requires bidirectional_sequence<decltype((self.base_))>
         {
             return flux::move_at_unchecked(self.base_, flux::prev(self.base_, cur.base_cur));
         }
@@ -112,14 +117,12 @@ public:
         }
 
         static constexpr auto size(auto& self) -> distance_t
-            requires sized_sequence<decltype((self.base_))>
+            requires sized_iterable<Base>
         {
             return flux::size(self.base_);
         }
 
         static constexpr auto for_each_while(auto& self, auto&& pred) -> cursor_type
-            requires bidirectional_sequence<decltype((self.base_))> &&
-                     bounded_sequence<decltype((self.base_))>
         {
             auto cur = flux::last(self.base_);
             const auto end = flux::first(self.base_);
@@ -164,7 +167,7 @@ struct reverse_fn {
 FLUX_EXPORT inline constexpr auto reverse = detail::reverse_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::reverse() &&
+constexpr auto inline_iter_base<D>::reverse() &&
     requires bidirectional_sequence<D> && bounded_sequence<D>
 {
     return flux::reverse(std::move(derived()));

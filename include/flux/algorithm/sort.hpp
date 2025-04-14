@@ -32,7 +32,7 @@ template <typename Cmp>
              bounded_sequence<D> &&
              detail::element_swappable_with<D, D> &&
              weak_ordering_for<Cmp, D>
-constexpr void inline_sequence_base<D>::sort(Cmp cmp)
+constexpr void inline_iter_base<D>::sort(Cmp cmp)
 {
     return flux::sort(derived(), std::ref(cmp));
 }

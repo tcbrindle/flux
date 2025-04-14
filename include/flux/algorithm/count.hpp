@@ -13,16 +13,16 @@ namespace flux {
 namespace detail {
 
 struct count_fn {
-    template <sequence Seq>
+    template <iterable It>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const -> distance_t
+    constexpr auto operator()(It&& it) const -> distance_t
     {
-        if constexpr (sized_sequence<Seq>) {
-            return flux::size(seq);
+        if constexpr (sized_iterable<It>) {
+            return flux::size(it);
         } else {
             distance_t counter = 0;
-            flux::for_each_while(seq, [&](auto&&) {
-                ++counter;
+            flux::iterate(it, [&](auto&&) {
+                counter = flux::num::add(counter, distance_t{1});
                 return true;
             });
             return counter;
@@ -31,16 +31,16 @@ struct count_fn {
 };
 
 struct count_eq_fn {
-    template <sequence Seq, typename Value>
-        requires std::equality_comparable_with<element_t<Seq>, Value const&>
+    template <iterable It, typename Value>
+        requires std::equality_comparable_with<element_t<It>, Value const&>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Value const& value) const
+    constexpr auto operator()(It&& it, Value const& value) const
         -> distance_t
     {
         distance_t counter = 0;
-        flux::for_each_while(seq, [&](auto&& elem) {
+        iterate(it, [&](auto&& elem) {
             if (value == FLUX_FWD(elem)) {
-                ++counter;
+                counter = flux::num::add(counter, distance_t{1});
             }
             return true;
         });
@@ -49,16 +49,16 @@ struct count_eq_fn {
 };
 
 struct count_if_fn {
-    template <sequence Seq, typename Pred>
-        requires std::predicate<Pred&, element_t<Seq>>
+    template <iterable It, typename Pred>
+        requires std::predicate<Pred&, element_t<It>>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Pred pred) const
+    constexpr auto operator()(It&& it, Pred pred) const
         -> distance_t
     {
         distance_t counter = 0;
-        flux::for_each_while(seq, [&](auto&& elem) {
+        iterate(it, [&](auto&& elem) {
             if (std::invoke(pred, FLUX_FWD(elem))) {
-                ++counter;
+                counter = flux::num::add(counter, distance_t{1});
             }
             return true;
         });
@@ -73,7 +73,7 @@ FLUX_EXPORT inline constexpr auto count_eq = detail::count_eq_fn{};
 FLUX_EXPORT inline constexpr auto count_if = detail::count_if_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::count()
+constexpr auto inline_iter_base<D>::count()
 {
     return flux::count(derived());
 }
@@ -81,7 +81,7 @@ constexpr auto inline_sequence_base<D>::count()
 template <typename D>
 template <typename Value>
     requires std::equality_comparable_with<element_t<D>, Value const&>
-constexpr auto inline_sequence_base<D>::count_eq(Value const& value)
+constexpr auto inline_iter_base<D>::count_eq(Value const& value)
 {
     return flux::count_eq(derived(), value);
 }
@@ -89,7 +89,7 @@ constexpr auto inline_sequence_base<D>::count_eq(Value const& value)
 template <typename D>
 template <typename Pred>
     requires std::predicate<Pred&, element_t<D>>
-constexpr auto inline_sequence_base<D>::count_if(Pred pred)
+constexpr auto inline_iter_base<D>::count_if(Pred pred)
 {
     return flux::count_if(derived(), std::move(pred));
 }

@@ -7,14 +7,23 @@
 #define FLUX_CORE_REF_HPP_INCLUDED
 
 #include <flux/core/concepts.hpp>
-#include <flux/core/inline_sequence_base.hpp>
+#include <flux/core/inline_iter_base.hpp>
 #include <flux/core/sequence_access.hpp>
 
 namespace flux {
 
 namespace detail {
 
-struct passthrough_traits_base : default_sequence_traits {
+struct passthrough_traits_base : default_iter_traits {
+
+    template <typename Self>
+    static consteval auto element_type(Self& self) -> element_t<decltype(self.base())>;
+
+    static constexpr auto iterate(auto& self, auto&& pred)
+        -> decltype(flux::iterate(self.base(), FLUX_FWD(pred)))
+    {
+        return flux::iterate(self.base(), FLUX_FWD(pred));
+    }
 
     static constexpr auto first(auto& self)
         -> decltype(flux::first(self.base()))
@@ -111,8 +120,8 @@ struct passthrough_traits_base : default_sequence_traits {
     }
 };
 
-template <sequence Base>
-struct ref_adaptor : inline_sequence_base<ref_adaptor<Base>> {
+template <iterable Base>
+struct ref_adaptor : inline_iter_base<ref_adaptor<Base>> {
 private:
     Base* base_;
 
@@ -143,7 +152,7 @@ public:
 
     constexpr Base& base() const noexcept { return *base_; }
 
-    struct flux_sequence_traits : passthrough_traits_base {
+    struct flux_iter_traits : passthrough_traits_base {
         using value_type = value_t<Base>;
     };
 };
@@ -155,7 +164,7 @@ template <typename T>
 inline constexpr bool is_ref_adaptor<ref_adaptor<T>> = true;
 
 struct mut_ref_fn {
-    template <sequence Seq>
+    template <iterable Seq>
         requires (!std::is_const_v<Seq>)
     [[nodiscard]]
     constexpr auto operator()(Seq& seq) const
@@ -169,7 +178,7 @@ struct mut_ref_fn {
 };
 
 struct ref_fn {
-    template <const_iterable_sequence Seq>
+    template <const_iterable Seq>
         requires (!is_ref_adaptor<Seq>)
     [[nodiscard]]
     constexpr auto operator()(Seq const& seq) const
@@ -177,7 +186,7 @@ struct ref_fn {
         return ref_adaptor<Seq const>(seq);
     }
 
-    template <const_iterable_sequence Seq>
+    template <const_iterable Seq>
     [[nodiscard]]
     constexpr auto operator()(ref_adaptor<Seq> ref) const
     {
@@ -188,9 +197,9 @@ struct ref_fn {
     auto operator()(T const&&) const -> void = delete;
 };
 
-template <sequence Base>
+template <iterable Base>
     requires std::movable<Base>
-struct owning_adaptor : inline_sequence_base<owning_adaptor<Base>> {
+struct owning_adaptor : inline_iter_base<owning_adaptor<Base>> {
 private:
     Base base_;
 
@@ -204,38 +213,38 @@ public:
     constexpr Base&& base() && noexcept { return std::move(base_); }
     constexpr Base const&& base() const&& noexcept { return std::move(base_); }
 
-    struct flux_sequence_traits : passthrough_traits_base {
+    struct flux_iter_traits : passthrough_traits_base {
         using value_type = value_t<Base>;
     };
 };
 
 struct from_fn {
-    template <adaptable_sequence Seq>
+    template <sink_iterable It>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const
+    constexpr auto operator()(It&& it) const
     {
-        if constexpr (derived_from_inline_sequence_base<Seq>) {
-            return FLUX_FWD(seq);
+        if constexpr (derived_from_inline_sequence_base<It>) {
+            return FLUX_FWD(it);
         } else {
-            return owning_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq));
+            return owning_adaptor<std::decay_t<It>>(FLUX_FWD(it));
         }
     }
 };
 
 struct from_fwd_ref_fn {
-    template <sequence Seq>
-        requires adaptable_sequence<Seq> || std::is_lvalue_reference_v<Seq>
+    template <iterable It>
+        requires sink_iterable<It> || std::is_lvalue_reference_v<It>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const
+    constexpr auto operator()(It&& it) const
     {
-        if constexpr (std::is_lvalue_reference_v<Seq>) {
-            if constexpr (std::is_const_v<std::remove_reference_t<Seq>>) {
-                return ref_fn{}(seq);
+        if constexpr (std::is_lvalue_reference_v<It>) {
+            if constexpr (std::is_const_v<std::remove_reference_t<It>>) {
+                return ref_fn{}(it);
             } else {
-                return mut_ref_fn{}(seq);
+                return mut_ref_fn{}(it);
             }
         } else {
-            return from_fn{}(seq);
+            return from_fn{}(FLUX_FWD(it));
         }
     }
 };
@@ -249,14 +258,14 @@ FLUX_EXPORT inline constexpr auto from = detail::from_fn{};
 FLUX_EXPORT inline constexpr auto from_fwd_ref = detail::from_fwd_ref_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::ref() const&
-    requires const_iterable_sequence<D>
+constexpr auto inline_iter_base<D>::ref() const&
+    requires const_iterable<D>
 {
     return flux::ref(derived());
 }
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::mut_ref() &
+constexpr auto inline_iter_base<D>::mut_ref() &
 {
     return flux::mut_ref(derived());
 }

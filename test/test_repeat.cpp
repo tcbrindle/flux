@@ -30,7 +30,7 @@ constexpr bool test_repeat()
 
         static_assert(flux::random_access_sequence<S>);
         static_assert(flux::infinite_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(not flux::bounded_sequence<S>);
         static_assert(std::same_as<flux::element_t<S>, int const&>);
         static_assert(std::same_as<flux::value_t<S>, int>);
@@ -63,7 +63,7 @@ constexpr bool test_repeat()
 
         static_assert(flux::random_access_sequence<S>);
         static_assert(flux::infinite_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
+        static_assert(not flux::sized_iterable<S>);
         static_assert(not flux::bounded_sequence<S>);
         static_assert(std::same_as<flux::element_t<S>, int const&>);
         static_assert(std::same_as<flux::value_t<S>, int>);
@@ -87,7 +87,7 @@ constexpr bool test_repeat()
         using S = decltype(seq);
 
         static_assert(flux::random_access_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
 
         STATIC_CHECK(check_equal(seq, {3, 3, 3, 3, 3}));
@@ -148,7 +148,7 @@ constexpr bool test_repeat_bounded()
 
         static_assert(flux::random_access_sequence<S>);
         static_assert(not flux::infinite_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(std::same_as<flux::element_t<S>, int const &>);
         static_assert(std::same_as<flux::value_t<S>, int>);
@@ -185,7 +185,7 @@ constexpr bool test_repeat_bounded()
 
         static_assert(flux::random_access_sequence<S>);
         static_assert(not flux::infinite_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
+        static_assert(flux::sized_iterable<S>);
         static_assert(flux::bounded_sequence<S>);
         static_assert(std::same_as<flux::element_t<S>, int const&>);
         static_assert(std::same_as<flux::value_t<S>, int>);

@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <initializer_list>
+#include <ranges>
 #include <vector>
 
 #ifdef USE_MODULES
@@ -28,13 +29,29 @@ static_assert(test_all<int>({}));
 static_assert(test_all({1, 2, 3, 4, 5}));
 static_assert(test_all({1.0, 2.0, -3.0, 4.0}));
 
+template <typename T>
+constexpr bool test_any(std::initializer_list<T> ilist)
+{
+    return flux::any(ilist, gt_zero) == std::any_of(ilist.begin(), ilist.end(), gt_zero);
+}
+static_assert(test_any<int>({}));
+static_assert(test_any({1, 2, 3, 4, 5}));
+static_assert(test_any({1.0, 2.0, -3.0, 4.0}));
+
+template <typename T>
+constexpr bool test_none(std::initializer_list<T> ilist)
+{
+    return flux::none(ilist, gt_zero) == std::none_of(ilist.begin(), ilist.end(), gt_zero);
+}
+static_assert(test_none<int>({}));
+static_assert(test_none({1, 2, 3, 4, 5}));
+static_assert(test_none({1.0, 2.0, -3.0, 4.0}));
+
 }
 
 TEST_CASE("all with vector")
 {
-    std::vector<int> vec{1, 2, 3, 4, 5};
-
-    static_assert(flux::contiguous_sequence<decltype(vec)>);
+    auto vec = std::vector<int>{1, 2, 3, 4, 5} | std::views::filter(flux::pred::even);
 
     bool req = flux::all(vec, gt_zero);
 

@@ -23,7 +23,7 @@ constexpr bool test_adjacent_filter()
         static_assert(flux::bidirectional_sequence<F>);
         static_assert(not flux::random_access_sequence<F>);
         static_assert(flux::bounded_sequence<F>);
-        static_assert(not flux::sized_sequence<F>);
+        static_assert(not flux::sized_iterable<F>);
 
         static_assert(std::same_as<flux::element_t<F>, int&>);
 
@@ -44,7 +44,7 @@ constexpr bool test_adjacent_filter()
         static_assert(flux::bidirectional_sequence<F>);
         static_assert(not flux::random_access_sequence<F>);
         static_assert(flux::bounded_sequence<F>);
-        static_assert(not flux::sized_sequence<F>);
+        static_assert(not flux::sized_iterable<F>);
 
         static_assert(std::same_as<flux::element_t<F>, int const&>);
 
@@ -136,7 +136,7 @@ constexpr bool test_dedup()
         static_assert(flux::bidirectional_sequence<F>);
         static_assert(not flux::random_access_sequence<F>);
         static_assert(flux::bounded_sequence<F>);
-        static_assert(not flux::sized_sequence<F>);
+        static_assert(not flux::sized_iterable<F>);
 
         static_assert(std::same_as<flux::element_t<F>, int&>);
 
@@ -157,7 +157,7 @@ constexpr bool test_dedup()
         static_assert(flux::bidirectional_sequence<F>);
         static_assert(not flux::random_access_sequence<F>);
         static_assert(flux::bounded_sequence<F>);
-        static_assert(not flux::sized_sequence<F>);
+        static_assert(not flux::sized_iterable<F>);
 
         static_assert(std::same_as<flux::element_t<F>, int const&>);
 

@@ -20,12 +20,12 @@ struct filter_map_fn {
     using strip_rvalue_ref_t = std::conditional_t<
         std::is_rvalue_reference_v<T>, std::remove_reference_t<T>, T>;
 
-    template <adaptable_sequence Seq, typename Func>
-        requires (std::invocable<Func&, element_t<Seq>> &&
-                  optional_like<std::remove_cvref_t<std::invoke_result_t<Func&, element_t<Seq>>>>)
-    constexpr auto operator()(Seq&& seq, Func func) const
+    template <sink_iterable It, typename Func>
+        requires (std::invocable<Func&, element_t<It>> &&
+                  optional_like<std::remove_cvref_t<std::invoke_result_t<Func&, element_t<It>>>>)
+    constexpr auto operator()(It&& it, Func func) const
     {
-        return flux::map(FLUX_FWD(seq), std::move(func))
+        return flux::map(FLUX_FWD(it), std::move(func))
             .filter([](auto&& opt) { return static_cast<bool>(opt); })
             .map([](auto&& opt) -> strip_rvalue_ref_t<decltype(*FLUX_FWD(opt))> {
                 return *FLUX_FWD(opt);
@@ -41,7 +41,7 @@ template <typename D>
 template <typename Func>
 requires std::invocable<Func&, element_t<D>> &&
          detail::optional_like<std::invoke_result_t<Func&, element_t<D>>>
-constexpr auto inline_sequence_base<D>::filter_map(Func func) &&
+constexpr auto inline_iter_base<D>::filter_map(Func func) &&
 {
     return flux::filter_map(derived(), std::move(func));
 }
@@ -50,11 +50,11 @@ namespace detail
 {
 
 struct filter_deref_fn {
-    template <adaptable_sequence Seq>
-        requires optional_like<value_t<Seq>>
-    constexpr auto operator()(Seq&& seq) const
+    template <sink_iterable It>
+        requires optional_like<value_t<It>>
+    constexpr auto operator()(It&& it) const
     {
-        return filter_map(FLUX_FWD(seq), [](auto&& opt) -> decltype(auto) { return FLUX_FWD(opt); });
+        return filter_map(FLUX_FWD(it), [](auto&& opt) -> decltype(auto) { return FLUX_FWD(opt); });
     }
 };
 
@@ -63,7 +63,7 @@ struct filter_deref_fn {
 FLUX_EXPORT inline constexpr auto filter_deref = detail::filter_deref_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::filter_deref() && requires detail::optional_like<value_t<D>>
+constexpr auto inline_iter_base<D>::filter_deref() && requires detail::optional_like<value_t<D>>
 {
     return flux::filter_deref(derived());
 }

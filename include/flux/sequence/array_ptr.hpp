@@ -22,7 +22,7 @@ struct make_array_ptr_unchecked_fn;
 FLUX_EXPORT
 template <typename T>
     requires (std::is_object_v<T> && !std::is_abstract_v<T>)
-struct array_ptr : inline_sequence_base<array_ptr<T>> {
+struct array_ptr : inline_iter_base<array_ptr<T>> {
 private:
     T* data_ = nullptr;
     distance_t sz_ = 0;
@@ -48,7 +48,7 @@ public:
     template <typename Seq>
         requires (!decays_to<Seq, array_ptr> &&
                   contiguous_sequence<Seq> &&
-                  sized_sequence<Seq> &&
+                  sized_iterable<Seq> &&
                   detail::non_slicing_ptr_convertible<std::remove_reference_t<element_t<Seq>>, T>)
     constexpr explicit array_ptr(Seq& seq)
         : data_(flux::data(seq)),
@@ -57,7 +57,7 @@ public:
 
     template <typename Seq>
         requires (contiguous_sequence<Seq> &&
-                  sized_sequence<Seq> &&
+                  sized_iterable<Seq> &&
                   detail::non_slicing_ptr_convertible<std::remove_reference_t<element_t<Seq>>, T>)
     constexpr array_ptr(detail::ref_adaptor<Seq> ref)
         : data_(flux::data(ref)),
@@ -76,7 +76,7 @@ public:
         return std::ranges::equal_to{}(lhs.data_, rhs.data_) && lhs.sz_ == rhs.sz_;
     }
 
-    struct flux_sequence_traits : default_sequence_traits {
+    struct flux_iter_traits : default_iter_traits {
 
         static constexpr auto first(array_ptr const&) -> index_t { return 0; }
 

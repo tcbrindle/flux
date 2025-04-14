@@ -14,7 +14,7 @@ namespace flux {
 namespace detail {
 
 template <multipass_sequence Base>
-struct slide_adaptor : inline_sequence_base<slide_adaptor<Base>> {
+struct slide_adaptor : inline_iter_base<slide_adaptor<Base>> {
 private:
     Base base_;
     distance_t win_sz_;
@@ -25,7 +25,7 @@ public:
           win_sz_(win_sz)
     {}
 
-    struct flux_sequence_traits : default_sequence_traits {
+    struct flux_iter_traits : default_iter_traits {
     private:
         struct cursor_type {
             cursor_t<Base> from;
@@ -102,7 +102,7 @@ public:
         }
 
         static constexpr auto size(auto& self) -> distance_t
-            requires sized_sequence<Base>
+            requires sized_iterable<Base>
         {
             auto s = num::add(num::sub(flux::size(self.base_), self.win_sz_), distance_t{1});
             return (cmp::max)(s, distance_t{0});
@@ -127,7 +127,7 @@ struct slide_fn {
 FLUX_EXPORT inline constexpr auto slide = detail::slide_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::slide(num::integral auto win_sz) &&
+constexpr auto inline_iter_base<D>::slide(num::integral auto win_sz) &&
         requires multipass_sequence<D>
 {
     FLUX_ASSERT(win_sz > 0);

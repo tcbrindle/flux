@@ -52,15 +52,15 @@ concept ordered_cursor =
 
 FLUX_EXPORT
 template <typename T>
-struct sequence_traits;
+struct iter_traits;
 
 FLUX_EXPORT
-struct default_sequence_traits;
+struct default_iter_traits;
 
 namespace detail {
 
 template <typename T>
-using traits_t = sequence_traits<std::remove_cvref_t<T>>;
+using traits_t = iter_traits<std::remove_cvref_t<T>>;
 
 } // namespace detail
 
@@ -70,7 +70,7 @@ using cursor_t = decltype(detail::traits_t<Seq>::first(FLUX_DECLVAL(Seq&)));
 
 FLUX_EXPORT
 template <typename Seq>
-using element_t = decltype(detail::traits_t<Seq>::read_at(FLUX_DECLVAL(Seq&), FLUX_DECLVAL(cursor_t<Seq> const&)));
+using element_t = decltype(detail::traits_t<Seq>::element_type(FLUX_DECLVAL(Seq&)));
 
 namespace detail {
 
@@ -123,7 +123,24 @@ using with_ref = T&;
 template <typename T>
 concept can_reference = requires { typename with_ref<T>; };
 
-template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+template <typename E>
+using predicate_archetype = bool (*)(E);
+
+template <typename T, typename Traits = iter_traits<std::remove_cvref_t<T>>>
+concept iterable_concept =
+    requires (T& self) {
+        { Traits::element_type(self) } -> can_reference;
+    } && requires (T& self, predicate_archetype<element_t<T>> pred) {
+        { Traits::iterate(self, pred) } -> std::same_as<bool>;
+    } && requires {
+        typename value_t<T>;
+    }
+#ifdef FLUX_HAVE_CPP23_TUPLE_COMMON_REF
+    && std::common_reference_with<element_t<T>&&, value_t<T>&>
+#endif
+    ;
+
+template <typename Seq, typename Traits = iter_traits<std::remove_cvref_t<Seq>>>
 concept sequence_requirements =
     requires (Seq& seq) {
         { Traits::first(seq) } -> cursor;
@@ -136,7 +153,7 @@ concept sequence_requirements =
         { Traits::inc(seq, cur) };
     };
 
-template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+template <typename Seq, typename Traits = iter_traits<std::remove_cvref_t<Seq>>>
 concept sequence_concept =
     sequence_requirements<Seq> &&
     requires (Seq& seq, cursor_t<Seq> const& cur) {
@@ -158,8 +175,12 @@ concept sequence_concept =
 } // namespace detail
 
 FLUX_EXPORT
+template <typename I>
+concept iterable = detail::iterable_concept<I>;
+
+FLUX_EXPORT
 template <typename Seq>
-concept sequence = detail::sequence_concept<Seq>;
+concept sequence = iterable<Seq> && detail::sequence_concept<Seq>;
 
 namespace detail {
 
@@ -181,7 +202,7 @@ concept multipass_sequence =
 
 namespace detail {
 
-template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+template <typename Seq, typename Traits = iter_traits<std::remove_cvref_t<Seq>>>
 concept bidirectional_sequence_requirements =
     requires (Seq& seq, cursor_t<Seq>& cur) {
         { Traits::dec(seq, cur) };
@@ -195,7 +216,7 @@ concept bidirectional_sequence = multipass_sequence<Seq> && detail::bidirectiona
 
 namespace detail {
 
-template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+template <typename Seq, typename Traits = iter_traits<std::remove_cvref_t<Seq>>>
 concept random_access_sequence_requirements =
     ordered_cursor<cursor_t<Seq>> &&
     requires (Seq& seq, cursor_t<Seq>& cur, distance_t offset) {
@@ -215,7 +236,7 @@ concept random_access_sequence =
 
 namespace detail {
 
-template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+template <typename Seq, typename Traits = iter_traits<std::remove_cvref_t<Seq>>>
 concept bounded_sequence_requirements =
     requires (Seq& seq) {
         { Traits::last(seq) } -> std::same_as<cursor_t<Seq>>;
@@ -229,7 +250,7 @@ concept bounded_sequence = sequence<Seq> && detail::bounded_sequence_requirement
 
 namespace detail {
 
-template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
+template <typename Seq, typename Traits = iter_traits<std::remove_cvref_t<Seq>>>
 concept contiguous_sequence_requirements =
     std::is_lvalue_reference_v<element_t<Seq>> &&
     std::same_as<value_t<Seq>, std::remove_cvref_t<element_t<Seq>>> &&
@@ -248,24 +269,24 @@ concept contiguous_sequence =
 
 namespace detail {
 
-template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
-concept sized_sequence_requirements =
-    requires (Seq& seq) {
-        { Traits::size(seq) } -> std::convertible_to<distance_t>;
+template <typename It, typename Traits = iter_traits<std::remove_cvref_t<It>>>
+concept sized_iterable_requirements =
+    requires (It& it) {
+        { Traits::size(it) } -> std::convertible_to<distance_t>;
     };
 
 } // namespace detail
 
 FLUX_EXPORT
-template <typename Seq>
-concept sized_sequence = sequence<Seq> && detail::sized_sequence_requirements<Seq>;
+template <typename It>
+concept sized_iterable = iterable<It> && detail::sized_iterable_requirements<It>;
 
 FLUX_EXPORT
-template <typename Seq, typename T>
-concept writable_sequence_of =
-    sequence<Seq> &&
-    requires (element_t<Seq> elem, T&& item) {
-        { elem = FLUX_FWD(item) } -> std::same_as<element_t<Seq>&>;
+template <typename It, typename T>
+concept writable_iterable_of =
+    iterable<It> &&
+    requires (element_t<It> (*elem)(), T&& item) {
+        { elem() = FLUX_FWD(item) } -> std::same_as<element_t<It>&>;
     };
 
 namespace detail {
@@ -287,33 +308,35 @@ concept infinite_sequence =
     detail::is_infinite_seq<detail::traits_t<Seq>>;
 
 FLUX_EXPORT
-template <typename Seq>
-concept read_only_sequence =
-    sequence<Seq> &&
-    std::same_as<element_t<Seq>, const_element_t<Seq>>;
+template <typename It>
+concept read_only_iterable =
+    iterable<It> &&
+    std::same_as<element_t<It>, const_element_t<It>>;
 
 FLUX_EXPORT
-template <typename Seq>
-concept const_iterable_sequence =
-    // Seq and Seq const must both be sequences
-    sequence<Seq> && sequence<Seq const> &&
-    // Seq and Seq const must have the same cursor and value types
-    std::same_as<cursor_t<Seq>, cursor_t<Seq const>> &&
-    std::same_as<value_t<Seq>, value_t<Seq const>> &&
-    // Seq and Seq const must have the same const_element type
+template <typename It>
+concept const_iterable =
+    // It and It const must both be iterable
+    iterable<It> && iterable<It const> &&
+    // It and It const must have the same value type
+    std::same_as<value_t<It>, value_t<It const>> &&
+    // It and It const must have the same const_element type
 #ifdef FLUX_HAVE_CPP23_TUPLE_COMMON_REF
-    std::same_as<const_element_t<Seq>, const_element_t<Seq const>> &&
+    std::same_as<const_element_t<It>, const_element_t<It const>> &&
 #endif
-    // Seq and Seq const must model the same extended sequence concepts
-    (multipass_sequence<Seq> == multipass_sequence<Seq const>) &&
-    (bidirectional_sequence<Seq> == bidirectional_sequence<Seq const>) &&
-    (random_access_sequence<Seq> == random_access_sequence<Seq const>) &&
-    (contiguous_sequence<Seq> == contiguous_sequence<Seq const>) &&
-    (bounded_sequence<Seq> == bounded_sequence<Seq const>) &&
-    (sized_sequence<Seq> == sized_sequence<Seq const>) &&
-    (infinite_sequence<Seq> == infinite_sequence<Seq const>) &&
+    // It and It const must model the same extended sequence concepts,
+    // and if they are sequences they must have the same cursor type
+    (sequence<It> == sequence<It const>) &&
+    (!sequence<It> || (std::same_as<cursor_t<It>, cursor_t<It const>>)) &&
+    (multipass_sequence<It> == multipass_sequence<It const>) &&
+    (bidirectional_sequence<It> == bidirectional_sequence<It const>) &&
+    (random_access_sequence<It> == random_access_sequence<It const>) &&
+    (contiguous_sequence<It> == contiguous_sequence<It const>) &&
+    (bounded_sequence<It> == bounded_sequence<It const>) &&
+    (sized_iterable<It> == sized_iterable<It const>) &&
+    (infinite_sequence<It> == infinite_sequence<It const>) &&
     // If Seq is read-only, Seq const must be read-only as well
-    (!read_only_sequence<Seq> || read_only_sequence<Seq const>);
+    (!read_only_iterable<It> || read_only_iterable<It const>);
 
 namespace detail {
 
@@ -335,7 +358,26 @@ concept trivially_copyable_sequence =
     std::is_trivially_copyable_v<Seq> &&
     sequence<Seq>;
 
+template <typename It>
+concept rvalue_iterable =
+    std::is_object_v<It> &&
+    std::move_constructible<It> &&
+    iterable<It>;
+
+template <typename It>
+concept trivially_copyable_lvalue_iterable =
+    std::is_lvalue_reference_v<It> &&
+    std::copyable<std::decay_t<It>> &&
+    std::is_trivially_copyable_v<std::decay_t<It>> &&
+    iterable<std::decay_t<It>>;
+
 }
+
+FLUX_EXPORT
+template <typename It>
+concept sink_iterable =
+    (detail::rvalue_iterable<It> || detail::trivially_copyable_lvalue_iterable<It>)
+    && !detail::is_ilist<It>;
 
 FLUX_EXPORT
 template <typename Seq>
@@ -347,13 +389,13 @@ concept adaptable_sequence =
 
 FLUX_EXPORT
 template <typename D>
-struct inline_sequence_base;
+struct inline_iter_base;
 
 namespace detail {
 
 template <typename T, typename U>
-    requires (!std::same_as<T, inline_sequence_base<U>>)
-void derived_from_inline_sequence_base_test(T const&, inline_sequence_base<U> const&);
+    requires (!std::same_as<T, inline_iter_base<U>>)
+void derived_from_inline_sequence_base_test(T const&, inline_iter_base<U> const&);
 
 template <typename T>
 concept derived_from_inline_sequence_base = requires(T t) {
@@ -367,7 +409,40 @@ concept derived_from_inline_sequence_base = requires(T t) {
  * Default sequence_traits implementation
  */
 
-struct default_sequence_traits {
+struct default_iter_traits {
+
+    template <typename Self>
+        requires detail::sequence_requirements<Self>
+    static consteval auto element_type(Self& self)
+        -> decltype(detail::traits_t<Self>::read_at(FLUX_DECLVAL(Self&), FLUX_DECLVAL(cursor_t<Self> const&)));
+
+    template <typename Self, typename Pred>
+        requires detail::sequence_requirements<Self>
+    static constexpr auto iterate(Self& self, Pred&& pred) -> bool
+    {
+        using Traits = detail::traits_t<Self>;
+
+        auto cur = Traits::first(self);
+
+        if constexpr (bounded_sequence<Self> && regular_cursor<cursor_t<Self>>) {
+            auto const last = Traits::last(self);
+            while (cur != last) {
+                if (!std::invoke(pred, Traits::read_at_unchecked(self, cur))) {
+                    return false;
+                }
+                Traits::inc(self, cur);
+            }
+        } else {
+            while (!Traits::is_last(self, cur)) {
+                if (!std::invoke(pred, Traits::read_at(self, cur))) {
+                    return false;
+                }
+                Traits::inc(self, cur);
+            }
+        }
+
+        return true;
+    }
 
     template <typename Self>
         requires detail::sequence_requirements<Self>
@@ -440,15 +515,15 @@ struct default_sequence_traits {
 namespace detail {
 
 template <typename T>
-concept has_nested_sequence_traits =
-    requires { typename T::flux_sequence_traits; } &&
-    std::is_class_v<typename T::flux_sequence_traits>;
+concept has_nested_iter_traits =
+    requires { typename T::flux_iter_traits; } &&
+    std::is_class_v<typename T::flux_iter_traits>;
 
 }
 
 template <typename T>
-    requires detail::has_nested_sequence_traits<T>
-struct sequence_traits<T> : T::flux_sequence_traits {};
+    requires detail::has_nested_iter_traits<T>
+struct iter_traits<T> : T::flux_iter_traits {};
 
 namespace detail {
 

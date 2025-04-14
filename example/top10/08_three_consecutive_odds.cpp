@@ -16,8 +16,7 @@ namespace version1 {
 
 auto const tco = [](std::initializer_list<int> nums)
 {
-    int odd_count = 0;
-    auto idx = flux::for_each_while(nums, [&](int i) {
+    return !flux::iterate(nums, [odd_count = 0](int i) mutable {
         if (i % 2 != 0) {
             ++odd_count;
         } else {
@@ -25,7 +24,6 @@ auto const tco = [](std::initializer_list<int> nums)
         }
         return odd_count < 3; // true => keep iterating
     });
-    return !flux::is_last(nums, idx);
 };
 
 static_assert(tco({}) == false);

@@ -3,8 +3,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_CORE_INLINE_SEQUENCE_BASE_HPP_INCLUDED
-#define FLUX_CORE_INLINE_SEQUENCE_BASE_HPP_INCLUDED
+#ifndef FLUX_CORE_INLINE_ITER_BASE_HPP_INCLUDED
+#define FLUX_CORE_INLINE_ITER_BASE_HPP_INCLUDED
 
 #include <flux/core/sequence_access.hpp>
 #include <flux/core/operation_requirements.hpp>
@@ -28,7 +28,7 @@ template <sequence Seq>
 using bounds_t = bounds<cursor_t<Seq>>;
 
 template <typename Derived>
-struct inline_sequence_base {
+struct inline_iter_base {
 private:
     constexpr auto derived() -> Derived& { return static_cast<Derived&>(*this); }
     constexpr auto derived() const -> Derived const& { return static_cast<Derived const&>(*this); }
@@ -40,35 +40,59 @@ public:
 
     /// Returns a cursor pointing to the first element of the sequence
     [[nodiscard]]
-    constexpr auto first() { return flux::first(derived()); }
+    constexpr auto first()
+        requires sequence<Derived>
+    {
+        return flux::first(derived());
+    }
 
     /// Returns true if `cur` points to the end of the sequence
     ///
     /// @param cur The cursor to test
     template <std::same_as<Derived> D = Derived>
+        requires sequence<Derived>
     [[nodiscard]]
-    constexpr bool is_last(cursor_t<D> const& cur) { return flux::is_last(derived(), cur); }
+    constexpr bool is_last(cursor_t<D> const& cur)
+    {
+        return flux::is_last(derived(), cur);
+    }
 
     /// Increments the given cursor
     ///
     /// @param cur the cursor to increment
     template <std::same_as<Derived> D = Derived>
-    constexpr auto& inc(cursor_t<D>& cur) { return flux::inc(derived(), cur); }
+        requires sequence<Derived>
+    constexpr auto& inc(cursor_t<D>& cur)
+    {
+        return flux::inc(derived(), cur);
+    }
 
     /// Returns the element at the given cursor
     template <std::same_as<Derived> D = Derived>
+        requires sequence<Derived>
     [[nodiscard]]
-    constexpr decltype(auto) read_at(cursor_t<D> const& cur) { return flux::read_at(derived(), cur); }
+    constexpr decltype(auto) read_at(cursor_t<D> const& cur)
+    {
+        return flux::read_at(derived(), cur);
+    }
 
     /// Returns an rvalue version of the element at the given cursor
     template <std::same_as<Derived> D = Derived>
+        requires sequence<Derived>
     [[nodiscard]]
-    constexpr decltype(auto) move_at(cursor_t<D> const& cur) { return flux::move_at(derived(), cur); }
+    constexpr decltype(auto) move_at(cursor_t<D> const& cur)
+    {
+        return flux::move_at(derived(), cur);
+    }
 
     /// Returns the element at the given cursor
     template <std::same_as<Derived> D = Derived>
+        requires sequence<Derived>
     [[nodiscard]]
-    constexpr decltype(auto) operator[](cursor_t<D> const& cur) { return flux::read_at(derived(), cur); }
+    constexpr decltype(auto) operator[](cursor_t<D> const& cur)
+    {
+        return flux::read_at(derived(), cur);
+    }
 
     /// Returns an cursor pointing to one past the last element of the sequence
     [[nodiscard]]
@@ -109,17 +133,17 @@ public:
 
     /// Returns the number of elements in the sequence
     [[nodiscard]]
-    constexpr auto size() requires sized_sequence<Derived> { return flux::size(derived()); }
+    constexpr auto size() requires sized_iterable<Derived> { return flux::size(derived()); }
 
     [[nodiscard]]
-    constexpr auto size() const requires sized_sequence<Derived const> { return flux::size(derived()); }
+    constexpr auto size() const requires sized_iterable<Derived const> { return flux::size(derived()); }
 
     /// Returns the number of elements in the sequence as a size_t
     [[nodiscard]]
-    constexpr auto usize() requires sized_sequence<Derived> { return flux::usize(derived()); }
+    constexpr auto usize() requires sized_iterable<Derived> { return flux::usize(derived()); }
 
     [[nodiscard]]
-    constexpr auto usize() const requires sized_sequence<Derived const> { return flux::usize(derived()); }
+    constexpr auto usize() const requires sized_iterable<Derived const> { return flux::usize(derived()); }
 
     template <typename Pred>
         requires std::invocable<Pred&, element_t<Derived>> &&
@@ -132,14 +156,18 @@ public:
     /// Returns true if the sequence contains no elements
     [[nodiscard]]
     constexpr auto is_empty()
-        requires (multipass_sequence<Derived> || sized_sequence<Derived>)
+        requires (multipass_sequence<Derived> || sized_iterable<Derived>)
     {
         return flux::is_empty(derived());
     }
 
     template <std::same_as<Derived> D = Derived>
+        requires sequence<Derived>
     [[nodiscard]]
-    constexpr auto next(cursor_t<D> cur) { return flux::next(derived(), cur); }
+    constexpr auto next(cursor_t<D> cur)
+    {
+        return flux::next(derived(), cur);
+    }
 
     template <std::same_as<Derived> D = Derived>
         requires bidirectional_sequence<Derived>
@@ -200,7 +228,7 @@ public:
         return std::invoke(FLUX_FWD(func), std::move(derived()), FLUX_FWD(args)...);
     }
 
-    constexpr auto ref() const& requires const_iterable_sequence<Derived>;
+    constexpr auto ref() const& requires const_iterable<Derived>;
 
     auto ref() const&& -> void = delete;
 
@@ -209,11 +237,13 @@ public:
     /*
      * Iterator support
      */
-    constexpr auto begin() &;
+    constexpr auto begin() &
+        requires sequence<Derived>;
 
     constexpr auto begin() const& requires sequence<Derived const>;
 
-    constexpr auto end() &;
+    constexpr auto end() &
+        requires sequence<Derived>;
 
     constexpr auto end() const& requires sequence<Derived const>;
 
@@ -242,7 +272,8 @@ public:
                      (multipass_sequence<Derived> && not infinite_sequence<Derived>);
 
     [[nodiscard]]
-    constexpr auto chunk(num::integral auto chunk_sz) &&;
+    constexpr auto chunk(num::integral auto chunk_sz) &&
+        requires sequence<Derived>;
 
     template <typename Pred>
         requires multipass_sequence<Derived> &&
@@ -288,19 +319,17 @@ public:
     constexpr auto filter_deref() && requires detail::optional_like<value_t<Derived>>;
 
     [[nodiscard]]
-    constexpr auto flatten() && requires sequence<element_t<Derived>>;
+    constexpr auto flatten() && requires iterable<element_t<Derived>>;
 
     template <adaptable_sequence Pattern>
-        requires sequence<element_t<Derived>> &&
-                 multipass_sequence<Pattern> &&
-                 detail::flatten_with_compatible<element_t<Derived>, Pattern>
+        requires iterable<element_t<Derived>> && multipass_sequence<Pattern>
+        && detail::flatten_with_compatible<element_t<Derived>, Pattern>
     [[nodiscard]]
     constexpr auto flatten_with(Pattern&& pattern) &&;
 
-
     template <typename Value>
-        requires sequence<element_t<Derived>> &&
-                 std::constructible_from<value_t<element_t<Derived>>, Value&&>
+        requires iterable<element_t<Derived>>
+        && std::constructible_from<value_t<element_t<Derived>>, Value&&>
     [[nodiscard]]
     constexpr auto flatten_with(Value value) &&;
 
@@ -368,7 +397,8 @@ public:
 
     template <typename Pattern>
     [[nodiscard]]
-    constexpr auto split_string(Pattern&& pattern) &&;
+    constexpr auto split_string(Pattern&& pattern) &&
+        requires multipass_sequence<Derived>;
 
     [[nodiscard]]
     constexpr auto stride(num::integral auto by) &&;
@@ -386,13 +416,11 @@ public:
      */
 
     /// Returns `true` if every element of the sequence satisfies the predicate
-    template <typename Pred>
-        requires std::predicate<Pred&, element_t<Derived>>
+    template <predicate_for<Derived> Pred>
     [[nodiscard]]
     constexpr auto all(Pred pred);
 
-    template <typename Pred>
-        requires std::predicate<Pred&, element_t<Derived>>
+    template <predicate_for<Derived> Pred>
     [[nodiscard]]
     constexpr auto any(Pred pred);
 
@@ -413,43 +441,44 @@ public:
     constexpr auto count_if(Pred pred);
 
     template <sequence Needle, typename Cmp = std::ranges::equal_to>
-        requires std::predicate<Cmp&, element_t<Derived>, element_t<Needle>> &&
-                 (multipass_sequence<Derived> || sized_sequence<Derived>) &&
-                 (multipass_sequence<Needle> || sized_sequence<Needle>)
+        requires sequence<Derived> && std::predicate<Cmp&, element_t<Derived>, element_t<Needle>>
+        && (multipass_sequence<Derived> || sized_iterable<Derived>)
+        && (multipass_sequence<Needle> || sized_iterable<Needle>)
     constexpr auto ends_with(Needle&& needle, Cmp cmp = {}) -> bool;
 
     template <typename Value>
-        requires writable_sequence_of<Derived, Value const&>
+        requires writable_iterable_of<Derived, Value const&>
     constexpr auto fill(Value const& value) -> void;
 
     /// Returns a cursor pointing to the first occurrence of `value` in the sequence
     template <typename Value>
-        requires std::equality_comparable_with<element_t<Derived>, Value const&>
+        requires sequence<Derived>
+        && std::equality_comparable_with<element_t<Derived>, Value const&>
     [[nodiscard]]
     constexpr auto find(Value const&);
 
     template <typename Pred>
-        requires std::predicate<Pred&, element_t<Derived>>
+        requires sequence<Derived> && std::predicate<Pred&, element_t<Derived>>
     [[nodiscard]]
     constexpr auto find_if(Pred pred);
 
     template <typename Pred>
-        requires std::predicate<Pred&, element_t<Derived>>
+        requires sequence<Derived> && std::predicate<Pred&, element_t<Derived>>
     [[nodiscard]]
     constexpr auto find_if_not(Pred pred);
 
     template <typename Cmp = std::compare_three_way>
-        requires weak_ordering_for<Cmp, Derived>
+        requires sequence<Derived> && weak_ordering_for<Cmp, Derived>
     [[nodiscard]]
     constexpr auto find_max(Cmp cmp = Cmp{});
 
     template <typename Cmp = std::compare_three_way>
-        requires weak_ordering_for<Cmp, Derived>
+        requires sequence<Derived> && weak_ordering_for<Cmp, Derived>
     [[nodiscard]]
     constexpr auto find_min(Cmp cmp = Cmp{});
 
     template <typename Cmp = std::compare_three_way>
-        requires weak_ordering_for<Cmp, Derived>
+        requires sequence<Derived> && weak_ordering_for<Cmp, Derived>
     [[nodiscard]]
     constexpr auto find_minmax(Cmp cmp = Cmp{});
 
@@ -484,8 +513,7 @@ public:
         requires weak_ordering_for<Cmp, Derived>
     constexpr auto minmax(Cmp cmp = Cmp{});
 
-    template <typename Pred>
-        requires std::predicate<Pred&, element_t<Derived>>
+    template <predicate_for<Derived> Pred>
     [[nodiscard]]
     constexpr auto none(Pred pred);
 
@@ -525,4 +553,4 @@ public:
 
 } // namespace flux
 
-#endif // FLUX_CORE_SEQUENCE_IFACE_HPP_INCLUDED
+#endif // FLUX_CORE_INLINE_ITER_BASE_HPP_INCLUDED

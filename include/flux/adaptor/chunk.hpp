@@ -16,7 +16,7 @@ namespace flux {
 namespace detail {
 
 template <typename Base>
-struct chunk_adaptor : inline_sequence_base<chunk_adaptor<Base>> {
+struct chunk_adaptor : inline_iter_base<chunk_adaptor<Base>> {
 private:
     Base base_;
     distance_t chunk_sz_;
@@ -32,13 +32,13 @@ public:
     chunk_adaptor(chunk_adaptor&&) = default;
     chunk_adaptor& operator=(chunk_adaptor&&) = default;
 
-    struct flux_sequence_traits : default_sequence_traits {
+    struct flux_iter_traits : default_iter_traits {
     private:
         struct outer_cursor {
             outer_cursor(outer_cursor&&) = default;
             outer_cursor& operator=(outer_cursor&&) = default;
 
-            friend struct flux_sequence_traits;
+            friend struct flux_iter_traits;
 
         private:
             explicit outer_cursor() = default;
@@ -47,26 +47,26 @@ public:
         using self_t = chunk_adaptor;
 
     public:
-        struct value_type : inline_sequence_base<value_type> {
+        struct value_type : inline_iter_base<value_type> {
         private:
             chunk_adaptor* parent_;
             constexpr explicit value_type(chunk_adaptor& parent)
                 : parent_(std::addressof(parent))
             {}
 
-            friend struct self_t::flux_sequence_traits;
+            friend struct self_t::flux_iter_traits;
 
         public:
             value_type(value_type&&) = default;
             value_type& operator=(value_type&&) = default;
 
-            struct flux_sequence_traits : default_sequence_traits {
+            struct flux_iter_traits : default_iter_traits {
             private:
                 struct inner_cursor {
                     inner_cursor(inner_cursor&&) = default;
                     inner_cursor& operator=(inner_cursor&&) = default;
 
-                    friend struct value_type::flux_sequence_traits;
+                    friend struct value_type::flux_iter_traits;
 
                 private:
                     explicit inner_cursor() = default;
@@ -125,7 +125,7 @@ public:
         }
 
         static constexpr auto size(self_t& self) -> distance_t
-            requires sized_sequence<Base>
+            requires sized_iterable<Base>
         {
             auto s = flux::size(self.base_);
             return s/self.chunk_sz_ + (s % self.chunk_sz_ == 0 ? 0 : 1);
@@ -134,7 +134,7 @@ public:
 };
 
 template <multipass_sequence Base>
-struct chunk_adaptor<Base> : inline_sequence_base<chunk_adaptor<Base>> {
+struct chunk_adaptor<Base> : inline_iter_base<chunk_adaptor<Base>> {
 private:
     Base base_;
     distance_t chunk_sz_;
@@ -145,7 +145,7 @@ public:
           chunk_sz_(chunk_sz)
     {}
 
-    struct flux_sequence_traits : default_sequence_traits {
+    struct flux_iter_traits : default_iter_traits {
         static inline constexpr bool is_infinite = infinite_sequence<Base>;
 
         static constexpr auto first(auto& self) -> cursor_t<Base>
@@ -177,7 +177,7 @@ public:
         }
 
         static constexpr auto size(auto& self) -> distance_t
-            requires sized_sequence<Base>
+            requires sized_iterable<Base>
         {
             auto s = flux::size(self.base_);
             return s/self.chunk_sz_ + (s % self.chunk_sz_ == 0 ? 0 : 1);
@@ -186,7 +186,7 @@ public:
 };
 
 template <bidirectional_sequence Base>
-struct chunk_adaptor<Base> : inline_sequence_base<chunk_adaptor<Base>> {
+struct chunk_adaptor<Base> : inline_iter_base<chunk_adaptor<Base>> {
 private:
     Base base_;
     distance_t chunk_sz_;
@@ -197,7 +197,7 @@ public:
           chunk_sz_(chunk_sz)
     {}
 
-    struct flux_sequence_traits : default_sequence_traits {
+    struct flux_iter_traits : default_iter_traits {
     private:
         struct cursor_type {
             cursor_t<Base> cur{};
@@ -257,7 +257,7 @@ public:
         }
 
         static constexpr auto last(auto& self) -> cursor_type
-            requires bounded_sequence<Base> && sized_sequence<Base>
+            requires bounded_sequence<Base> && sized_iterable<Base>
         {
             distance_t missing =
                 (self.chunk_sz_ - flux::size(self.base_) % self.chunk_sz_) % self.chunk_sz_;
@@ -268,7 +268,7 @@ public:
         }
 
         static constexpr auto size(auto& self) -> distance_t
-            requires sized_sequence<Base>
+            requires sized_iterable<Base>
         {
             auto s = flux::size(self.base_);
             return s/self.chunk_sz_ + (s % self.chunk_sz_ == 0 ? 0 : 1);
@@ -311,7 +311,8 @@ struct chunk_fn {
 FLUX_EXPORT inline constexpr auto chunk = detail::chunk_fn{};
 
 template <typename D>
-constexpr auto inline_sequence_base<D>::chunk(num::integral auto chunk_sz) &&
+constexpr auto inline_iter_base<D>::chunk(num::integral auto chunk_sz) &&
+    requires sequence<D>
 {
     return flux::chunk(std::move(derived()), chunk_sz);
 }

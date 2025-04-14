@@ -15,57 +15,52 @@ namespace flux {
 
 namespace detail {
 
-template <sequence... Bases>
-struct chain_adaptor : inline_sequence_base<chain_adaptor<Bases...>> {
-private:
-    std::tuple<Bases...> bases_;
-
-    friend struct sequence_traits<chain_adaptor>;
-
-public:
-    explicit constexpr chain_adaptor(decays_to<Bases> auto&&... bases)
-        : bases_(FLUX_FWD(bases)...)
-    {}
-};
-
-template <typename... Ts>
-concept all_have_common_ref =
-    requires { typename std::common_reference_t<Ts...>; } &&
-    (std::convertible_to<Ts, std::common_reference_t<Ts...>> && ...);
-
-template <typename... Seqs>
-concept chainable =
-    all_have_common_ref<element_t<Seqs>...> &&
-    all_have_common_ref<rvalue_element_t<Seqs>...> &&
-    requires { typename std::common_type_t<value_t<Seqs>...>; };
-
-struct chain_fn {
-    template <adaptable_sequence... Seqs>
-        requires (sizeof...(Seqs) >= 1) &&
-                 chainable<Seqs...>
-    [[nodiscard]]
-    constexpr auto operator()(Seqs&&... seqs) const
-    {
-        if constexpr (sizeof...(Seqs) == 1) {
-            return std::forward<Seqs...>(seqs...);
-        } else {
-            return chain_adaptor<std::decay_t<Seqs>...>(FLUX_FWD(seqs)...);
-        }
-    }
-};
-
-} // namespace detail
-
 template <typename... Bases>
-struct sequence_traits<detail::chain_adaptor<Bases...>> : default_sequence_traits {
+struct chain_iterable_traits_base : default_iter_traits {
 
     using value_type = std::common_type_t<value_t<Bases>...>;
 
+protected:
+    static constexpr std::size_t End = sizeof...(Bases) - 1;
+
+    template <typename From, typename To>
+    using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
+
+    template <std::size_t N>
+    static constexpr auto iterate_impl(auto& self, auto& pred) -> bool
+    {
+        if constexpr (N < End) {
+            if (flux::iterate(std::get<N>(self.bases_), pred)) {
+                return iterate_impl<N+1>(self, pred);
+            } else {
+                return false;
+            }
+        } else {
+            return flux::iterate(std::get<N>(self.bases_), pred);
+        }
+    }
+
+public:
+    template <typename Self>
+    static consteval auto element_type(Self&)
+        -> std::common_reference_t<element_t<const_like_t<Self, Bases>>...>;
+
+    template <typename Self, typename Pred>
+    static constexpr auto iterate(Self& self, Pred&& pred) -> bool
+    {
+        return iterate_impl<0>(self, pred);
+    }
+
+};
+
+template <typename... Bases>
+struct chain_sequence_traits_base : chain_iterable_traits_base<Bases...>
+{
     static constexpr bool disable_multipass = !(multipass_sequence<Bases> && ...);
     static constexpr bool is_infinite = (infinite_sequence<Bases> || ...);
 
 private:
-    static constexpr std::size_t End = sizeof...(Bases) - 1;
+    using chain_iterable_traits_base<Bases...>::End;
 
     template <typename From, typename To>
     using const_like_t = std::conditional_t<std::is_const_v<From>, To const, To>;
@@ -247,7 +242,7 @@ public:
     static constexpr auto is_last(Self& self, cursor_type const& cur) -> bool
     {
         return cur.index() == End &&
-               flux::is_last(std::get<End>(self.bases_), std::get<End>(cur));
+            flux::is_last(std::get<End>(self.bases_), std::get<End>(cur));
     }
 
     template <typename Self>
@@ -273,7 +268,7 @@ public:
     template <typename Self>
     static constexpr auto dec(Self& self, cursor_type& cur) -> void
         requires (bidirectional_sequence<const_like_t<Self, Bases>> && ...) &&
-                 (bounded_sequence<const_like_t<Self,Bases>> &&...)
+        (bounded_sequence<const_like_t<Self,Bases>> &&...)
     {
         dec_impl<End>(self, cur);
     }
@@ -287,7 +282,7 @@ public:
 
     template <typename Self>
     static constexpr auto size(Self& self)
-        requires (sized_sequence<const_like_t<Self, Bases>> && ...)
+        requires (sized_iterable<const_like_t<Self, Bases>> && ...)
     {
         return std::apply([](auto&... bases) { return (flux::size(bases) + ...); },
                           self.bases_);
@@ -304,7 +299,7 @@ public:
                                    cursor_type const& to)
         -> distance_t
         requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
-                 (bounded_sequence<const_like_t<Self, Bases>> && ...)
+        (bounded_sequence<const_like_t<Self, Bases>> && ...)
     {
         if (from.index() <= to.index()) {
             return distance_impl<0>(self, from, to);
@@ -316,12 +311,58 @@ public:
     template <typename Self>
     static constexpr auto inc(Self& self, cursor_type& cur, distance_t offset)
         requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
-                 (bounded_sequence<const_like_t<Self, Bases>> && ...)
+        (bounded_sequence<const_like_t<Self, Bases>> && ...)
     {
         inc_ra_impl<0>(self, cur, offset);
     }
 
 };
+
+template <iterable... Bases>
+struct chain_adaptor : inline_iter_base<chain_adaptor<Bases...>> {
+private:
+    std::tuple<Bases...> bases_;
+
+    friend struct chain_iterable_traits_base<Bases...>;
+    friend struct chain_sequence_traits_base<Bases...>;
+
+public:
+    explicit constexpr chain_adaptor(decays_to<Bases> auto&&... bases)
+        : bases_(FLUX_FWD(bases)...)
+    {}
+
+    struct flux_iter_traits
+        : std::conditional_t<(sequence<Bases> && ...),
+            chain_sequence_traits_base<Bases...>,
+            chain_iterable_traits_base<Bases...>>
+    {};
+};
+
+template <typename... Ts>
+concept all_have_common_ref =
+    requires { typename std::common_reference_t<Ts...>; } &&
+    (std::convertible_to<Ts, std::common_reference_t<Ts...>> && ...);
+
+template <typename... Seqs>
+concept chainable =
+    all_have_common_ref<element_t<Seqs>...> &&
+    requires { typename std::common_type_t<value_t<Seqs>...>; };
+
+struct chain_fn {
+    template <sink_iterable It0, sink_iterable... Its>
+        requires chainable<It0, Its...>
+    [[nodiscard]]
+    constexpr auto operator()(It0&& it0, Its&&... its) const
+    {
+        if constexpr (sizeof...(Its) == 0) {
+            return FLUX_FWD(it0);
+        } else {
+            return chain_adaptor<std::decay_t<It0>, std::decay_t<Its>...>(FLUX_FWD(it0), FLUX_FWD(its)...);
+        }
+    }
+};
+
+} // namespace detail
 
 FLUX_EXPORT inline constexpr auto chain = detail::chain_fn{};
 

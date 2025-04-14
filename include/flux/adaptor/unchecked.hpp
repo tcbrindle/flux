@@ -13,7 +13,7 @@ namespace flux {
 namespace detail {
 
 template <sequence Base>
-struct unchecked_adaptor : inline_sequence_base<unchecked_adaptor<Base>> {
+struct unchecked_adaptor : inline_iter_base<unchecked_adaptor<Base>> {
 private:
     Base base_;
 
@@ -25,7 +25,7 @@ public:
     constexpr auto base() & -> Base& { return base_; }
     constexpr auto base() const& -> Base const& { return base_; }
 
-    struct flux_sequence_traits : passthrough_traits_base {
+    struct flux_iter_traits : passthrough_traits_base {
 
         using value_type = value_t<Base>;
         static constexpr bool disable_multipass = !multipass_sequence<Base>;

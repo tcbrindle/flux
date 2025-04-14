@@ -22,33 +22,32 @@ private:
     }
 
 public:
-    template <typename Value, writable_sequence_of<Value> Seq>
-    constexpr void operator()(Seq&& seq, Value const& value) const
+    template <typename Value, writable_iterable_of<Value> It>
+    constexpr void operator()(It&& it, Value const& value) const
     {
         constexpr bool can_memset = 
-            contiguous_sequence<Seq> &&
-            sized_sequence<Seq> &&
-            std::same_as<Value, value_t<Seq>> &&
+            contiguous_sequence<It> &&
+            sized_iterable<It> &&
+            std::same_as<Value, value_t<It>> &&
             // only allow memset on single byte types
-            sizeof(value_t<Seq>) == 1 &&
-            std::is_trivially_copyable_v<value_t<Seq>>;
+            sizeof(value_t<It>) == 1 &&
+            std::is_trivially_copyable_v<value_t<It>>;
 
         if constexpr (can_memset) {
             if (std::is_constant_evaluated()) {
-                impl(seq, value); // LCOV_EXCL_LINE
+                impl(it, value); // LCOV_EXCL_LINE
             } else {
-                auto size = flux::usize(seq);
-                if(size == 0) {
+                auto size = flux::usize(it);
+                if (size == 0) {
                     return;
                 }
                 
-                FLUX_ASSERT(flux::data(seq) != nullptr);
+                FLUX_ASSERT(flux::data(it) != nullptr);
                 
-                std::memset(flux::data(seq), value,
-                    size * sizeof(value_t<Seq>));
+                std::memset(flux::data(it), value, size);
             }
         } else {
-            impl(seq, value);
+            impl(it, value);
         }
     }
 };
@@ -59,8 +58,8 @@ FLUX_EXPORT inline constexpr auto fill = detail::fill_fn{};
 
 template <typename D>
 template <typename Value>
-    requires writable_sequence_of<D, Value const&>
-constexpr void inline_sequence_base<D>::fill(Value const& value)
+    requires writable_iterable_of<D, Value const&>
+constexpr void inline_iter_base<D>::fill(Value const& value)
 {
     flux::fill(derived(), value);
 }

@@ -12,15 +12,15 @@ namespace flux {
 
 namespace detail {
 
-template <sequence Base, typename Pred>
-struct take_while_adaptor : inline_sequence_base<take_while_adaptor<Base, Pred>> {
+template <iterable Base, typename Pred>
+struct take_while_adaptor : inline_iter_base<take_while_adaptor<Base, Pred>> {
 private:
     Base base_;
     Pred pred_;
 
     constexpr auto base() & -> Base& { return base_; }
 
-    friend struct sequence_traits<take_while_adaptor>;
+    friend struct iter_traits<take_while_adaptor>;
     friend struct passthrough_traits_base;
 
 public:
@@ -34,20 +34,45 @@ public:
 };
 
 struct take_while_fn {
-    template <adaptable_sequence Seq, std::move_constructible Pred>
-        requires std::predicate<Pred&, element_t<Seq>>
+    template <sink_iterable It, std::move_constructible Pred>
+        requires std::predicate<Pred&, element_t<It>>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Pred pred) const
+    constexpr auto operator()(It&& it, Pred pred) const
     {
-        return take_while_adaptor<std::decay_t<Seq>, Pred>(
-                    FLUX_FWD(seq), std::move(pred));
+        return take_while_adaptor<std::decay_t<It>, Pred>(
+                    FLUX_FWD(it), std::move(pred));
     }
 };
 
 } // namespace detail
 
-template <typename Base, typename Pred>
-struct sequence_traits<detail::take_while_adaptor<Base, Pred>>
+template <iterable Base, typename Pred>
+struct iter_traits<detail::take_while_adaptor<Base, Pred>>
+    : default_iter_traits {
+
+    template <typename Self>
+    static consteval auto element_type(Self& self)
+        -> element_t<decltype((self.base_))>;
+
+    static constexpr auto iterate(auto& self, auto&& iter_pred) -> bool
+    {
+        bool done = false;
+        bool res = flux::iterate(self.base_, [&](auto&& elem) {
+            if (!std::invoke(self.pred_, elem)) {
+                done = true;
+                return false; // break
+            } else {
+                return std::invoke(iter_pred, FLUX_FWD(elem));
+            }
+        });
+        // Return true if take_while was exhausted
+        return res ? res : done;
+    }
+
+};
+
+template <sequence Base, typename Pred>
+struct iter_traits<detail::take_while_adaptor<Base, Pred>>
     : detail::passthrough_traits_base
 {
     using self_t = detail::take_while_adaptor<Base, Pred>;
@@ -55,6 +80,23 @@ struct sequence_traits<detail::take_while_adaptor<Base, Pred>>
     using value_type = value_t<Base>;
 
     static constexpr bool is_infinite = false;
+
+    using default_iter_traits::element_type;
+
+    static constexpr auto iterate(auto& self, auto&& iter_pred) -> bool
+    {
+        bool done = false;
+        bool res = flux::iterate(self.base_, [&](auto&& elem) {
+            if (!std::invoke(self.pred_, elem)) {
+                done = true;
+                return false; // break
+            } else {
+                return std::invoke(iter_pred, FLUX_FWD(elem));
+            }
+        });
+        // Return true if take_while was exhausted
+        return res ? res : done;
+    }
 
     template <typename Self>
     static constexpr bool is_last(Self& self, cursor_t<Self> const& cur)
@@ -88,7 +130,7 @@ FLUX_EXPORT inline constexpr auto take_while = detail::take_while_fn{};
 template <typename D>
 template <typename Pred>
     requires std::predicate<Pred&, element_t<D>>
-constexpr auto inline_sequence_base<D>::take_while(Pred pred) &&
+constexpr auto inline_iter_base<D>::take_while(Pred pred) &&
 {
     return flux::take_while(std::move(derived()), std::move(pred));
 }

@@ -59,7 +59,7 @@ struct cartesian_traits_types<Arity, cartesian_kind::product, read_kind::tuple, 
 };
 
 template <std::size_t Arity, cartesian_kind CartesianKind, read_kind ReadKind, typename... Bases>
-struct cartesian_traits_base_impl : default_sequence_traits {
+struct cartesian_traits_base_impl : default_iter_traits {
 private:
 
     template<std::size_t I, typename Self>
@@ -204,10 +204,36 @@ private:
         }
     }
 
+    template <std::size_t I, typename Self, typename Predicate,
+              typename... PartialElements>
+    static constexpr auto iterate_impl(Self& self, Predicate& pred,
+                                       PartialElements&&... partial_elements) -> bool
+    {
+        if constexpr (I == Arity - 1) {
+            return flux::iterate(get_base<I>(self), [&](auto&& elem) {
+                if constexpr (ReadKind == read_kind::tuple) {
+                    return std::invoke(pred, element_t<Self>(FLUX_FWD(partial_elements)..., FLUX_FWD(elem)));
+                } else {
+                    return std::invoke(pred, std::invoke(self.func_, FLUX_FWD(partial_elements)..., FLUX_FWD(elem)));
+                }
+            });
+        } else {
+            return flux::iterate(get_base<I>(self), [&](auto&& elem) {
+                return iterate_impl<I+1>(self, pred, FLUX_FWD(partial_elements)..., FLUX_FWD(elem));
+            });
+        }
+    }
+
 protected:
     using types = cartesian_traits_types<Arity, CartesianKind, ReadKind, Bases...>;
 
 public:
+
+    template <typename Self, typename Pred>
+    static constexpr auto iterate(Self& self, Pred&& pred) -> bool
+    {
+        return iterate_impl<0>(self, pred);
+    }
 
     template <typename Self>
     static constexpr auto first(Self& self)
@@ -233,7 +259,7 @@ public:
     template <typename Self>
     static constexpr auto size(Self& self) -> distance_t
         requires (CartesianKind == cartesian_kind::product
-                  && (sized_sequence<Bases> && ...))
+                  && (sized_iterable<Bases> && ...))
     {
         return std::apply([](auto& base0, auto&... bases) {
             distance_t sz = flux::size(base0);
@@ -245,7 +271,7 @@ public:
     template <typename Self>
     static constexpr auto size(Self& self) -> distance_t
         requires (CartesianKind == cartesian_kind::power
-                  && (sized_sequence<Bases> && ...))
+                  && (sized_iterable<Bases> && ...))
     {
         return checked_pow(flux::size(self.base_), Arity);
     }
@@ -269,7 +295,7 @@ public:
     template <typename Self>
     static constexpr auto inc(Self& self, cursor_t<Self>& cur, distance_t offset) -> cursor_t<Self>&
         requires ((random_access_sequence<Bases> && ...) &&
-                  (sized_sequence<Bases> && ...))
+                  (sized_iterable<Bases> && ...))
     {
         return ra_inc_impl<Arity - 1>(self, cur, offset);
     }
@@ -305,7 +331,7 @@ public:
                                         cursor_t<Self> const& from,
                                         cursor_t<Self> const& to) -> distance_t
         requires ((random_access_sequence<Bases> && ...) &&
-                  (sized_sequence<Bases> && ...))
+                  (sized_iterable<Bases> && ...))
     {
         return distance_impl<Arity - 1>(self, from, to);
     }
@@ -342,7 +368,7 @@ public:
         -> decltype(auto)
         requires (ReadKind == read_kind::map)
     {
-        return default_sequence_traits::move_at(self, cur);
+        return default_iter_traits::move_at(self, cur);
     }
 
     template <typename Self>
@@ -350,7 +376,7 @@ public:
         -> decltype(auto)
         requires (ReadKind == read_kind::map)
     {
-        return default_sequence_traits::move_at_unchecked(self, cur);
+        return default_iter_traits::move_at_unchecked(self, cur);
     }
 
     template <typename Self>
@@ -389,7 +415,7 @@ public:
     static constexpr auto for_each_while(Self& self, Function&& func) -> cursor_t<Self>
         requires (ReadKind == read_kind::map)
     {
-        return default_sequence_traits::for_each_while(self, FLUX_FWD(func));
+        return default_iter_traits::for_each_while(self, FLUX_FWD(func));
     }
 
 };

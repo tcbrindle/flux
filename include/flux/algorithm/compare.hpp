@@ -51,8 +51,8 @@ public:
             std::same_as<Cmp, std::compare_three_way> &&
             contiguous_sequence<Seq1> && 
             contiguous_sequence<Seq2> &&
-            sized_sequence<Seq1> && 
-            sized_sequence<Seq2> &&
+            sized_iterable<Seq1> &&
+            sized_iterable<Seq2> &&
             std::same_as<value_t<Seq1>, value_t<Seq2>> &&
             std::unsigned_integral<value_t<Seq1>> &&
             ((sizeof(value_t<Seq1>) == 1) || (std::endian::native == std::endian::big));

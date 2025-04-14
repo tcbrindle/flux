@@ -6,6 +6,7 @@
 #ifndef FLUX_ALGORITHM_ENDS_WITH_HPP_INCLUDED
 #define FLUX_ALGORITHM_ENDS_WITH_HPP_INCLUDED
 
+#include <flux/adaptor/stride.hpp>
 #include <flux/algorithm/count.hpp>
 #include <flux/algorithm/equal.hpp>
 
@@ -18,7 +19,7 @@ private:
     template <typename H, typename N>
     static constexpr auto bidir_impl(H& h, N& n, auto& cmp) -> bool
     {
-        if constexpr (sized_sequence<H> && sized_sequence<N>) {
+        if constexpr (sized_iterable<H> && sized_iterable<N>) {
             if (flux::size(h) < flux::size(n)) {
                 return false;
             }
@@ -55,8 +56,8 @@ private:
 public:
     template <sequence Haystack, sequence Needle, typename Cmp = std::ranges::equal_to>
         requires std::predicate<Cmp&, element_t<Haystack>, element_t<Needle>> &&
-                 (multipass_sequence<Haystack> || sized_sequence<Haystack>) &&
-                 (multipass_sequence<Needle> || sized_sequence<Needle>)
+                 (multipass_sequence<Haystack> || sized_iterable<Haystack>) &&
+                 (multipass_sequence<Needle> || sized_iterable<Needle>)
     constexpr auto operator()(Haystack&& haystack, Needle&& needle, Cmp cmp = Cmp{}) const
         -> bool
     {
@@ -88,10 +89,11 @@ FLUX_EXPORT inline constexpr auto ends_with = detail::ends_with_fn{};
 
 template <typename Derived>
 template <sequence Needle, typename Cmp>
-    requires std::predicate<Cmp&, element_t<Derived>, element_t<Needle>> &&
-             (multipass_sequence<Derived> || sized_sequence<Derived>) &&
-             (multipass_sequence<Needle> || sized_sequence<Needle>)
-constexpr auto inline_sequence_base<Derived>::ends_with(Needle&& needle, Cmp cmp) -> bool
+    requires sequence<Derived> &&
+             std::predicate<Cmp&, element_t<Derived>, element_t<Needle>> &&
+             (multipass_sequence<Derived> || sized_iterable<Derived>) &&
+             (multipass_sequence<Needle> || sized_iterable<Needle>)
+constexpr auto inline_iter_base<Derived>::ends_with(Needle&& needle, Cmp cmp) -> bool
 {
     return flux::ends_with(derived(), FLUX_FWD(needle), std::move(cmp));
 }
