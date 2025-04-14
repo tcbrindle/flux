@@ -48,6 +48,7 @@ jobs:
           - compiler: LLVM-Clang-20
             cxx: $(brew --prefix llvm@20)/bin/clang++
             install: |
+              brew update
               brew install llvm@20 ninja
 
 
