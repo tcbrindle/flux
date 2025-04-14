@@ -30,7 +30,7 @@ constexpr auto col_sep = "  ";
 constexpr auto row_sep = ' ';
 
 // Workaround: libc++18 does not support C++20 chrono::time_point::operator++
-#if defined _LIBCPP_VERSION and _LIBCPP_VERSION < 200000
+#if defined _LIBCPP_VERSION and _LIBCPP_VERSION < 210000
 namespace std::chrono {
     sys_days& operator++(sys_days& d) {
         return d += days{1};
@@ -46,23 +46,23 @@ auto dates(ymd from, ymd to) {
     return flux::iota(sys_days{from}, sys_days{to});
 }
 
-auto month_num = [](sys_days d1, sys_days d2) { 
-    return ymd(d1).month() == ymd(d2).month(); 
+auto month_num = [](sys_days d1, sys_days d2) {
+    return ymd(d1).month() == ymd(d2).month();
 };
 
-auto week_num = [](sys_days d1, sys_days d2) { 
+auto week_num = [](sys_days d1, sys_days d2) {
     return weekday(d1).iso_encoding() < weekday(d2).iso_encoding();
 };
 
-auto day_to_string = [](sys_days d) { 
+auto day_to_string = [](sys_days d) {
     auto day_num = static_cast<unsigned>(ymd(d).day());
     auto day_str = (day_num < 10 ? " "s : ""s) + std::to_string(day_num);
     std::string pad_str(day_pad_size, ' ');
     return pad_str + day_str + pad_str;
 };
 
-auto month_name(sys_days d) { 
-    constexpr std::array months = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+auto month_name(sys_days d) {
+    constexpr std::array months = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
                                    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
     auto year = std::to_string(static_cast<int>(ymd{d}.year()));
     auto month = std::string{months[static_cast<unsigned>(ymd{d}.month()) - 1]};
@@ -75,12 +75,12 @@ auto month_name(sys_days d) {
 
 // In: sequence<sys_day> (week days)
 // Out: std::string (week string)
-auto week_to_string = [](flux::sequence auto&& week) { 
+auto week_to_string = [](flux::sequence auto&& week) {
     bool first_week_in_month = ymd(*flux::front(week)).day() == 1d;
     auto week_str = FLUX_FWD(week)
                      .map(day_to_string)
                      .flatten()
-                     .template to<std::string>();                     
+                     .template to<std::string>();
     if (week_str.size() < week_str_size) {
         std::string padding(week_str_size - week_str.size(), ' ');
         week_str = first_week_in_month ? padding + week_str : week_str + padding;
@@ -91,15 +91,15 @@ auto week_to_string = [](flux::sequence auto&& week) {
 
 // In: sequence<sys_day> (month days)
 // Out: sequence<std::string> (month calendar)
-auto to_week_lines = [](flux::sequence auto&& month) { 
+auto to_week_lines = [](flux::sequence auto&& month) {
     auto month_str = month_name(*flux::front(month));
     auto week_lines = FLUX_FWD(month)
                         .chunk_by(week_num)
                         .map(week_to_string);
     std::vector<std::string> pad_lines(size_t(max_weeks_in_month - flux::count(week_lines)),
                                        std::string(week_str_size, ' '));
-    return flux::chain(flux::single(std::move(month_str)), 
-                       std::move(week_lines), 
+    return flux::chain(flux::single(std::move(month_str)),
+                       std::move(week_lines),
                        std::move(pad_lines),
                        flux::single(std::string(week_str_size, row_sep)));
 };
@@ -127,7 +127,7 @@ struct app_args_t {
 };
 
 [[noreturn]] void print_help_and_exit(std::string_view app_name) {
-    std::cout << "Usage: " << app_name << " [--help] [--per-line=num] [--from=year] [--to=year]\n\n"; 
+    std::cout << "Usage: " << app_name << " [--help] [--per-line=num] [--from=year] [--to=year]\n\n";
     exit(0);
 }
 
@@ -140,8 +140,8 @@ app_args_t parse_args(int argc, char** argv) {
     std::map<std::string, parse_func_t> args_map {
         {"--help"s, [&]([[maybe_unused]] std::string) { print_help_and_exit(app_name); }},
         {"--per-line"s, [&](std::string val) { result.per_line = std::max(1, std::stoi(val)); }},
-        {"--from"s, [&](std::string val) { 
-            result.from = year{std::max(1, std::stoi(val))} / January / 1d; 
+        {"--from"s, [&](std::string val) {
+            result.from = year{std::max(1, std::stoi(val))} / January / 1d;
             result.to = (result.from.year() + years{1}) / January / 1d;}},
         {"--to"s, [&](std::string val) { result.to = ymd{year{std::max(1, std::stoi(val))}, January, 1d}; }}
     };
@@ -159,7 +159,7 @@ app_args_t parse_args(int argc, char** argv) {
             throw std::runtime_error("Unknown option "s + key + ". Use --help for more info.");
         }
     }
-    
+
     return result;
 }
 
