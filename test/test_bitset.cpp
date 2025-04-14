@@ -5,6 +5,7 @@
 
 #include <array>
 #include <bitset>
+#include <cstdint>
 #include <iostream>
 #include <utility>
 #include <vector>

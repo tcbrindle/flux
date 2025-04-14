@@ -5,6 +5,7 @@
 
 #include <array>
 #include <chrono>
+#include <cstdint>
 #include <vector>
 
 #include "test_utils.hpp"
@@ -38,9 +39,9 @@ constexpr bool test_fold()
         auto prod = flux::ref(arr)
                        .filter([](int i) { return i % 2 == 0; })
                        .map([](int i) { return i + i; })
-                       .fold(std::multiplies<>{}, int64_t{1});
+                       .fold(std::multiplies<>{}, std::int64_t{1});
 
-        static_assert(std::same_as<decltype(prod), int64_t>);
+        static_assert(std::same_as<decltype(prod), std::int64_t>);
 
         STATIC_CHECK(prod == 122'880);
     }
