@@ -12,8 +12,7 @@ jobs:
     strategy:
       matrix:
         compiler: [GCC-12, GCC-13, GCC-14, Clang-17, Clang-18, Clang-19]
-        # test_with: [Headers, Module]
-        test_with: [Headers]
+        test_with: [Headers, Module]
         build_type: [Debug, Release]
 
         exclude:
@@ -22,6 +21,10 @@ jobs:
           - compiler: GCC-13
             test_with: Module
           - compiler: GCC-14
+            test_with: Module
+          - compiler: Clang-17
+            test_with: Module
+          - compiler: clang-18
             test_with: Module
 
         include:
