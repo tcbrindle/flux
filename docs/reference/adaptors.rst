@@ -1081,6 +1081,18 @@ You can pass a reference to a sequence into an adaptor using :func:`flux::ref` o
     :see also:
         * :func:`flux::filter`
 
+``permutations``
+^^^^^^^^^^^^^^^^
+
+.. function::
+   template<sequence Seq>
+       requires(not infinite_sequence<Seq>)
+   auto permutations(Seq seq) -> bidirectional_sequence auto
+
+   :param seq: A non-infinite sequence 
+
+   :returns: A bidirectional sequence yielding permutations of :var:`seq`.
+
 ``pairwise``
 ^^^^^^^^^^^^
 
