@@ -49,8 +49,7 @@ constexpr bool test_repeat()
         // Check that internal iteration works as expected
         {
             auto counter = 0;
-            auto inner_cur =
-                flux::for_each_while(seq, [&](int) { return counter++ < 5; });
+            auto inner_cur = flux::seq_for_each_while(seq, [&](int) { return counter++ < 5; });
             STATIC_CHECK(inner_cur == 5);
         }
     }
@@ -164,15 +163,14 @@ constexpr bool test_repeat_bounded()
 
         // Check that internal iteration works as expected
         {
-            auto cur = flux::for_each_while(seq, flux::pred::true_);
+            auto cur = flux::seq_for_each_while(seq, flux::pred::true_);
             STATIC_CHECK(cur == seq.last());
         }
 
         // ...and again with early termination
         {
             auto counter = 0;
-            auto cur =
-                flux::for_each_while(seq, [&](int) { return counter++ < 3; });
+            auto cur = flux::seq_for_each_while(seq, [&](int) { return counter++ < 3; });
             STATIC_CHECK(cur == 3);
         }
     }

@@ -97,7 +97,7 @@ public:
 
         static constexpr auto for_each_while(self_t& self, auto&& pred) -> cursor_type
         {
-            return cursor_type(flux::for_each_while(self.base_, [&](auto&& elem) {
+            return cursor_type(flux::seq_for_each_while(self.base_, [&](auto&& elem) {
                 if (self.accum_.has_value()) {
                     self.accum_.emplace(
                         std::invoke(self.func_,

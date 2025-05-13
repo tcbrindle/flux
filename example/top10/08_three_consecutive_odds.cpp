@@ -17,7 +17,7 @@ namespace version1 {
 auto const tco = [](std::initializer_list<int> nums)
 {
     int odd_count = 0;
-    auto idx = flux::for_each_while(nums, [&](int i) {
+    auto idx = flux::seq_for_each_while(nums, [&](int i) {
         if (i % 2 != 0) {
             ++odd_count;
         } else {

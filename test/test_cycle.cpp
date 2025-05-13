@@ -52,7 +52,7 @@ constexpr bool test_cycle() {
 
         // Make sure internal iteration works as expected
         int counter = 101;
-        cur = flux::for_each_while(seq, [&counter](auto&&) { return counter-- > 0; });
+        cur = flux::seq_for_each_while(seq, [&counter](auto&&) { return counter-- > 0; });
         STATIC_CHECK(seq.distance(cur, seq.first()) == -101);
     }
 

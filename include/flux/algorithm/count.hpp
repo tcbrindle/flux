@@ -21,7 +21,7 @@ struct count_fn {
             return flux::size(seq);
         } else {
             int_t counter = 0;
-            flux::for_each_while(seq, [&](auto&&) {
+            flux::seq_for_each_while(seq, [&](auto&&) {
                 ++counter;
                 return true;
             });
@@ -37,7 +37,7 @@ struct count_eq_fn {
     constexpr auto operator()(Seq&& seq, Value const& value) const -> int_t
     {
         int_t counter = 0;
-        flux::for_each_while(seq, [&](auto&& elem) {
+        flux::seq_for_each_while(seq, [&](auto&& elem) {
             if (value == FLUX_FWD(elem)) {
                 ++counter;
             }
@@ -54,7 +54,7 @@ struct count_if_fn {
     constexpr auto operator()(Seq&& seq, Pred pred) const -> int_t
     {
         int_t counter = 0;
-        flux::for_each_while(seq, [&](auto&& elem) {
+        flux::seq_for_each_while(seq, [&](auto&& elem) {
             if (std::invoke(pred, FLUX_FWD(elem))) {
                 ++counter;
             }

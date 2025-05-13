@@ -22,7 +22,7 @@ struct fold_op {
     constexpr auto operator()(Seq&& seq, Func func, Init init = Init{}) const -> R
     {
         R init_ = R(std::move(init));
-        flux::for_each_while(seq, [&func, &init_](auto&& elem) {
+        flux::seq_for_each_while(seq, [&func, &init_](auto&& elem) {
             init_ = std::invoke(func, std::move(init_), FLUX_FWD(elem));
             return true;
         });

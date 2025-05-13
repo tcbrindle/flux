@@ -129,7 +129,7 @@ public:
         detail::boolean_testable<std::invoke_result_t<Pred&, element_t<Derived>>>
     constexpr auto for_each_while(Pred pred)
     {
-        return flux::for_each_while(derived(), std::ref(pred));
+        return flux::seq_for_each_while(derived(), std::ref(pred));
     }
 
     /// Returns true if the sequence contains no elements

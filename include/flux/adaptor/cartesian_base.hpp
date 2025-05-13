@@ -186,20 +186,17 @@ private:
     {
         // We need to iterate right to left.
         if constexpr (I == Arity - 1) {
-            std::get<I>(cur) = flux::for_each_while(get_base<I>(self),
-                [&](auto&& elem) {
-                    keep_going = std::invoke(func,
-                                             element_t<Self>(FLUX_FWD(partial_elements)..., FLUX_FWD(elem)));
-                    return keep_going;
-                });
+            std::get<I>(cur) = flux::seq_for_each_while(get_base<I>(self), [&](auto&& elem) {
+                keep_going = std::invoke(
+                    func, element_t<Self>(FLUX_FWD(partial_elements)..., FLUX_FWD(elem)));
+                return keep_going;
+            });
         } else {
-            std::get<I>(cur) = flux::for_each_while(get_base<I>(self),
-                [&](auto&& elem) {
-                    for_each_while_impl<I+1>(
-                            self, keep_going, cur,
-                            func, FLUX_FWD(partial_elements)..., FLUX_FWD(elem));
-                    return keep_going;
-                });
+            std::get<I>(cur) = flux::seq_for_each_while(get_base<I>(self), [&](auto&& elem) {
+                for_each_while_impl<I + 1>(self, keep_going, cur, func,
+                                           FLUX_FWD(partial_elements)..., FLUX_FWD(elem));
+                return keep_going;
+            });
         }
     }
 

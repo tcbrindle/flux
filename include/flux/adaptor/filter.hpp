@@ -103,7 +103,7 @@ public:
         static constexpr auto for_each_while(auto& self, auto&& func)
             -> cursor_type
         {
-            return cursor_type{flux::for_each_while(self.base_, [&](auto&& elem) {
+            return cursor_type {flux::seq_for_each_while(self.base_, [&](auto&& elem) {
                 if (std::invoke(self.pred_, elem)) {
                     return std::invoke(func, FLUX_FWD(elem));
                 } else {
