@@ -18,9 +18,9 @@ struct contains_fn {
     constexpr auto operator()(Seq&& seq, Value const& value) const
         -> bool
     {
-        return !flux::is_last(seq, flux::for_each_while(seq, [&](auto&& elem) {
-            return FLUX_FWD(elem) != value;
-        }));
+        return !flux::is_last(seq, flux::seq_for_each_while(seq, [&](auto&& elem) {
+                                  return FLUX_FWD(elem) != value;
+                              }));
     }
 };
 

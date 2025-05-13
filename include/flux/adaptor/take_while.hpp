@@ -73,7 +73,7 @@ struct sequence_traits<detail::take_while_adaptor<Base, Pred>>
 
     static constexpr auto for_each_while(auto& self, auto&& func)
     {
-        return flux::for_each_while(self.base_, [&](auto&& elem) {
+        return flux::seq_for_each_while(self.base_, [&](auto&& elem) {
             if (!std::invoke(self.pred_, elem)) {
                 return false;
             } else {

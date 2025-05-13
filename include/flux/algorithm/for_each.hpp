@@ -19,7 +19,7 @@ struct for_each_fn {
                   !infinite_sequence<Seq>)
     constexpr auto operator()(Seq&& seq, Func func) const -> Func
     {
-        (void) flux::for_each_while(FLUX_FWD(seq), [&](auto&& elem) {
+        (void)flux::seq_for_each_while(FLUX_FWD(seq), [&](auto&& elem) {
             std::invoke(func, FLUX_FWD(elem));
             return true;
         });

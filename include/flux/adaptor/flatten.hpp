@@ -187,8 +187,8 @@ public:
         static constexpr auto for_each_while(Self& self, auto&& pred) -> cursor_type
         {
             auto inner_cur = cursor_t<InnerSeq>{};
-            auto outer_cur = flux::for_each_while(self.base_, [&](auto&& inner_seq) {
-                inner_cur = flux::for_each_while(inner_seq, pred);
+            auto outer_cur = flux::seq_for_each_while(self.base_, [&](auto&& inner_seq) {
+                inner_cur = flux::seq_for_each_while(inner_seq, pred);
                 return flux::is_last(inner_seq, inner_cur);
             });
             return cursor_type{.outer_cur = std::move(outer_cur),

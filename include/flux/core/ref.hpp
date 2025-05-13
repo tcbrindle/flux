@@ -105,9 +105,9 @@ struct passthrough_traits_base : default_sequence_traits {
 
     template <typename Self>
     static constexpr auto for_each_while(Self& self, auto&& pred)
-        -> decltype(flux::for_each_while(self.base(), FLUX_FWD(pred)))
+        -> decltype(flux::seq_for_each_while(self.base(), FLUX_FWD(pred)))
     {
-        return flux::for_each_while(self.base(), FLUX_FWD(pred));
+        return flux::seq_for_each_while(self.base(), FLUX_FWD(pred));
     }
 };
 

@@ -17,9 +17,9 @@ struct fn {
         requires std::predicate<Pred&, element_t<Seq>>
     constexpr bool operator()(Seq&& seq, Pred pred) const
     {
-        return is_last(seq, for_each_while(seq, [&](auto&& elem) {
-            return std::invoke(pred, FLUX_FWD(elem));
-        }));
+        return is_last(seq, seq_for_each_while(seq, [&](auto&& elem) {
+                           return std::invoke(pred, FLUX_FWD(elem));
+                       }));
     }
 };
 
@@ -34,9 +34,9 @@ struct fn {
         requires std::predicate<Pred&, element_t<Seq>>
     constexpr bool operator()(Seq&& seq, Pred pred) const
     {
-        return is_last(seq, for_each_while(seq, [&](auto&& elem) {
-            return !std::invoke(pred, FLUX_FWD(elem));
-        }));
+        return is_last(seq, seq_for_each_while(seq, [&](auto&& elem) {
+                           return !std::invoke(pred, FLUX_FWD(elem));
+                       }));
     }
 };
 
@@ -51,9 +51,9 @@ struct fn {
         requires std::predicate<Pred&, element_t<Seq>>
     constexpr bool operator()(Seq&& seq, Pred pred) const
     {
-        return !is_last(seq, for_each_while(seq, [&](auto&& elem) {
-            return !std::invoke(pred, FLUX_FWD(elem));
-        }));
+        return !is_last(seq, seq_for_each_while(seq, [&](auto&& elem) {
+                            return !std::invoke(pred, FLUX_FWD(elem));
+                        }));
     }
 };
 
