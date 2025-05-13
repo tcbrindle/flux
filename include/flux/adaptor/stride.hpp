@@ -100,7 +100,7 @@ public:
             requires sequence<decltype((self.base_))>
         {
             int_t n = self.stride_;
-            return flux::for_each_while(self.base_, [&n, &pred, s = self.stride_](auto&& elem) {
+            return flux::seq_for_each_while(self.base_, [&n, &pred, s = self.stride_](auto&& elem) {
                 if (++n < s) {
                     return true;
                 } else {
@@ -237,14 +237,15 @@ public:
             requires sequence<decltype((self.base_))>
         {
             int_t n = self.stride_;
-            auto c = flux::for_each_while(self.base_, [&n, &pred, s = self.stride_](auto&& elem) {
-                if (++n < s) {
-                    return true;
-                } else {
-                    n = 0;
-                    return std::invoke(pred, FLUX_FWD(elem));
-                }
-            });
+            auto c
+                = flux::seq_for_each_while(self.base_, [&n, &pred, s = self.stride_](auto&& elem) {
+                      if (++n < s) {
+                          return true;
+                      } else {
+                          n = 0;
+                          return std::invoke(pred, FLUX_FWD(elem));
+                      }
+                  });
             return cursor_type{std::move(c), (n + 1) % self.stride_};
         }
     };

@@ -21,7 +21,7 @@ struct zip_for_each_while_fn {
         if constexpr (sizeof...(Seqs) == 0) {
             return std::tuple<>{};
         } else if constexpr (sizeof...(Seqs) == 1) {
-            return std::tuple<cursor_t<Seqs>...>(flux::for_each_while(seqs..., std::ref(pred)));
+            return std::tuple<cursor_t<Seqs>...>(flux::seq_for_each_while(seqs..., std::ref(pred)));
         } else {
             return [&pred, &...seqs = seqs, ...curs = flux::first(seqs)]() mutable {
                 while (!(flux::is_last(seqs, curs) || ...)) {

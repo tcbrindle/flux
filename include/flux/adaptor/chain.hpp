@@ -168,7 +168,7 @@ private:
     {
         if constexpr (N < End) {
             auto& base = std::get<N>(self.bases_);
-            auto base_cur = flux::for_each_while(base, pred);
+            auto base_cur = flux::seq_for_each_while(base, pred);
             if (!flux::is_last(base, base_cur)) {
                 return cursor_type(std::in_place_index<N>, std::move(base_cur));
             } else {
@@ -176,7 +176,7 @@ private:
             }
         } else {
             return cursor_type(std::in_place_index<N>,
-                               flux::for_each_while(std::get<N>(self.bases_), pred));
+                               flux::seq_for_each_while(std::get<N>(self.bases_), pred));
         }
     }
 

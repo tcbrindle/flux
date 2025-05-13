@@ -57,7 +57,7 @@ public:
 
         static constexpr auto for_each_while(auto& self, auto&& pred)
         {
-            return flux::for_each_while(self.base_, [&](auto&& elem) {
+            return flux::seq_for_each_while(self.base_, [&](auto&& elem) {
                 return std::invoke(pred, std::invoke(self.func_, FLUX_FWD(elem)));
             });
         }

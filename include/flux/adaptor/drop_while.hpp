@@ -36,7 +36,7 @@ public:
 
         static constexpr auto first(auto& self)
         {
-            return flux::for_each_while(self.base_, std::ref(self.pred_));
+            return flux::seq_for_each_while(self.base_, std::ref(self.pred_));
         }
 
         static constexpr auto data(auto& self)

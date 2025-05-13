@@ -128,7 +128,7 @@ public:
             if constexpr (IsInfinite) {
                 std::size_t n = 0;
                 while (true) {
-                    auto cur = flux::for_each_while(self.base_, constify_pred);
+                    auto cur = flux::seq_for_each_while(self.base_, constify_pred);
                     if (!flux::is_last(self.base_, cur)) {
                         return cursor_type{std::move(cur), n};
                     }
@@ -136,7 +136,7 @@ public:
                 }
             } else {
                 for (std::size_t n = 0; n < self.data_.count; ++n) {
-                    auto cur = flux::for_each_while(self.base_, constify_pred);
+                    auto cur = flux::seq_for_each_while(self.base_, constify_pred);
                     if (!flux::is_last(self.base_, cur)) {
                         return cursor_type{std::move(cur), n};
                     }

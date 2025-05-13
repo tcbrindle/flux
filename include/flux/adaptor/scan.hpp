@@ -141,7 +141,7 @@ public:
         static constexpr auto for_each_while(self_t& self, auto&& pred) -> cursor_type
             requires (Mode != scan_mode::exclusive)
         {
-            return cursor_type(flux::for_each_while(self.base_, [&](auto&& elem) {
+            return cursor_type(flux::seq_for_each_while(self.base_, [&](auto&& elem) {
                 self.accum_ = std::invoke(self.func_, std::move(self.accum_), FLUX_FWD(elem));
                 return std::invoke(pred, std::as_const(self.accum_));
             }));
