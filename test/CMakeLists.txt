@@ -19,6 +19,7 @@ add_executable(test-flux
     num/test_checked_ops.cpp
     num/test_default_ops.cpp
 
+    test_iterable_concepts.cpp
     test_concepts.cpp
     test_optional.cpp
     test_predicates.cpp
