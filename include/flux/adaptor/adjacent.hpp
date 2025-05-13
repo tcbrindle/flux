@@ -19,7 +19,7 @@ namespace flux {
 
 namespace detail {
 
-template <typename Base, distance_t N>
+template <typename Base, int_t N>
 struct adjacent_sequence_traits_base : default_sequence_traits {
 protected:
     struct cursor_type {
@@ -91,7 +91,7 @@ public:
         }, cur.arr);
     }
 
-    static constexpr auto inc(auto& self, cursor_type& cur, distance_t offset) -> void
+    static constexpr auto inc(auto& self, cursor_type& cur, int_t offset) -> void
         requires random_access_sequence<Base>
     {
         std::apply([&self, offset](auto&... curs) {
@@ -100,21 +100,21 @@ public:
     }
 
     static constexpr auto distance(auto& self, cursor_type const& from, cursor_type const& to)
-        -> distance_t
+        -> int_t
         requires random_access_sequence<Base>
     {
         return flux::distance(self.base_, from.arr.back(), to.arr.back());
     }
 
-    static constexpr auto size(auto& self) -> distance_t
+    static constexpr auto size(auto& self) -> int_t
         requires sized_sequence<Base>
     {
         auto s = (flux::size(self.base_) - N) + 1;
-        return (cmp::max)(s, distance_t{0});
+        return (cmp::max)(s, int_t {0});
     }
 };
 
-template <typename Base, distance_t N>
+template <typename Base, int_t N>
 struct adjacent_adaptor : inline_sequence_base<adjacent_adaptor<Base, N>> {
 private:
     Base base_;
@@ -175,7 +175,7 @@ public:
     };
 };
 
-template <typename Base, distance_t N, typename Func>
+template <typename Base, int_t N, typename Func>
 struct adjacent_map_adaptor : inline_sequence_base<adjacent_map_adaptor<Base, N, Func>> {
 private:
     Base base_;
@@ -202,7 +202,7 @@ public:
     };
 };
 
-template <distance_t N>
+template <int_t N>
 struct adjacent_fn {
     template <adaptable_sequence Seq>
         requires multipass_sequence<Seq>
@@ -213,7 +213,7 @@ struct adjacent_fn {
     }
 };
 
-template <distance_t N>
+template <int_t N>
 struct adjacent_map_fn {
     template <adaptable_sequence Seq, typename Func>
         requires multipass_sequence<Seq> &&
@@ -229,21 +229,21 @@ struct adjacent_map_fn {
 } // namespace detail
 
 FLUX_EXPORT
-template <distance_t N>
-    requires (N > 0)
-inline constexpr auto adjacent = detail::adjacent_fn<N>{};
+template <int_t N>
+    requires(N > 0)
+inline constexpr auto adjacent = detail::adjacent_fn<N> {};
 
 FLUX_EXPORT inline constexpr auto pairwise = adjacent<2>;
 
 FLUX_EXPORT
-template <distance_t N>
-    requires (N > 0)
-inline constexpr auto adjacent_map = detail::adjacent_map_fn<N>{};
+template <int_t N>
+    requires(N > 0)
+inline constexpr auto adjacent_map = detail::adjacent_map_fn<N> {};
 
 FLUX_EXPORT inline constexpr auto pairwise_map = adjacent_map<2>;
 
 template <typename D>
-template <distance_t N>
+template <int_t N>
 constexpr auto inline_sequence_base<D>::adjacent() &&
     requires multipass_sequence<D>
 {
@@ -258,7 +258,7 @@ constexpr auto inline_sequence_base<D>::pairwise() &&
 }
 
 template <typename D>
-template <distance_t N, typename Func>
+template <int_t N, typename Func>
     requires multipass_sequence<D>
 constexpr auto inline_sequence_base<D>::adjacent_map(Func func) &&
 {

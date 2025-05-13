@@ -243,7 +243,7 @@ constexpr bool test_chunk_multipass()
     {
         std::array arr{1, 2, 3, 4, 5};
 
-        constexpr auto max = std::numeric_limits<flux::distance_t>::max();
+        constexpr auto max = std::numeric_limits<flux::int_t>::max();
 
         auto seq = NotBidir(arr).chunk(max);
 
@@ -372,7 +372,7 @@ constexpr bool test_chunk_bidir()
     {
         std::array arr{1, 2, 3, 4, 5};
 
-        constexpr auto max = std::numeric_limits<flux::distance_t>::max();
+        constexpr auto max = std::numeric_limits<flux::int_t>::max();
 
         auto seq = flux::chunk(arr,max);
 

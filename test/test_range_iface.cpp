@@ -27,20 +27,20 @@ constexpr bool test_range_iface()
         static_assert(rng::common_range<R>);
 
         static_assert(std::same_as<rng::range_reference_t<R>, int&>);
-        static_assert(std::same_as<rng::range_difference_t<R>, flux::distance_t>);
+        static_assert(std::same_as<rng::range_difference_t<R>, flux::int_t>);
         static_assert(std::same_as<rng::range_value_t<R>, int>);
         static_assert(std::same_as<rng::range_rvalue_reference_t<R>, int&&>);
-        static_assert(std::same_as<rng::range_size_t<R>, flux::distance_t>);
+        static_assert(std::same_as<rng::range_size_t<R>, flux::int_t>);
 
         static_assert(rng::random_access_range<R const>);
         static_assert(rng::sized_range<R const>);
         static_assert(rng::common_range<R const>);
 
         static_assert(std::same_as<rng::range_reference_t<R const>, int const&>);
-        static_assert(std::same_as<rng::range_difference_t<R const>, flux::distance_t>);
+        static_assert(std::same_as<rng::range_difference_t<R const>, flux::int_t>);
         static_assert(std::same_as<rng::range_value_t<R const>, int>);
         static_assert(std::same_as<rng::range_rvalue_reference_t<R const>, int const&&>);
-        static_assert(std::same_as<rng::range_size_t<R const>, flux::distance_t>);
+        static_assert(std::same_as<rng::range_size_t<R const>, flux::int_t>);
 
         STATIC_CHECK(std::ranges::equal(seq, std::array{1, 2, 3, 4, 5}));
 

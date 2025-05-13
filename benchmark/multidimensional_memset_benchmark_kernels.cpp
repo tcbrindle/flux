@@ -18,14 +18,16 @@
 #include <ranges>
 #include <algorithm>
 
-void memset_2d_reference(double* A, flux::distance_t N, flux::distance_t M)
+void memset_2d_reference(double* A, flux::int_t N, flux::int_t M)
 {
-    for (flux::distance_t i = 0; i != N; ++i)
-        for (flux::distance_t j = 0; j != M; ++j)
+    for (flux::int_t i = 0; i != N; ++i) {
+        for (flux::int_t j = 0; j != M; ++j) {
             A[i * M + j] = 0.0;
+        }
+    }
 }
 
-void memset_2d_std_cartesian_product_iota(double* A, flux::distance_t N, flux::distance_t M)
+void memset_2d_std_cartesian_product_iota(double* A, flux::int_t N, flux::int_t M)
 {
     std::ranges::for_each(
         std::views::cartesian_product(std::views::iota(0, N), std::views::iota(0, M)),
@@ -34,7 +36,7 @@ void memset_2d_std_cartesian_product_iota(double* A, flux::distance_t N, flux::d
         }));
 }
 
-void memset_2d_flux_cartesian_product_iota(double* A, flux::distance_t N, flux::distance_t M)
+void memset_2d_flux_cartesian_product_iota(double* A, flux::int_t N, flux::int_t M)
 {
     flux::for_each(
         flux::cartesian_product(flux::ints(0, N), flux::ints(0, M)),
@@ -43,14 +45,17 @@ void memset_2d_flux_cartesian_product_iota(double* A, flux::distance_t N, flux::
         }));
 }
 
-void memset_diagonal_2d_reference(double* A, flux::distance_t N, flux::distance_t M)
+void memset_diagonal_2d_reference(double* A, flux::int_t N, flux::int_t M)
 {
-    for (flux::distance_t i = 0; i != N; ++i)
-        for (flux::distance_t j = 0; j != M; ++j)
-            if (i == j) A[i * M + j] = 0.0;
+    for (flux::int_t i = 0; i != N; ++i) {
+        for (flux::int_t j = 0; j != M; ++j) {
+            if (i == j)
+                A[i * M + j] = 0.0;
+        }
+    }
 }
 
-void memset_diagonal_2d_std_cartesian_product_iota_filter(double* A, flux::distance_t N, flux::distance_t M)
+void memset_diagonal_2d_std_cartesian_product_iota_filter(double* A, flux::int_t N, flux::int_t M)
 {
     std::ranges::for_each(
         std::views::cartesian_product(std::views::iota(0, N), std::views::iota(0, M))
@@ -60,7 +65,7 @@ void memset_diagonal_2d_std_cartesian_product_iota_filter(double* A, flux::dista
         }));
 }
 
-void memset_diagonal_2d_flux_cartesian_product_iota_filter(double* A, flux::distance_t N, flux::distance_t M)
+void memset_diagonal_2d_flux_cartesian_product_iota_filter(double* A, flux::int_t N, flux::int_t M)
 {
     flux::for_each(
         flux::cartesian_product(flux::ints(0, N), flux::ints(0, M))

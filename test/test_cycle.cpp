@@ -187,7 +187,7 @@ constexpr bool test_cycle() {
 
         // Go a long way back from the start
         cur = seq.first();
-        seq.inc(cur, std::numeric_limits<flux::distance_t>::lowest());
+        seq.inc(cur, std::numeric_limits<flux::int_t>::lowest());
         (void) seq[cur];
     }
 
@@ -331,7 +331,7 @@ TEST_CASE("cycle")
 
     SUBCASE("over-large sizes are caught")
     {
-        constexpr auto max_dist = std::numeric_limits<flux::distance_t>::max();
+        constexpr auto max_dist = std::numeric_limits<flux::int_t>::max();
 
         auto seq = flux::ints(0, max_dist).cycle(max_dist);
 

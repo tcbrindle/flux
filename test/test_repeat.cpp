@@ -114,8 +114,8 @@ constexpr bool test_repeat()
     {
         auto seq = flux::repeat(1.0);
 
-        constexpr auto max_idx = std::numeric_limits<flux::distance_t>::max();
-        constexpr auto min_idx = std::numeric_limits<flux::distance_t>::lowest();
+        constexpr auto max_idx = std::numeric_limits<flux::int_t>::max();
+        constexpr auto min_idx = std::numeric_limits<flux::int_t>::lowest();
 
         auto cur = flux::next(seq, seq.first(), max_idx);
 

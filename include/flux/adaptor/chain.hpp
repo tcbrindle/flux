@@ -208,9 +208,7 @@ private:
     }
 
     template <std::size_t N, typename Self>
-    static constexpr auto inc_ra_impl(Self& self, cursor_type& cur,
-                                      distance_t offset)
-        -> cursor_type&
+    static constexpr auto inc_ra_impl(Self& self, cursor_type& cur, int_t offset) -> cursor_type&
     {
         if constexpr (N < End) {
             if (N < cur.index()) {
@@ -300,11 +298,10 @@ public:
     }
 
     template <typename Self>
-    static constexpr auto distance(Self& self, cursor_type const& from,
-                                   cursor_type const& to)
-        -> distance_t
-        requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
-                 (bounded_sequence<const_like_t<Self, Bases>> && ...)
+    static constexpr auto distance(Self& self, cursor_type const& from, cursor_type const& to)
+        -> int_t
+        requires(random_access_sequence<const_like_t<Self, Bases>> && ...)
+        && (bounded_sequence<const_like_t<Self, Bases>> && ...)
     {
         if (from.index() <= to.index()) {
             return distance_impl<0>(self, from, to);
@@ -314,9 +311,9 @@ public:
     }
 
     template <typename Self>
-    static constexpr auto inc(Self& self, cursor_type& cur, distance_t offset)
-        requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
-                 (bounded_sequence<const_like_t<Self, Bases>> && ...)
+    static constexpr auto inc(Self& self, cursor_type& cur, int_t offset)
+        requires(random_access_sequence<const_like_t<Self, Bases>> && ...)
+        && (bounded_sequence<const_like_t<Self, Bases>> && ...)
     {
         inc_ra_impl<0>(self, cur, offset);
     }

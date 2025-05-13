@@ -25,14 +25,11 @@ template <typename T>
 struct array_ptr : inline_sequence_base<array_ptr<T>> {
 private:
     T* data_ = nullptr;
-    distance_t sz_ = 0;
+    int_t sz_ = 0;
 
     friend struct detail::make_array_ptr_unchecked_fn;
 
-    constexpr array_ptr(T* ptr, distance_t sz) noexcept
-        : data_(ptr),
-          sz_(sz)
-    {}
+    constexpr array_ptr(T* ptr, int_t sz) noexcept : data_(ptr), sz_(sz) { }
 
 public:
     array_ptr() = default;
@@ -88,7 +85,7 @@ public:
         static constexpr auto inc(array_ptr const& self, index_t& idx) -> void
         {
             FLUX_DEBUG_ASSERT(idx < self.sz_);
-            idx = num::add(idx, distance_t{1});
+            idx = num::add(idx, int_t {1});
         }
 
         static constexpr auto read_at(array_ptr const& self, index_t idx) -> T&
@@ -110,8 +107,7 @@ public:
 
         static constexpr auto last(array_ptr const& self) -> index_t { return self.sz_; }
 
-        static constexpr auto inc(array_ptr const& self, index_t& idx, distance_t offset)
-            -> void
+        static constexpr auto inc(array_ptr const& self, index_t& idx, int_t offset) -> void
         {
             index_t nxt = num::add(idx, offset);
             FLUX_DEBUG_ASSERT(nxt >= 0);
@@ -119,16 +115,12 @@ public:
             idx = nxt;
         }
 
-        static constexpr auto distance(array_ptr const&, index_t from, index_t to)
-            -> distance_t
+        static constexpr auto distance(array_ptr const&, index_t from, index_t to) -> int_t
         {
             return num::sub(to, from);
         }
 
-        static constexpr auto size(array_ptr const& self) -> distance_t
-        {
-            return self.sz_;
-        }
+        static constexpr auto size(array_ptr const& self) -> int_t { return self.sz_; }
 
         static constexpr auto data(array_ptr const& self) -> T* { return self.data_; }
 
@@ -158,7 +150,7 @@ struct make_array_ptr_unchecked_fn {
         requires (std::is_object_v<T> && !std::is_abstract_v<T>)
     constexpr auto operator()(T* ptr, num::integral auto size) const -> array_ptr<T>
     {
-        return array_ptr<T>(ptr, num::checked_cast<distance_t>(size));
+        return array_ptr<T>(ptr, num::checked_cast<int_t>(size));
     }
 };
 

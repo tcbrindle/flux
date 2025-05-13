@@ -82,7 +82,10 @@ public:
     /// Increments the given cursor by `offset` places
     template <std::same_as<Derived> D = Derived>
         requires random_access_sequence<Derived>
-    constexpr auto& inc(cursor_t<D>& cur, distance_t offset) { return flux::inc(derived(), cur, offset); }
+    constexpr auto& inc(cursor_t<D>& cur, int_t offset)
+    {
+        return flux::inc(derived(), cur, offset);
+    }
 
     /// Returns the number of times `from` must be incremented to reach `to`
     ///
@@ -221,9 +224,10 @@ public:
      * Adaptors
      */
 
-    template <distance_t N>
+    template <int_t N>
     [[nodiscard]]
-    constexpr auto adjacent() && requires multipass_sequence<Derived>;
+    constexpr auto adjacent() &&
+        requires multipass_sequence<Derived>;
 
     template <typename Pred>
         requires multipass_sequence<Derived> &&
@@ -231,7 +235,7 @@ public:
     [[nodiscard]]
     constexpr auto adjacent_filter(Pred pred) &&;
 
-    template <distance_t N, typename Func>
+    template <int_t N, typename Func>
         requires multipass_sequence<Derived>
     [[nodiscard]]
     constexpr auto adjacent_map(Func func) &&;

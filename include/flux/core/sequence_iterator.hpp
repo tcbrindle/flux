@@ -39,7 +39,7 @@ private:
 
 public:
     using value_type = value_t<S>;
-    using difference_type = distance_t;
+    using difference_type = int_t;
     using element_type = value_t<S>; // Yes, really
     using iterator_concept = decltype(get_iterator_tag<S>());
 

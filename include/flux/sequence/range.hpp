@@ -112,8 +112,8 @@ public:
         }
 
         template <typename Self>
-            requires (!std::is_const_v<Self> || can_const_iterate<V>)
-        static constexpr auto inc(Self& self, cursor_type& cur, distance_t offset)
+            requires(!std::is_const_v<Self> || can_const_iterate<V>)
+        static constexpr auto inc(Self& self, cursor_type& cur, int_t offset)
             requires std::ranges::random_access_range<R>
         {
             if (offset < 0) {
@@ -126,12 +126,12 @@ public:
         }
 
         template <typename Self>
-            requires (!std::is_const_v<Self> || can_const_iterate<V>)
+            requires(!std::is_const_v<Self> || can_const_iterate<V>)
         static constexpr auto distance(Self&, cursor_type const& from, cursor_type const& to)
-            -> distance_t
+            -> int_t
             requires std::ranges::random_access_range<R>
         {
-            return num::cast<distance_t>(std::ranges::distance(from.iter, to.iter));
+            return num::cast<int_t>(std::ranges::distance(from.iter, to.iter));
         }
 
         template <typename Self>
@@ -155,11 +155,11 @@ public:
         }
 
         template <typename Self>
-            requires (!std::is_const_v<Self> || can_const_iterate<V>)
-        static constexpr auto size(Self& self) -> distance_t
+            requires(!std::is_const_v<Self> || can_const_iterate<V>)
+        static constexpr auto size(Self& self) -> int_t
             requires std::ranges::sized_range<R>
         {
-            return num::cast<distance_t>(std::ranges::ssize(self.rng_));
+            return num::cast<int_t>(std::ranges::ssize(self.rng_));
         }
 
         template <typename Self>
