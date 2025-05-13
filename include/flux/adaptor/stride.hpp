@@ -15,10 +15,10 @@ namespace detail {
 // This is a Flux-ified version of ranges::advance.
 inline constexpr struct advance_fn {
     template <sequence Seq>
-    constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur, distance_t offset) const -> distance_t
+    constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur, int_t offset) const -> int_t
     {
         if (offset > 0) {
-            distance_t counter = 0;
+            int_t counter = 0;
             while (offset-- > 0 && !flux::is_last(seq, cur))  {
                 flux::inc(seq, cur);
                 ++counter;
@@ -44,7 +44,7 @@ inline constexpr struct advance_fn {
 
     template <random_access_sequence Seq>
         requires bounded_sequence<Seq>
-    constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur, distance_t offset) const -> distance_t
+    constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur, int_t offset) const -> int_t
     {
         if (offset > 0) {
             auto dist = (cmp::min)(flux::distance(seq, cur, flux::last(seq)), offset);
@@ -65,10 +65,10 @@ template <typename Base>
 struct stride_adaptor : inline_sequence_base<stride_adaptor<Base>> {
 private:
     Base base_;
-    distance_t stride_;
+    int_t stride_;
 
 public:
-    constexpr stride_adaptor(decays_to<Base> auto&& base, distance_t stride)
+    constexpr stride_adaptor(decays_to<Base> auto&& base, int_t stride)
         : base_(FLUX_FWD(base)),
           stride_(stride)
     {}
@@ -89,7 +89,7 @@ public:
         // This version of stride is never bidir
         static void dec(...) = delete;
 
-        static constexpr auto size(auto& self) -> distance_t
+        static constexpr auto size(auto& self) -> int_t
             requires sized_sequence<Base>
         {
             auto s = flux::size(self.base_);
@@ -99,7 +99,7 @@ public:
         static constexpr auto for_each_while(auto& self, auto&& pred) -> cursor_t<Base>
             requires sequence<decltype((self.base_))>
         {
-            distance_t n = self.stride_;
+            int_t n = self.stride_;
             return flux::for_each_while(self.base_, [&n, &pred, s = self.stride_](auto&& elem) {
                 if (++n < s) {
                     return true;
@@ -117,10 +117,10 @@ template <bidirectional_sequence Base>
 struct stride_adaptor<Base> : inline_sequence_base<stride_adaptor<Base>> {
 private:
     Base base_;
-    distance_t stride_;
+    int_t stride_;
 
 public:
-    constexpr stride_adaptor(decays_to<Base> auto&& base, distance_t stride)
+    constexpr stride_adaptor(decays_to<Base> auto&& base, int_t stride)
         : base_(FLUX_FWD(base)),
           stride_(stride)
     {}
@@ -129,7 +129,7 @@ public:
     private:
         struct cursor_type {
             cursor_t<Base> cur{};
-            distance_t missing = 0;
+            int_t missing = 0;
 
             friend constexpr auto operator==(cursor_type const& lhs, cursor_type const& rhs) -> bool
             {
@@ -193,8 +193,7 @@ public:
         static constexpr auto last(auto& self) -> cursor_type
             requires bounded_sequence<Base> && sized_sequence<Base>
         {
-            distance_t missing =
-                (self.stride_ - flux::size(self.base_) % self.stride_) % self.stride_;
+            int_t missing = (self.stride_ - flux::size(self.base_) % self.stride_) % self.stride_;
             return cursor_type{
                 .cur = flux::last(self.base_),
                 .missing = missing
@@ -208,21 +207,21 @@ public:
             cur.missing = 0;
         }
 
-        static constexpr auto size(auto& self) -> distance_t
+        static constexpr auto size(auto& self) -> int_t
             requires sized_sequence<Base>
         {
             auto s = flux::size(self.base_);
             return s/self.stride_ + (s % self.stride_ == 0 ? 0 : 1);
         }
 
-        static constexpr auto distance(auto& self, cursor_type const& from,
-                                       cursor_type const& to) -> distance_t
+        static constexpr auto distance(auto& self, cursor_type const& from, cursor_type const& to)
+            -> int_t
             requires random_access_sequence<Base>
         {
             return (flux::distance(self.base_, from.cur, to.cur) - from.missing + to.missing)/self.stride_;
         }
 
-        static constexpr auto inc(auto& self, cursor_type& cur, distance_t offset) -> void
+        static constexpr auto inc(auto& self, cursor_type& cur, int_t offset) -> void
             requires random_access_sequence<Base>
         {
             if (offset > 0) {
@@ -237,7 +236,7 @@ public:
         static constexpr auto for_each_while(auto& self, auto&& pred) -> cursor_type
             requires sequence<decltype((self.base_))>
         {
-            distance_t n = self.stride_;
+            int_t n = self.stride_;
             auto c = flux::for_each_while(self.base_, [&n, &pred, s = self.stride_](auto&& elem) {
                 if (++n < s) {
                     return true;
@@ -257,8 +256,7 @@ struct stride_fn {
     constexpr auto operator()(Seq&& seq, num::integral auto by) const
     {
         FLUX_ASSERT(by > 0);
-        return stride_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq),
-                                                 num::checked_cast<distance_t>(by));
+        return stride_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq), num::checked_cast<int_t>(by));
     }
 };
 

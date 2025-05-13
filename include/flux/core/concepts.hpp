@@ -91,7 +91,7 @@ template <typename Seq>
 using value_t = typename detail::value_type<Seq>::type;
 
 FLUX_EXPORT
-using distance_t = flux::config::int_type;
+using int_t = flux::config::int_type;
 
 FLUX_EXPORT
 using index_t = flux::config::int_type;
@@ -198,11 +198,11 @@ namespace detail {
 template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
 concept random_access_sequence_requirements =
     ordered_cursor<cursor_t<Seq>> &&
-    requires (Seq& seq, cursor_t<Seq>& cur, distance_t offset) {
+    requires (Seq& seq, cursor_t<Seq>& cur, int_t offset) {
         { Traits::inc(seq, cur, offset) };
     } &&
     requires (Seq& seq, cursor_t<Seq> const& cur) {
-        { Traits::distance(seq, cur, cur) } -> std::convertible_to<distance_t>;
+        { Traits::distance(seq, cur, cur) } -> std::convertible_to<int_t>;
     };
 
 } // namespace detail
@@ -251,7 +251,7 @@ namespace detail {
 template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
 concept sized_sequence_requirements =
     requires (Seq& seq) {
-        { Traits::size(seq) } -> std::convertible_to<distance_t>;
+        { Traits::size(seq) } -> std::convertible_to<int_t>;
     };
 
 } // namespace detail
@@ -403,7 +403,7 @@ struct default_sequence_traits {
     template <typename Self>
         requires detail::random_access_sequence_requirements<Self> &&
                  detail::bounded_sequence_requirements<Self>
-    static constexpr auto size(Self& self) -> distance_t
+    static constexpr auto size(Self& self) -> int_t
     {
         using Traits = detail::traits_t<Self>;
         return Traits::distance(self, Traits::first(self), Traits::last(self));

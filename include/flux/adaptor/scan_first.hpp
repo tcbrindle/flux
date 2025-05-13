@@ -89,7 +89,7 @@ public:
             return cursor_type(flux::last(self.base_));
         }
 
-        static constexpr auto size(self_t& self) -> distance_t
+        static constexpr auto size(self_t& self) -> int_t
             requires sized_sequence<Base>
         {
             return flux::size(self.base_);

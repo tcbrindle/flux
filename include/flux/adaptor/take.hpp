@@ -17,10 +17,10 @@ struct take_adaptor : inline_sequence_base<take_adaptor<Base>>
 {
 private:
     Base base_;
-    distance_t count_;
+    int_t count_;
 
 public:
-    constexpr take_adaptor(decays_to<Base> auto&& base, distance_t count)
+    constexpr take_adaptor(decays_to<Base> auto&& base, int_t count)
         : base_(FLUX_FWD(base)),
           count_(count)
     {}
@@ -32,7 +32,7 @@ public:
     private:
         struct cursor_type {
             cursor_t<Base> base_cur;
-            distance_t length;
+            int_t length;
 
             friend bool operator==(cursor_type const&, cursor_type const&) = default;
             friend auto operator<=>(cursor_type const& lhs, cursor_type const& rhs) = default;
@@ -55,7 +55,7 @@ public:
         static constexpr auto inc(auto& self, cursor_type& cur)
         {
             flux::inc(self.base_, cur.base_cur);
-            cur.length = num::sub(cur.length, distance_t{1});
+            cur.length = num::sub(cur.length, int_t {1});
         }
 
         static constexpr auto read_at(auto& self, cursor_type const& cur)
@@ -86,10 +86,10 @@ public:
             requires bidirectional_sequence<Base>
         {
             flux::dec(self.base_, cur.base_cur);
-            cur.length = num::add(cur.length, distance_t{1});
+            cur.length = num::add(cur.length, int_t {1});
         }
 
-        static constexpr auto inc(auto& self, cursor_type& cur, distance_t offset)
+        static constexpr auto inc(auto& self, cursor_type& cur, int_t offset)
             requires random_access_sequence<Base>
         {
             flux::inc(self.base_, cur.base_cur, offset);
@@ -97,7 +97,7 @@ public:
         }
 
         static constexpr auto distance(auto& self, cursor_type const& from, cursor_type const& to)
-            -> distance_t
+            -> int_t
             requires random_access_sequence<Base>
         {
             return (cmp::min)(flux::distance(self.base_, from.base_cur, to.base_cur),
@@ -133,7 +133,7 @@ public:
 
         static constexpr auto for_each_while(auto& self, auto&& pred) -> cursor_type
         {
-            distance_t len = self.count_;
+            int_t len = self.count_;
             auto cur = flux::for_each_while(self.base_, [&](auto&& elem) {
                 return (len-- > 0) && std::invoke(pred, FLUX_FWD(elem));
             });
@@ -148,7 +148,7 @@ struct take_fn {
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, num::integral auto count) const
     {
-        auto count_ = num::checked_cast<distance_t>(count);
+        auto count_ = num::checked_cast<int_t>(count);
         if (count_ < 0) {
             runtime_error("Negative argument passed to take()");
         }
