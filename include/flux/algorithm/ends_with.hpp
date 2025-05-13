@@ -66,8 +66,8 @@ public:
                      bounded_sequence<Needle>) {
             return bidir_impl(haystack, needle, cmp);
         } else {
-            distance_t len1 = flux::count(haystack);
-            distance_t len2 = flux::count(needle);
+            int_t len1 = flux::count(haystack);
+            int_t len2 = flux::count(needle);
 
             if (len1 < len2) {
                 return false;

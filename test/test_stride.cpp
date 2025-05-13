@@ -116,7 +116,7 @@ constexpr bool test_stride_non_bidir()
     // Stride of distance_t::max doesn't break stuff
     {
         std::array arr{0, 1, 2, 3, 4, 5};
-        auto seq = NotBidir(arr).stride(std::numeric_limits<flux::distance_t>::max());
+        auto seq = NotBidir(arr).stride(std::numeric_limits<flux::int_t>::max());
 
         auto cur = seq.first();
         STATIC_CHECK(!seq.is_last(cur));
@@ -259,7 +259,7 @@ constexpr bool test_stride_bidir()
     // Stride of distance_t::max doesn't break stuff
     {
         std::array arr{0, 1, 2, 3, 4, 5};
-        auto seq = flux::ref(arr).stride(std::numeric_limits<flux::distance_t>::max());
+        auto seq = flux::ref(arr).stride(std::numeric_limits<flux::int_t>::max());
 
         auto cur = seq.first();
         STATIC_CHECK(!seq.is_last(cur));

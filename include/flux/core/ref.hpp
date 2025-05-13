@@ -51,7 +51,7 @@ struct passthrough_traits_base : default_sequence_traits {
     }
 
     template <typename Self>
-    static constexpr auto inc(Self& self, auto& cur, distance_t dist)
+    static constexpr auto inc(Self& self, auto& cur, int_t dist)
         -> decltype(flux::inc(self.base(), cur, dist))
     {
         return flux::inc(self.base(), cur, dist);

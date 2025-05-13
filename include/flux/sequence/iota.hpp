@@ -40,7 +40,7 @@ concept advancable =
         T(u + o);
         T(o + u);
         T(u - o);
-        { u - u } -> std::convertible_to<distance_t>;
+        { u - u } -> std::convertible_to<int_t>;
     };
 
 struct iota_traits {
@@ -94,8 +94,7 @@ struct iota_sequence_traits : default_sequence_traits {
         return --cur;
     }
 
-    static constexpr auto inc(auto&, cursor_type& cur, distance_t offset)
-        -> cursor_type&
+    static constexpr auto inc(auto&, cursor_type& cur, int_t offset) -> cursor_type&
         requires advancable<T>
     {
         return cur += num::cast<std::iter_difference_t<T>>(offset);
@@ -104,13 +103,13 @@ struct iota_sequence_traits : default_sequence_traits {
     static constexpr auto distance(auto&, cursor_type const& from, cursor_type const& to)
         requires advancable<T>
     {
-        return from <= to ? num::cast<distance_t>(to - from) : -num::cast<distance_t>(from - to);
+        return from <= to ? num::cast<int_t>(to - from) : -num::cast<int_t>(from - to);
     }
 
-    static constexpr auto size(auto& self) -> distance_t
+    static constexpr auto size(auto& self) -> int_t
         requires advancable<T> && (Traits.has_start && Traits.has_end)
     {
-        return num::cast<distance_t>(self.end_ - self.start_);
+        return num::cast<int_t>(self.end_ - self.start_);
     }
 };
 
@@ -168,19 +167,13 @@ struct iota_fn {
 };
 
 struct ints_fn {
-    inline constexpr auto operator()() const
-    {
-        return basic_iota_sequence<distance_t>();
-    }
+    inline constexpr auto operator()() const { return basic_iota_sequence<int_t>(); }
 
-    inline constexpr auto operator()(distance_t from) const
-    {
-        return iota_sequence<distance_t>(from);
-    }
+    inline constexpr auto operator()(int_t from) const { return iota_sequence<int_t>(from); }
 
-    inline constexpr auto operator()(distance_t from, distance_t to) const
+    inline constexpr auto operator()(int_t from, int_t to) const
     {
-        return bounded_iota_sequence<distance_t>(from, to);
+        return bounded_iota_sequence<int_t>(from, to);
     }
 };
 

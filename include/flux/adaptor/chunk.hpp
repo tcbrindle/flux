@@ -19,12 +19,12 @@ template <typename Base>
 struct chunk_adaptor : inline_sequence_base<chunk_adaptor<Base>> {
 private:
     Base base_;
-    distance_t chunk_sz_;
+    int_t chunk_sz_;
     optional<cursor_t<Base>> cur_ = nullopt;
-    distance_t rem_ = chunk_sz_;
+    int_t rem_ = chunk_sz_;
 
 public:
-    constexpr chunk_adaptor(decays_to<Base> auto&& base, distance_t chunk_sz)
+    constexpr chunk_adaptor(decays_to<Base> auto&& base, int_t chunk_sz)
         : base_(FLUX_FWD(base)),
           chunk_sz_(chunk_sz)
     {}
@@ -124,7 +124,7 @@ public:
             return value_type(self);
         }
 
-        static constexpr auto size(self_t& self) -> distance_t
+        static constexpr auto size(self_t& self) -> int_t
             requires sized_sequence<Base>
         {
             auto s = flux::size(self.base_);
@@ -137,10 +137,10 @@ template <multipass_sequence Base>
 struct chunk_adaptor<Base> : inline_sequence_base<chunk_adaptor<Base>> {
 private:
     Base base_;
-    distance_t chunk_sz_;
+    int_t chunk_sz_;
 
 public:
-    constexpr chunk_adaptor(decays_to<Base> auto&& base, distance_t chunk_sz)
+    constexpr chunk_adaptor(decays_to<Base> auto&& base, int_t chunk_sz)
         : base_(FLUX_FWD(base)),
           chunk_sz_(chunk_sz)
     {}
@@ -176,7 +176,7 @@ public:
             return flux::last(self.base_);
         }
 
-        static constexpr auto size(auto& self) -> distance_t
+        static constexpr auto size(auto& self) -> int_t
             requires sized_sequence<Base>
         {
             auto s = flux::size(self.base_);
@@ -189,10 +189,10 @@ template <bidirectional_sequence Base>
 struct chunk_adaptor<Base> : inline_sequence_base<chunk_adaptor<Base>> {
 private:
     Base base_;
-    distance_t chunk_sz_;
+    int_t chunk_sz_;
 
 public:
-    constexpr chunk_adaptor(decays_to<Base> auto&& base, distance_t chunk_sz)
+    constexpr chunk_adaptor(decays_to<Base> auto&& base, int_t chunk_sz)
         : base_(FLUX_FWD(base)),
           chunk_sz_(chunk_sz)
     {}
@@ -201,7 +201,7 @@ public:
     private:
         struct cursor_type {
             cursor_t<Base> cur{};
-            distance_t missing = 0;
+            int_t missing = 0;
 
             friend constexpr auto operator==(cursor_type const& lhs, cursor_type const& rhs) -> bool
             {
@@ -259,15 +259,15 @@ public:
         static constexpr auto last(auto& self) -> cursor_type
             requires bounded_sequence<Base> && sized_sequence<Base>
         {
-            distance_t missing =
-                (self.chunk_sz_ - flux::size(self.base_) % self.chunk_sz_) % self.chunk_sz_;
+            int_t missing
+                = (self.chunk_sz_ - flux::size(self.base_) % self.chunk_sz_) % self.chunk_sz_;
             return cursor_type{
                 .cur = flux::last(self.base_),
                 .missing = missing
             };
         }
 
-        static constexpr auto size(auto& self) -> distance_t
+        static constexpr auto size(auto& self) -> int_t
             requires sized_sequence<Base>
         {
             auto s = flux::size(self.base_);
@@ -275,13 +275,13 @@ public:
         }
 
         static constexpr auto distance(auto& self, cursor_type const& from, cursor_type const& to)
-            -> distance_t
+            -> int_t
             requires random_access_sequence<Base>
         {
             return (flux::distance(self.base_, from.cur, to.cur) - from.missing + to.missing)/self.chunk_sz_;
         }
 
-        static constexpr auto inc(auto& self, cursor_type& cur, distance_t offset) -> void
+        static constexpr auto inc(auto& self, cursor_type& cur, int_t offset) -> void
             requires random_access_sequence<Base>
         {
             if (offset > 0) {
@@ -301,8 +301,7 @@ struct chunk_fn {
         -> sequence auto
     {
         FLUX_ASSERT(chunk_sz > 0);
-        return chunk_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq),
-                                                num::checked_cast<distance_t>(chunk_sz));
+        return chunk_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq), num::checked_cast<int_t>(chunk_sz));
     }
 };
 

@@ -17,10 +17,10 @@ template <sequence Base>
 struct drop_adaptor : inline_sequence_base<drop_adaptor<Base>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
-    distance_t count_;
+    int_t count_;
 
 public:
-    constexpr drop_adaptor(decays_to<Base> auto&& base, distance_t count)
+    constexpr drop_adaptor(decays_to<Base> auto&& base, int_t count)
         : base_(FLUX_FWD(base)),
           count_(count)
     {}
@@ -43,8 +43,7 @@ public:
         static constexpr auto size(auto& self)
             requires sized_sequence<Base>
         {
-            return (cmp::max)(num::sub(flux::size(self.base()), self.count_),
-                              distance_t{0});
+            return (cmp::max)(num::sub(flux::size(self.base()), self.count_), int_t {0});
         }
 
         static constexpr auto data(auto& self)
@@ -65,7 +64,7 @@ struct drop_fn {
     [[nodiscard]]
     constexpr auto operator()(Seq&& seq, num::integral auto count) const
     {
-        auto count_ = num::checked_cast<distance_t>(count);
+        auto count_ = num::checked_cast<int_t>(count);
         if (count_ < 0) {
             runtime_error("Negative argument passed to drop()");
         }

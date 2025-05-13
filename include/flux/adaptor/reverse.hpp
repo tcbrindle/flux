@@ -100,18 +100,18 @@ public:
             flux::inc(self.base_, cur.base_cur);
         }
 
-        static constexpr auto inc(auto& self, cursor_type& cur, distance_t dist) -> void
+        static constexpr auto inc(auto& self, cursor_type& cur, int_t dist) -> void
         {
             flux::inc(self.base_, cur.base_cur, num::neg(dist));
         }
 
         static constexpr auto distance(auto& self, cursor_type const& from, cursor_type const& to)
-            -> distance_t
+            -> int_t
         {
             return flux::distance(self.base_, to.base_cur, from.base_cur);
         }
 
-        static constexpr auto size(auto& self) -> distance_t
+        static constexpr auto size(auto& self) -> int_t
             requires sized_sequence<decltype((self.base_))>
         {
             return flux::size(self.base_);

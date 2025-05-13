@@ -15,12 +15,12 @@ namespace detail {
 struct count_fn {
     template <sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const -> distance_t
+    constexpr auto operator()(Seq&& seq) const -> int_t
     {
         if constexpr (sized_sequence<Seq>) {
             return flux::size(seq);
         } else {
-            distance_t counter = 0;
+            int_t counter = 0;
             flux::for_each_while(seq, [&](auto&&) {
                 ++counter;
                 return true;
@@ -34,10 +34,9 @@ struct count_eq_fn {
     template <sequence Seq, typename Value>
         requires std::equality_comparable_with<element_t<Seq>, Value const&>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Value const& value) const
-        -> distance_t
+    constexpr auto operator()(Seq&& seq, Value const& value) const -> int_t
     {
-        distance_t counter = 0;
+        int_t counter = 0;
         flux::for_each_while(seq, [&](auto&& elem) {
             if (value == FLUX_FWD(elem)) {
                 ++counter;
@@ -52,10 +51,9 @@ struct count_if_fn {
     template <sequence Seq, typename Pred>
         requires std::predicate<Pred&, element_t<Seq>>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Pred pred) const
-        -> distance_t
+    constexpr auto operator()(Seq&& seq, Pred pred) const -> int_t
     {
-        distance_t counter = 0;
+        int_t counter = 0;
         flux::for_each_while(seq, [&](auto&& elem) {
             if (std::invoke(pred, FLUX_FWD(elem))) {
                 ++counter;

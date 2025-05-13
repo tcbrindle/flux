@@ -356,13 +356,19 @@ constexpr bool test_cartesian_product()
         static_assert(flux::bounded_sequence<C const>);
         static_assert(flux::sized_sequence<C const>);
 
-        static_assert(std::same_as<flux::element_t<C>, std::tuple<flux::distance_t, flux::distance_t, flux::distance_t>>);
-        static_assert(std::same_as<flux::value_t<C>, std::tuple<flux::distance_t, flux::distance_t, flux::distance_t>>);
-        static_assert(std::same_as<flux::rvalue_element_t<C>, std::tuple<flux::distance_t, flux::distance_t, flux::distance_t>>);
+        static_assert(
+            std::same_as<flux::element_t<C>, std::tuple<flux::int_t, flux::int_t, flux::int_t>>);
+        static_assert(
+            std::same_as<flux::value_t<C>, std::tuple<flux::int_t, flux::int_t, flux::int_t>>);
+        static_assert(std::same_as<flux::rvalue_element_t<C>,
+                                   std::tuple<flux::int_t, flux::int_t, flux::int_t>>);
 
-        static_assert(std::same_as<flux::element_t<C const>, std::tuple<flux::distance_t, flux::distance_t, flux::distance_t>>);
-        static_assert(std::same_as<flux::value_t<C const>, std::tuple<flux::distance_t, flux::distance_t, flux::distance_t>>);
-        static_assert(std::same_as<flux::rvalue_element_t<C const>, std::tuple<flux::distance_t, flux::distance_t, flux::distance_t>>);
+        static_assert(std::same_as<flux::element_t<C const>,
+                                   std::tuple<flux::int_t, flux::int_t, flux::int_t>>);
+        static_assert(std::same_as<flux::value_t<C const>,
+                                   std::tuple<flux::int_t, flux::int_t, flux::int_t>>);
+        static_assert(std::same_as<flux::rvalue_element_t<C const>,
+                                   std::tuple<flux::int_t, flux::int_t, flux::int_t>>);
 
         STATIC_CHECK(flux::size(cart) == 4 * 2 * 3);
 
@@ -421,14 +427,14 @@ constexpr bool test_cartesian_product()
             STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 11), -5) == std::tuple{1, 0, 0});
         }
 
-        flux::distance_t sum_i = 0;
-        flux::distance_t sum_j = 0;
-        flux::distance_t sum_k = 0;
-        cart.for_each(flux::unpack([&] (flux::distance_t i, flux::distance_t j, flux::distance_t k) {
-                sum_i += i;
-                sum_j += j;
-                sum_k += k;
-            }));
+        flux::int_t sum_i = 0;
+        flux::int_t sum_j = 0;
+        flux::int_t sum_k = 0;
+        cart.for_each(flux::unpack([&](flux::int_t i, flux::int_t j, flux::int_t k) {
+            sum_i += i;
+            sum_j += j;
+            sum_k += k;
+        }));
         constexpr auto triangular_number = [] (auto n) { return (n * (n + 1)) / 2; };
         STATIC_CHECK(sum_i == triangular_number(4 - 1) * 2 * 3);
         STATIC_CHECK(sum_j == 4 * triangular_number(2 - 1) * 3);
@@ -501,7 +507,7 @@ static_assert(test_cartesian_product());
 void issue_167()
 {
     // Check that overflowing size() is correctly caught
-    auto ints = flux::ints(0, std::numeric_limits<flux::distance_t>::max());
+    auto ints = flux::ints(0, std::numeric_limits<flux::int_t>::max());
 
     auto prod = flux::cartesian_product(ints, ints, ints);
 

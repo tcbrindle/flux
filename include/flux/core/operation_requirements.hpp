@@ -23,7 +23,7 @@ concept foldable_ =
     std::convertible_to<Init, R> &&
     std::assignable_from<R&, std::invoke_result_t<Func&, R, element_t<Seq>>>;
 
-template <typename Func, typename E, distance_t N>
+template <typename Func, typename E, int_t N>
 struct repeated_invocable_helper {
     template <std::size_t I>
     using repeater = E;
@@ -33,7 +33,7 @@ struct repeated_invocable_helper {
     }(std::make_index_sequence<N>{});
 };
 
-template <typename Func, typename E, distance_t N>
+template <typename Func, typename E, int_t N>
 concept repeated_invocable = repeated_invocable_helper<Func, E, N>::value;
 
 template <typename InnerSeq, typename Pattern>

@@ -54,7 +54,7 @@ struct inc_fn {
     }
 
     template <random_access_sequence Seq>
-    constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur, distance_t offset) const
+    constexpr auto operator()(Seq& seq, cursor_t<Seq>& cur, int_t offset) const
         noexcept(noexcept(traits_t<Seq>::inc(seq, cur, offset))) -> cursor_t<Seq>&
     {
         (void) traits_t<Seq>::inc(seq, cur, offset);
@@ -75,14 +75,13 @@ struct dec_fn {
 struct distance_fn {
     template <multipass_sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq& seq, cursor_t<Seq> const& from,
-                                            cursor_t<Seq> const& to) const
-        -> distance_t
+    constexpr auto operator()(Seq& seq, cursor_t<Seq> const& from, cursor_t<Seq> const& to) const
+        -> int_t
     {
         if constexpr (random_access_sequence<Seq>) {
             return traits_t<Seq>::distance(seq, from, to);
         } else {
-            distance_t n = 0;
+            int_t n = 0;
             auto from_ = from;
             while (from_ != to) {
                 inc_fn{}(seq, from_);
@@ -116,7 +115,7 @@ struct last_fn {
 struct size_fn {
     template <sized_sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const -> distance_t
+    constexpr auto operator()(Seq&& seq) const -> int_t
     {
         return traits_t<Seq>::size(seq);
     }
@@ -202,13 +201,12 @@ struct next_fn {
 
     template <sequence Seq>
     [[nodiscard]]
-    constexpr auto operator()(Seq& seq, cursor_t<Seq> cur, distance_t offset) const
-        -> cursor_t<Seq>
+    constexpr auto operator()(Seq& seq, cursor_t<Seq> cur, int_t offset) const -> cursor_t<Seq>
     {
         if constexpr (random_access_sequence<Seq>) {
             return inc(seq, cur, offset);
         } else if constexpr (bidirectional_sequence<Seq>) {
-            auto const zero = distance_t{0};
+            auto const zero = int_t {0};
             if (offset > zero) {
                 while (offset-- > zero) {
                     inc(seq, cur);
@@ -220,7 +218,7 @@ struct next_fn {
             }
             return cur;
         } else {
-            while (offset-- > distance_t{0}) {
+            while (offset-- > int_t {0}) {
                 inc(seq, cur);
             }
             return cur;
