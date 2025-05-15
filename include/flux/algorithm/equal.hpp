@@ -12,89 +12,97 @@
 
 namespace flux {
 
-namespace detail {
-
-struct equal_fn {
+FLUX_EXPORT
+struct equal_t {
 private:
-    template <typename Seq1, typename Seq2, typename Cmp>
-    static constexpr auto impl(Seq1& seq1, Seq2& seq2, Cmp cmp)
+    template <typename It1, typename It2, typename Cmp>
+    static constexpr auto impl(It1& it1, It2& it2, Cmp& cmp) -> bool
     {
-        auto cur1 = flux::first(seq1);
-        auto cur2 = flux::first(seq2);
+        iteration_context auto ctx1 = iterate(it1);
+        iteration_context auto ctx2 = iterate(it2);
 
-        while (!flux::is_last(seq1, cur1) && !flux::is_last(seq2, cur2)) {
-            if (!std::invoke(cmp, flux::read_at(seq1, cur1), flux::read_at(seq2, cur2))) {
+        while (true) {
+            flux::optional opt1 = next_element(ctx1);
+            flux::optional opt2 = next_element(ctx2);
+
+            if (opt1.has_value() && opt2.has_value()) {
+                if (!std::invoke(cmp, opt1.value(), opt2.value())) {
+                    return false;
+                }
+            } else if (opt1.has_value() || opt2.has_value()) {
                 return false;
+            } else {
+                return true;
             }
-            flux::inc(seq1, cur1);
-            flux::inc(seq2, cur2);
+        }
+    }
+
+    template <contiguous_sequence Seq1, contiguous_sequence Seq2>
+    static constexpr auto memcmp_impl(Seq1& seq1, Seq2& seq2) -> bool
+    {
+        auto size = flux::usize(seq1);
+        if (size == 0) {
+            return true;
         }
 
-        return flux::is_last(seq1, cur1) == flux::is_last(seq2, cur2);
+        auto data1 = flux::data(seq1);
+        auto data2 = flux::data(seq2);
+        FLUX_ASSERT(data1 != nullptr);
+        FLUX_ASSERT(data2 != nullptr);
+
+        auto result = std::memcmp(data1, data2, size * sizeof(iterable_value_t<Seq1>));
+        return result == 0;
+    }
+
+    template <typename It1, typename It2, typename Cmp>
+    static consteval auto can_memcmp() -> bool
+    {
+        return std::same_as<Cmp, std::ranges::equal_to> && contiguous_sequence<It1>
+            && contiguous_sequence<It2> && sized_sequence<It1> && sized_sequence<It2>
+            && std::same_as<iterable_value_t<It1>, iterable_value_t<It2>>
+            && (std::integral<iterable_value_t<It1>> || std::is_pointer_v<iterable_value_t<It1>>)
+            && std::has_unique_object_representations_v<iterable_value_t<It1>>;
     }
 
 public:
-    template <sequence Seq1, sequence Seq2, typename Cmp = std::ranges::equal_to>
-        requires std::predicate<Cmp&, element_t<Seq1>, element_t<Seq2>>
-    constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const
-        -> bool
+    template <iterable It1, iterable It2, typename Cmp = std::ranges::equal_to>
+        requires std::predicate<Cmp&, iterable_element_t<It1>, iterable_element_t<It2>>
+    constexpr auto operator()(It1&& it1, It2&& it2, Cmp cmp = {}) const -> bool
     {
-        if constexpr (sized_sequence<Seq1> && sized_sequence<Seq2>) {
-            if (flux::size(seq1) != flux::size(seq2)) {
+        if constexpr (sized_iterable<It1> && sized_iterable<It2>) {
+            if (flux::iterable_size(it1) != flux::iterable_size(it2)) {
                 return false;
             }
         }
 
-        constexpr bool can_memcmp = 
-            std::same_as<Cmp, std::ranges::equal_to> &&
-            contiguous_sequence<Seq1> && contiguous_sequence<Seq2> &&
-            sized_sequence<Seq1> && sized_sequence<Seq2> &&
-            std::same_as<value_t<Seq1>, value_t<Seq2>> &&
-            (std::integral<value_t<Seq1>> || std::is_pointer_v<value_t<Seq1>>) &&
-            std::has_unique_object_representations_v<value_t<Seq1>>;
-
-        if constexpr (can_memcmp) {
+        if constexpr (can_memcmp<It1, It2, Cmp>()) {
             if (std::is_constant_evaluated()) {
-                return impl(seq1, seq2, cmp); // LCOV_EXCL_LINE
+                return impl(it1, it2, cmp); // LCOV_EXCL_LINE
             } else {
-                auto size = flux::usize(seq1);
-                if(size == 0) {
-                    return true;
-                }
-
-                auto data1 = flux::data(seq1);
-                auto data2 = flux::data(seq2);
-                FLUX_ASSERT(data1 != nullptr);
-                FLUX_ASSERT(data2 != nullptr);
-
-                auto result = std::memcmp(data1, data2, size * sizeof(value_t<Seq1>));
-                return result == 0;
+                return memcmp_impl(it1, it2);
             }
         } else {
-            return impl(seq1, seq2, cmp);
+            return impl(it1, it2, cmp);
         }
     }
 
-    template <sequence Seq1, sequence Seq2>
-        requires (sequence<element_t<Seq1>> &&
-                 sequence<element_t<Seq2>> &&
-                 !std::equality_comparable_with<element_t<Seq1>, element_t<Seq2>> &&
-                 std::is_invocable_v<equal_fn&, Seq1&, Seq2&, equal_fn&>)
-    constexpr auto operator()(Seq1&& seq1, Seq2&& seq2) const -> bool
+    template <iterable It1, iterable It2>
+        requires iterable<iterable_element_t<It1>> && iterable<iterable_element_t<It2>>
+        && (!std::equality_comparable_with<iterable_element_t<It1>, iterable_element_t<It2>>
+            && std::is_invocable_v<equal_t&, It1&, It2&, equal_t&>)
+    constexpr auto operator()(It1&& it1, It2&& it2) const -> bool
     {
-        if constexpr (sized_sequence<Seq1> && sized_sequence<Seq2>) {
-            if (flux::size(seq1) != flux::size(seq2)) {
+        if constexpr (sized_iterable<It1> && sized_iterable<It2>) {
+            if (flux::iterable_size(it1) != flux::iterable_size(it2)) {
                 return false;
             }
         }
 
-        return (*this)(seq1, seq2, *this);
+        return (*this)(it1, it2, *this);
     }
 };
 
-} // namespace detail
-
-FLUX_EXPORT inline constexpr auto equal = detail::equal_fn{};
+FLUX_EXPORT inline constexpr equal_t equal{};
 
 } // namespace flux
 

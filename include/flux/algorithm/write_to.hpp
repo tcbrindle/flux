@@ -12,27 +12,24 @@
 
 namespace flux {
 
-namespace detail {
-
-struct write_to_fn {
-
-    template <sequence Seq, typename OStream>
+FLUX_EXPORT
+struct write_to_t {
+    template <iterable It, typename OStream>
         requires std::derived_from<OStream, std::ostream>
-    auto operator()(Seq&& seq, OStream& os) const
-        -> std::ostream&
+    auto operator()(It&& it, OStream& os) const -> OStream&
     {
         bool first = true;
         os << '[';
 
-        flux::for_each(FLUX_FWD(seq), [&os, &first](auto&& elem) {
+        for_each(it, [&os, &first](auto&& elem) {
             if (first) {
                 first = false;
             } else {
                 os << ", ";
             }
 
-            if constexpr (sequence<element_t<Seq>>) {
-                write_to_fn{}(FLUX_FWD(elem), os);
+            if constexpr (iterable<iterable_element_t<It>>) {
+                write_to_t{}(FLUX_FWD(elem), os);
             } else {
                 os << FLUX_FWD(elem);
             }
@@ -43,9 +40,7 @@ struct write_to_fn {
     }
 };
 
-} // namespace detail
-
-FLUX_EXPORT inline constexpr auto write_to = detail::write_to_fn{};
+FLUX_EXPORT inline constexpr write_to_t write_to{};
 
 template <typename Derived>
 auto inline_sequence_base<Derived>::write_to(std::ostream& os) -> std::ostream&
