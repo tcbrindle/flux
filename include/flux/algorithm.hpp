@@ -14,6 +14,7 @@
 #include <flux/algorithm/equal.hpp>
 #include <flux/algorithm/fill.hpp>
 #include <flux/algorithm/find.hpp>
+#include <flux/algorithm/find_element.hpp>
 #include <flux/algorithm/find_min_max.hpp>
 #include <flux/algorithm/fold.hpp>
 #include <flux/algorithm/for_each.hpp>
