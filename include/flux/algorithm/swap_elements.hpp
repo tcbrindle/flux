@@ -10,28 +10,29 @@
 
 namespace flux {
 
-namespace detail {
-
-struct swap_elements_fn {
-    template <sequence Seq1, sequence Seq2>
-        requires element_swappable_with<Seq1&, Seq2&>
-    constexpr void operator()(Seq1&& seq1, Seq2&& seq2) const
+FLUX_EXPORT
+struct swap_elements_t {
+    template <iterable It1, iterable It2>
+        requires std::swappable_with<iterable_element_t<It1>, iterable_element_t<It2>>
+    constexpr auto operator()(It1&& it1, It2&& it2) const -> void
     {
-        auto cur1 = flux::first(seq1);
-        auto cur2 = flux::first(seq2);
+        iteration_context auto ctx1 = iterate(it1);
+        iteration_context auto ctx2 = iterate(it2);
 
-        while (!flux::is_last(seq1, cur1) && !flux::is_last(seq2, cur2)) {
-            flux::swap_with(seq1, cur1, seq2, cur2);
-            flux::inc(seq1, cur1);
-            flux::inc(seq2, cur2);
+        while (true) {
+            auto opt1 = next_element(ctx1);
+            auto opt2 = next_element(ctx2);
+
+            if (opt1.has_value() && opt2.has_value()) {
+                std::ranges::swap(*std::move(opt1), *std::move(opt2));
+            } else {
+                break;
+            }
         }
     }
 };
 
-}
-
-FLUX_EXPORT inline constexpr auto swap_elements = detail::swap_elements_fn{};
-
+FLUX_EXPORT inline constexpr swap_elements_t swap_elements{};
 }
 
 #endif // FLUX_ALGORITHM_SWAP_ELEMENTS_HPP_INCLUDED

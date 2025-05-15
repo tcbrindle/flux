@@ -7,6 +7,7 @@
 #define FLUX_CORE_OPERATION_REQUIREMENTS_HPP_INCLUDED
 
 #include <flux/core/concepts.hpp>
+#include <flux/core/iterable_concepts.hpp>
 
 namespace flux {
 
@@ -52,15 +53,13 @@ concept foldable =
     detail::foldable_<Seq, Func, Init>;
 
 FLUX_EXPORT
-template <typename Fn, typename Seq1, typename Seq2 = Seq1>
-concept weak_ordering_for =
-    sequence<Seq1> &&
-    sequence<Seq2> &&
-    ordering_invocable<Fn&, element_t<Seq1>, element_t<Seq2>, std::weak_ordering> &&
-    ordering_invocable<Fn&, value_t<Seq1>&, element_t<Seq2>, std::weak_ordering> &&
-    ordering_invocable<Fn&, element_t<Seq1>, value_t<Seq2>&, std::weak_ordering> &&
-    ordering_invocable<Fn&, value_t<Seq1>&, value_t<Seq2>&, std::weak_ordering> &&
-    ordering_invocable<Fn&, common_element_t<Seq1>, common_element_t<Seq2>, std::weak_ordering>;
+template <typename Fn, typename It1, typename It2 = It1>
+concept weak_ordering_for = iterable<It1> && iterable<It2>
+    && ordering_invocable<Fn&, iterable_element_t<It1>, iterable_element_t<It2>, std::weak_ordering>
+    && ordering_invocable<Fn&, iterable_value_t<It1>&, iterable_value_t<It2>&, std::weak_ordering>
+    && ordering_invocable<Fn&, iterable_value_t<It1>&, iterable_value_t<It2>&, std::weak_ordering>
+    && ordering_invocable<Fn&, iterable_common_element_t<It1>, iterable_common_element_t<It2>,
+                          std::weak_ordering>;
 
 } // namespace flux
 
