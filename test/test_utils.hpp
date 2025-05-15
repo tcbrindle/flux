@@ -24,21 +24,27 @@ inline namespace test_utils {
 
 inline constexpr struct {
 private:
-    static constexpr bool impl(flux::sequence auto&& seq1, flux::sequence auto&& seq2)
+    static constexpr bool impl(flux::iterable auto&& it1, flux::iterable auto&& it2)
     {
         using namespace flux;
 
-        auto cur1 = first(seq1);
-        auto cur2 = first(seq2);
+        auto ctx1 = iterate(it1);
+        auto ctx2 = iterate(it2);
 
-        while (!is_last(seq1, cur1) && !is_last(seq2, cur2)) {
-            if (read_at(seq1, cur1) != read_at(seq2, cur2)) { return false; }
+        while (true) {
+            auto opt1 = next_element(ctx1);
+            auto opt2 = next_element(ctx2);
 
-            inc(seq1, cur1);
-            inc(seq2, cur2);
+            if (opt1.has_value() && opt2.has_value()) {
+                if (*opt1 != *opt2) {
+                    return false;
+                }
+            } else if (opt1.has_value() || opt2.has_value()) {
+                return false;
+            } else {
+                return true;
+            }
         }
-
-        return is_last(seq1, cur1) == is_last(seq2, cur2);
     }
 
 public:

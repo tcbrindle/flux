@@ -111,7 +111,7 @@ template <callable_once<void()> Fn>
 struct [[nodiscard("Discarded defer_t will execute its associated function immediately")]] defer_t {
     FLUX_NO_UNIQUE_ADDRESS Fn fn;
 
-    ~defer_t() { fn(); }
+    constexpr ~defer_t() { fn(); }
 };
 
 // template <typename F>

@@ -6,6 +6,7 @@
 #define FLUX_CORE_ITERABLE_CONCEPTS_HPP_INCLUDED
 
 #include <flux/core/concepts.hpp>
+#include <flux/core/numeric.hpp>
 #include <flux/core/optional.hpp>
 
 namespace flux {
@@ -46,7 +47,7 @@ FLUX_EXPORT
 struct step_t {
     template <iteration_context Ctx, typename Fn>
         requires callable_once<Fn, void(context_element_t<Ctx>)>
-    constexpr auto operator()(Ctx& ctx, Fn&& fn)
+    constexpr auto operator()(Ctx& ctx, Fn fn) const
     {
         using E = context_element_t<Ctx>;
         using R = callable_result_t<Fn, E>;
@@ -73,7 +74,21 @@ struct step_t {
     }
 };
 
-FLUX_EXPORT inline constexpr step_t step {};
+FLUX_EXPORT inline constexpr step_t step{};
+
+FLUX_EXPORT
+struct next_element_t {
+    template <iteration_context Ctx>
+    constexpr auto operator()(Ctx& ctx) const
+        -> std::conditional_t<std::is_rvalue_reference_v<context_element_t<Ctx>>,
+                              flux::optional<std::remove_cvref_t<context_element_t<Ctx>>>,
+                              flux::optional<context_element_t<Ctx>>>
+    {
+        return step(ctx, std::identity{});
+    }
+};
+
+FLUX_EXPORT inline constexpr next_element_t next_element{};
 
 /*
  * MARK: Iterable
@@ -115,8 +130,8 @@ concept has_member_iterate = requires(T& t) {
 };
 
 template <typename T>
-concept can_iterate = has_valid_iter_traits<T> || has_member_iterate<T>
-    || std::ranges::input_range<T> || sequence<T>;
+concept can_iterate = has_valid_iter_traits<T> || has_member_iterate<T> || sequence<T>
+    || std::ranges::input_range<T>;
 
 template <std::ranges::input_range R>
 struct range_iteration_context : immovable {
@@ -253,7 +268,7 @@ struct iterate_t {
     constexpr auto operator()(It& it) const -> iteration_context auto
     {
         if constexpr (detail::has_valid_iter_traits<It>) {
-            return iterable_traits<It>::iterate(it);
+            return detail::iter_traits_t<It>::iterate(it);
         } else if constexpr (detail::has_member_iterate<It>) {
             return it.iterate();
         } else if constexpr (sequence<It>) {
@@ -266,13 +281,113 @@ struct iterate_t {
 
 FLUX_EXPORT inline constexpr iterate_t iterate {};
 
+FLUX_EXPORT template <typename I>
+using iteration_context_t = decltype(iterate(std::declval<I&>()));
+
+FLUX_EXPORT template <typename I>
+using iterable_element_t = context_element_t<iteration_context_t<I>>;
+
+namespace detail {
+
+// Try to work out the value type of the iterable
+// * If iterable_context_t<T>::value_type exists, use that
+// * otherwise, if iterable_traits<T>::value_type exists, use that
+// * otherwise, if T::value_type exists, use that,
+// * otherwise, fall back to std::remove_cvref_t<iterable_element_t<T>>
+
+template <typename T>
+concept has_context_value_type = requires { typename iteration_context_t<T>::value_type; };
+
+template <typename T>
+concept has_traits_value_type = requires { typename iter_traits_t<T>::value_type; };
+
+template <typename T>
+concept has_member_value_type = requires { typename T::value_type; };
+
+template <typename T>
+struct iterable_value_type {
+    using type = std::remove_cvref_t<iterable_element_t<T>>;
+};
+
+template <typename T>
+    requires has_context_value_type<T>
+struct iterable_value_type<T> {
+    using type = typename iteration_context_t<T>::value_type;
+};
+
+template <typename T>
+    requires has_traits_value_type<T> && (!has_context_value_type<T>)
+struct iterable_value_type<T> {
+    using type = typename iter_traits_t<T>::value_type;
+};
+
+template <typename T>
+    requires has_member_value_type<T> && (!has_context_value_type<T> && !has_traits_value_type<T>)
+struct iterable_value_type<T> {
+    using type = std::remove_cvref_t<iterable_element_t<T>>;
+};
+
+} // namespace detail
+
+FLUX_EXPORT template <typename I>
+using iterable_value_t = typename detail::iterable_value_type<I>::type;
+
+FLUX_EXPORT template <typename Seq>
+using iterable_common_element_t = std::common_reference_t<element_t<Seq>, value_t<Seq>&>;
+
 FLUX_EXPORT template <typename It>
 concept iterable = requires(It& it) {
     { iterate(it) } -> iteration_context;
+} && requires {
+    typename iterable_value_t<It>;
+} && std::is_object_v<iterable_value_t<It>> && std::common_reference_with<iterable_element_t<It>&&, iterable_value_t<It>&>;
+
+/*
+ * MARK: Sized iterable
+ */
+
+namespace detail {
+
+template <typename T>
+concept has_iterable_traits_size = requires(T& t) {
+    { iter_traits_t<T>::size(t) } -> num::integral;
 };
 
-FLUX_EXPORT template <iterable I>
-using iteration_context_t = decltype(iterate(std::declval<I&>()));
+template <typename T>
+concept has_member_size = has_member_iterate<T> && requires(T& t) {
+    { t.size() } -> num::integral;
+};
+
+template <typename T>
+concept is_sized_iterable = has_iterable_traits_size<T> || has_member_size<T> || sized_sequence<T>
+    || std::ranges::sized_range<T>;
+
+} // namespace detail
+
+struct iterable_size_fn_t {
+    template <typename It>
+        requires detail::is_sized_iterable<It>
+    [[nodiscard]]
+    constexpr auto operator()(It&& it) const -> int_t
+    {
+        if constexpr (detail::has_iterable_traits_size<It>) {
+            return num::cast<int_t>(detail::iter_traits_t<It>::size(it));
+        } else if constexpr (detail::has_member_size<It>) {
+            return num::cast<int_t>(it.size());
+        } else if constexpr (sized_sequence<It>) {
+            return sequence_traits<std::remove_cvref_t<It>>::size(it);
+        } else if constexpr (std::ranges::sized_range<It>) {
+            return num::cast<int_t>(std::ranges::ssize(it));
+        }
+    }
+};
+
+FLUX_EXPORT inline constexpr iterable_size_fn_t iterable_size{};
+
+FLUX_EXPORT template <typename It>
+concept sized_iterable = iterable<It> && requires(It&& it) {
+    { iterable_size(it) } -> std::same_as<int_t>;
+};
 
 /*
  * MARK: Reverse iterable

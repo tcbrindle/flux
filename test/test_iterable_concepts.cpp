@@ -186,3 +186,59 @@ static_assert(flux::reverse_iterable<std::initializer_list<int>>);
 static_assert(flux::reverse_iterable<decltype(flux::iota(0, 10))>);
 
 } // namespace
+
+/*
+ * sized_iterable concept tests
+ */
+
+namespace {
+
+// Things that are not sized iterable
+
+static_assert(not flux::sized_iterable<int>);
+static_assert(not flux::sized_iterable<int*>);
+static_assert(not flux::sized_iterable<int[]>);
+static_assert(not flux::sized_iterable<void>);
+static_assert(not flux::sized_iterable<void*>);
+static_assert(not flux::sized_iterable<incomplete>);
+static_assert(not flux::sized_iterable<empty>);
+static_assert(not flux::sized_iterable<has_empty_iter_traits_specialisation>);
+static_assert(not flux::sized_iterable<has_incorrect_iter_traits_specialisation>);
+static_assert(not flux::sized_iterable<has_valid_iter_traits_specialisation>);
+
+struct has_invalid_member_size {
+    auto iterate() -> minimal_iteration_context { return {}; }
+    auto size() -> bool { return false; }
+};
+
+static_assert(not flux::sized_iterable<has_invalid_member_size>);
+
+struct has_sized_iter_traits_specialisation { };
+
+} // namespace
+
+template <>
+struct flux::iterable_traits<has_sized_iter_traits_specialisation> {
+    static auto iterate(has_sized_iter_traits_specialisation&) -> minimal_iteration_context
+    {
+        return {};
+    }
+
+    static auto size(has_sized_iter_traits_specialisation&) -> int_t { return 0; }
+};
+
+namespace {
+
+// Things that *are* sized iterable
+static_assert(flux::sized_iterable<has_sized_iter_traits_specialisation>);
+static_assert(flux::sized_iterable<int (&)[5]>);
+static_assert(flux::sized_iterable<int const (&)[5]>);
+static_assert(flux::sized_iterable<std::initializer_list<int>>);
+
+struct has_member_size {
+    auto iterate() -> minimal_iteration_context { return {}; }
+    auto size() -> int { return 0; }
+};
+static_assert(flux::sized_iterable<has_member_size>);
+
+} // namespace

@@ -18,5 +18,6 @@ IndentPPDirectives: AfterHash
 InsertBraces: true
 NamespaceIndentation: None
 PackConstructorInitializers: CurrentLine
+SpaceBeforeCpp11BracedList: false
 SortIncludes: Never
 TabWidth: 4

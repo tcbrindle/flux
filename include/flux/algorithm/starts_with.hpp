@@ -10,37 +10,40 @@
 
 namespace flux {
 
-namespace detail {
-
-struct starts_with_fn {
-    template <sequence Haystack, sequence Needle, typename Cmp = std::ranges::equal_to>
+FLUX_EXPORT
+struct starts_with_t {
+    template <iterable Haystack, iterable Needle, typename Cmp = std::ranges::equal_to>
         requires std::predicate<Cmp&, element_t<Haystack>, element_t<Needle>>
+    [[nodiscard]]
     constexpr auto operator()(Haystack&& haystack, Needle&& needle, Cmp cmp = Cmp{}) const -> bool
     {
-        if constexpr (sized_sequence<Haystack> && sized_sequence<Needle>) {
-            if (flux::size(haystack) < flux::size(needle)) {
+        if constexpr (sized_iterable<Haystack> && sized_iterable<Needle>) {
+            if (flux::iterable_size(haystack) < flux::iterable_size(needle)) {
                 return false;
             }
         }
 
-        auto h = flux::first(haystack);
-        auto n = flux::first(needle);
+        iteration_context auto haystack_ctx = iterate(haystack);
+        iteration_context auto needle_ctx = iterate(needle);
 
-        while (!flux::is_last(haystack, h) && !flux::is_last(needle, n)) {
-            if (!std::invoke(cmp, flux::read_at(haystack, h), flux::read_at(needle, n))) {
+        while (true) {
+            auto haystack_elem = next_element(haystack_ctx);
+            auto needle_elem = next_element(needle_ctx);
+
+            if (haystack_elem.has_value() && needle_elem.has_value()) {
+                if (!std::invoke(cmp, haystack_elem.value(), needle_elem.value())) {
+                    return false;
+                }
+            } else if (needle_elem.has_value()) {
                 return false;
+            } else {
+                return true;
             }
-            flux::inc(haystack, h);
-            flux::inc(needle, n);
         }
-
-        return flux::is_last(needle, n);
     }
 };
 
-} // namespace detail
-
-FLUX_EXPORT inline constexpr auto starts_with = detail::starts_with_fn{};
+FLUX_EXPORT inline constexpr starts_with_t starts_with{};
 
 template <typename Derived>
 template <sequence Needle, typename Cmp>
