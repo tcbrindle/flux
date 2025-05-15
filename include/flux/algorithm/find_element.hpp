@@ -13,6 +13,7 @@ FLUX_EXPORT
 struct find_element_if_t {
     template <iterable It, typename Pred>
         requires std::predicate<Pred&, iterable_element_t<It>>
+    [[nodiscard]]
     constexpr auto operator()(It&& it, Pred pred) const
     {
         iterable auto filtered = filter(std::ref(it), std::ref(pred));
@@ -27,6 +28,7 @@ FLUX_EXPORT
 struct find_element_t {
     template <iterable It, typename Value>
         requires std::equality_comparable_with<iterable_element_t<It>, Value const&>
+    [[nodiscard]]
     constexpr auto operator()(It&& it, Value const& value) const
     {
         return find_element_if(it, [&value](auto&& elem) { return FLUX_FWD(elem) == value; });
