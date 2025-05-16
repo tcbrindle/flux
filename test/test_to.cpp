@@ -41,14 +41,13 @@ struct test_vector {
     test_vector() = default;
 
     template <flux::sequence Seq>
-    test_vector(flux::from_sequence_t, Seq&& seq)
+    test_vector(flux::from_iterable_t, Seq&& seq)
     {
         flux::output_to(seq, std::back_inserter(vec_));
     }
 
     template <flux::sequence Seq>
-    test_vector(flux::from_sequence_t, Seq&& seq, A const& alloc)
-        : vec_(alloc)
+    test_vector(flux::from_iterable_t, Seq&& seq, A const& alloc) : vec_(alloc)
     {
         flux::output_to(seq, std::back_inserter(vec_));
     }
@@ -61,8 +60,7 @@ private:
 };
 
 template <flux::sequence Seq, typename A>
-test_vector(flux::from_sequence_t, Seq&&, A const&) -> test_vector<flux::value_t<Seq>, A>;
-
+test_vector(flux::from_iterable_t, Seq&&, A const&) -> test_vector<flux::value_t<Seq>, A>;
 }
 
 TEST_CASE("to")

@@ -6,6 +6,7 @@
 #ifndef FLUX_CORE_HPP_INCLUDED
 #define FLUX_CORE_HPP_INCLUDED
 
+#include <flux/core/as_range.hpp>
 #include <flux/core/concepts.hpp>
 #include <flux/core/default_impls.hpp>
 #include <flux/core/functional.hpp>
