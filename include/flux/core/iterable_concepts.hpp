@@ -8,6 +8,7 @@
 #include <flux/core/concepts.hpp>
 #include <flux/core/numeric.hpp>
 #include <flux/core/optional.hpp>
+#include <flux/core/sequence_access.hpp>
 
 namespace flux {
 
