@@ -114,8 +114,8 @@ struct [[nodiscard("Discarded defer_t will execute its associated function immed
     constexpr ~defer_t() { fn(); }
 };
 
-// template <typename F>
-// defer_t(F) -> defer_t<F>;
+template <typename F>
+defer_t(F) -> defer_t<F>;
 
 } // namespace detail
 
