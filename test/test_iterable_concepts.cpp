@@ -4,6 +4,8 @@
 
 #include <doctest/doctest.h>
 
+#include <initializer_list>
+
 #ifdef USE_MODULES
 import flux;
 #else
