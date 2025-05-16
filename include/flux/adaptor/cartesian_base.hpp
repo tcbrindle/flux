@@ -19,7 +19,7 @@ inline constexpr auto checked_pow =
 {
     T res{1};
     for(U i{0}; i < exponent; i++) {
-        res = num::mul(res, base, loc);
+        res = num::checked_mul(res, base, loc);
     }
     return res;
 };
