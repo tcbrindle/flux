@@ -491,13 +491,21 @@ FLUX_EXPORT struct reverse_iterate_t {
 
 FLUX_EXPORT inline constexpr reverse_iterate_t reverse_iterate {};
 
+FLUX_EXPORT template <typename I>
+using reverse_iteration_context_t = decltype(reverse_iterate(std::declval<I&>()));
+
 FLUX_EXPORT template <typename It>
 concept reverse_iterable = iterable<It> && requires(It& it) {
     { reverse_iterate(it) } -> iteration_context;
-};
+} && std::same_as<iterable_element_t<It>, context_element_t<reverse_iteration_context_t<It>>>;
 
-FLUX_EXPORT template <reverse_iterable I>
-using reverse_iteration_context_t = decltype(reverse_iterate(std::declval<I&>()));
+/*
+ * MARK: Other concepts
+ */
+
+FLUX_EXPORT template <typename I>
+concept adaptable_iterable = iterable<std::decay_t<I>>
+    && (detail::movable_rvalue<I> || detail::trivially_copyable_lvalue<I>);
 
 } // namespace flux
 

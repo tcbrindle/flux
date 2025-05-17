@@ -33,9 +33,47 @@ static_assert(not std::invocable<filter_fn, int(&)[10], decltype([](int) {})>);
 // Incompatible predicate
 static_assert(not std::invocable<filter_fn, int(&)[10], decltype([](int*) { return true; })>);
 
-
 constexpr bool test_filter()
 {
+    // Basic filtering with iterable
+    {
+        auto iter = iterable_only(std::array{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+
+        auto filtered = flux::filter(iter, flux::pred::even);
+
+        using F = decltype(filtered);
+
+        static_assert(flux::iterable<F>);
+        static_assert(std::same_as<flux::iterable_element_t<F>, int&>);
+        static_assert(std::same_as<flux::iterable_value_t<F>, int>);
+
+        static_assert(flux::iterable<F const>);
+        static_assert(std::same_as<flux::iterable_element_t<F const>, int const&>);
+        static_assert(std::same_as<flux::iterable_value_t<F const>, int>);
+
+        STATIC_CHECK(check_equal(filtered, {0, 2, 4, 6, 8}));
+
+        STATIC_CHECK(check_equal(std::as_const(filtered), {0, 2, 4, 6, 8}));
+    }
+
+    // Reverse iteration with filter
+    {
+        auto iter = iterable_only(std::array{1, 2, 3, 4, 5});
+
+        auto filtered = flux::filter(iter, flux::pred::odd);
+
+        using F = decltype(filtered);
+
+        static_assert(flux::reverse_iterable<F>);
+
+        flux::iteration_context auto ctx = flux::reverse_iterate(filtered);
+
+        STATIC_CHECK(flux::next_element(ctx).value() == 5);
+        STATIC_CHECK(flux::next_element(ctx).value() == 3);
+        STATIC_CHECK(flux::next_element(ctx).value() == 1);
+        STATIC_CHECK(not flux::next_element(ctx).has_value());
+    }
+
     // Basic filtering
     {
         int arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
@@ -101,7 +139,7 @@ constexpr bool test_filter()
             {4, false}
         };
 
-        auto f = flux::filter(flux::ref(pairs), &Pair::ok);
+        auto f = flux::filter(iterable_only(pairs), &Pair::ok);
 
         if (!check_equal(f, {Pair{1, true}, Pair{3, true}})) {
             return false;
