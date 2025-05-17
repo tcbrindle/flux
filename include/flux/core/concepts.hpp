@@ -324,26 +324,25 @@ template <typename T, typename E>
 constexpr bool is_ilist<T, std::initializer_list<E>> = true;
 
 template <typename Seq>
-concept rvalue_sequence =
+concept movable_rvalue =
     std::is_object_v<Seq> &&
-    std::move_constructible<Seq> &&
-    sequence<Seq>;
+    std::same_as<std::decay_t<Seq>, Seq> &&
+    std::move_constructible<Seq>;
 
 template <typename Seq>
-concept trivially_copyable_sequence =
-    std::copyable<Seq> &&
-    std::is_trivially_copyable_v<Seq> &&
-    sequence<Seq>;
+concept trivially_copyable_lvalue =
+    std::is_lvalue_reference_v<Seq> &&
+    std::copyable<std::decay_t<Seq>> &&
+    std::is_trivially_copyable_v<std::decay_t<Seq>>;
 
 }
 
 FLUX_EXPORT
 template <typename Seq>
 concept adaptable_sequence =
-    (detail::rvalue_sequence<Seq>
-         || (std::is_lvalue_reference_v<Seq> &&
-             detail::trivially_copyable_sequence<std::decay_t<Seq>>)) &&
-    !detail::is_ilist<Seq>;
+    sequence<std::decay_t<Seq>> &&
+    (detail::movable_rvalue<Seq> || detail::trivially_copyable_lvalue<Seq>) &&
+    !(detail::is_ilist<Seq>);
 
 FLUX_EXPORT
 template <typename D>
