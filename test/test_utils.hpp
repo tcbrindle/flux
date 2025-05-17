@@ -49,14 +49,12 @@ private:
 
 public:
     template <typename T>
-    constexpr bool operator()(flux::sequence auto&& seq,
-                              std::initializer_list<T> ilist) const
+    constexpr bool operator()(flux::iterable auto&& seq, std::initializer_list<T> ilist) const
     {
         return impl(FLUX_FWD(seq), ilist);
     }
 
-    constexpr bool operator()(flux::sequence auto&& seq1,
-                              flux::sequence auto&& seq2) const
+    constexpr bool operator()(flux::iterable auto&& seq1, flux::iterable auto&& seq2) const
     {
         return impl(FLUX_FWD(seq1), FLUX_FWD(seq2));
     }
@@ -91,6 +89,37 @@ public:
     single_pass_only&  operator=(single_pass_only&&) = default;
 };
 
+template <flux::iterable Base>
+struct iterable_only {
+private:
+    Base base_;
+
+public:
+    constexpr explicit iterable_only(flux::decays_to<Base> auto&& base) : base_(FLUX_FWD(base)) { }
+
+    constexpr auto iterate() { return flux::iterate(base_); }
+
+    constexpr auto iterate() const
+        requires flux::iterable<Base const>
+    {
+        return flux::iterate(base_);
+    }
+
+    constexpr auto reverse_iterate()
+        requires flux::reverse_iterable<Base>
+    {
+        return flux::reverse_iterate(base_);
+    }
+
+    constexpr auto reverse_iterate() const
+        requires flux::reverse_iterable<Base const>
+    {
+        return flux::reverse_iterate(base_);
+    }
+};
+
+template <flux::iterable Base>
+iterable_only(Base) -> iterable_only<Base>;
 }
 
 template <typename Base>
@@ -133,9 +162,3 @@ struct flux::sequence_traits<single_pass_only<Base>> : flux::default_sequence_tr
         return flux::size(self.base_);
     }
 };
-
-template <typename Reqd, typename Expr>
-constexpr void assert_has_type(Expr&&)
-{
-    static_assert(std::same_as<Reqd, Expr>);
-}
