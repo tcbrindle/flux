@@ -12,10 +12,8 @@ namespace flux {
 
 namespace detail {
 
-template <bidirectional_sequence Base>
-    requires bounded_sequence<Base>
-struct reverse_adaptor : inline_sequence_base<reverse_adaptor<Base>>
-{
+template <reverse_iterable Base>
+struct reverse_adaptor : inline_sequence_base<reverse_adaptor<Base>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
 
@@ -26,6 +24,26 @@ public:
 
     [[nodiscard]] constexpr auto base() const& -> Base const& { return base_; }
     [[nodiscard]] constexpr auto base() && -> Base&& { return std::move(base_); }
+
+    struct flux_iterable_traits {
+        static constexpr auto iterate(auto& self)
+            requires reverse_iterable<decltype(self.base_)>
+        {
+            return flux::reverse_iterate(self.base_);
+        }
+
+        static constexpr auto reverse_iterate(auto& self)
+            requires iterable<decltype(self.base_)>
+        {
+            return flux::iterate(self.base_);
+        }
+
+        static constexpr auto size(auto& self)
+            requires sized_iterable<decltype(self.base_)>
+        {
+            return flux::iterable_size(self.base_);
+        }
+    };
 
     struct flux_sequence_traits {
     private:
@@ -144,17 +162,15 @@ template <typename Base>
 inline constexpr bool is_reverse_adaptor<reverse_adaptor<Base>> = true;
 
 struct reverse_fn {
-    template <adaptable_sequence Seq>
-        requires bidirectional_sequence<Seq> &&
-                 bounded_sequence<Seq>
+    template <adaptable_iterable It>
+        requires reverse_iterable<It>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const
-        -> sequence auto
+    constexpr auto operator()(It&& it) const -> reverse_iterable auto
     {
-        if constexpr (is_reverse_adaptor<std::decay_t<Seq>>) {
-            return FLUX_FWD(seq).base();
+        if constexpr (is_reverse_adaptor<std::decay_t<It>>) {
+            return FLUX_FWD(it).base();
         } else {
-            return reverse_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq));
+            return reverse_adaptor<std::decay_t<It>>(FLUX_FWD(it));
         }
     }
 };
