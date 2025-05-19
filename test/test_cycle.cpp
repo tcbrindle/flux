@@ -77,7 +77,7 @@ constexpr bool test_cycle() {
         static_assert(std::same_as<flux::rvalue_element_t<C>, int const&&>);
         static_assert(std::same_as<flux::const_element_t<C>, int const&>);
 
-        STATIC_CHECK(seq.size() == 5);
+        STATIC_CHECK(flux::size(seq) == 5);
 
         STATIC_CHECK(check_equal(seq, {1, 2, 3, 1, 2}));
 
@@ -110,7 +110,7 @@ constexpr bool test_cycle() {
         static_assert(std::same_as<flux::const_element_t<C>, std::pair<int const&, double const&>>);
 #endif
 
-        STATIC_CHECK(seq.size() == 10);
+        STATIC_CHECK(flux::size(seq) == 10);
 
         auto firsts = flux::ref(seq).map([](auto p) { return p.first; });
 
