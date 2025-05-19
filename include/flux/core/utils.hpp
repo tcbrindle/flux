@@ -117,6 +117,16 @@ struct [[nodiscard("Discarded defer_t will execute its associated function immed
 template <typename F>
 defer_t(F) -> defer_t<F>;
 
+template <typename Fn>
+constexpr auto copy_or_ref(Fn& fn)
+{
+    if constexpr (std::is_trivially_copyable_v<Fn> && sizeof(Fn) <= sizeof(void*)) {
+        return fn;
+    } else {
+        return std::ref(fn);
+    }
+}
+
 } // namespace detail
 
 } // namespace flux
