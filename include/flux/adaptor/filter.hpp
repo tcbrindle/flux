@@ -13,16 +13,6 @@ namespace flux {
 
 namespace detail {
 
-template <typename Fn>
-constexpr auto copy_or_ref(Fn& fn)
-{
-    if constexpr (std::is_trivially_copyable_v<Fn> && sizeof(Fn) <= sizeof(void*)) {
-        return fn;
-    } else {
-        return std::ref(fn);
-    }
-}
-
 template <typename Base, typename Pred>
 class filter_adaptor : public inline_sequence_base<filter_adaptor<Base, Pred>> {
     FLUX_NO_UNIQUE_ADDRESS Base base_;

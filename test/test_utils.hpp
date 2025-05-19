@@ -116,6 +116,18 @@ public:
     {
         return flux::reverse_iterate(base_);
     }
+
+    constexpr auto size() -> flux::int_t
+        requires flux::sized_iterable<Base>
+    {
+        return flux::iterable_size(base_);
+    }
+
+    constexpr auto size() const -> flux::int_t
+        requires flux::sized_iterable<Base const>
+    {
+        return flux::iterable_size(base_);
+    }
 };
 
 template <flux::iterable Base>
