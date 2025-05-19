@@ -24,6 +24,55 @@ struct ints {
 
 constexpr bool test_take_while()
 {
+    // Test take_while with basic iterables
+    {
+        auto arr = iterable_only(std::array{0, 1, 2, 3, 4});
+
+        auto taken = flux::take_while(arr, [](int i) { return i < 3; });
+
+        using T = decltype(taken);
+        static_assert(flux::iterable<T>);
+
+        static_assert(flux::iterable<T const>);
+
+        STATIC_CHECK(check_equal(taken, {0, 1, 2}));
+    }
+
+    // Test take_while with a predicate that always returns true
+    {
+        auto arr = iterable_only(std::array{0, 1, 2, 3, 4});
+
+        auto taken = flux::take_while(arr, [](int) { return true; });
+
+        STATIC_CHECK(check_equal(taken, arr));
+    }
+
+    // Test take_while with an always-false predicate returns no elements
+    {
+        auto arr = iterable_only(std::array{0, 1, 2, 3, 4});
+
+        auto taken = flux::take_while(arr, [](int) { return false; });
+
+        auto ctx = flux::iterate(taken);
+        STATIC_CHECK(flux::next_element(ctx) == std::nullopt);
+    }
+
+    // Test (attempting to) restart iteration after completion
+    {
+        auto arr = iterable_only(std::array{0, 1, 2, 3, 4});
+
+        auto taken = flux::take_while(arr, flux::pred::lt(3));
+
+        auto ctx = flux::iterate(taken);
+        STATIC_CHECK(flux::next_element(ctx).value() == 0);
+        STATIC_CHECK(flux::next_element(ctx).value() == 1);
+        STATIC_CHECK(flux::next_element(ctx).value() == 2);
+        STATIC_CHECK(not flux::next_element(ctx).has_value());
+
+        // Restarting iteration
+        STATIC_CHECK(not flux::next_element(ctx).has_value());
+    }
+
     {
         auto seq = flux::take_while(ints{10}, [](int i) { return i != 25; });
 
