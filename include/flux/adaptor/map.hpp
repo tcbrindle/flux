@@ -12,16 +12,27 @@ namespace flux {
 
 namespace detail {
 
-template <sequence Base, typename Func>
-    requires std::is_object_v<Func> &&
-             std::regular_invocable<Func&, element_t<Base>>
-struct map_adaptor : inline_sequence_base<map_adaptor<Base, Func>>
-{
+template <typename Base, typename Func>
+struct map_adaptor : inline_sequence_base<map_adaptor<Base, Func>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Func func_;
 
     friend struct sequence_traits<map_adaptor>;
+
+    template <typename BaseCtx, typename MapFn>
+    struct context_type : immovable {
+        BaseCtx base_ctx;
+        MapFn map_fn;
+
+        using element_type = std::invoke_result_t<MapFn&, context_element_t<BaseCtx>>;
+
+        constexpr auto run_while(auto&& pred) -> iteration_result
+        {
+            return base_ctx.run_while(
+                [&pred, this](auto&& elem) { return pred(std::invoke(map_fn, FLUX_FWD(elem))); });
+        }
+    };
 
 public:
     constexpr map_adaptor(decays_to<Base> auto&& base, decays_to<Func> auto&& func)
@@ -34,10 +45,31 @@ public:
     constexpr auto base() && -> Base&& { return std::move(base_); }
     constexpr auto base() const&& -> Base const&& { return std::move(base_); }
 
-    struct flux_sequence_traits  : detail::passthrough_traits_base
+    constexpr auto iterate()
     {
-        using value_type = std::remove_cvref_t<std::invoke_result_t<Func&, element_t<Base>>>;
+        return context_type{.base_ctx = flux::iterate(base_), .map_fn = copy_or_ref(func_)};
+    }
 
+    constexpr auto iterate() const
+        requires iterable<Base const>
+        && std::regular_invocable<Func&, iterable_element_t<Base const>>
+    {
+        return context_type{.base_ctx = flux::iterate(base_), .map_fn = copy_or_ref(func_)};
+    }
+
+    constexpr auto size() -> int_t
+        requires sized_iterable<Base>
+    {
+        return flux::iterable_size(base_);
+    }
+
+    constexpr auto size() const -> int_t
+        requires sized_iterable<Base const>
+    {
+        return flux::iterable_size(base_);
+    }
+
+    struct flux_sequence_traits : detail::passthrough_traits_base {
         static constexpr bool disable_multipass = !multipass_sequence<Base>;
         static constexpr bool is_infinite = infinite_sequence<Base>;
 
@@ -70,12 +102,12 @@ public:
 };
 
 struct map_fn {
-    template <adaptable_sequence Seq, typename Func>
-        requires std::regular_invocable<Func&, element_t<Seq>>
+    template <adaptable_iterable It, std::move_constructible Func>
+        requires std::regular_invocable<Func&, iterable_element_t<It>>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Func func) const
+    constexpr auto operator()(It&& it, Func func) const
     {
-        return map_adaptor<std::decay_t<Seq>, Func>(FLUX_FWD(seq), std::move(func));
+        return map_adaptor<std::decay_t<It>, Func>(FLUX_FWD(it), std::move(func));
     }
 };
 
