@@ -13,6 +13,55 @@ namespace {
 
 constexpr bool test_take()
 {
+    // Test take with basic iterables
+    {
+        auto arr = iterable_only(std::array{0, 1, 2, 3, 4});
+
+        auto taken = flux::take(arr, 3);
+
+        using T = decltype(taken);
+        static_assert(flux::iterable<T>);
+        static_assert(flux::sized_iterable<T>);
+
+        static_assert(flux::iterable<T const>);
+        static_assert(flux::sized_iterable<T const>);
+
+        STATIC_CHECK(flux::iterable_size(taken) == 3);
+        STATIC_CHECK(check_equal(taken, {0, 1, 2}));
+    }
+
+    // Taking all elements
+    {
+        auto arr = iterable_only(std::array{0, 1, 2, 3, 4});
+
+        auto taken = flux::take(arr, 5);
+
+        STATIC_CHECK(flux::iterable_size(taken) == 5);
+        STATIC_CHECK(check_equal(taken, arr));
+    }
+
+    // Taking "too many" elements
+    {
+        auto arr = iterable_only(std::array{0, 1, 2, 3, 4});
+
+        auto taken = flux::take(arr, 1'000'000);
+
+        STATIC_CHECK(flux::iterable_size(taken) == 5);
+        STATIC_CHECK(check_equal(taken, arr));
+    }
+
+    // Taking zero elements
+    {
+        auto arr = iterable_only(std::array{0, 1, 2, 3, 4});
+
+        auto taken = flux::take(arr, 0);
+
+        STATIC_CHECK(flux::iterable_size(taken) == 0);
+
+        auto ctx = flux::iterate(taken);
+        STATIC_CHECK(flux::next_element(ctx) == std::nullopt);
+    }
+
     {
         int arr[] = {0, 1, 2, 3, 4};
         auto taken = flux::take(std::ref(arr), 3);

@@ -12,12 +12,32 @@ namespace flux {
 
 namespace detail {
 
-template <sequence Base>
-struct take_adaptor : inline_sequence_base<take_adaptor<Base>>
-{
+template <typename Base>
+struct take_adaptor : inline_sequence_base<take_adaptor<Base>> {
 private:
     Base base_;
     int_t count_;
+
+    template <typename BaseCtx>
+    struct context_type : immovable {
+        BaseCtx base_ctx;
+        int_t remaining;
+
+        using element_type = context_element_t<BaseCtx>;
+
+        constexpr auto run_while(auto&& pred) -> iteration_result
+        {
+            if (remaining > 0) {
+                auto res = base_ctx.run_while([&](auto&& elem) {
+                    --remaining;
+                    return pred(FLUX_FWD(elem)) && (remaining > 0);
+                });
+                return static_cast<iteration_result>(static_cast<bool>(res) || (remaining == 0));
+            } else {
+                return iteration_result::complete;
+            }
+        }
+    };
 
 public:
     constexpr take_adaptor(decays_to<Base> auto&& base, int_t count)
@@ -27,6 +47,28 @@ public:
 
     [[nodiscard]] constexpr auto base() const& -> Base const& { return base_; }
     [[nodiscard]] constexpr auto base() && -> Base&& { return std::move(base_); }
+
+    constexpr auto iterate()
+    {
+        return context_type{.base_ctx = flux::iterate(base_), .remaining = count_};
+    }
+    constexpr auto iterate() const
+        requires iterable<Base const>
+    {
+        return context_type{.base_ctx = flux::iterate(base_), .remaining = count_};
+    }
+
+    constexpr auto size() -> int_t
+        requires sized_iterable<Base>
+    {
+        return (cmp::min)(flux::iterable_size(base_), count_);
+    }
+
+    constexpr auto size() const -> int_t
+        requires sized_iterable<Base const>
+    {
+        return (cmp::min)(flux::iterable_size(base_), count_);
+    }
 
     struct flux_sequence_traits {
     private:
@@ -144,16 +186,16 @@ public:
 };
 
 struct take_fn {
-    template <adaptable_sequence Seq>
+    template <adaptable_iterable It>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, num::integral auto count) const
+    constexpr auto operator()(It&& it, num::integral auto count) const
     {
         auto count_ = num::checked_cast<int_t>(count);
         if (count_ < 0) {
             runtime_error("Negative argument passed to take()");
         }
 
-        return take_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq), count_);
+        return take_adaptor<std::decay_t<It>>(FLUX_FWD(it), count_);
     }
 };
 
