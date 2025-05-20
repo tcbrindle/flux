@@ -47,14 +47,16 @@ public:
 
     constexpr auto iterate()
     {
-        return context_type{.base_ctx = flux::iterate(base_), .map_fn = copy_or_ref(func_)};
+        return context_type<iteration_context_t<Base>, copy_or_ref_t<Func>>{
+            .base_ctx = flux::iterate(base_), .map_fn = copy_or_ref(func_)};
     }
 
     constexpr auto iterate() const
         requires iterable<Base const>
         && std::regular_invocable<Func&, iterable_element_t<Base const>>
     {
-        return context_type{.base_ctx = flux::iterate(base_), .map_fn = copy_or_ref(func_)};
+        return context_type<iteration_context_t<Base const>, copy_or_ref_t<Func const>>{
+            .base_ctx = flux::iterate(base_), .map_fn = copy_or_ref(func_)};
     }
 
     constexpr auto size() -> int_t
