@@ -11,6 +11,41 @@ namespace {
 
 constexpr bool test_drop_while()
 {
+    // Test drop while with basic iterables
+    {
+        auto arr = iterable_only(std::array{0, 1, 2, 3, 4});
+
+        auto dropped = flux::drop_while(arr, [](int i) { return i < 3; });
+
+        using D = decltype(dropped);
+        static_assert(flux::iterable<D>);
+
+        static_assert(flux::iterable<D const>);
+        static_assert(not flux::reverse_iterable<D const>);
+        static_assert(not flux::sized_iterable<D const>);
+
+        STATIC_CHECK(check_equal(dropped, {3, 4}));
+    }
+
+    // Drop while with always-true predicate returns no elements
+    {
+        auto arr = iterable_only(std::array{0, 1, 2, 3, 4});
+
+        auto dropped = flux::drop_while(arr, flux::pred::true_);
+
+        STATIC_CHECK(flux::count(dropped) == 0);
+    }
+
+    // Drop while with always-false predicate returns all elements
+    {
+        auto arr = iterable_only(std::array{0, 1, 2, 3, 4});
+
+        auto dropped = flux::drop_while(arr, flux::pred::false_);
+
+        STATIC_CHECK(flux::count(dropped) == 5);
+        STATIC_CHECK(check_equal(dropped, arr));
+    }
+
     {
         int arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
