@@ -13,64 +13,100 @@ namespace flux {
 
 namespace detail {
 
+template <typename BaseCtx>
+struct drop_iteration_context : immovable {
+    BaseCtx base_ctx;
+    int_t remaining;
+
+    using element_type = context_element_t<BaseCtx>;
+
+    constexpr auto run_while(auto&& pred) -> iteration_result
+    {
+        return base_ctx.run_while([&](auto&& elem) {
+            if (remaining > 0) {
+                --remaining;
+                return loop_continue;
+            } else {
+                return pred(FLUX_FWD(elem));
+            }
+        });
+    }
+};
+
+template <typename BaseCtx>
+struct take_iteration_context : immovable {
+    BaseCtx base_ctx;
+    int_t remaining;
+
+    using element_type = context_element_t<BaseCtx>;
+
+    constexpr auto run_while(auto&& pred) -> iteration_result
+    {
+        if (remaining > 0) {
+            auto res = base_ctx.run_while([&](auto&& elem) {
+                --remaining;
+                return pred(FLUX_FWD(elem)) && (remaining > 0);
+            });
+            return static_cast<iteration_result>(static_cast<bool>(res) || (remaining == 0));
+        } else {
+            return iteration_result::complete;
+        }
+    }
+};
+
 template <typename Base>
 struct drop_adaptor : inline_sequence_base<drop_adaptor<Base>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     int_t count_;
 
-    template <typename BaseCtx>
-    struct context_type : immovable {
-        BaseCtx base_ctx;
-        int_t remaining;
-
-        using element_type = context_element_t<BaseCtx>;
-
-        constexpr auto run_while(auto&& pred) -> iteration_result
-        {
-            return base_ctx.run_while([&](auto&& elem) {
-                if (remaining > 0) {
-                    --remaining;
-                    return loop_continue;
-                } else {
-                    return pred(FLUX_FWD(elem));
-                }
-            });
-        }
-    };
-
 public:
     constexpr drop_adaptor(decays_to<Base> auto&& base, int_t count)
         : base_(FLUX_FWD(base)),
           count_(count)
-    {}
+    {
+    }
 
     constexpr Base& base() & { return base_; }
     constexpr Base const& base() const& { return base_; }
 
     [[nodiscard]] constexpr auto iterate()
     {
-        return context_type{.base_ctx = flux::iterate(base_), .remaining = count_};
+        return drop_iteration_context{.base_ctx = flux::iterate(base_), .remaining = count_};
     }
 
     [[nodiscard]] constexpr auto iterate() const
         requires iterable<Base const>
     {
-        return context_type{.base_ctx = flux::iterate(base_), .remaining = count_};
+        return drop_iteration_context{.base_ctx = flux::iterate(base_), .remaining = count_};
+    }
+
+    [[nodiscard]] constexpr auto reverse_iterate()
+        requires reverse_iterable<Base> && sized_iterable<Base>
+    {
+        return take_iteration_context{.base_ctx = flux::reverse_iterate(base_),
+                                      .remaining = size()};
+    }
+
+    [[nodiscard]] constexpr auto reverse_iterate() const
+        requires reverse_iterable<Base const> && sized_iterable<Base const>
+    {
+        return take_iteration_context{.base_ctx = flux::reverse_iterate(base_),
+                                      .remaining = size()};
     }
 
     [[nodiscard]] constexpr auto size() -> int_t
         requires sized_iterable<Base>
     {
         auto sz = flux::iterable_size(base_);
-        return (cmp::max)(num::sub(sz, count_), int_t{0});
+        return sz > count_ ? sz - count_ : 0;
     }
 
     [[nodiscard]] constexpr auto size() const -> int_t
         requires sized_iterable<Base const>
     {
         auto sz = flux::iterable_size(base_);
-        return (cmp::max)(num::sub(sz, count_), int_t{0});
+        return sz > count_ ? sz - count_ : 0;
     }
 
     struct flux_sequence_traits : passthrough_traits_base {
@@ -88,7 +124,7 @@ public:
         static constexpr auto size(auto& self)
             requires sized_sequence<Base>
         {
-            return (cmp::max)(num::sub(flux::size(self.base()), self.count_), int_t {0});
+            return (cmp::max)(num::sub(flux::size(self.base()), self.count_), int_t{0});
         }
 
         static constexpr auto data(auto& self)
