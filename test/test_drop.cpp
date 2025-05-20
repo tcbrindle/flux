@@ -14,7 +14,56 @@
 
 namespace {
 
-constexpr bool test_drop() {
+constexpr bool test_drop()
+{
+    // Test dropping elements from basic iterables
+    {
+        auto arr = iterable_only(std::array{0, 1, 2, 3, 4});
+
+        auto dropped = flux::drop(arr, 2);
+
+        using D = decltype(dropped);
+        static_assert(flux::iterable<D>);
+        static_assert(flux::sized_iterable<D>);
+
+        static_assert(flux::iterable<D const>);
+        static_assert(flux::sized_iterable<D const>);
+
+        STATIC_CHECK(check_equal(dropped, {2, 3, 4}));
+        STATIC_CHECK(flux::iterable_size(dropped) == 3);
+    }
+
+    // Test dropping zero items
+    {
+        auto arr = iterable_only(std::array{0, 1, 2, 3, 4});
+
+        auto dropped = flux::drop(arr, 0);
+
+        STATIC_CHECK(flux::iterable_size(dropped) == 5);
+        STATIC_CHECK(check_equal(dropped, arr));
+    }
+
+    // Test dropping all items
+    {
+        auto arr = iterable_only(std::array{0, 1, 2, 3, 4});
+
+        auto dropped = flux::drop(arr, 5);
+
+        STATIC_CHECK(flux::iterable_size(dropped) == 0);
+        auto ctx = flux::iterate(dropped);
+        STATIC_CHECK(not flux::next_element(ctx).has_value());
+    }
+
+    // Test dropping too many items
+    {
+        auto arr = iterable_only(std::array{0, 1, 2, 3, 4});
+
+        auto dropped = flux::drop(arr, 1000);
+
+        STATIC_CHECK(flux::iterable_size(dropped) == 0);
+        auto ctx = flux::iterate(dropped);
+        STATIC_CHECK(not flux::next_element(ctx).has_value());
+    }
 
     {
         int arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
