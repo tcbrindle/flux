@@ -128,6 +128,9 @@ constexpr auto copy_or_ref(Fn& fn)
     }
 }
 
+template <typename Fn>
+using copy_or_ref_t = decltype(copy_or_ref(std::declval<Fn&>()));
+
 } // namespace detail
 
 } // namespace flux
