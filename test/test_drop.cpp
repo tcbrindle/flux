@@ -65,6 +65,23 @@ constexpr bool test_drop()
         STATIC_CHECK(not flux::next_element(ctx).has_value());
     }
 
+    // Test reverse iteration
+    {
+        auto arr = iterable_only(std::array{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+
+        auto dropped = flux::reverse(flux::drop(arr, 3));
+
+        using D = decltype(dropped);
+        static_assert(flux::iterable<D>);
+        static_assert(flux::sized_iterable<D>);
+
+        static_assert(flux::iterable<D const>);
+        static_assert(flux::sized_iterable<D const>);
+
+        STATIC_CHECK(check_equal(dropped, {9, 8, 7, 6, 5, 4, 3}));
+        STATIC_CHECK(flux::iterable_size(dropped) == 7);
+    }
+
     {
         int arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 

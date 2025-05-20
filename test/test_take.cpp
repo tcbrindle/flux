@@ -62,6 +62,23 @@ constexpr bool test_take()
         STATIC_CHECK(flux::next_element(ctx) == std::nullopt);
     }
 
+    // Reverse iteration
+    {
+        auto arr = iterable_only(std::array{0, 1, 2, 3, 4});
+
+        auto taken = flux::reverse(flux::take(arr, 3));
+
+        using T = decltype(taken);
+        static_assert(flux::iterable<T>);
+        static_assert(flux::sized_iterable<T>);
+
+        static_assert(flux::iterable<T const>);
+        static_assert(flux::sized_iterable<T const>);
+
+        STATIC_CHECK(flux::iterable_size(taken) == 3);
+        STATIC_CHECK(check_equal(taken, {2, 1, 0}));
+    }
+
     {
         int arr[] = {0, 1, 2, 3, 4};
         auto taken = flux::take(std::ref(arr), 3);

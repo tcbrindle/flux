@@ -7,6 +7,7 @@
 #define FLUX_ADAPTOR_TAKE_HPP_INCLUDED
 
 #include <flux/core.hpp>
+#include <flux/adaptor/drop.hpp>
 
 namespace flux {
 
@@ -18,27 +19,6 @@ private:
     Base base_;
     int_t count_;
 
-    template <typename BaseCtx>
-    struct context_type : immovable {
-        BaseCtx base_ctx;
-        int_t remaining;
-
-        using element_type = context_element_t<BaseCtx>;
-
-        constexpr auto run_while(auto&& pred) -> iteration_result
-        {
-            if (remaining > 0) {
-                auto res = base_ctx.run_while([&](auto&& elem) {
-                    --remaining;
-                    return pred(FLUX_FWD(elem)) && (remaining > 0);
-                });
-                return static_cast<iteration_result>(static_cast<bool>(res) || (remaining == 0));
-            } else {
-                return iteration_result::complete;
-            }
-        }
-    };
-
 public:
     constexpr take_adaptor(decays_to<Base> auto&& base, int_t count)
         : base_(FLUX_FWD(base)),
@@ -48,23 +28,40 @@ public:
     [[nodiscard]] constexpr auto base() const& -> Base const& { return base_; }
     [[nodiscard]] constexpr auto base() && -> Base&& { return std::move(base_); }
 
-    constexpr auto iterate()
+    [[nodiscard]] constexpr auto iterate()
     {
-        return context_type{.base_ctx = flux::iterate(base_), .remaining = count_};
-    }
-    constexpr auto iterate() const
-        requires iterable<Base const>
-    {
-        return context_type{.base_ctx = flux::iterate(base_), .remaining = count_};
+        return take_iteration_context{.base_ctx = flux::iterate(base_), .remaining = count_};
     }
 
-    constexpr auto size() -> int_t
+    [[nodiscard]] constexpr auto iterate() const
+        requires iterable<Base const>
+    {
+        return take_iteration_context{.base_ctx = flux::iterate(base_), .remaining = count_};
+    }
+
+    [[nodiscard]] constexpr auto reverse_iterate()
+        requires reverse_iterable<Base> && sized_iterable<Base>
+    {
+        int_t sz = flux::iterable_size(base_);
+        return drop_iteration_context{.base_ctx = flux::reverse_iterate(base_),
+                                      .remaining = sz > count_ ? sz - count_ : 0};
+    }
+
+    [[nodiscard]] constexpr auto reverse_iterate() const
+        requires reverse_iterable<Base const> && sized_iterable<Base const>
+    {
+        int_t sz = flux::iterable_size(base_);
+        return drop_iteration_context{.base_ctx = flux::reverse_iterate(base_),
+                                      .remaining = sz > count_ ? sz - count_ : 0};
+    }
+
+    [[nodiscard]] constexpr auto size() -> int_t
         requires sized_iterable<Base>
     {
         return (cmp::min)(flux::iterable_size(base_), count_);
     }
 
-    constexpr auto size() const -> int_t
+    [[nodiscard]] constexpr auto size() const -> int_t
         requires sized_iterable<Base const>
     {
         return (cmp::min)(flux::iterable_size(base_), count_);
@@ -85,8 +82,7 @@ public:
 
         static constexpr auto first(auto& self) -> cursor_type
         {
-            return cursor_type{.base_cur = flux::first(self.base_),
-                               .length = self.count_};
+            return cursor_type{.base_cur = flux::first(self.base_), .length = self.count_};
         }
 
         static constexpr auto is_last(auto& self, cursor_type const& cur) -> bool
@@ -97,7 +93,7 @@ public:
         static constexpr auto inc(auto& self, cursor_type& cur)
         {
             flux::inc(self.base_, cur.base_cur);
-            cur.length = num::sub(cur.length, int_t {1});
+            cur.length = num::sub(cur.length, int_t{1});
         }
 
         static constexpr auto read_at(auto& self, cursor_type const& cur)
@@ -128,7 +124,7 @@ public:
             requires bidirectional_sequence<Base>
         {
             flux::dec(self.base_, cur.base_cur);
-            cur.length = num::add(cur.length, int_t {1});
+            cur.length = num::add(cur.length, int_t{1});
         }
 
         static constexpr auto inc(auto& self, cursor_type& cur, int_t offset)
@@ -146,8 +142,7 @@ public:
                               num::sub(from.length, to.length));
         }
 
-        static constexpr auto data(auto& self)
-            -> decltype(flux::data(self.base_))
+        static constexpr auto data(auto& self) -> decltype(flux::data(self.base_))
             requires contiguous_sequence<Base>
         {
             return flux::data(self.base_);
@@ -164,13 +159,12 @@ public:
         }
 
         static constexpr auto last(auto& self) -> cursor_type
-            requires (random_access_sequence<Base> && sized_sequence<Base>) ||
-                      infinite_sequence<Base>
+            requires(random_access_sequence<Base> && sized_sequence<Base>)
+            || infinite_sequence<Base>
         {
-            return cursor_type{
-                .base_cur = flux::next(self.base_, flux::first(self.base_), size(self)),
-                .length = 0
-            };
+            return cursor_type{.base_cur
+                               = flux::next(self.base_, flux::first(self.base_), size(self)),
+                               .length = 0};
         }
 
         static constexpr auto for_each_while(auto& self, auto&& pred) -> cursor_type
