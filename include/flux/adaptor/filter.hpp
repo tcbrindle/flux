@@ -28,7 +28,7 @@ class filter_adaptor : public inline_sequence_base<filter_adaptor<Base, Pred>> {
         constexpr auto run_while(auto&& pred) -> iteration_result
         {
             return base_ctx.run_while([this, &pred](auto&& elem) {
-                if (std::invoke(filter_fn, std::as_const(elem))) {
+                if (std::invoke(filter_fn, elem)) {
                     return std::invoke(pred, FLUX_FWD(elem));
                 } else {
                     return loop_continue;
