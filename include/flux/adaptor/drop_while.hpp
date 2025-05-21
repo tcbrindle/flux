@@ -57,14 +57,16 @@ public:
 
     [[nodiscard]] constexpr auto iterate()
     {
-        return context_type{.base_ctx = flux::iterate(base_), .drop_pred = copy_or_ref(pred_)};
+        return context_type<iteration_context_t<Base>, copy_or_ref_t<Pred>>{
+            .base_ctx = flux::iterate(base_), .drop_pred = copy_or_ref(pred_)};
     }
 
     [[nodiscard]]
     constexpr auto iterate() const
         requires iterable<Base const> && std::predicate<Pred&, iterable_element_t<Base const>>
     {
-        return context_type{.base_ctx = flux::iterate(base_), .drop_pred = copy_or_ref(pred_)};
+        return context_type<iteration_context_t<Base const>, copy_or_ref_t<Pred const>>{
+            .base_ctx = flux::iterate(base_), .drop_pred = copy_or_ref(pred_)};
     }
 
     struct flux_sequence_traits : detail::passthrough_traits_base {

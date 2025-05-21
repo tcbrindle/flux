@@ -50,28 +50,30 @@ public:
 
     constexpr auto iterate()
     {
-        return context_type{.base_ctx = flux::iterate(base_), .filter_fn = copy_or_ref(pred_)};
+        return context_type<iteration_context_t<Base>, copy_or_ref_t<Pred>>{
+            .base_ctx = flux::iterate(base_), .filter_fn = copy_or_ref(pred_)};
     }
 
     constexpr auto iterate() const
         requires iterable<Base const> && std::invocable<Pred&, iterable_element_t<Base const>>
     {
-        return context_type{.base_ctx = flux::iterate(base_), .filter_fn = copy_or_ref(pred_)};
+        return context_type<iteration_context_t<Base const>, copy_or_ref_t<Pred const>>{
+            .base_ctx = flux::iterate(base_), .filter_fn = copy_or_ref(pred_)};
     }
 
     constexpr auto reverse_iterate()
         requires reverse_iterable<Base>
     {
-        return context_type{.base_ctx = flux::reverse_iterate(base_),
-                            .filter_fn = copy_or_ref(pred_)};
+        return context_type<reverse_iteration_context_t<Base>, copy_or_ref_t<Pred>>{
+            .base_ctx = flux::reverse_iterate(base_), .filter_fn = copy_or_ref(pred_)};
     }
 
     constexpr auto reverse_iterate() const
         requires reverse_iterable<Base const>
         && std::invocable<Pred&, iterable_element_t<Base const>>
     {
-        return context_type{.base_ctx = flux::reverse_iterate(base_),
-                            .filter_fn = copy_or_ref(pred_)};
+        return context_type<reverse_iteration_context_t<Base const>, copy_or_ref_t<Pred const>>{
+            .base_ctx = flux::reverse_iterate(base_), .filter_fn = copy_or_ref(pred_)};
     }
 
     struct flux_sequence_traits {

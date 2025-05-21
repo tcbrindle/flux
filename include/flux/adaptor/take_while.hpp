@@ -62,7 +62,8 @@ public:
     [[nodiscard]]
     constexpr auto iterate()
     {
-        return context_type{.base_ctx = flux::iterate(base_), .take_pred = copy_or_ref(pred_)};
+        return context_type<iteration_context_t<Base>, copy_or_ref_t<Pred>>{
+            .base_ctx = flux::iterate(base_), .take_pred = copy_or_ref(pred_)};
     }
 
     [[nodiscard]]
@@ -70,7 +71,8 @@ public:
         requires iterable<Base const>
         && std::predicate<Pred&, iterable_element_t<Base const> const&>
     {
-        return context_type{.base_ctx = flux::iterate(base_), .take_pred = copy_or_ref(pred_)};
+        return context_type<iteration_context_t<Base const>, copy_or_ref_t<Pred const>>{
+            .base_ctx = flux::iterate(base_), .take_pred = copy_or_ref(pred_)};
     }
 };
 
