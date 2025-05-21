@@ -30,29 +30,31 @@ public:
 
     [[nodiscard]] constexpr auto iterate()
     {
-        return take_iteration_context{.base_ctx = flux::iterate(base_), .remaining = count_};
+        return take_iteration_context<iteration_context_t<Base>>{.base_ctx = flux::iterate(base_),
+                                                                 .remaining = count_};
     }
 
     [[nodiscard]] constexpr auto iterate() const
         requires iterable<Base const>
     {
-        return take_iteration_context{.base_ctx = flux::iterate(base_), .remaining = count_};
+        return take_iteration_context<iteration_context_t<Base const>>{
+            .base_ctx = flux::iterate(base_), .remaining = count_};
     }
 
     [[nodiscard]] constexpr auto reverse_iterate()
         requires reverse_iterable<Base> && sized_iterable<Base>
     {
         int_t sz = flux::iterable_size(base_);
-        return drop_iteration_context{.base_ctx = flux::reverse_iterate(base_),
-                                      .remaining = sz > count_ ? sz - count_ : 0};
+        return drop_iteration_context<reverse_iteration_context_t<Base>>{
+            .base_ctx = flux::reverse_iterate(base_), .remaining = sz > count_ ? sz - count_ : 0};
     }
 
     [[nodiscard]] constexpr auto reverse_iterate() const
         requires reverse_iterable<Base const> && sized_iterable<Base const>
     {
         int_t sz = flux::iterable_size(base_);
-        return drop_iteration_context{.base_ctx = flux::reverse_iterate(base_),
-                                      .remaining = sz > count_ ? sz - count_ : 0};
+        return drop_iteration_context<reverse_iteration_context_t<Base const>>{
+            .base_ctx = flux::reverse_iterate(base_), .remaining = sz > count_ ? sz - count_ : 0};
     }
 
     [[nodiscard]] constexpr auto size() -> int_t

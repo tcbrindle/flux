@@ -102,13 +102,15 @@ public:
 
     [[nodiscard]] constexpr auto iterate()
     {
-        return stride_iteration_context{.base_ctx = flux::iterate(base_), .stride = stride_};
+        return stride_iteration_context<iteration_context_t<Base>>{.base_ctx = flux::iterate(base_),
+                                                                   .stride = stride_};
     }
 
     [[nodiscard]] constexpr auto iterate() const
         requires iterable<Base const>
     {
-        return stride_iteration_context{.base_ctx = flux::iterate(base_), .stride = stride_};
+        return stride_iteration_context<iteration_context_t<Base const>>{
+            .base_ctx = flux::iterate(base_), .stride = stride_};
     }
 
     [[nodiscard]] constexpr auto reverse_iterate()
@@ -116,7 +118,7 @@ public:
     {
         int_t initial_skip
             = stride_ - 1 - (stride_ - flux::iterable_size(base_) % stride_) % stride_;
-        return stride_iteration_context{
+        return stride_iteration_context<reverse_iteration_context_t<Base>>{
             .base_ctx = flux::reverse_iterate(base_), .stride = stride_, .skip = initial_skip};
     }
 
@@ -125,7 +127,7 @@ public:
     {
         int_t initial_skip
             = stride_ - 1 - (stride_ - flux::iterable_size(base_) % stride_) % stride_;
-        return stride_iteration_context{
+        return stride_iteration_context<reverse_iteration_context_t<Base const>>{
             .base_ctx = flux::reverse_iterate(base_), .stride = stride_, .skip = initial_skip};
     }
 
