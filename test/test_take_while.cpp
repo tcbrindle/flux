@@ -54,7 +54,7 @@ constexpr bool test_take_while()
         auto taken = flux::take_while(arr, [](int) { return false; });
 
         auto ctx = flux::iterate(taken);
-        STATIC_CHECK(flux::next_element(ctx) == std::nullopt);
+        STATIC_CHECK(flux::next_element(ctx) == flux::nullopt);
     }
 
     // Test (attempting to) restart iteration after completion
