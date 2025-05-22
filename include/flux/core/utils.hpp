@@ -131,6 +131,19 @@ constexpr auto copy_or_ref(Fn& fn)
 template <typename Fn>
 using copy_or_ref_t = decltype(copy_or_ref(std::declval<Fn&>()));
 
+template <typename Fn>
+struct emplace_from {
+    Fn fn;
+    using type = decltype(std::move(fn)());
+
+    constexpr operator type() && noexcept { return std::move(fn)(); }
+
+    constexpr type operator()() && { return std::move(fn)(); }
+};
+
+template <typename Fn>
+emplace_from(Fn) -> emplace_from<Fn>;
+
 } // namespace detail
 
 } // namespace flux

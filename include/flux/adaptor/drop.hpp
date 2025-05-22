@@ -43,11 +43,10 @@ struct take_iteration_context : immovable {
     constexpr auto run_while(auto&& pred) -> iteration_result
     {
         if (remaining > 0) {
-            auto res = base_ctx.run_while([&](auto&& elem) {
+            return base_ctx.run_while([&](auto&& elem) {
                 --remaining;
                 return pred(FLUX_FWD(elem)) && (remaining > 0);
             });
-            return static_cast<iteration_result>(static_cast<bool>(res) || (remaining == 0));
         } else {
             return iteration_result::complete;
         }
