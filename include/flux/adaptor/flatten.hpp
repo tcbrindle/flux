@@ -12,8 +12,80 @@ namespace flux {
 
 namespace detail {
 
-template <sequence Base>
+template <typename BaseCtx, auto const& IterateFn = flux::iterate>
+struct flatten_iteration_context : immovable {
+    BaseCtx base_ctx;
+
+    using OptInnerElem = decltype(next_element(base_ctx));
+    OptInnerElem inner_elem = nullopt;
+
+    using InnerCtx = decltype(IterateFn(*inner_elem));
+    optional<InnerCtx> inner_ctx = nullopt;
+
+    using element_type = context_element_t<InnerCtx>;
+
+    constexpr auto run_while(auto&& pred) -> iteration_result
+    {
+        while (true) {
+            if (!inner_ctx.has_value()) {
+                inner_elem = next_element(base_ctx);
+                if (!inner_elem) {
+                    return iteration_result::complete;
+                }
+                inner_ctx.emplace(detail::emplace_from([&] { return IterateFn(*inner_elem); }));
+            }
+
+            FLUX_DEBUG_ASSERT(inner_ctx.has_value());
+            auto res = flux::run_while(*inner_ctx, pred);
+            if (res == iteration_result::incomplete) {
+                return res;
+            } else {
+                inner_ctx.reset();
+            }
+        }
+    }
+};
+
+template <typename Base>
 struct flatten_adaptor : inline_sequence_base<flatten_adaptor<Base>> {
+private:
+    Base base_;
+
+public:
+    constexpr explicit flatten_adaptor(decays_to<Base> auto&& base) : base_(FLUX_FWD(base)) { }
+
+    constexpr auto iterate()
+    {
+        using Ctx = flatten_iteration_context<iteration_context_t<Base>>;
+        return Ctx{.base_ctx = flux::iterate(base_)};
+    }
+
+    constexpr auto iterate() const
+        requires iterable<Base const> && iterable<iterable_element_t<Base const>>
+    {
+        using Ctx = flatten_iteration_context<iteration_context_t<Base const>>;
+        return Ctx{.base_ctx = flux::iterate(base_)};
+    }
+
+    constexpr auto reverse_iterate()
+        requires reverse_iterable<Base> && reverse_iterable<iterable_element_t<Base>>
+    {
+        using Ctx
+            = flatten_iteration_context<reverse_iteration_context_t<Base>, flux::reverse_iterate>;
+        return Ctx{.base_ctx = flux::reverse_iterate(base_)};
+    }
+
+    constexpr auto reverse_iterate() const
+        requires reverse_iterable<Base const> && reverse_iterable<iterable_element_t<Base const>>
+    {
+        using Ctx = flatten_iteration_context<reverse_iteration_context_t<Base const>,
+                                              flux::reverse_iterate>;
+        return Ctx{.base_ctx = flux::reverse_iterate(base_)};
+    }
+};
+
+template <sequence Base>
+struct flatten_adaptor<Base> : inline_sequence_base<flatten_adaptor<Base>> {
 private:
     using InnerSeq = element_t<Base>;
 
@@ -21,9 +93,36 @@ private:
     optional<InnerSeq> inner_ = nullopt;
 
 public:
-    constexpr explicit flatten_adaptor(decays_to<Base> auto&& base)
-        : base_(FLUX_FWD(base))
-    {}
+    constexpr explicit flatten_adaptor(decays_to<Base> auto&& base) : base_(FLUX_FWD(base)) { }
+
+    constexpr auto iterate()
+    {
+        return flatten_iteration_context<iteration_context_t<Base>>{.base_ctx
+                                                                    = flux::iterate(base_)};
+    }
+
+    constexpr auto iterate() const
+        requires iterable<Base const> && iterable<iterable_element_t<Base const>>
+    {
+        return flatten_iteration_context<iteration_context_t<Base const>>{.base_ctx
+                                                                          = flux::iterate(base_)};
+    }
+
+    constexpr auto reverse_iterate()
+        requires reverse_iterable<Base> && reverse_iterable<iterable_element_t<Base>>
+    {
+        using Ctx
+            = flatten_iteration_context<reverse_iteration_context_t<Base>, flux::reverse_iterate>;
+        return Ctx{.base_ctx = flux::reverse_iterate(base_)};
+    }
+
+    constexpr auto reverse_iterate() const
+        requires reverse_iterable<Base const> && reverse_iterable<iterable_element_t<Base const>>
+    {
+        using Ctx = flatten_iteration_context<reverse_iteration_context_t<Base const>,
+                                              flux::reverse_iterate>;
+        return Ctx{.base_ctx = flux::reverse_iterate(base_)};
+    }
 
     struct flux_sequence_traits : default_sequence_traits {
     private:
@@ -101,9 +200,30 @@ private:
     Base base_;
 
 public:
-    constexpr explicit flatten_adaptor(decays_to<Base> auto&& base)
-        : base_(FLUX_FWD(base))
-    {}
+    constexpr explicit flatten_adaptor(decays_to<Base> auto&& base) : base_(FLUX_FWD(base)) { }
+
+    constexpr auto iterate() -> flatten_iteration_context<iteration_context_t<Base>>
+    {
+        return {.base_ctx = flux::iterate(base_)};
+    }
+
+    constexpr auto iterate() const -> flatten_iteration_context<iteration_context_t<Base const>>
+        requires iterable<Base const> && iterable<iterable_element_t<Base const>>
+    {
+        return {.base_ctx = flux::iterate(base_)};
+    }
+
+    constexpr auto size() -> int_t
+        requires sized_sequence<Base> && sized_sequence<element_t<Base>>
+    {
+        return num::mul(flux::size(base_), flux::size(flux::read_at(base_, flux::first(base_))));
+    }
+
+    constexpr auto size() const -> int_t
+        requires sized_sequence<Base const> && sized_sequence<element_t<Base const>>
+    {
+        return num::mul(flux::size(base_), flux::size(flux::read_at(base_, flux::first(base_))));
+    }
 
     struct flux_sequence_traits : default_sequence_traits {
     private:
@@ -231,12 +351,12 @@ public:
 };
 
 struct flatten_fn {
-    template <adaptable_sequence Seq>
-        requires sequence<element_t<Seq>>
+    template <adaptable_iterable It>
+        requires iterable<iterable_element_t<It>>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const -> sequence auto
+    constexpr auto operator()(It&& it) const -> iterable auto
     {
-        return flatten_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq));
+        return flatten_adaptor<std::decay_t<It>>(FLUX_FWD(it));
     }
 };
 
