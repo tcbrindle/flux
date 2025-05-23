@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <array>
 #include <ranges>
+#include <utility>
 
 #include "test_utils.hpp"
 
