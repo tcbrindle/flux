@@ -13,6 +13,20 @@ namespace {
 
 constexpr bool test_inclusive_scan()
 {
+    // inclusive scan with iterables
+    {
+        auto iter = iterable_only(std::array{1, 2, 3, 4, 5});
+
+        auto scan = flux::scan(iter, std::plus{});
+
+        using S = decltype(scan);
+        static_assert(flux::iterable<S>);
+        static_assert(flux::sized_iterable<S>);
+
+        STATIC_CHECK(flux::iterable_size(scan) == 5);
+        STATIC_CHECK(check_equal(scan, {1, 3, 6, 10, 15}));
+    }
+
     // scan returns the same as std::inclusive_scan
     {
         std::array arr{1, 2, 3, 4, 5};
@@ -75,6 +89,20 @@ static_assert(test_inclusive_scan());
 
 constexpr bool test_prescan()
 {
+    // exclusive scan with iterables
+    {
+        auto iter = iterable_only(std::array{1, 2, 3, 4, 5});
+
+        auto scan = flux::prescan(iter, std::plus{}, 0);
+
+        using S = decltype(scan);
+        static_assert(flux::iterable<S>);
+        static_assert(flux::sized_iterable<S>);
+
+        STATIC_CHECK(flux::iterable_size(scan) == 6);
+        STATIC_CHECK(check_equal(scan, {0, 1, 3, 6, 10, 15}));
+    }
+
     // prescan returns the same as std::exclusive_scan with one extra value
     {
         std::array arr{1, 2, 3, 4, 5};
@@ -145,6 +173,20 @@ static_assert(test_prescan());
 
 constexpr bool test_scan_first()
 {
+    // scan_first with iterables
+    {
+        auto iter = iterable_only(std::array{1, 2, 3, 4, 5});
+
+        auto scan = flux::scan_first(iter, std::plus{});
+
+        using S = decltype(scan);
+        static_assert(flux::iterable<S>);
+        static_assert(flux::sized_iterable<S>);
+
+        STATIC_CHECK(flux::iterable_size(scan) == 5);
+        STATIC_CHECK(check_equal(scan, {1, 3, 6, 10, 15}));
+    }
+
     // scan_first returns the same as std::inclusive_scan
     {
         std::array arr{1, 2, 3, 4, 5};
