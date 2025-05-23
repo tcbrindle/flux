@@ -45,18 +45,33 @@ public:
     constexpr auto base() && -> Base&& { return std::move(base_); }
     constexpr auto base() const&& -> Base const&& { return std::move(base_); }
 
-    constexpr auto iterate()
+    [[nodiscard]] constexpr auto iterate()
     {
         return context_type<iteration_context_t<Base>, copy_or_ref_t<Func>>{
             .base_ctx = flux::iterate(base_), .map_fn = copy_or_ref(func_)};
     }
 
-    constexpr auto iterate() const
+    [[nodiscard]] constexpr auto iterate() const
         requires iterable<Base const>
         && std::regular_invocable<Func&, iterable_element_t<Base const>>
     {
         return context_type<iteration_context_t<Base const>, copy_or_ref_t<Func const>>{
             .base_ctx = flux::iterate(base_), .map_fn = copy_or_ref(func_)};
+    }
+
+    [[nodiscard]] constexpr auto reverse_iterate()
+        requires reverse_iterable<Base>
+    {
+        return context_type<reverse_iteration_context_t<Base>, copy_or_ref_t<Func>>{
+            .base_ctx = flux::reverse_iterate(base_), .map_fn = copy_or_ref(func_)};
+    }
+
+    [[nodiscard]] constexpr auto reverse_iterate() const
+        requires reverse_iterable<Base const>
+        && std::regular_invocable<Func&, iterable_element_t<Base const>>
+    {
+        return context_type<reverse_iteration_context_t<Base const>, copy_or_ref_t<Func const>>{
+            .base_ctx = flux::reverse_iterate(base_), .map_fn = copy_or_ref(func_)};
     }
 
     constexpr auto size() -> int_t
