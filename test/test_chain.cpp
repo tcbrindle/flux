@@ -10,6 +10,11 @@
 
 #include "test_utils.hpp"
 
+// Older libc++ versions don't support constexpr emplace for variant
+#if defined(_LIBCPP_VERSION) && (_LIBCPP_VERSION < 190000)
+#    define NO_CONSTEXPR_VARIANT_EMPLACE
+#endif
+
 namespace {
 
 constexpr bool test_chain()
@@ -184,8 +189,9 @@ constexpr bool test_chain()
 
     return true;
 }
+#ifndef NO_CONSTEXPR_VARIANT_EMPLACE
 static_assert(test_chain());
-
+#endif
 }
 
 TEST_CASE("chain")
