@@ -144,6 +144,23 @@ struct emplace_from {
 template <typename Fn>
 emplace_from(Fn) -> emplace_from<Fn>;
 
+[[noreturn]] inline void unreachable()
+{
+    if constexpr (config::enable_debug_asserts) {
+        runtime_error(
+            "Unreachable code reached! This should never happen. Please file a bug report.");
+    }
+#if defined(__cpp_lib_unreachable) && (__cpp_lib_unreachable >= 202202L)
+    std::unreachable();
+#elif defined(__has_builtin) && __has_builtin(__builtin_unreachable)
+    __builtin_unreachable();
+#elif defined(_MSC_VER)
+    __assume(false);
+#else
+    std::abort();
+#endif
+}
+
 } // namespace detail
 
 } // namespace flux
