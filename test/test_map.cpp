@@ -47,6 +47,21 @@ constexpr bool test_map()
         STATIC_CHECK(check_equal(mapped, {2, 4, 6, 8, 10}));
     }
 
+    // Reverse iteration works with iterables
+    {
+        auto iter = iterable_only(std::array{1, 2, 3, 4, 5});
+
+        auto mapped = flux::map(std::move(iter), [](int i) { return i * 2; });
+
+        using M = decltype(mapped);
+
+        static_assert(flux::reverse_iterable<M>);
+        static_assert(flux::reverse_iterable<M const>);
+
+        STATIC_CHECK(check_equal(flux::reverse(mapped), {10, 8, 6, 4, 2}));
+        STATIC_CHECK(check_equal(flux::reverse(std::as_const(mapped)), {10, 8, 6, 4, 2}));
+    }
+
     {
         int arr[] = {0, 1, 2, 3, 4};
 
