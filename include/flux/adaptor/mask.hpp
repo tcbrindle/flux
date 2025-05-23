@@ -12,18 +12,57 @@ namespace flux {
 
 namespace detail {
 
-template <sequence Base, sequence Mask>
-struct mask_adaptor : inline_sequence_base<mask_adaptor<Base, Mask>>
-{
+template <iterable Base, iterable Mask>
+struct mask_adaptor : inline_sequence_base<mask_adaptor<Base, Mask>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Mask mask_;
+
+    template <typename BaseCtx, typename MaskCtx>
+    struct context_type : immovable {
+        BaseCtx base_ctx;
+        MaskCtx mask_ctx;
+
+        using element_type = typename BaseCtx::element_type;
+
+        constexpr auto run_while(auto&& pred) -> iteration_result
+        {
+            while (true) {
+                auto base_elem = next_element(base_ctx);
+                auto mask_elem = next_element(mask_ctx);
+
+                if (!base_elem || !mask_elem) {
+                    return iteration_result::complete;
+                }
+
+                if (*mask_elem) {
+                    if (!pred(*std::move(base_elem))) {
+                        return iteration_result::incomplete;
+                    }
+                }
+            }
+        }
+    };
 
 public:
     constexpr mask_adaptor(decays_to<Base> auto&& base, decays_to<Mask> auto&& mask)
         : base_(FLUX_FWD(base)),
           mask_(FLUX_FWD(mask))
-    {}
+    {
+    }
+
+    [[nodiscard]] constexpr auto iterate()
+    {
+        return context_type<iteration_context_t<Base>, iteration_context_t<Mask>>{
+            .base_ctx = flux::iterate(base_), .mask_ctx = flux::iterate(mask_)};
+    }
+
+    [[nodiscard]] constexpr auto iterate() const
+        requires iterable<Base const> && iterable<Mask const>
+    {
+        return context_type<iteration_context_t<Base const>, iteration_context_t<Mask const>>{
+            .base_ctx = flux::iterate(base_), .mask_ctx = flux::iterate(mask_)};
+    }
 
     struct flux_sequence_traits : default_sequence_traits {
     private:
@@ -141,8 +180,8 @@ public:
 };
 
 struct mask_fn {
-    template <adaptable_sequence Base, adaptable_sequence Mask>
-        requires boolean_testable<element_t<Mask>>
+    template <adaptable_iterable Base, adaptable_iterable Mask>
+        requires boolean_testable<iterable_element_t<Mask>>
     [[nodiscard]]
     constexpr auto operator()(Base&& base, Mask&& mask) const
     {
