@@ -13,16 +13,14 @@ namespace flux {
 
 FLUX_EXPORT
 template <typename Seq, typename Func, typename Init>
-using fold_result_t = std::decay_t<std::invoke_result_t<Func&, Init, element_t<Seq>>>;
+using fold_result_t = std::decay_t<std::invoke_result_t<Func&, Init, iterable_element_t<Seq>>>;
 
 namespace detail {
 
-template <typename Seq, typename Func, typename Init,
-          typename R = fold_result_t<Seq, Func, Init>>
-concept foldable_ =
-    std::invocable<Func&, R, element_t<Seq>> &&
-    std::convertible_to<Init, R> &&
-    std::assignable_from<R&, std::invoke_result_t<Func&, R, element_t<Seq>>>;
+template <typename Seq, typename Func, typename Init, typename R = fold_result_t<Seq, Func, Init>>
+concept foldable_
+    = std::invocable<Func&, R, iterable_element_t<Seq>> && std::convertible_to<Init, R>
+    && std::assignable_from<R&, std::invoke_result_t<Func&, R, iterable_element_t<Seq>>>;
 
 template <typename Func, typename E, int_t N>
 struct repeated_invocable_helper {
@@ -45,11 +43,9 @@ concept flatten_with_compatible
 } // namespace detail
 
 FLUX_EXPORT
-template <typename Seq, typename Func, typename Init>
-concept foldable =
-    sequence<Seq> &&
-    std::invocable<Func&, Init, element_t<Seq>> &&
-    detail::foldable_<Seq, Func, Init>;
+template <typename It, typename Func, typename Init>
+concept foldable = iterable<It> && std::invocable<Func&, Init, iterable_element_t<It>>
+    && detail::foldable_<It, Func, Init>;
 
 FLUX_EXPORT
 template <typename Fn, typename It1, typename It2 = It1>
