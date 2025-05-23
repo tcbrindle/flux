@@ -18,15 +18,14 @@ struct cast_to_const {
     constexpr auto operator()(auto&& elem) const -> T { return FLUX_FWD(elem); }
 };
 
-template <sequence Base>
-    requires (not read_only_sequence<Base>)
-struct read_only_adaptor : map_adaptor<Base, cast_to_const<const_element_t<Base>>> {
+template <iterable Base>
+struct read_only_adaptor : map_adaptor<Base, cast_to_const<iterable_const_element_t<Base>>> {
 private:
-    using map = map_adaptor<Base, cast_to_const<const_element_t<Base>>>;
+    using map = map_adaptor<Base, cast_to_const<iterable_const_element_t<Base>>>;
 
 public:
     constexpr explicit read_only_adaptor(decays_to<Base> auto&& base)
-        : map(FLUX_FWD(base), cast_to_const<const_element_t<Base>>{})
+        : map(FLUX_FWD(base), cast_to_const<iterable_const_element_t<Base>>{})
     {}
 
     struct flux_sequence_traits : map::flux_sequence_traits {
@@ -59,14 +58,14 @@ public:
 };
 
 struct read_only_fn {
-    template <adaptable_sequence Seq>
+    template <adaptable_iterable It>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const -> read_only_sequence auto
+    constexpr auto operator()(It&& it) const -> iterable auto
     {
-        if constexpr (read_only_sequence<Seq>) {
-            return FLUX_FWD(seq);
+        if constexpr (std::same_as<iterable_element_t<It>, iterable_const_element_t<It>>) {
+            return FLUX_FWD(it);
         } else {
-            return read_only_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq));
+            return read_only_adaptor<std::decay_t<It>>(FLUX_FWD(it));
         }
     }
 };

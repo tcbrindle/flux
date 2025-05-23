@@ -333,8 +333,13 @@ struct iterable_value_type<T> {
 FLUX_EXPORT template <typename I>
 using iterable_value_t = typename detail::iterable_value_type<I>::type;
 
-FLUX_EXPORT template <typename Seq>
-using iterable_common_element_t = std::common_reference_t<element_t<Seq>, value_t<Seq>&>;
+FLUX_EXPORT template <typename It>
+using iterable_common_element_t
+    = std::common_reference_t<iterable_element_t<It>, iterable_value_t<It>&>;
+
+FLUX_EXPORT template <typename It>
+using iterable_const_element_t
+    = std::common_reference_t<iterable_value_t<It> const&&, iterable_element_t<It>>;
 
 FLUX_EXPORT template <typename It>
 concept iterable = requires(It& it) {
