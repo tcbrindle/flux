@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compiler: [GCC-12, GCC-13, GCC-14, Clang-17, Clang-18, Clang-19, Clang-20]
+        compiler: [GCC-12, GCC-13, GCC-14, GCC-15, Clang-17, Clang-18, Clang-19, Clang-20]
         test_with: [Headers, Module]
         build_type: [Debug, Release]
 
@@ -21,6 +21,8 @@ jobs:
           - compiler: GCC-13
             test_with: Module
           - compiler: GCC-14
+            test_with: Module
+          - compiler: GCC-15
             test_with: Module
           - compiler: Clang-17
             test_with: Module
@@ -40,6 +42,11 @@ jobs:
             cxx: g++-14
             install: |
               brew install gcc@14 ninja binutils
+              brew link --force binutils
+          - compiler: GCC-15
+            cxx: g++-15
+            install: |
+              brew install gcc@15 ninja binutils
               brew link --force binutils
           - compiler: Clang-17
             cxx: $(brew --prefix llvm@17)/bin/clang++
