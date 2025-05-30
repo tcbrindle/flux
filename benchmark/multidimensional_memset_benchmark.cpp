@@ -18,19 +18,21 @@ namespace an = ankerl::nanobench;
 // Kernels are placed in a separate translation unit to prevent compilers from
 // optimizing them based on the input that we'll be giving them and to make it
 // easier to study their compiled assembly.
-extern void memset_2d_reference(double* A, flux::distance_t N, flux::distance_t M);
-extern void memset_2d_std_cartesian_product_iota(double* A, flux::distance_t N, flux::distance_t M);
-extern void memset_2d_flux_cartesian_product_iota(double* A, flux::distance_t N, flux::distance_t M);
-extern void memset_diagonal_2d_reference(double* A, flux::distance_t N, flux::distance_t M);
-extern void memset_diagonal_2d_std_cartesian_product_iota_filter(double* A, flux::distance_t N, flux::distance_t M);
-extern void memset_diagonal_2d_flux_cartesian_product_iota_filter(double* A, flux::distance_t N, flux::distance_t M);
+extern void memset_2d_reference(double* A, flux::int_t N, flux::int_t M);
+extern void memset_2d_std_cartesian_product_iota(double* A, flux::int_t N, flux::int_t M);
+extern void memset_2d_flux_cartesian_product_iota(double* A, flux::int_t N, flux::int_t M);
+extern void memset_diagonal_2d_reference(double* A, flux::int_t N, flux::int_t M);
+extern void memset_diagonal_2d_std_cartesian_product_iota_filter(double* A, flux::int_t N,
+                                                                 flux::int_t M);
+extern void memset_diagonal_2d_flux_cartesian_product_iota_filter(double* A, flux::int_t N,
+                                                                  flux::int_t M);
 
 int main(int argc, char** argv)
 {
     int const n_iters = argc > 1 ? std::atoi(argv[1]) : 40;
 
-    constexpr flux::distance_t N = 1024;
-    constexpr flux::distance_t M = 2048;
+    constexpr flux::int_t N = 1024;
+    constexpr flux::int_t M = 2048;
     std::vector<double> A(N * M);
 
     const auto run_benchmark =

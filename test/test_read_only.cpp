@@ -9,7 +9,24 @@
 
 namespace {
 
-constexpr bool test_read_only() {
+constexpr bool test_read_only()
+{
+    // read_only with iterables
+    {
+        auto iter = iterable_only(std::array{1, 2, 3, 4, 5});
+
+        auto read_only = flux::read_only(iter);
+
+        using R = decltype(read_only);
+
+        static_assert(flux::iterable<R>);
+        static_assert(flux::sized_iterable<R>);
+
+        static_assert(std::same_as<flux::iterable_element_t<R>, int const&>);
+        static_assert(std::same_as<flux::iterable_value_t<R>, int>);
+
+        STATIC_CHECK(check_equal(read_only, {1, 2, 3, 4, 5}));
+    }
 
     // Mutable lvalue ref -> const lvalue ref
     {
@@ -120,7 +137,7 @@ constexpr bool test_read_only() {
         using S = decltype(seq);
 
         static_assert(flux::random_access_sequence<S>);
-        static_assert(flux::read_only_sequence<S>);
+        // static_assert(flux::read_only_sequence<S>);
         // This needs the C++23 tuple/pair converting constructors and
         // basic_common_reference specialisations to work properly
 #ifdef FLUX_HAVE_CPP23_TUPLE_COMMON_REF

@@ -17,10 +17,10 @@ template <multipass_sequence Base>
 struct slide_adaptor : inline_sequence_base<slide_adaptor<Base>> {
 private:
     Base base_;
-    distance_t win_sz_;
+    int_t win_sz_;
 
 public:
-    constexpr slide_adaptor(decays_to<Base> auto&& base, distance_t win_sz)
+    constexpr slide_adaptor(decays_to<Base> auto&& base, int_t win_sz)
         : base_(FLUX_FWD(base)),
           win_sz_(win_sz)
     {}
@@ -49,7 +49,7 @@ public:
         static constexpr auto first(auto& self) -> cursor_type {
             auto cur = flux::first(self.base_);
             auto end = cur;
-            advance(self.base_, end, num::sub(self.win_sz_, distance_t{1}));
+            advance(self.base_, end, num::sub(self.win_sz_, int_t {1}));
 
             return cursor_type{.from = std::move(cur), .to = std::move(end)};
         }
@@ -76,7 +76,7 @@ public:
         {
             auto end = flux::last(self.base_);
             auto cur = end;
-            advance(self.base_, cur, num::sub(distance_t{1}, self.win_sz_));
+            advance(self.base_, cur, num::sub(int_t {1}, self.win_sz_));
             return cursor_type{.from = std::move(cur), .to = std::move(end)};
         }
 
@@ -87,7 +87,7 @@ public:
             flux::dec(self.base_, cur.to);
         }
 
-        static constexpr auto inc(auto& self, cursor_type& cur, distance_t offset) -> void
+        static constexpr auto inc(auto& self, cursor_type& cur, int_t offset) -> void
             requires random_access_sequence<Base>
         {
             flux::inc(self.base_, cur.from, offset);
@@ -95,17 +95,17 @@ public:
         }
 
         static constexpr auto distance(auto& self, cursor_type const& from, cursor_type const& to)
-            -> distance_t
+            -> int_t
             requires random_access_sequence<Base>
         {
             return flux::distance(self.base_, from.from, to.from);
         }
 
-        static constexpr auto size(auto& self) -> distance_t
+        static constexpr auto size(auto& self) -> int_t
             requires sized_sequence<Base>
         {
-            auto s = num::add(num::sub(flux::size(self.base_), self.win_sz_), distance_t{1});
-            return (cmp::max)(s, distance_t{0});
+            auto s = num::add(num::sub(flux::size(self.base_), self.win_sz_), int_t {1});
+            return (cmp::max)(s, int_t {0});
         }
     };
 };
@@ -117,8 +117,7 @@ struct slide_fn {
     constexpr auto operator()(Seq&& seq, num::integral auto win_sz) const
         -> sequence auto
     {
-        return slide_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq),
-                                                num::checked_cast<distance_t>(win_sz));
+        return slide_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq), num::checked_cast<int_t>(win_sz));
     }
 };
 

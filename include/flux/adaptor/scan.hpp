@@ -35,6 +35,31 @@ private:
     FLUX_NO_UNIQUE_ADDRESS Func func_;
     FLUX_NO_UNIQUE_ADDRESS R accum_;
 
+    struct context_type : immovable {
+        scan_adaptor* parent;
+        iteration_context_t<Base> base_ctx;
+        bool first = true;
+
+        using element_type = R const&;
+
+        constexpr auto run_while(auto&& pred) -> iteration_result
+        {
+            if constexpr (Mode == scan_mode::exclusive) {
+                if (first) {
+                    first = false;
+                    if (!pred(std::as_const(parent->accum_))) {
+                        return iteration_result::incomplete;
+                    }
+                }
+            }
+            return base_ctx.run_while([&](auto&& elem) {
+                parent->accum_
+                    = std::invoke(parent->func_, std::move(parent->accum_), FLUX_FWD(elem));
+                return pred(std::as_const(parent->accum_));
+            });
+        }
+    };
+
 public:
     constexpr scan_adaptor(decays_to<Base> auto&& base, Func&& func, auto&& init)
         : base_(FLUX_FWD(base)),
@@ -44,6 +69,21 @@ public:
 
     scan_adaptor(scan_adaptor&&) = default;
     scan_adaptor& operator=(scan_adaptor&&) = default;
+
+    constexpr auto iterate() -> context_type
+    {
+        return context_type{.parent = this, .base_ctx = flux::iterate(base_)};
+    }
+
+    constexpr auto size() -> int_t
+        requires sized_iterable<Base>
+    {
+        if constexpr (Mode == scan_mode::exclusive) {
+            return num::add(flux::iterable_size(base_), int_t{1});
+        } else {
+            return flux::iterable_size(base_);
+        }
+    }
 
     struct flux_sequence_traits : default_sequence_traits {
     private:
@@ -128,11 +168,11 @@ public:
             return cur;
         }
 
-        static constexpr auto size(self_t& self) -> distance_t
+        static constexpr auto size(self_t& self) -> int_t
             requires sized_sequence<Base>
         {
             if constexpr (Mode == scan_mode::exclusive) {
-                return num::add(flux::size(self.base_), distance_t{1});
+                return num::add(flux::size(self.base_), int_t {1});
             } else {
                 return flux::size(self.base_);
             }
@@ -141,7 +181,7 @@ public:
         static constexpr auto for_each_while(self_t& self, auto&& pred) -> cursor_type
             requires (Mode != scan_mode::exclusive)
         {
-            return cursor_type(flux::for_each_while(self.base_, [&](auto&& elem) {
+            return cursor_type(flux::seq_for_each_while(self.base_, [&](auto&& elem) {
                 self.accum_ = std::invoke(self.func_, std::move(self.accum_), FLUX_FWD(elem));
                 return std::invoke(pred, std::as_const(self.accum_));
             }));
@@ -152,28 +192,26 @@ public:
 };
 
 struct scan_fn {
-    template <adaptable_sequence Seq, typename Func, std::movable Init = value_t<Seq>,
-              typename R = fold_result_t<Seq, Func, Init>>
-        requires foldable<Seq, Func, Init>
+    template <adaptable_iterable It, typename Func, std::movable Init = iterable_value_t<It>,
+              typename R = fold_result_t<It, Func, Init>>
+        requires foldable<It, Func, Init>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Func func, Init init = Init{}) const
-        -> sequence auto
+    constexpr auto operator()(It&& it, Func func, Init init = Init{}) const -> iterable auto
     {
-        return scan_adaptor<std::decay_t<Seq>, Func, R, scan_mode::inclusive>(
-            FLUX_FWD(seq), std::move(func), std::move(init));
+        return scan_adaptor<std::decay_t<It>, Func, R, scan_mode::inclusive>(
+            FLUX_FWD(it), std::move(func), std::move(init));
     }
 };
 
 struct prescan_fn {
-    template <adaptable_sequence Seq, typename Func, std::movable Init,
-              typename R = fold_result_t<Seq, Func, Init>>
-        requires foldable<Seq, Func, Init>
+    template <adaptable_iterable It, typename Func, std::movable Init,
+              typename R = fold_result_t<It, Func, Init>>
+        requires foldable<It, Func, Init>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Func func, Init init) const
-        -> sequence auto
+    constexpr auto operator()(It&& it, Func func, Init init) const -> iterable auto
     {
-        return scan_adaptor<std::decay_t<Seq>, Func, R, scan_mode::exclusive>(
-            FLUX_FWD(seq), std::move(func), std::move(init));
+        return scan_adaptor<std::decay_t<It>, Func, R, scan_mode::exclusive>(
+            FLUX_FWD(it), std::move(func), std::move(init));
     }
 };
 

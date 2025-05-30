@@ -38,7 +38,7 @@ struct sequence_traits<T[N]> : default_sequence_traits {
     static constexpr auto inc(auto const&, index_t& idx)
     {
         FLUX_DEBUG_ASSERT(idx < N);
-        idx = num::add(idx, distance_t{1});
+        idx = num::add(idx, int_t {1});
     }
 
     static constexpr auto last(auto const&) -> index_t { return N; }
@@ -46,24 +46,24 @@ struct sequence_traits<T[N]> : default_sequence_traits {
     static constexpr auto dec(auto const&, index_t& idx)
     {
         FLUX_DEBUG_ASSERT(idx > 0);
-        idx = num::sub(idx, distance_t{1});
+        idx = num::sub(idx, int_t {1});
     }
 
-    static constexpr auto inc(auto const&, index_t& idx, distance_t offset)
+    static constexpr auto inc(auto const&, index_t& idx, int_t offset)
     {
         FLUX_DEBUG_ASSERT(num::add(idx, offset) <= N);
         FLUX_DEBUG_ASSERT(num::add(idx, offset) >= 0);
         idx = num::add(idx, offset);
     }
 
-    static constexpr auto distance(auto const&, index_t from, index_t to) -> distance_t
+    static constexpr auto distance(auto const&, index_t from, index_t to) -> int_t
     {
         return num::sub(to, from);
     }
 
     static constexpr auto data(auto& self) -> auto* { return self; }
 
-    static constexpr auto size(auto const&) -> distance_t { return N; }
+    static constexpr auto size(auto const&) -> int_t { return N; }
 
     static constexpr auto for_each_while(auto& self, auto&& pred) -> index_t
     {
@@ -125,16 +125,14 @@ struct sequence_traits<std::reference_wrapper<Seq>> : default_sequence_traits {
         return flux::dec(self.get(), cur);
     }
 
-    static constexpr auto inc(self_t self, cursor_t<Seq>& cur, distance_t offset)
-        -> cursor_t<Seq>&
+    static constexpr auto inc(self_t self, cursor_t<Seq>& cur, int_t offset) -> cursor_t<Seq>&
         requires random_access_sequence<Seq>
     {
         return flux::inc(self.get(), cur,  offset);
     }
 
-    static constexpr auto distance(self_t self, cursor_t<Seq> const& from,
-                                   cursor_t<Seq> const& to)
-        -> distance_t
+    static constexpr auto distance(self_t self, cursor_t<Seq> const& from, cursor_t<Seq> const& to)
+        -> int_t
         requires random_access_sequence<Seq>
     {
         return flux::distance(self.get(), from, to);
@@ -152,7 +150,7 @@ struct sequence_traits<std::reference_wrapper<Seq>> : default_sequence_traits {
         return flux::last(self.get());
     }
 
-    static constexpr auto size(self_t self) -> distance_t
+    static constexpr auto size(self_t self) -> int_t
         requires sized_sequence<Seq>
     {
         return flux::size(self.get());
@@ -186,7 +184,7 @@ struct sequence_traits<R> : default_sequence_traits {
     static constexpr auto inc(auto& self, index_t& idx)
     {
         FLUX_DEBUG_ASSERT(idx < size(self));
-        idx = num::add(idx, distance_t{1});
+        idx = num::add(idx, int_t {1});
     }
 
     static constexpr auto read_at(auto& self, index_t idx) -> decltype(auto)
@@ -203,26 +201,26 @@ struct sequence_traits<R> : default_sequence_traits {
     static constexpr auto dec(auto&, index_t& idx)
     {
         FLUX_DEBUG_ASSERT(idx > 0);
-        idx = num::sub(idx, distance_t{1});
+        idx = num::sub(idx, int_t {1});
     }
 
     static constexpr auto last(auto& self) -> index_t { return size(self); }
 
-    static constexpr auto inc(auto& self, index_t& idx, distance_t offset)
+    static constexpr auto inc(auto& self, index_t& idx, int_t offset)
     {
         FLUX_DEBUG_ASSERT(num::add(idx, offset) <= size(self));
         FLUX_DEBUG_ASSERT(num::add(idx, offset) >= 0);
         idx = num::add(idx, offset);
     }
 
-    static constexpr auto distance(auto&, index_t from, index_t to) -> distance_t
+    static constexpr auto distance(auto&, index_t from, index_t to) -> int_t
     {
         return num::sub(to, from);
     }
 
-    static constexpr auto size(auto& self) -> distance_t
+    static constexpr auto size(auto& self) -> int_t
     {
-        return num::cast<distance_t>(std::ranges::ssize(self));
+        return num::cast<int_t>(std::ranges::ssize(self));
     }
 
     static constexpr auto data(auto& self) -> auto*

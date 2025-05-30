@@ -92,8 +92,8 @@ public:
     }
 
     template <typename Self>
-        requires (random_access_sequence<const_like_t<Self, Bases>> && ...)
-    static constexpr auto& inc(Self& self, cursor_t<Self>& cur, distance_t offset)
+        requires(random_access_sequence<const_like_t<Self, Bases>> && ...)
+    static constexpr auto& inc(Self& self, cursor_t<Self>& cur, int_t offset)
     {
         [&]<std::size_t... I>(std::index_sequence<I...>) {
             (flux::inc(std::get<I>(self.bases_), std::get<I>(cur), offset), ...);
