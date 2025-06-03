@@ -70,14 +70,14 @@ public:
             --cur;
         }
 
-        static constexpr auto inc(self_t const&, std::size_t& cur, distance_t offset) -> void
+        static constexpr auto inc(self_t const&, std::size_t& cur, int_t offset) -> void
         {
             cur += static_cast<std::size_t>(offset);
         }
 
-        static constexpr auto distance(self_t const&, std::size_t from, std::size_t to) -> distance_t
+        static constexpr auto distance(self_t const&, std::size_t from, std::size_t to) -> int_t
         {
-            return num::cast<distance_t>(to) - num::cast<distance_t>(from);
+            return num::cast<int_t>(to) - num::cast<int_t>(from);
         }
 
         static constexpr auto for_each_while(self_t const& self, auto&& pred) -> std::size_t
@@ -107,10 +107,10 @@ public:
             return self.data_.count;
         }
 
-        static constexpr auto size(self_t const& self) -> distance_t
-            requires (!IsInfinite)
+        static constexpr auto size(self_t const& self) -> int_t
+            requires(!IsInfinite)
         {
-            return num::cast<distance_t>(self.data_.count);
+            return num::cast<int_t>(self.data_.count);
         }
     };
 };
@@ -127,7 +127,7 @@ struct repeat_fn {
         requires std::movable<std::decay_t<T>>
     constexpr auto operator()(T&& obj, num::integral auto count) const
     {
-        auto c = num::checked_cast<distance_t>(count);
+        auto c = num::checked_cast<int_t>(count);
         if (c < 0) {
             runtime_error("Negative count passed to repeat()");
         }

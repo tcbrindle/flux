@@ -24,33 +24,37 @@ inline namespace test_utils {
 
 inline constexpr struct {
 private:
-    static constexpr bool impl(flux::sequence auto&& seq1, flux::sequence auto&& seq2)
+    static constexpr bool impl(flux::iterable auto&& it1, flux::iterable auto&& it2)
     {
         using namespace flux;
 
-        auto cur1 = first(seq1);
-        auto cur2 = first(seq2);
+        auto ctx1 = iterate(it1);
+        auto ctx2 = iterate(it2);
 
-        while (!is_last(seq1, cur1) && !is_last(seq2, cur2)) {
-            if (read_at(seq1, cur1) != read_at(seq2, cur2)) { return false; }
+        while (true) {
+            auto opt1 = next_element(ctx1);
+            auto opt2 = next_element(ctx2);
 
-            inc(seq1, cur1);
-            inc(seq2, cur2);
+            if (opt1.has_value() && opt2.has_value()) {
+                if (*opt1 != *opt2) {
+                    return false;
+                }
+            } else if (opt1.has_value() || opt2.has_value()) {
+                return false;
+            } else {
+                return true;
+            }
         }
-
-        return is_last(seq1, cur1) == is_last(seq2, cur2);
     }
 
 public:
     template <typename T>
-    constexpr bool operator()(flux::sequence auto&& seq,
-                              std::initializer_list<T> ilist) const
+    constexpr bool operator()(flux::iterable auto&& seq, std::initializer_list<T> ilist) const
     {
         return impl(FLUX_FWD(seq), ilist);
     }
 
-    constexpr bool operator()(flux::sequence auto&& seq1,
-                              flux::sequence auto&& seq2) const
+    constexpr bool operator()(flux::iterable auto&& seq1, flux::iterable auto&& seq2) const
     {
         return impl(FLUX_FWD(seq1), FLUX_FWD(seq2));
     }
@@ -85,6 +89,49 @@ public:
     single_pass_only&  operator=(single_pass_only&&) = default;
 };
 
+template <flux::iterable Base>
+struct iterable_only {
+private:
+    Base base_;
+
+public:
+    constexpr explicit iterable_only(flux::decays_to<Base> auto&& base) : base_(FLUX_FWD(base)) { }
+
+    constexpr auto iterate() { return flux::iterate(base_); }
+
+    constexpr auto iterate() const
+        requires flux::iterable<Base const>
+    {
+        return flux::iterate(base_);
+    }
+
+    constexpr auto reverse_iterate()
+        requires flux::reverse_iterable<Base>
+    {
+        return flux::reverse_iterate(base_);
+    }
+
+    constexpr auto reverse_iterate() const
+        requires flux::reverse_iterable<Base const>
+    {
+        return flux::reverse_iterate(base_);
+    }
+
+    constexpr auto size() -> flux::int_t
+        requires flux::sized_iterable<Base>
+    {
+        return flux::iterable_size(base_);
+    }
+
+    constexpr auto size() const -> flux::int_t
+        requires flux::sized_iterable<Base const>
+    {
+        return flux::iterable_size(base_);
+    }
+};
+
+template <flux::iterable Base>
+iterable_only(Base) -> iterable_only<Base>;
 }
 
 template <typename Base>
@@ -127,9 +174,3 @@ struct flux::sequence_traits<single_pass_only<Base>> : flux::default_sequence_tr
         return flux::size(self.base_);
     }
 };
-
-template <typename Reqd, typename Expr>
-constexpr void assert_has_type(Expr&&)
-{
-    static_assert(std::same_as<Reqd, Expr>);
-}

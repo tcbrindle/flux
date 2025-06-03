@@ -19,17 +19,16 @@ struct minmax_result {
     T max;
 };
 
-namespace detail {
-
-struct min_op {
-    template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way>
+FLUX_EXPORT
+struct min_t {
+    template <iterable It, weak_ordering_for<It> Cmp = std::compare_three_way>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
-        -> flux::optional<value_t<Seq>>
+    constexpr auto operator()(It&& it, Cmp cmp = Cmp{}) const
+        -> flux::optional<iterable_value_t<It>>
     {
-        return flux::fold_first(FLUX_FWD(seq), [&](auto min, auto&& elem) -> value_t<Seq> {
+        return fold_first(FLUX_FWD(it), [&](auto min, auto&& elem) -> iterable_value_t<It> {
             if (std::invoke(cmp, elem, min) < 0) {
-                return value_t<Seq>(FLUX_FWD(elem));
+                return iterable_value_t<It>(FLUX_FWD(elem));
             } else {
                 return min;
             }
@@ -37,15 +36,18 @@ struct min_op {
     }
 };
 
-struct max_op {
-    template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way>
+FLUX_EXPORT inline constexpr min_t min{};
+
+FLUX_EXPORT
+struct max_t {
+    template <iterable It, weak_ordering_for<It> Cmp = std::compare_three_way>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
-        -> flux::optional<value_t<Seq>>
+    constexpr auto operator()(It&& it, Cmp cmp = Cmp{}) const
+        -> flux::optional<iterable_value_t<It>>
     {
-        return flux::fold_first(FLUX_FWD(seq), [&](auto max, auto&& elem) -> value_t<Seq> {
+        return fold_first(FLUX_FWD(it), [&](auto max, auto&& elem) -> iterable_value_t<It> {
             if (!(std::invoke(cmp, elem, max) < 0)) {
-                return value_t<Seq>(FLUX_FWD(elem));
+                return iterable_value_t<It>(FLUX_FWD(elem));
             } else {
                 return max;
             }
@@ -53,42 +55,42 @@ struct max_op {
     }
 };
 
-struct minmax_op {
-    template <sequence Seq, weak_ordering_for<Seq> Cmp = std::compare_three_way>
-    [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Cmp cmp = Cmp{}) const
-        -> flux::optional<minmax_result<value_t<Seq>>>
-    {
-        using R = minmax_result<value_t<Seq>>;
+FLUX_EXPORT inline constexpr max_t max{};
 
-        auto cur = flux::first(seq);
-        if (flux::is_last(seq, cur)) {
-            return std::nullopt;
+FLUX_EXPORT
+struct minmax_t {
+    template <iterable It, weak_ordering_for<It> Cmp = std::compare_three_way>
+    [[nodiscard]]
+    constexpr auto operator()(It&& it, Cmp cmp = Cmp{}) const
+        -> flux::optional<minmax_result<iterable_value_t<It>>>
+    {
+        using R = minmax_result<iterable_value_t<It>>;
+
+        iteration_context auto ctx = iterate(it);
+
+        auto opt = next_element(ctx);
+        if (!opt.has_value()) {
+            return flux::nullopt;
         }
 
-        R init = R{value_t<Seq>(flux::read_at(seq, cur)),
-                   value_t<Seq>(flux::read_at(seq, cur))};
+        auto min = iterable_value_t<It>(opt.value());
+        auto max = iterable_value_t<It>(std::move(opt).value());
 
-        auto fold_fn = [&](R mm, auto&& elem) -> R {
-            if (std::invoke(cmp, elem, mm.min) < 0) {
-                mm.min = value_t<Seq>(elem);
+        run_while(ctx, [&](auto&& elem) {
+            if (std::invoke(cmp, elem, min) < 0) {
+                min = iterable_value_t<It>(elem);
             }
-            if (!(std::invoke(cmp, elem, mm.max) < 0)) {
-                mm.max = value_t<Seq>(FLUX_FWD(elem));
+            if (!(std::invoke(cmp, elem, max) < 0)) {
+                max = iterable_value_t<It>(FLUX_FWD(elem));
             }
-            return mm;
-        };
+            return loop_continue;
+        });
 
-        return flux::optional<R>(std::in_place,
-                                flux::fold(flux::slice(seq, std::move(cur), flux::last), fold_fn, std::move(init)));
+        return flux::optional<R>(R(std::move(min), std::move(max)));
     }
 };
 
-} // namespace detail
-
-FLUX_EXPORT inline constexpr auto min = detail::min_op{};
-FLUX_EXPORT inline constexpr auto max = detail::max_op{};
-FLUX_EXPORT inline constexpr auto minmax = detail::minmax_op{};
+FLUX_EXPORT inline constexpr minmax_t minmax{};
 
 template <typename Derived>
 template <typename Cmp>

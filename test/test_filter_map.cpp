@@ -37,20 +37,15 @@ constexpr bool test_filter()
 {
     // Basic filtering
     {
-        int arr[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-        auto filtered = flux::filter_map(flux::ref(arr), is_even_opt);
-        using F = decltype(filtered);
-        static_assert(flux::sequence<F>);
-        static_assert(flux::bidirectional_sequence<F>);
-        static_assert(flux::bounded_sequence<F>);
-        static_assert(not flux::ordered_cursor<F>);
-        static_assert(not flux::sized_sequence<F>);
+        std::array arr = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+        auto filtered = flux::filter_map(iterable_only(arr), is_even_opt);
 
-        static_assert(flux::sequence<F const>);
-        static_assert(flux::bidirectional_sequence<F const>);
-        static_assert(flux::bounded_sequence<F const>);
-        static_assert(not flux::ordered_cursor<F const>);
-        static_assert(not flux::sized_sequence<F const>);
+        using F = decltype(filtered);
+        static_assert(flux::iterable<F>);
+        static_assert(flux::reverse_iterable<F>);
+
+        static_assert(flux::iterable<F const>);
+        static_assert(flux::reverse_iterable<F const>);
 
         STATIC_CHECK(check_equal(filtered, {0, 2, 4, 6, 8}));
         STATIC_CHECK(check_equal(std::as_const(filtered), {0, 2, 4, 6, 8}));

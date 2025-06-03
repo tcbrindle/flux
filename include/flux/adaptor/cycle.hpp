@@ -128,7 +128,7 @@ public:
             if constexpr (IsInfinite) {
                 std::size_t n = 0;
                 while (true) {
-                    auto cur = flux::for_each_while(self.base_, constify_pred);
+                    auto cur = flux::seq_for_each_while(self.base_, constify_pred);
                     if (!flux::is_last(self.base_, cur)) {
                         return cursor_type{std::move(cur), n};
                     }
@@ -136,7 +136,7 @@ public:
                 }
             } else {
                 for (std::size_t n = 0; n < self.data_.count; ++n) {
-                    auto cur = flux::for_each_while(self.base_, constify_pred);
+                    auto cur = flux::seq_for_each_while(self.base_, constify_pred);
                     if (!flux::is_last(self.base_, cur)) {
                         return cursor_type{std::move(cur), n};
                     }
@@ -156,9 +156,9 @@ public:
             flux::dec(self.base_, cur.base_cur);
         }
 
-        static constexpr auto inc(auto& self, cursor_type& cur, distance_t offset)
-            requires random_access_sequence<decltype(self.base_)> &&
-                     bounded_sequence<decltype(self.base_)>
+        static constexpr auto inc(auto& self, cursor_type& cur, int_t offset)
+            requires random_access_sequence<decltype(self.base_)>
+            && bounded_sequence<decltype(self.base_)>
         {
             auto const first = flux::first(self.base_);
 
@@ -180,13 +180,12 @@ public:
             cur.base_cur = flux::next(self.base_, first, off);
         }
 
-        static constexpr auto distance(auto& self,
-                                       cursor_type const& from,
-                                       cursor_type const& to) -> distance_t
-            requires random_access_sequence<decltype(self.base_)> &&
-                     sized_sequence<decltype(self.base_)>
+        static constexpr auto distance(auto& self, cursor_type const& from, cursor_type const& to)
+            -> int_t
+            requires random_access_sequence<decltype(self.base_)>
+            && sized_sequence<decltype(self.base_)>
         {
-            auto dist = num::cast<distance_t>(to.n) - num::cast<distance_t>(from.n);
+            auto dist = num::cast<int_t>(to.n) - num::cast<int_t>(from.n);
             dist = num::mul(dist, flux::size(self.base_));
             return num::add(dist,
                     flux::distance(self.base_, from.base_cur, to.base_cur));
@@ -200,11 +199,10 @@ public:
                                .n = self.data_.count};
         }
 
-        static constexpr auto size(auto& self) -> distance_t
-            requires (!IsInfinite && sized_sequence<Base>)
+        static constexpr auto size(auto& self) -> int_t
+            requires(!IsInfinite && sized_sequence<Base>)
         {
-            return num::mul(flux::size(self.base_),
-                            num::cast<flux::distance_t>(self.data_.count));
+            return num::mul(flux::size(self.base_), num::cast<flux::int_t>(self.data_.count));
         }
     };
 };
@@ -228,7 +226,7 @@ struct cycle_fn {
     constexpr auto operator()(Seq&& seq, num::integral auto count) const
         -> multipass_sequence auto
     {
-        auto c = num::checked_cast<distance_t>(count);
+        auto c = num::checked_cast<int_t>(count);
         if (c < 0) {
             runtime_error("Negative count passed to cycle()");
         }

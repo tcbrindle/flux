@@ -133,7 +133,7 @@ static_assert(test_cartesian_product_map());
 void issue_167()
 {
     // Check that overflowing size() is correctly caught
-    auto ints = flux::ints(0, std::numeric_limits<flux::distance_t>::max());
+    auto ints = flux::ints(0, std::numeric_limits<flux::int_t>::max());
 
     auto prod = flux::cartesian_product_map([](auto...) { return 0; }, ints, ints, ints);
 

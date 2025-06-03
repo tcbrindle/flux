@@ -61,9 +61,9 @@ struct cartesian_power_fn {
 } // end namespace detail
 
 FLUX_EXPORT
-template<distance_t N>
-    requires (N >= 0)
-inline constexpr auto cartesian_power = detail::cartesian_power_fn<N>{};
+template <int_t N>
+    requires(N >= 0)
+inline constexpr auto cartesian_power = detail::cartesian_power_fn<N> {};
 
 } // end namespace flux
 

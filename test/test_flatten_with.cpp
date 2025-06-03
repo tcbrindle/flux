@@ -18,6 +18,34 @@ using namespace std::string_view_literals;
 
 constexpr bool test_flatten_with_single_pass()
 {
+    // Iterable outer, sequence pattern
+    {
+        std::array<std::string_view, 3> arr{"111", "222", "333"};
+
+        auto flattened = flux::flatten_with(iterable_only(arr), "-_-"sv);
+
+        using F = decltype(flattened);
+        static_assert(flux::iterable<F>);
+        static_assert(std::same_as<flux::iterable_element_t<F>, char const&>);
+        static_assert(std::same_as<flux::iterable_value_t<F>, char>);
+        static_assert(not flux::sized_iterable<F>);
+
+        static_assert(flux::iterable<F const>);
+        static_assert(std::same_as<flux::iterable_element_t<F const>, char const&>);
+        static_assert(std::same_as<flux::iterable_value_t<F const>, char>);
+
+        STATIC_CHECK(check_equal(flattened, "111-_-222-_-333"sv));
+    }
+
+    // Iterable outer, value pattern
+    {
+        std::array<std::string_view, 3> arr{"111", "222", "333"};
+
+        auto flattened = flux::flatten_with(iterable_only(arr), '-');
+
+        STATIC_CHECK(check_equal(flattened, "111-222-333"sv));
+    }
+
     // Single-pass outer, multipass inner, sequence pattern
     {
         std::array<std::string_view, 3> arr{"111", "222", "333"};
@@ -76,7 +104,7 @@ constexpr bool test_flatten_with_single_pass()
         std::array<std::string_view, 6> arr{
             "123"sv, ""sv, "456"sv, ""sv, "7"sv, "89"sv
         };
-        
+
         auto seq = single_pass_only(std::move(arr)).flatten_with('-');
 
         using S = decltype(seq);
