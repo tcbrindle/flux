@@ -14901,7 +14901,7 @@ public:
             if (offset < 0) {
                 bounds_check(num::add(offset, distance(self, first(self), cur)) >= 0);
             } else if (offset > 0) {
-                bounds_check(offset < distance(self, cur, last(self)));
+                bounds_check(offset <= distance(self, cur, last(self)));
             }
 
             cur.iter += num::cast<std::ranges::range_difference_t<V>>(offset);
