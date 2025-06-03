@@ -49,11 +49,26 @@ constexpr bool test_from_range()
 }
 static_assert(test_from_range());
 
+// https://github.com/tcbrindle/flux/issues/244
+constexpr bool issue_244()
+{
+    std::string_view str("abcdefghijklmnopqrstuvwxyz");
+
+    auto chunks = flux::from_range(str).chunk(3);
+
+    std::string out;
+
+    flux::for_each(chunks, [&out](auto c) { flux::for_each(c, [&out](char n) { out += n; }); });
+
+    return out == str;
+}
+static_assert(issue_244());
 }
 
 TEST_CASE("from range")
 {
     REQUIRE(test_from_range());
+    REQUIRE(issue_244());
 
     SUBCASE("bounds checking") {
         std::vector<int> vec{0, 1, 2, 3, 4};
