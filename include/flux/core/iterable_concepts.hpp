@@ -325,7 +325,7 @@ struct iterable_value_type<T> {
 template <typename T>
     requires has_member_value_type<T> && (!has_context_value_type<T> && !has_traits_value_type<T>)
 struct iterable_value_type<T> {
-    using type = std::remove_cvref_t<iterable_element_t<T>>;
+    using type = typename T::value_type;
 };
 
 } // namespace detail
@@ -346,7 +346,11 @@ concept iterable = requires(It& it) {
     { iterate(it) } -> iteration_context;
 } && requires {
     typename iterable_value_t<It>;
-} && std::is_object_v<iterable_value_t<It>> && std::common_reference_with<iterable_element_t<It>&&, iterable_value_t<It>&>;
+} && std::is_object_v<iterable_value_t<It>>
+#ifdef FLUX_HAVE_CPP23_TUPLE_COMMON_REF
+&& std::common_reference_with<iterable_element_t<It>&&, iterable_value_t<It>&>
+#endif
+;
 
 /*
  * MARK: Sized iterable
