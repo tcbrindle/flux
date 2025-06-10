@@ -15,8 +15,7 @@
 
 #include <flux.hpp>
 
-auto const rain_water = [](std::initializer_list<int> heights)
-{
+auto const rain_water = []<std::size_t N>(std::array<int, N> heights) {
     // Find the index of the maximum height
     flux::cursor auto max_idx = flux::find_max(heights);
 
@@ -37,7 +36,7 @@ auto const rain_water = [](std::initializer_list<int> heights)
     return trapped(left) + trapped(flux::reverse(right));
 };
 
-static_assert(rain_water({0,1,0,2,1,0,1,3,2,1,2,1}) == 6);
-static_assert(rain_water({4,2,0,3,2,5}) == 9);
+static_assert(rain_water(std::array{0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1}) == 6);
+static_assert(rain_water(std::array{4, 2, 0, 3, 2, 5}) == 9);
 
 int main() {}
