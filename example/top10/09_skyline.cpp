@@ -14,14 +14,13 @@
 
 #include <flux.hpp>
 
-auto const skyline = [](std::initializer_list<int> heights)
-{
+auto const skyline = [](auto heights) {
     auto h = flux::ref(heights);
 
     return 1 + flux::zip(flux::drop(h, 1), flux::scan(h, flux::cmp::max))
                    .count_if([](auto p) { return p.first > p.second; });
 };
 
-static_assert(skyline({5, 5, 2, 10, 3, 15, 10}) == 3);
+static_assert(skyline(std::array{5, 5, 2, 10, 3, 15, 10}) == 3);
 
 int main() {}
