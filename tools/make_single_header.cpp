@@ -4,6 +4,7 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
+#include <algorithm>
 #include <deque>
 #include <iostream>
 #include <filesystem>
@@ -37,7 +38,7 @@ private:
     struct replacement {
         std::ptrdiff_t pos;
         std::ptrdiff_t len;
-        std::string text;
+        std::string text{};
     };
 
     include_processor(fs::path&& start_path)
