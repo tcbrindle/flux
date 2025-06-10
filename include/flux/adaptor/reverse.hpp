@@ -27,19 +27,19 @@ public:
 
     struct flux_iterable_traits {
         static constexpr auto iterate(auto& self)
-            requires reverse_iterable<decltype(self.base_)>
+            requires reverse_iterable<decltype((self.base_))>
         {
             return flux::reverse_iterate(self.base_);
         }
 
         static constexpr auto reverse_iterate(auto& self)
-            requires iterable<decltype(self.base_)>
+            requires iterable<decltype((self.base_))>
         {
             return flux::iterate(self.base_);
         }
 
         static constexpr auto size(auto& self)
-            requires sized_iterable<decltype(self.base_)>
+            requires sized_iterable<decltype((self.base_))>
         {
             return flux::iterable_size(self.base_);
         }
