@@ -41,6 +41,87 @@ struct NotBidir : flux::inline_sequence_base<NotBidir<Base>> {
     };
 };
 
+constexpr bool test_stride_iterable()
+{
+    // Basic stride, n divides size
+    {
+        auto iter = iterable_only(std::array{0, 1, 2, 3, 4, 5});
+
+        auto strided = flux::stride(iter, 2);
+
+        using S = decltype(strided);
+        static_assert(flux::iterable<S>);
+        static_assert(flux::sized_iterable<S>);
+
+        STATIC_CHECK(check_equal(strided, {0, 2, 4}));
+        STATIC_CHECK(flux::iterable_size(strided) == 3);
+    }
+
+    // Basic stride, n does not divide size
+    {
+        auto iter = iterable_only(std::array{0, 1, 2, 3, 4, 5, 6, 7});
+
+        auto const strided = flux::stride(iter, 3);
+
+        using S = decltype(strided);
+        static_assert(flux::iterable<S>);
+        static_assert(flux::sized_iterable<S>);
+
+        STATIC_CHECK(check_equal(strided, {0, 3, 6}));
+        STATIC_CHECK(flux::iterable_size(strided) == 3);
+    }
+
+    // Stride of 1 returns the original sequence
+    {
+        auto iter = iterable_only(std::array{0, 1, 2, 3, 4, 5, 6});
+
+        auto const strided = flux::stride(iter, 1);
+
+        STATIC_CHECK(check_equal(strided, iter));
+    }
+
+    // Stride >= than sequence size returns sequence of one element
+    {
+        auto iter = iterable_only(std::array{0, 1, 2, 3, 4, 5});
+
+        auto strided = flux::stride(iter, flux::iterable_size(iter));
+
+        STATIC_CHECK(flux::iterable_size(strided) == 1);
+        STATIC_CHECK(check_equal(strided, {0}));
+    }
+
+    // Reverse iteration, n divides size
+    {
+        auto iter = iterable_only(std::array{0, 1, 2, 3, 4, 5});
+
+        auto strided = flux::reverse(flux::stride(iter, 2));
+
+        using S = decltype(strided);
+        static_assert(flux::iterable<S>);
+        static_assert(flux::sized_iterable<S>);
+
+        STATIC_CHECK(check_equal(strided, {4, 2, 0}));
+        STATIC_CHECK(flux::iterable_size(strided) == 3);
+    }
+
+    // Reverse iteration, n does not divide size
+    {
+        auto iter = iterable_only(std::array{0, 1, 2, 3, 4, 5, 6, 7});
+
+        auto const strided = flux::reverse(flux::stride(iter, 3));
+
+        using S = decltype(strided);
+        static_assert(flux::iterable<S>);
+        static_assert(flux::sized_iterable<S>);
+
+        STATIC_CHECK(check_equal(strided, {6, 3, 0}));
+        STATIC_CHECK(flux::iterable_size(strided) == 3);
+    }
+
+    return true;
+}
+static_assert(test_stride_iterable());
+
 constexpr bool test_stride_non_bidir()
 {
     // Basic stride, n divides size
@@ -116,7 +197,7 @@ constexpr bool test_stride_non_bidir()
     // Stride of distance_t::max doesn't break stuff
     {
         std::array arr{0, 1, 2, 3, 4, 5};
-        auto seq = NotBidir(arr).stride(std::numeric_limits<flux::distance_t>::max());
+        auto seq = NotBidir(arr).stride(std::numeric_limits<flux::int_t>::max());
 
         auto cur = seq.first();
         STATIC_CHECK(!seq.is_last(cur));
@@ -259,7 +340,7 @@ constexpr bool test_stride_bidir()
     // Stride of distance_t::max doesn't break stuff
     {
         std::array arr{0, 1, 2, 3, 4, 5};
-        auto seq = flux::ref(arr).stride(std::numeric_limits<flux::distance_t>::max());
+        auto seq = flux::ref(arr).stride(std::numeric_limits<flux::int_t>::max());
 
         auto cur = seq.first();
         STATIC_CHECK(!seq.is_last(cur));

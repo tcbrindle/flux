@@ -5,6 +5,7 @@
 
 #include <array>
 #include <iostream>
+#include <utility>
 
 #include "test_utils.hpp"
 
@@ -12,6 +13,24 @@ namespace {
 
 constexpr bool test_mask()
 {
+    // Mask with non-sequence iterables
+    {
+        auto iter = iterable_only(std::array{1, 2, 3, 4, 5});
+        auto mask = iterable_only(std::array{true, false, true, false, true});
+
+        auto masked = flux::mask(iter, mask);
+
+        using S = decltype(masked);
+        static_assert(flux::iterable<S>);
+        static_assert(std::same_as<flux::iterable_element_t<S>, int&>);
+
+        static_assert(flux::iterable<S const>);
+        static_assert(std::same_as<flux::iterable_element_t<S const>, int const&>);
+
+        STATIC_CHECK(check_equal(masked, {1, 3, 5}));
+        STATIC_CHECK(check_equal(std::as_const(masked), {1, 3, 5}));
+    }
+
     // Basic mask
     {
         std::array values{1, 2, 3, 4, 5};

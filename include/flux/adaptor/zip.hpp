@@ -92,8 +92,8 @@ public:
     }
 
     template <typename Self>
-        requires (random_access_sequence<const_like_t<Self, Bases>> && ...)
-    static constexpr auto& inc(Self& self, cursor_t<Self>& cur, distance_t offset)
+        requires(random_access_sequence<const_like_t<Self, Bases>> && ...)
+    static constexpr auto& inc(Self& self, cursor_t<Self>& cur, int_t offset)
     {
         [&]<std::size_t... I>(std::index_sequence<I...>) {
             (flux::inc(std::get<I>(self.bases_), std::get<I>(cur), offset), ...);
@@ -134,7 +134,7 @@ public:
 
 namespace detail {
 
-template <sequence... Bases>
+template <iterable... Bases>
 struct zip_adaptor : inline_sequence_base<zip_adaptor<Bases...>> {
 private:
     pair_or_tuple_t<Bases...> bases_;
@@ -142,26 +142,92 @@ private:
     friend struct sequence_traits<zip_adaptor>;
     friend struct zip_traits_base<Bases...>;
 
+    template <typename... BaseCtx>
+    struct context_type : immovable {
+        std::tuple<BaseCtx...> base_ctxs;
+
+        using element_type = pair_or_tuple_t<context_element_t<BaseCtx>...>;
+
+        static constexpr auto run_while_impl(auto& pred, auto&... ctxs) -> iteration_result
+        {
+            return [&pred, &ctxs..., ... opts = flux::next_element(ctxs)]() mutable {
+                while (true) {
+                    if (!(opts.has_value() && ...)) {
+                        return iteration_result::complete;
+                    }
+                    if (!pred(element_type(std::move(opts).value_unchecked()...))) {
+                        return iteration_result::incomplete;
+                    }
+                    ((opts = flux::next_element(ctxs)), ...);
+                }
+            }();
+        }
+
+        constexpr auto run_while(auto&& pred) -> iteration_result
+        {
+            return std::apply([&pred](auto&... ctxs) { return run_while_impl(pred, ctxs...); },
+                              base_ctxs);
+        }
+    };
+
 public:
+    using value_type = pair_or_tuple_t<iterable_value_t<Bases>...>;
+
     constexpr explicit zip_adaptor(decays_to<Bases> auto&&... bases)
-        : bases_(FLUX_FWD(bases)...)
-    {}
+        : bases_(FLUX_FWD(bases)...) { }
+
+    constexpr auto iterate() -> context_type<iteration_context_t<Bases>...>
+    {
+        return context_type<iteration_context_t<Bases>...>{
+            .base_ctxs = std::apply(
+                [&](auto&... bases) {
+                    return std::tuple<iteration_context_t<Bases>...>(
+                        emplace_from([&] { return flux::iterate(bases); })...);
+                },
+                bases_)};
+    }
+
+    constexpr auto iterate() const
+        requires(iterable<Bases const> && ...)
+    {
+        return context_type<iteration_context_t<Bases const>...>{
+            .base_ctxs = std::apply(
+                [&](auto&... bases) {
+                    return std::tuple<iteration_context_t<Bases const>...>(
+                        emplace_from([&] { return flux::iterate(bases); })...);
+                },
+                bases_)};
+    }
+
+    constexpr auto size() -> int_t
+        requires(sized_iterable<Bases> && ...)
+    {
+        return std::apply([](auto&... bases) { return std::min({flux::iterable_size(bases)...}); },
+                          bases_);
+    }
+
+    constexpr auto size() const -> int_t
+        requires(sized_iterable<Bases const> && ...)
+    {
+        return std::apply([](auto&... bases) { return std::min({flux::iterable_size(bases)...}); },
+                          bases_);
+    }
 };
 
 struct zip_fn {
-    template <adaptable_sequence... Seqs>
+    template <adaptable_iterable... Its>
     [[nodiscard]]
-    constexpr auto operator()(Seqs&&... seqs) const
+    constexpr auto operator()(Its&&... its) const
     {
-        if constexpr (sizeof...(Seqs) == 0) {
+        if constexpr (sizeof...(Its) == 0) {
             return empty<std::tuple<>>;
         } else {
-            return zip_adaptor<std::decay_t<Seqs>...>(FLUX_FWD(seqs)...);
+            return zip_adaptor<std::decay_t<Its>...>(FLUX_FWD(its)...);
         }
     }
 };
 
-template <typename Func, sequence... Bases>
+template <typename Func, iterable... Bases>
 struct zip_map_adaptor : inline_sequence_base<zip_map_adaptor<Func, Bases...>> {
 private:
     pair_or_tuple_t<Bases...> bases_;
@@ -170,22 +236,93 @@ private:
     friend struct sequence_traits<zip_map_adaptor>;
     friend struct zip_traits_base<Bases...>;
 
+    template <typename Fn, typename... BaseCtx>
+    struct context_type : immovable {
+        Fn fn;
+        std::tuple<BaseCtx...> base_ctxs;
+
+        using element_type = std::invoke_result_t<Fn&, context_element_t<BaseCtx>...>;
+
+        static constexpr auto run_while_impl(auto& fn, auto& pred, auto&... ctxs)
+            -> iteration_result
+        {
+            return [&fn, &pred, &ctxs..., ... opts = flux::next_element(ctxs)]() mutable {
+                while (true) {
+                    if (!(opts.has_value() && ...)) {
+                        return iteration_result::complete;
+                    }
+                    if (!pred(std::invoke(fn, std::move(opts).value_unchecked()...))) {
+                        return iteration_result::incomplete;
+                    }
+                    ((opts = flux::next_element(ctxs)), ...);
+                }
+            }();
+        }
+
+        constexpr auto run_while(auto&& pred) -> iteration_result
+        {
+            return std::apply(
+                [&fn = fn, &pred](auto&... ctxs) { return run_while_impl(fn, pred, ctxs...); },
+                base_ctxs);
+        }
+    };
+
 public:
     constexpr explicit zip_map_adaptor(Func&& func, decays_to<Bases> auto&&... bases)
         : bases_(FLUX_FWD(bases)...), func_(std::move(func))
     {}
+
+    constexpr auto iterate() -> context_type<copy_or_ref_t<Func>, iteration_context_t<Bases>...>
+    {
+        return context_type<copy_or_ref_t<Func>, iteration_context_t<Bases>...>{
+            .fn = copy_or_ref(func_),
+            .base_ctxs = std::apply(
+                [&](auto&... bases) {
+                    return std::tuple<iteration_context_t<Bases>...>(
+                        emplace_from([&] { return flux::iterate(bases); })...);
+                },
+                bases_)};
+    }
+
+    constexpr auto iterate() const
+        requires(iterable<Bases const> && ...)
+        && std::regular_invocable<Func const&, iterable_element_t<Bases const>...>
+    {
+        return context_type<copy_or_ref_t<Func const>, iteration_context_t<Bases const>...>{
+            .fn = copy_or_ref(func_),
+            .base_ctxs = std::apply(
+                [&](auto&... bases) {
+                    return std::tuple<iteration_context_t<Bases const>...>(
+                        emplace_from([&] { return flux::iterate(bases); })...);
+                },
+                bases_)};
+    }
+
+    constexpr auto size() -> int_t
+        requires(sized_iterable<Bases> && ...)
+    {
+        return std::apply([](auto&... bases) { return std::min({flux::iterable_size(bases)...}); },
+                          bases_);
+    }
+
+    constexpr auto size() const -> int_t
+        requires(sized_iterable<Bases const> && ...)
+    {
+        return std::apply([](auto&... bases) { return std::min({flux::iterable_size(bases)...}); },
+                          bases_);
+    }
 };
 
 struct zip_map_fn {
-    template <typename Func, adaptable_sequence... Seqs>
-        requires std::regular_invocable<Func&, element_t<Seqs>...>
+    template <typename Func, adaptable_iterable... Its>
+        requires std::regular_invocable<Func&, iterable_element_t<Its>...>
     [[nodiscard]]
-    constexpr auto operator()(Func func, Seqs&&... seqs) const
+    constexpr auto operator()(Func func, Its&&... its) const
     {
-        if constexpr (sizeof...(Seqs) == 0) {
+        if constexpr (sizeof...(Its) == 0) {
             return empty<std::invoke_result_t<Func>>;
         } else {
-            return zip_map_adaptor<Func, std::decay_t<Seqs>...>(std::move(func), FLUX_FWD(seqs)...);
+            return zip_map_adaptor<Func, std::decay_t<Its>...>(std::move(func), FLUX_FWD(its)...);
         }
     }
 };

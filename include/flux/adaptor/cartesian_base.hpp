@@ -19,7 +19,7 @@ inline constexpr auto checked_pow =
 {
     T res{1};
     for(U i{0}; i < exponent; i++) {
-        res = num::mul(res, base, loc);
+        res = num::checked_mul(res, base, loc);
     }
     return res;
 };
@@ -36,7 +36,7 @@ struct tuple_repeated {
     using repeater = T;
 
     template <std::size_t... Is>
-    static auto make_tuple(std::index_sequence<Is...>) -> std::tuple<repeater<Is>...>;    
+    static auto make_tuple(std::index_sequence<Is...>) -> std::tuple<repeater<Is>...>;
 
     using type = decltype(make_tuple(std::make_index_sequence<RepeatCount>{}));
 };
@@ -109,8 +109,8 @@ private:
     }
 
     template <std::size_t I, typename Self>
-    static constexpr auto ra_inc_impl(Self& self, cursor_t<Self>& cur, distance_t offset)
-    -> cursor_t<Self>&
+    static constexpr auto ra_inc_impl(Self& self, cursor_t<Self>& cur, int_t offset)
+        -> cursor_t<Self>&
     {
         if (offset == 0) {
             return cur;
@@ -129,7 +129,7 @@ private:
             // Correct for negative index which may happen when underflowing.
             if (new_index < 0) {
                 new_index = num::add(new_index, this_size);
-                offset = num::sub(offset, flux::distance_t(1));
+                offset = num::sub(offset, flux::int_t(1));
             }
 
             // Call the next level down if necessary.
@@ -146,9 +146,8 @@ private:
     }
 
     template <std::size_t I, typename Self>
-    static constexpr auto distance_impl(Self& self,
-                                        cursor_t<Self> const& from,
-                                        cursor_t<Self> const& to) -> distance_t
+    static constexpr auto distance_impl(Self& self, cursor_t<Self> const& from,
+                                        cursor_t<Self> const& to) -> int_t
     {
         if constexpr (I == 0) {
             return flux::distance(get_base<0>(self), std::get<0>(from), std::get<0>(to));
@@ -187,20 +186,17 @@ private:
     {
         // We need to iterate right to left.
         if constexpr (I == Arity - 1) {
-            std::get<I>(cur) = flux::for_each_while(get_base<I>(self),
-                [&](auto&& elem) {
-                    keep_going = std::invoke(func,
-                                             element_t<Self>(FLUX_FWD(partial_elements)..., FLUX_FWD(elem)));
-                    return keep_going;
-                });
+            std::get<I>(cur) = flux::seq_for_each_while(get_base<I>(self), [&](auto&& elem) {
+                keep_going = std::invoke(
+                    func, element_t<Self>(FLUX_FWD(partial_elements)..., FLUX_FWD(elem)));
+                return keep_going;
+            });
         } else {
-            std::get<I>(cur) = flux::for_each_while(get_base<I>(self),
-                [&](auto&& elem) {
-                    for_each_while_impl<I+1>(
-                            self, keep_going, cur,
-                            func, FLUX_FWD(partial_elements)..., FLUX_FWD(elem));
-                    return keep_going;
-                });
+            std::get<I>(cur) = flux::seq_for_each_while(get_base<I>(self), [&](auto&& elem) {
+                for_each_while_impl<I + 1>(self, keep_going, cur, func,
+                                           FLUX_FWD(partial_elements)..., FLUX_FWD(elem));
+                return keep_going;
+            });
         }
     }
 
@@ -231,21 +227,21 @@ public:
     }
 
     template <typename Self>
-    static constexpr auto size(Self& self) -> distance_t
-        requires (CartesianKind == cartesian_kind::product
-                  && (sized_sequence<Bases> && ...))
+    static constexpr auto size(Self& self) -> int_t
+        requires(CartesianKind == cartesian_kind::product && (sized_sequence<Bases> && ...))
     {
-        return std::apply([](auto& base0, auto&... bases) {
-            distance_t sz = flux::size(base0);
-            ((sz = num::mul(sz, flux::size(bases))), ...);
-            return sz;
-        }, self.bases_);
+        return std::apply(
+            [](auto& base0, auto&... bases) {
+                int_t sz = flux::size(base0);
+                ((sz = num::mul(sz, flux::size(bases))), ...);
+                return sz;
+            },
+            self.bases_);
     }
 
     template <typename Self>
-    static constexpr auto size(Self& self) -> distance_t
-        requires (CartesianKind == cartesian_kind::power
-                  && (sized_sequence<Bases> && ...))
+    static constexpr auto size(Self& self) -> int_t
+        requires(CartesianKind == cartesian_kind::power && (sized_sequence<Bases> && ...))
     {
         return checked_pow(flux::size(self.base_), Arity);
     }
@@ -267,9 +263,8 @@ public:
     }
 
     template <typename Self>
-    static constexpr auto inc(Self& self, cursor_t<Self>& cur, distance_t offset) -> cursor_t<Self>&
-        requires ((random_access_sequence<Bases> && ...) &&
-                  (sized_sequence<Bases> && ...))
+    static constexpr auto inc(Self& self, cursor_t<Self>& cur, int_t offset) -> cursor_t<Self>&
+        requires((random_access_sequence<Bases> && ...) && (sized_sequence<Bases> && ...))
     {
         return ra_inc_impl<Arity - 1>(self, cur, offset);
     }
@@ -301,11 +296,9 @@ public:
     }
 
     template <typename Self>
-    static constexpr auto distance(Self& self,
-                                        cursor_t<Self> const& from,
-                                        cursor_t<Self> const& to) -> distance_t
-        requires ((random_access_sequence<Bases> && ...) &&
-                  (sized_sequence<Bases> && ...))
+    static constexpr auto distance(Self& self, cursor_t<Self> const& from, cursor_t<Self> const& to)
+        -> int_t
+        requires((random_access_sequence<Bases> && ...) && (sized_sequence<Bases> && ...))
     {
         return distance_impl<Arity - 1>(self, from, to);
     }

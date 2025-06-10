@@ -7,6 +7,7 @@
 #define FLUX_ADAPTOR_FILTER_MAP_HPP_INCLUDED
 
 #include <flux/core.hpp>
+#include <flux/adaptor/filter.hpp>
 #include <flux/adaptor/map.hpp>
 
 namespace flux {
@@ -20,16 +21,20 @@ struct filter_map_fn {
     using strip_rvalue_ref_t = std::conditional_t<
         std::is_rvalue_reference_v<T>, std::remove_reference_t<T>, T>;
 
-    template <adaptable_sequence Seq, typename Func>
-        requires (std::invocable<Func&, element_t<Seq>> &&
-                  optional_like<std::remove_cvref_t<std::invoke_result_t<Func&, element_t<Seq>>>>)
-    constexpr auto operator()(Seq&& seq, Func func) const
+    template <adaptable_iterable It, typename Func>
+        requires(std::invocable<Func&, iterable_element_t<It>>
+                 && optional_like<
+                     std::remove_cvref_t<std::invoke_result_t<Func&, iterable_element_t<It>>>>)
+    constexpr auto operator()(It&& it, Func func) const
     {
-        return flux::map(FLUX_FWD(seq), std::move(func))
-            .filter([](auto&& opt) { return static_cast<bool>(opt); })
-            .map([](auto&& opt) -> strip_rvalue_ref_t<decltype(*FLUX_FWD(opt))> {
-                return *FLUX_FWD(opt);
-            });
+        // FIXME: Change this back to a pipeline later
+        auto mapped = flux::map(FLUX_FWD(it), std::move(func));
+        auto filtered
+            = flux::filter(std::move(mapped), [](auto&& opt) { return static_cast<bool>(opt); });
+        return flux::map(std::move(filtered),
+                         [](auto&& opt) -> strip_rvalue_ref_t<decltype(*FLUX_FWD(opt))> {
+                             return *FLUX_FWD(opt);
+                         });
     }
 };
 
@@ -50,11 +55,11 @@ namespace detail
 {
 
 struct filter_deref_fn {
-    template <adaptable_sequence Seq>
-        requires optional_like<value_t<Seq>>
-    constexpr auto operator()(Seq&& seq) const
+    template <adaptable_iterable It>
+        requires optional_like<iterable_value_t<It>>
+    constexpr auto operator()(It&& it) const
     {
-        return filter_map(FLUX_FWD(seq), [](auto&& opt) -> decltype(auto) { return FLUX_FWD(opt); });
+        return filter_map(FLUX_FWD(it), [](auto&& opt) -> decltype(auto) { return FLUX_FWD(opt); });
     }
 };
 

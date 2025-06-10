@@ -5,7 +5,8 @@
 #ifndef FLUX_ALGORITHM_ZIP_ALGORITHMS_HPP_INCLUDED
 #define FLUX_ALGORITHM_ZIP_ALGORITHMS_HPP_INCLUDED
 
-#include <flux/core.hpp>
+#include <flux/algorithm/find.hpp>
+#include <flux/algorithm/for_each_while.hpp>
 
 namespace flux {
 
@@ -13,25 +14,54 @@ namespace detail {
 
 struct zip_for_each_while_fn {
     template <typename Pred, sequence... Seqs>
-        requires std::invocable<Pred&, element_t<Seqs>...> &&
-                 boolean_testable<std::invoke_result_t<Pred&, element_t<Seqs>...>>
-    constexpr auto operator()(Pred pred, Seqs&&... seqs) const
-        -> std::tuple<cursor_t<Seqs>...>
+        requires std::invocable<Pred&, element_t<Seqs>...>
+        && boolean_testable<std::invoke_result_t<Pred&, element_t<Seqs>...>>
+    constexpr auto operator()(Pred pred, Seqs&&... seqs) const -> iteration_result
     {
         if constexpr (sizeof...(Seqs) == 0) {
-            return std::tuple<>{};
+            return {};
         } else if constexpr (sizeof...(Seqs) == 1) {
-            return std::tuple<cursor_t<Seqs>...>(flux::for_each_while(seqs..., std::ref(pred)));
+            return flux::for_each_while(seqs..., std::ref(pred));
         } else {
-            return [&pred, &...seqs = seqs, ...curs = flux::first(seqs)]() mutable {
-                while (!(flux::is_last(seqs, curs) || ...)) {
-                    if (!std::invoke(pred, flux::read_at_unchecked(seqs, curs)...)) {
-                        break;
-                    }
-                    (flux::inc(seqs, curs), ...);
+#ifdef _MSC_VER
+            // Do things the sad ugly way :(
+            auto ctxs = std::tuple<iteration_context_t<Seqs>...>(
+                emplace_from([&] { return iterate(seqs); })...);
+
+            auto opts
+                = std::apply([](auto&... ctx) { return std::tuple(next_element(ctx)...); }, ctxs);
+
+            while (true) {
+                bool all_have_value
+                    = std::apply([](auto&... opt) { return (opt.has_value() && ...); }, opts);
+                if (!all_have_value) {
+                    return iteration_result::complete;
                 }
-                return std::tuple<cursor_t<Seqs>...>(std::move(curs)...);
+
+                auto res = std::apply([&](auto&... opt) { return pred(opt.value_unchecked()...); },
+                                      opts);
+                if (!res) {
+                    return iteration_result::incomplete;
+                }
+
+                opts = std::apply([&](auto&... ctx) { return std::tuple(next_element(ctx)...); },
+                                  ctxs);
+            }
+#else
+            return [&pred, ... ctxs = iterate(seqs)]() mutable {
+                return [&pred, &ctxs..., ... opts = step(ctxs, std::identity {})]() mutable {
+                    while (true) {
+                        if (!(opts.has_value() && ...)) {
+                            return iteration_result::complete;
+                        }
+                        if (!std::invoke(pred, opts.value_unchecked()...)) {
+                            return iteration_result::incomplete;
+                        }
+                        ((opts = step(ctxs, std::identity {})), ...);
+                    }
+                }();
             }();
+#endif
         }
     }
 };
@@ -61,7 +91,21 @@ struct zip_find_if_fn {
     constexpr auto operator()(Pred pred, Seqs&&... seqs) const
         -> std::tuple<cursor_t<Seqs>...>
     {
-        return zip_for_each_while(std::not_fn(pred), seqs...);
+        if constexpr (sizeof...(Seqs) == 0) {
+            return {};
+        } else if constexpr (sizeof...(Seqs) == 1) {
+            return std::tuple<cursor_t<Seqs>...>(flux::find_if(seqs..., std::ref(pred)));
+        } else {
+            return [&pred, &... seqs = seqs, ... curs = first(seqs)]() mutable {
+                while ((!is_last(seqs, curs) && ...)) {
+                    if (std::invoke(pred, read_at_unchecked(seqs, curs)...)) {
+                        break;
+                    }
+                    ((inc(seqs, curs)), ...);
+                }
+                return std::tuple<cursor_t<Seqs>...>(std::move(curs)...);
+            }();
+        }
     }
 };
 

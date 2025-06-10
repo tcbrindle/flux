@@ -10,10 +10,46 @@
 
 #include "test_utils.hpp"
 
+// Older libc++ versions don't support constexpr emplace for variant
+#if defined(_LIBCPP_VERSION) && (_LIBCPP_VERSION < 190000)
+#    define NO_CONSTEXPR_VARIANT_EMPLACE
+#endif
+
 namespace {
 
 constexpr bool test_chain()
 {
+    // Basic chaining with iterables
+    {
+        auto iter1 = iterable_only(std::array{1, 2, 3});
+        auto iter2 = iterable_only(std::array{4, 5});
+        auto iter3 = iterable_only(std::array{6});
+
+        auto chained = flux::chain(iter1, iter2, iter3);
+
+        using C = decltype(chained);
+        static_assert(flux::iterable<C>);
+        static_assert(flux::sized_iterable<C>);
+
+        STATIC_CHECK(flux::iterable_size(chained) == 6);
+        STATIC_CHECK(check_equal(chained, {1, 2, 3, 4, 5, 6}));
+    }
+
+    // Const iteration with iterables
+    {
+        auto iter1 = iterable_only(std::array{1, 2, 3});
+        auto iter2 = iterable_only(std::array{4, 5, 6});
+
+        auto const chained = flux::chain(iter1, iter2);
+
+        using C = decltype(chained);
+        static_assert(flux::iterable<C>);
+        static_assert(flux::sized_iterable<C>);
+
+        STATIC_CHECK(flux::iterable_size(chained) == 6);
+        STATIC_CHECK(check_equal(chained, {1, 2, 3, 4, 5, 6}));
+    }
+
     // Basic chaining
     {
         int arr1[] = {0, 1, 2};
@@ -153,8 +189,9 @@ constexpr bool test_chain()
 
     return true;
 }
+#ifndef NO_CONSTEXPR_VARIANT_EMPLACE
 static_assert(test_chain());
-
+#endif
 }
 
 TEST_CASE("chain")

@@ -6,85 +6,41 @@
 #ifndef FLUX_ALGORITHM_ENDS_WITH_HPP_INCLUDED
 #define FLUX_ALGORITHM_ENDS_WITH_HPP_INCLUDED
 
+#include <flux/adaptor/drop.hpp>
+#include <flux/adaptor/reverse.hpp>
 #include <flux/algorithm/count.hpp>
 #include <flux/algorithm/equal.hpp>
+#include <flux/algorithm/starts_with.hpp>
 
 namespace flux {
 
-namespace detail {
-
-struct ends_with_fn {
-private:
-    template <typename H, typename N>
-    static constexpr auto bidir_impl(H& h, N& n, auto& cmp) -> bool
+FLUX_EXPORT
+struct ends_with_t {
+    template <iterable Haystack, iterable Needle, typename Cmp = std::ranges::equal_to>
+        requires std::predicate<Cmp&, iterable_element_t<Haystack>, iterable_element_t<Needle>>
+        && (multipass_sequence<Haystack> || sized_iterable<Haystack>)
+        && (multipass_sequence<Needle> || sized_iterable<Needle>)
+    [[nodiscard]]
+    constexpr auto operator()(Haystack&& haystack, Needle&& needle, Cmp cmp = Cmp{}) const -> bool
     {
-        if constexpr (sized_sequence<H> && sized_sequence<N>) {
-            if (flux::size(h) < flux::size(n)) {
-                return false;
-            }
-        }
-
-        auto cur1 = flux::last(h);
-        auto cur2 = flux::last(n);
-
-        auto const f1 = flux::first(h);
-        auto const f2 = flux::first(n);
-
-        if (cur2 == f2) {
-            return true;
-        } else if (cur1 == f1) {
-            return false;
-        }
-
-        while (true) {
-            flux::dec(h, cur1);
-            flux::dec(n, cur2);
-
-            if (!std::invoke(cmp, flux::read_at(h, cur1), flux::read_at(n, cur2))) {
-                return false;
-            }
-
-            if (cur2 == f2) {
-                return true;
-            } else if (cur1 == f1) {
-                return false;
-            }
-        }
-    }
-
-public:
-    template <sequence Haystack, sequence Needle, typename Cmp = std::ranges::equal_to>
-        requires std::predicate<Cmp&, element_t<Haystack>, element_t<Needle>> &&
-                 (multipass_sequence<Haystack> || sized_sequence<Haystack>) &&
-                 (multipass_sequence<Needle> || sized_sequence<Needle>)
-    constexpr auto operator()(Haystack&& haystack, Needle&& needle, Cmp cmp = Cmp{}) const
-        -> bool
-    {
-        if constexpr(bidirectional_sequence<Haystack> &&
-                     bounded_sequence<Haystack> &&
-                     bidirectional_sequence<Needle> &&
-                     bounded_sequence<Needle>) {
-            return bidir_impl(haystack, needle, cmp);
+        if constexpr (reverse_iterable<Haystack> && reverse_iterable<Needle>) {
+            return starts_with(reverse(from_fwd_ref(haystack)), reverse(from_fwd_ref(needle)),
+                               std::ref(cmp));
         } else {
-            distance_t len1 = flux::count(haystack);
-            distance_t len2 = flux::count(needle);
+            int_t haystack_size = flux::count(haystack);
+            int_t needle_size = flux::count(needle);
 
-            if (len1 < len2) {
+            if (haystack_size < needle_size) {
                 return false;
             }
 
-            auto cur1 = flux::first(haystack);
-            detail::advance(haystack, cur1, len1 - len2);
-
-            return flux::equal(flux::slice(haystack, std::move(cur1), flux::last),
-                               needle, std::move(cmp));
+            return equal(drop(from_fwd_ref(haystack), num::sub(haystack_size, needle_size)), needle,
+                         std::ref(cmp));
         }
     }
 };
 
-} // namespace detail
-
-FLUX_EXPORT inline constexpr auto ends_with = detail::ends_with_fn{};
+FLUX_EXPORT inline constexpr auto ends_with = ends_with_t{};
 
 template <typename Derived>
 template <sequence Needle, typename Cmp>

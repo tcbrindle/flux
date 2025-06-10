@@ -93,8 +93,7 @@ public:
         return cur;
     }
 
-    static constexpr auto inc(self_t const&, cursor_type& cur, distance_t off)
-        -> cursor_type&
+    static constexpr auto inc(self_t const&, cursor_type& cur, int_t off) -> cursor_type&
     {
         if (off > 0) {
             FLUX_DEBUG_ASSERT(cur == cursor_type::valid && off == 1);

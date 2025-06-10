@@ -13,11 +13,29 @@ namespace flux {
 
 namespace detail {
 
-template <sequence Base, typename Pred>
-class filter_adaptor : public inline_sequence_base<filter_adaptor<Base, Pred>>
-{
+template <typename Base, typename Pred>
+class filter_adaptor : public inline_sequence_base<filter_adaptor<Base, Pred>> {
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Pred pred_;
+
+    template <typename BaseCtx, typename FilterFn>
+    struct context_type : immovable {
+        BaseCtx base_ctx;
+        FilterFn filter_fn;
+
+        using element_type = context_element_t<BaseCtx>;
+
+        constexpr auto run_while(auto&& pred) -> iteration_result
+        {
+            return base_ctx.run_while([this, &pred](auto&& elem) {
+                if (std::invoke(filter_fn, elem)) {
+                    return std::invoke(pred, FLUX_FWD(elem));
+                } else {
+                    return loop_continue;
+                }
+            });
+        }
+    };
 
 public:
     constexpr filter_adaptor(decays_to<Base> auto&& base, decays_to<Pred> auto&& pred)
@@ -29,6 +47,34 @@ public:
     constexpr auto base() const& -> Base const& { return base_; }
     [[nodiscard]]
     constexpr auto base() && -> Base { return std::move(base_); }
+
+    constexpr auto iterate()
+    {
+        return context_type<iteration_context_t<Base>, copy_or_ref_t<Pred>>{
+            .base_ctx = flux::iterate(base_), .filter_fn = copy_or_ref(pred_)};
+    }
+
+    constexpr auto iterate() const
+        requires iterable<Base const> && std::invocable<Pred&, iterable_element_t<Base const>>
+    {
+        return context_type<iteration_context_t<Base const>, copy_or_ref_t<Pred const>>{
+            .base_ctx = flux::iterate(base_), .filter_fn = copy_or_ref(pred_)};
+    }
+
+    constexpr auto reverse_iterate()
+        requires reverse_iterable<Base>
+    {
+        return context_type<reverse_iteration_context_t<Base>, copy_or_ref_t<Pred>>{
+            .base_ctx = flux::reverse_iterate(base_), .filter_fn = copy_or_ref(pred_)};
+    }
+
+    constexpr auto reverse_iterate() const
+        requires reverse_iterable<Base const>
+        && std::invocable<Pred&, iterable_element_t<Base const>>
+    {
+        return context_type<reverse_iteration_context_t<Base const>, copy_or_ref_t<Pred const>>{
+            .base_ctx = flux::reverse_iterate(base_), .filter_fn = copy_or_ref(pred_)};
+    }
 
     struct flux_sequence_traits {
     private:
@@ -103,7 +149,7 @@ public:
         static constexpr auto for_each_while(auto& self, auto&& func)
             -> cursor_type
         {
-            return cursor_type{flux::for_each_while(self.base_, [&](auto&& elem) {
+            return cursor_type {flux::seq_for_each_while(self.base_, [&](auto&& elem) {
                 if (std::invoke(self.pred_, elem)) {
                     return std::invoke(func, FLUX_FWD(elem));
                 } else {
@@ -115,12 +161,12 @@ public:
 };
 
 struct filter_fn {
-    template <adaptable_sequence Seq, std::move_constructible Pred>
-        requires std::predicate<Pred&, element_t<Seq>>
+    template <adaptable_iterable It, std::move_constructible Pred>
+        requires std::predicate<Pred&, iterable_element_t<It> const&>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Pred pred) const
+    constexpr auto operator()(It&& it, Pred pred) const
     {
-        return filter_adaptor<std::decay_t<Seq>, Pred>(FLUX_FWD(seq), std::move(pred));
+        return filter_adaptor<std::decay_t<It>, Pred>(FLUX_FWD(it), std::move(pred));
     }
 };
 

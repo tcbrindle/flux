@@ -15,16 +15,136 @@ namespace flux {
 
 namespace detail {
 
+template <typename BaseCtx>
+struct chunk_iteration_context : immovable {
+    BaseCtx base_ctx;
+
+    using OptElem = decltype(next_element(base_ctx));
+
+    int_t chunk_sz;
+    OptElem elem = nullopt;
+    int_t remaining = 0;
+    bool base_done = false;
+
+    struct inner_iterable {
+        chunk_iteration_context* outer_ctx;
+
+        struct inner_context_type : immovable {
+            chunk_iteration_context* outer_ctx;
+
+            using element_type = context_element_t<BaseCtx>;
+
+            constexpr auto run_while(auto&& pred) -> iteration_result
+            {
+                while (true) {
+                    if (outer_ctx->remaining == 0) {
+                        return iteration_result::complete;
+                    }
+
+                    if (!outer_ctx->elem) {
+                        if (!outer_ctx->read_next()) {
+                            return iteration_result::complete;
+                        }
+                    }
+
+                    --outer_ctx->remaining;
+
+                    auto r = pred(*std::move(outer_ctx->elem));
+                    outer_ctx->elem.reset();
+                    if (!r) {
+                        return iteration_result::incomplete;
+                    }
+                }
+            }
+        };
+
+        constexpr auto iterate() const -> inner_context_type
+        {
+            return inner_context_type{.outer_ctx = this->outer_ctx};
+        }
+    };
+
+    constexpr bool read_next()
+    {
+        elem = flux::next_element(base_ctx);
+        return elem.has_value();
+    }
+
+    using element_type = inner_iterable;
+
+    constexpr auto run_while(auto&& outer_pred) -> iteration_result
+    {
+        while (true) {
+            while (remaining-- > 0) {
+                if (!read_next()) {
+                    return iteration_result::complete;
+                }
+            }
+
+            if (!read_next()) {
+                return iteration_result::complete;
+            }
+
+            remaining = chunk_sz;
+
+            if (!outer_pred(inner_iterable{.outer_ctx = this})) {
+                return iteration_result::incomplete;
+            }
+        }
+    }
+};
+
 template <typename Base>
 struct chunk_adaptor : inline_sequence_base<chunk_adaptor<Base>> {
 private:
     Base base_;
-    distance_t chunk_sz_;
-    optional<cursor_t<Base>> cur_ = nullopt;
-    distance_t rem_ = chunk_sz_;
+    int_t chunk_sz_;
 
 public:
-    constexpr chunk_adaptor(decays_to<Base> auto&& base, distance_t chunk_sz)
+    constexpr chunk_adaptor(decays_to<Base> auto&& base, int_t chunk_sz)
+        : base_(FLUX_FWD(base)),
+          chunk_sz_(chunk_sz)
+    {
+    }
+
+    constexpr auto iterate()
+    {
+        return detail::chunk_iteration_context<iteration_context_t<Base>>{
+            .base_ctx = flux::iterate(base_), .chunk_sz = chunk_sz_};
+    }
+
+    constexpr auto iterate() const
+        requires iterable<Base const>
+    {
+        return detail::chunk_iteration_context<iteration_context_t<Base const>>{
+            .base_ctx = flux::iterate(base_), .chunk_sz = chunk_sz_};
+    }
+
+    constexpr auto size() -> int_t
+        requires sized_iterable<Base>
+    {
+        auto sz = flux::iterable_size(base_);
+        return sz / chunk_sz_ + (sz % chunk_sz_ == 0 ? 0 : 1);
+    }
+
+    constexpr auto size() const -> int_t
+        requires sized_iterable<Base const>
+    {
+        auto sz = flux::iterable_size(base_);
+        return sz / chunk_sz_ + (sz % chunk_sz_ == 0 ? 0 : 1);
+    }
+};
+
+template <sequence Base>
+struct chunk_adaptor<Base> : inline_sequence_base<chunk_adaptor<Base>> {
+private:
+    Base base_;
+    int_t chunk_sz_;
+    optional<cursor_t<Base>> cur_ = nullopt;
+    int_t rem_ = chunk_sz_;
+
+public:
+    constexpr chunk_adaptor(decays_to<Base> auto&& base, int_t chunk_sz)
         : base_(FLUX_FWD(base)),
           chunk_sz_(chunk_sz)
     {}
@@ -47,18 +167,18 @@ public:
         using self_t = chunk_adaptor;
 
     public:
-        struct value_type : inline_sequence_base<value_type> {
+        struct inner_sequence : inline_sequence_base<inner_sequence> {
         private:
             chunk_adaptor* parent_;
-            constexpr explicit value_type(chunk_adaptor& parent)
+            constexpr explicit inner_sequence(chunk_adaptor& parent)
                 : parent_(std::addressof(parent))
             {}
 
             friend struct self_t::flux_sequence_traits;
 
         public:
-            value_type(value_type&&) = default;
-            value_type& operator=(value_type&&) = default;
+            inner_sequence(inner_sequence&&) = default;
+            inner_sequence& operator=(inner_sequence&&) = default;
 
             struct flux_sequence_traits : default_sequence_traits {
             private:
@@ -66,24 +186,24 @@ public:
                     inner_cursor(inner_cursor&&) = default;
                     inner_cursor& operator=(inner_cursor&&) = default;
 
-                    friend struct value_type::flux_sequence_traits;
+                    friend struct inner_sequence::flux_sequence_traits;
 
                 private:
                     explicit inner_cursor() = default;
                 };
 
             public:
-                static constexpr auto first(value_type&) -> inner_cursor
+                static constexpr auto first(inner_sequence&) -> inner_cursor
                 {
                     return inner_cursor{};
                 }
 
-                static constexpr auto is_last(value_type& self, inner_cursor const&) -> bool
+                static constexpr auto is_last(inner_sequence& self, inner_cursor const&) -> bool
                 {
                     return self.parent_->rem_ == 0;
                 }
 
-                static constexpr auto inc(value_type& self, inner_cursor&) -> void
+                static constexpr auto inc(inner_sequence& self, inner_cursor&) -> void
                 {
                     flux::inc(self.parent_->base_, *self.parent_->cur_);
                     if (flux::is_last(self.parent_->base_, *self.parent_->cur_)) {
@@ -93,7 +213,7 @@ public:
                     }
                 }
 
-                static constexpr auto read_at(value_type& self, inner_cursor const&)
+                static constexpr auto read_at(inner_sequence& self, inner_cursor const&)
                     -> element_t<Base>
                 {
                     return flux::read_at(self.parent_->base_, *self.parent_->cur_);
@@ -119,12 +239,12 @@ public:
             self.rem_ = self.chunk_sz_;
         }
 
-        static constexpr auto read_at(self_t& self, outer_cursor const&) -> value_type
+        static constexpr auto read_at(self_t& self, outer_cursor const&) -> inner_sequence
         {
-            return value_type(self);
+            return inner_sequence(self);
         }
 
-        static constexpr auto size(self_t& self) -> distance_t
+        static constexpr auto size(self_t& self) -> int_t
             requires sized_sequence<Base>
         {
             auto s = flux::size(self.base_);
@@ -137,10 +257,10 @@ template <multipass_sequence Base>
 struct chunk_adaptor<Base> : inline_sequence_base<chunk_adaptor<Base>> {
 private:
     Base base_;
-    distance_t chunk_sz_;
+    int_t chunk_sz_;
 
 public:
-    constexpr chunk_adaptor(decays_to<Base> auto&& base, distance_t chunk_sz)
+    constexpr chunk_adaptor(decays_to<Base> auto&& base, int_t chunk_sz)
         : base_(FLUX_FWD(base)),
           chunk_sz_(chunk_sz)
     {}
@@ -176,7 +296,7 @@ public:
             return flux::last(self.base_);
         }
 
-        static constexpr auto size(auto& self) -> distance_t
+        static constexpr auto size(auto& self) -> int_t
             requires sized_sequence<Base>
         {
             auto s = flux::size(self.base_);
@@ -189,10 +309,10 @@ template <bidirectional_sequence Base>
 struct chunk_adaptor<Base> : inline_sequence_base<chunk_adaptor<Base>> {
 private:
     Base base_;
-    distance_t chunk_sz_;
+    int_t chunk_sz_;
 
 public:
-    constexpr chunk_adaptor(decays_to<Base> auto&& base, distance_t chunk_sz)
+    constexpr chunk_adaptor(decays_to<Base> auto&& base, int_t chunk_sz)
         : base_(FLUX_FWD(base)),
           chunk_sz_(chunk_sz)
     {}
@@ -201,7 +321,7 @@ public:
     private:
         struct cursor_type {
             cursor_t<Base> cur{};
-            distance_t missing = 0;
+            int_t missing = 0;
 
             friend constexpr auto operator==(cursor_type const& lhs, cursor_type const& rhs) -> bool
             {
@@ -259,15 +379,15 @@ public:
         static constexpr auto last(auto& self) -> cursor_type
             requires bounded_sequence<Base> && sized_sequence<Base>
         {
-            distance_t missing =
-                (self.chunk_sz_ - flux::size(self.base_) % self.chunk_sz_) % self.chunk_sz_;
+            int_t missing
+                = (self.chunk_sz_ - flux::size(self.base_) % self.chunk_sz_) % self.chunk_sz_;
             return cursor_type{
                 .cur = flux::last(self.base_),
                 .missing = missing
             };
         }
 
-        static constexpr auto size(auto& self) -> distance_t
+        static constexpr auto size(auto& self) -> int_t
             requires sized_sequence<Base>
         {
             auto s = flux::size(self.base_);
@@ -275,13 +395,13 @@ public:
         }
 
         static constexpr auto distance(auto& self, cursor_type const& from, cursor_type const& to)
-            -> distance_t
+            -> int_t
             requires random_access_sequence<Base>
         {
             return (flux::distance(self.base_, from.cur, to.cur) - from.missing + to.missing)/self.chunk_sz_;
         }
 
-        static constexpr auto inc(auto& self, cursor_type& cur, distance_t offset) -> void
+        static constexpr auto inc(auto& self, cursor_type& cur, int_t offset) -> void
             requires random_access_sequence<Base>
         {
             if (offset > 0) {
@@ -295,14 +415,13 @@ public:
 };
 
 struct chunk_fn {
-    template <adaptable_sequence Seq>
+    template <adaptable_iterable It>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, num::integral auto chunk_sz) const
-        -> sequence auto
+    constexpr auto operator()(It&& it, num::integral auto chunk_sz) const //-> iterable auto
     {
-        FLUX_ASSERT(chunk_sz > 0);
-        return chunk_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq),
-                                                num::checked_cast<distance_t>(chunk_sz));
+        int_t chunk_sz_ = num::checked_cast<int_t>(chunk_sz);
+        FLUX_ASSERT(chunk_sz_ > 0);
+        return chunk_adaptor<std::decay_t<It>>(FLUX_FWD(it), chunk_sz_);
     }
 };
 

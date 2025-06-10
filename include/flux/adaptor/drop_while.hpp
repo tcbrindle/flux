@@ -12,7 +12,7 @@ namespace flux {
 
 namespace detail {
 
-template <sequence Base, typename Pred>
+template <typename Base, typename Pred>
 struct drop_while_adaptor : inline_sequence_base<drop_while_adaptor<Base, Pred>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
@@ -23,20 +23,59 @@ private:
     constexpr auto base() & -> Base& { return base_; }
     constexpr auto base() const& -> Base const& { return base_; }
 
+    template <typename BaseCtx, typename DropPred>
+    struct context_type : immovable {
+        BaseCtx base_ctx;
+        DropPred drop_pred;
+        bool done = false;
+
+        using element_type = context_element_t<BaseCtx>;
+
+        constexpr auto run_while(auto&& pred) -> iteration_result
+        {
+            return base_ctx.run_while([&](auto&& elem) {
+                if (done) {
+                    return std::invoke(pred, FLUX_FWD(elem));
+                } else {
+                    if (std::invoke(drop_pred, std::as_const(elem))) {
+                        return loop_continue;
+                    } else {
+                        done = true;
+                        return std::invoke(pred, FLUX_FWD(elem));
+                    }
+                }
+            });
+        }
+    };
+
 public:
     constexpr drop_while_adaptor(decays_to<Base> auto&& base, decays_to<Pred> auto&& pred)
         : base_(FLUX_FWD(base)),
           pred_(FLUX_FWD(pred))
-    {}
+    {
+    }
+
+    [[nodiscard]] constexpr auto iterate()
+    {
+        return context_type<iteration_context_t<Base>, copy_or_ref_t<Pred>>{
+            .base_ctx = flux::iterate(base_), .drop_pred = copy_or_ref(pred_)};
+    }
+
+    [[nodiscard]]
+    constexpr auto iterate() const
+        requires iterable<Base const> && std::predicate<Pred&, iterable_element_t<Base const>>
+    {
+        return context_type<iteration_context_t<Base const>, copy_or_ref_t<Pred const>>{
+            .base_ctx = flux::iterate(base_), .drop_pred = copy_or_ref(pred_)};
+    }
 
     struct flux_sequence_traits : detail::passthrough_traits_base {
-        using value_type = value_t<Base>;
-
         static constexpr bool disable_multipass = !multipass_sequence<Base>;
 
         static constexpr auto first(auto& self)
+            requires sequence<decltype((self.base_))>
         {
-            return flux::for_each_while(self.base_, std::ref(self.pred_));
+            return flux::seq_for_each_while(self.base_, std::ref(self.pred_));
         }
 
         static constexpr auto data(auto& self)
@@ -52,12 +91,12 @@ public:
 };
 
 struct drop_while_fn {
-    template <adaptable_sequence Seq, std::move_constructible Pred>
-        requires std::predicate<Pred&, element_t<Seq>>
+    template <adaptable_iterable It, std::move_constructible Pred>
+        requires std::predicate<Pred&, iterable_element_t<It>>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq, Pred pred) const
+    constexpr auto operator()(It&& it, Pred pred) const
     {
-        return drop_while_adaptor<std::decay_t<Seq>, Pred>(FLUX_FWD(seq), std::move(pred));
+        return drop_while_adaptor<std::decay_t<It>, Pred>(FLUX_FWD(it), std::move(pred));
     }
 };
 

@@ -26,16 +26,17 @@ struct span_seq {
         static constexpr T& read_at(span_seq const& self, std::size_t i) { return self.ptr_[i]; }
         static constexpr std::size_t last(span_seq const& self) { return self.sz_; }
         static constexpr std::size_t& dec(span_seq const&, std::size_t& i) { return --i; }
-        static constexpr std::size_t& inc(span_seq const&, std::size_t& i, flux::distance_t o)
+        static constexpr std::size_t& inc(span_seq const&, std::size_t& i, flux::int_t o)
         {
             return i += static_cast<std::size_t>(o);
         }
-        static constexpr flux::distance_t distance(span_seq const&, std::size_t from, std::size_t to)
+        static constexpr flux::int_t distance(span_seq const&, std::size_t from, std::size_t to)
         {
-            return static_cast<flux::distance_t>(to) - static_cast<flux::distance_t>(from);
+            return static_cast<flux::int_t>(to) - static_cast<flux::int_t>(from);
         }
-        static constexpr flux::distance_t size(span_seq const& self) {
-            return static_cast<flux::distance_t>(self.sz_);
+        static constexpr flux::int_t size(span_seq const& self)
+        {
+            return static_cast<flux::int_t>(self.sz_);
         }
         static constexpr T* data(span_seq const& self) { return self.ptr_; }
     };
