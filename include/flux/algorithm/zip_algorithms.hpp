@@ -23,6 +23,31 @@ struct zip_for_each_while_fn {
         } else if constexpr (sizeof...(Seqs) == 1) {
             return flux::for_each_while(seqs..., std::ref(pred));
         } else {
+#ifdef _MSC_VER
+            // Do things the sad ugly way :(
+            auto ctxs = std::tuple<iteration_context_t<Seqs>...>(
+                emplace_from([&] { return iterate(seqs); })...);
+
+            auto opts
+                = std::apply([](auto&... ctx) { return std::tuple(next_element(ctx)...); }, ctxs);
+
+            while (true) {
+                bool all_have_value
+                    = std::apply([](auto&... opt) { return (opt.has_value() && ...); }, opts);
+                if (!all_have_value) {
+                    return iteration_result::complete;
+                }
+
+                auto res = std::apply([&](auto&... opt) { return pred(opt.value_unchecked()...); },
+                                      opts);
+                if (!res) {
+                    return iteration_result::incomplete;
+                }
+
+                opts = std::apply([&](auto&... ctx) { return std::tuple(next_element(ctx)...); },
+                                  ctxs);
+            }
+#else
             return [&pred, ... ctxs = iterate(seqs)]() mutable {
                 return [&pred, &ctxs..., ... opts = step(ctxs, std::identity {})]() mutable {
                     while (true) {
@@ -36,6 +61,7 @@ struct zip_for_each_while_fn {
                     }
                 }();
             }();
+#endif
         }
     }
 };
