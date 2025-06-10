@@ -184,7 +184,7 @@ public:
         }(std::index_sequence_for<Bases...>{});
     }
 
-    constexpr auto iterate() const -> context_type<iteration_context_t<Bases const>...>
+    constexpr auto iterate() const
         requires(iterable<Bases const> && ...)
     {
         return [&]<std::size_t... I>(std::index_sequence<I...>) {
@@ -276,7 +276,6 @@ public:
     }
 
     constexpr auto iterate() const
-        -> context_type<copy_or_ref_t<Func const>, iteration_context_t<Bases const>...>
         requires(iterable<Bases const> && ...)
         && std::regular_invocable<Func const&, iterable_element_t<Bases const>...>
     {
