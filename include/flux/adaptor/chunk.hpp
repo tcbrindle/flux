@@ -167,18 +167,18 @@ public:
         using self_t = chunk_adaptor;
 
     public:
-        struct value_type : inline_sequence_base<value_type> {
+        struct inner_sequence : inline_sequence_base<inner_sequence> {
         private:
             chunk_adaptor* parent_;
-            constexpr explicit value_type(chunk_adaptor& parent)
+            constexpr explicit inner_sequence(chunk_adaptor& parent)
                 : parent_(std::addressof(parent))
             {}
 
             friend struct self_t::flux_sequence_traits;
 
         public:
-            value_type(value_type&&) = default;
-            value_type& operator=(value_type&&) = default;
+            inner_sequence(inner_sequence&&) = default;
+            inner_sequence& operator=(inner_sequence&&) = default;
 
             struct flux_sequence_traits : default_sequence_traits {
             private:
@@ -186,24 +186,24 @@ public:
                     inner_cursor(inner_cursor&&) = default;
                     inner_cursor& operator=(inner_cursor&&) = default;
 
-                    friend struct value_type::flux_sequence_traits;
+                    friend struct inner_sequence::flux_sequence_traits;
 
                 private:
                     explicit inner_cursor() = default;
                 };
 
             public:
-                static constexpr auto first(value_type&) -> inner_cursor
+                static constexpr auto first(inner_sequence&) -> inner_cursor
                 {
                     return inner_cursor{};
                 }
 
-                static constexpr auto is_last(value_type& self, inner_cursor const&) -> bool
+                static constexpr auto is_last(inner_sequence& self, inner_cursor const&) -> bool
                 {
                     return self.parent_->rem_ == 0;
                 }
 
-                static constexpr auto inc(value_type& self, inner_cursor&) -> void
+                static constexpr auto inc(inner_sequence& self, inner_cursor&) -> void
                 {
                     flux::inc(self.parent_->base_, *self.parent_->cur_);
                     if (flux::is_last(self.parent_->base_, *self.parent_->cur_)) {
@@ -213,7 +213,7 @@ public:
                     }
                 }
 
-                static constexpr auto read_at(value_type& self, inner_cursor const&)
+                static constexpr auto read_at(inner_sequence& self, inner_cursor const&)
                     -> element_t<Base>
                 {
                     return flux::read_at(self.parent_->base_, *self.parent_->cur_);
@@ -239,9 +239,9 @@ public:
             self.rem_ = self.chunk_sz_;
         }
 
-        static constexpr auto read_at(self_t& self, outer_cursor const&) -> value_type
+        static constexpr auto read_at(self_t& self, outer_cursor const&) -> inner_sequence
         {
-            return value_type(self);
+            return inner_sequence(self);
         }
 
         static constexpr auto size(self_t& self) -> int_t
