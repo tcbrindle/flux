@@ -34,7 +34,7 @@ target_compile_options(flux-internal INTERFACE
         -ftemplate-backtrace-limit=0
     >
 
-    $<$<CXX_COMPILER_ID:GNU>: -fconcepts-diagnostics-depth=2>
+    $<$<CXX_COMPILER_ID:GNU>: -fconcepts-diagnostics-depth=2 -Wno-missing-field-initializers>
 
     $<$<CXX_COMPILER_ID:Clang,AppleClang>: -fconstexpr-backtrace-limit=0>
 
