@@ -249,11 +249,11 @@ public:
     constexpr auto run_while(auto&& pred) -> iteration_result
     {
         while (!is_last(*ptr_, cur_)) {
-            auto _ = detail::defer_t([&] { inc(*ptr_, cur_); });
-
             if (!pred(read_at_unchecked(*ptr_, cur_))) {
+                inc(*ptr_, cur_);
                 return iteration_result::incomplete;
             }
+            inc(*ptr_, cur_);
         }
 
         return iteration_result::complete;
