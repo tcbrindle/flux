@@ -10,6 +10,7 @@
 #include <concepts>
 #include <functional>
 #include <type_traits>
+#include <utility>
 
 #include <flux/core/assert.hpp>
 
