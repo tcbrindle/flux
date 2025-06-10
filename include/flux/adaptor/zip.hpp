@@ -178,19 +178,25 @@ public:
 
     constexpr auto iterate() -> context_type<iteration_context_t<Bases>...>
     {
-        return [&]<std::size_t... I>(std::index_sequence<I...>) {
-            return context_type<iteration_context_t<Bases>...>{
-                .base_ctxs{emplace_from([&] { return flux::iterate(std::get<I>(bases_)); })...}};
-        }(std::index_sequence_for<Bases...>{});
+        return context_type<iteration_context_t<Bases>...>{
+            .base_ctxs = std::apply(
+                [&](auto&... bases) {
+                    return std::tuple<iteration_context_t<Bases>...>(
+                        emplace_from([&] { return flux::iterate(bases); })...);
+                },
+                bases_)};
     }
 
     constexpr auto iterate() const
         requires(iterable<Bases const> && ...)
     {
-        return [&]<std::size_t... I>(std::index_sequence<I...>) {
-            return context_type<iteration_context_t<Bases const>...>{
-                .base_ctxs{emplace_from([&] { return flux::iterate(std::get<I>(bases_)); })...}};
-        }(std::index_sequence_for<Bases...>{});
+        return context_type<iteration_context_t<Bases const>...>{
+            .base_ctxs = std::apply(
+                [&](auto&... bases) {
+                    return std::tuple<iteration_context_t<Bases const>...>(
+                        emplace_from([&] { return flux::iterate(bases); })...);
+                },
+                bases_)};
     }
 
     constexpr auto size() -> int_t
@@ -268,22 +274,28 @@ public:
 
     constexpr auto iterate() -> context_type<copy_or_ref_t<Func>, iteration_context_t<Bases>...>
     {
-        return [&]<std::size_t... I>(std::index_sequence<I...>) {
-            return context_type<copy_or_ref_t<Func>, iteration_context_t<Bases>...>{
-                .fn = copy_or_ref(func_),
-                .base_ctxs{emplace_from([&] { return flux::iterate(std::get<I>(bases_)); })...}};
-        }(std::index_sequence_for<Bases...>{});
+        return context_type<copy_or_ref_t<Func>, iteration_context_t<Bases>...>{
+            .fn = copy_or_ref(func_),
+            .base_ctxs = std::apply(
+                [&](auto&... bases) {
+                    return std::tuple<iteration_context_t<Bases>...>(
+                        emplace_from([&] { return flux::iterate(bases); })...);
+                },
+                bases_)};
     }
 
     constexpr auto iterate() const
         requires(iterable<Bases const> && ...)
         && std::regular_invocable<Func const&, iterable_element_t<Bases const>...>
     {
-        return [&]<std::size_t... I>(std::index_sequence<I...>) {
-            return context_type<copy_or_ref_t<Func const>, iteration_context_t<Bases const>...>{
-                .fn = copy_or_ref(func_),
-                .base_ctxs{emplace_from([&] { return flux::iterate(std::get<I>(bases_)); })...}};
-        }(std::index_sequence_for<Bases...>{});
+        return context_type<copy_or_ref_t<Func const>, iteration_context_t<Bases const>...>{
+            .fn = copy_or_ref(func_),
+            .base_ctxs = std::apply(
+                [&](auto&... bases) {
+                    return std::tuple<iteration_context_t<Bases const>...>(
+                        emplace_from([&] { return flux::iterate(bases); })...);
+                },
+                bases_)};
     }
 
     constexpr auto size() -> int_t
