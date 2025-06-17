@@ -11,6 +11,21 @@ namespace {
 
 constexpr bool test_adjacent_filter()
 {
+    {
+        std::array arr{1, 1, 1, 2, 2, 3, 4, 4, 4, 5};
+
+        auto filtered = flux::adjacent_filter(arr, std::not_equal_to{});
+
+        auto ctx = filtered.iterate();
+
+        STATIC_CHECK(flux::next_element(ctx).value() == 1);
+        STATIC_CHECK(flux::next_element(ctx).value() == 2);
+        STATIC_CHECK(flux::next_element(ctx).value() == 3);
+        STATIC_CHECK(flux::next_element(ctx).value() == 4);
+        STATIC_CHECK(flux::next_element(ctx).value() == 5);
+        STATIC_CHECK(not flux::next_element(ctx).has_value());
+    }
+
     // Basic adjacent_filter
     {
         std::array arr{1, 1, 1, 2, 2, 3, 4, 4, 4, 5};

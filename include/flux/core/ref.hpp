@@ -143,6 +143,13 @@ public:
 
     constexpr Base& base() const noexcept { return *base_; }
 
+    constexpr auto iterate() const { return flux::iterate(*base_); }
+    constexpr auto reverse_iterate() const
+        requires reverse_iterable<Base>
+    {
+        return flux::reverse_iterate(*base_);
+    }
+
     struct flux_sequence_traits : passthrough_traits_base {
         using value_type = value_t<Base>;
     };
