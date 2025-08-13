@@ -262,10 +262,7 @@ TEST_CASE("scan")
 
         auto seq = flux::from_istream<int>(iss).scan(std::plus<>{}, 100);
 
-        static_assert(flux::sequence<decltype(seq)>);
-        static_assert(not flux::multipass_sequence<decltype(seq)>);
-        static_assert(not flux::sized_sequence<decltype(seq)>);
-        static_assert(not flux::bounded_sequence<decltype(seq)>);
+        static_assert(flux::iterable<decltype(seq)>);
 
         REQUIRE(check_equal(seq, {101, 103, 106, 110, 115}));
     }
@@ -277,10 +274,7 @@ TEST_CASE("scan")
         auto seq = flux::prescan(flux::from_istream<int>(iss),
                                         std::plus<>{}, 100);
 
-        static_assert(flux::sequence<decltype(seq)>);
-        static_assert(not flux::multipass_sequence<decltype(seq)>);
-        static_assert(not flux::sized_sequence<decltype(seq)>);
-        static_assert(not flux::bounded_sequence<decltype(seq)>);
+        static_assert(flux::iterable<decltype(seq)>);
 
         REQUIRE(check_equal(seq, {100, 101, 103, 106, 110, 115}));
     }
@@ -291,10 +285,7 @@ TEST_CASE("scan")
 
         auto seq = flux::from_istream<int>(iss).scan_first(std::plus<>{});
 
-        static_assert(flux::sequence<decltype(seq)>);
-        static_assert(not flux::multipass_sequence<decltype(seq)>);
-        static_assert(not flux::sized_sequence<decltype(seq)>);
-        static_assert(not flux::bounded_sequence<decltype(seq)>);
+        static_assert(flux::iterable<decltype(seq)>);
 
         REQUIRE(check_equal(seq, {1, 3, 6, 10, 15}));
     }

@@ -15,75 +15,44 @@ namespace flux {
 namespace detail {
 
 template <typename T, typename CharT, typename Traits>
-    requires std::default_initializable<T>
-class istream_adaptor : public inline_sequence_base<istream_adaptor<T, CharT, Traits>> {
-    using istream_type = std::basic_istream<CharT, Traits>;
-    istream_type* is_ = nullptr;
-    T val_ = T();
+struct istream_adaptor : inline_sequence_base<istream_adaptor<T, CharT, Traits>> {
+    std::basic_istream<CharT, Traits>* stream;
 
-    friend struct sequence_traits<istream_adaptor>;
+    struct context_type : immovable {
+        std::basic_istream<CharT, Traits>* stream_;
+        T elem_ = T{};
 
-public:
-    explicit istream_adaptor(istream_type& is)
-        : is_(std::addressof(is))
-    {}
+        using element_type = T const&;
 
+        explicit context_type(istream_adaptor& adaptor) : stream_(adaptor.stream) { }
+
+        auto run_while(auto&& pred) -> iteration_result
+        {
+            while (*stream_ >> elem_) {
+                if (!std::invoke(pred, static_cast<element_type>(elem_))) {
+                    return iteration_result::incomplete;
+                }
+            }
+            return iteration_result::complete;
+        }
+    };
+
+    explicit istream_adaptor(std::basic_istream<CharT, Traits>& is) : stream(std::addressof(is)) { }
+
+    auto iterate() { return context_type{*this}; }
 };
 
 template <std::default_initializable T>
 struct from_istream_fn {
-
     template <typename CharT, typename Traits>
     [[nodiscard]]
     auto operator()(std::basic_istream<CharT, Traits>& is) const
     {
         return istream_adaptor<T, CharT, Traits>(is);
     }
-
 };
 
 } // namespace detail
-
-template <typename T, typename CharT, typename Traits>
-struct sequence_traits<detail::istream_adaptor<T, CharT, Traits>> : default_sequence_traits
-{
-private:
-    struct cursor_type {
-        cursor_type(cursor_type&&) = default;
-        cursor_type& operator=(cursor_type&&) = default;
-    private:
-        friend struct sequence_traits;
-        explicit cursor_type() = default;
-    };
-
-    using self_t = detail::istream_adaptor<T, CharT, Traits>;
-
-public:
-    static auto first(self_t& self) -> cursor_type
-    {
-        cursor_type cur{};
-        inc(self, cur);
-        return cur;
-    }
-
-    static auto is_last(self_t& self, cursor_type const&) -> bool
-    {
-        return !(self.is_ && static_cast<bool>(*self.is_));
-    }
-
-    static auto read_at(self_t& self, cursor_type const&) -> T const&
-    {
-        return self.val_;
-    }
-
-    static auto inc(self_t& self, cursor_type& cur) -> cursor_type&
-    {
-        if (!(self.is_ && (*self.is_ >> self.val_))) {
-            self.is_ = nullptr;
-        }
-        return cur;
-    }
-};
 
 FLUX_EXPORT
 template <std::default_initializable T>

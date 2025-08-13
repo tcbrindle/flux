@@ -142,8 +142,8 @@ consteval auto deduce_container_type()
         using I = common_iterator_t<Seq>;
         return type_t<decltype(C(FLUX_DECLVAL(I), FLUX_DECLVAL(I), FLUX_DECLVAL(Args)...))>{};
     } else {
-        static_assert(requires { typename C<value_t<Seq>>; });
-        return type_t<C<value_t<Seq>>>{};
+        static_assert(requires { typename C<iterable_value_t<Seq>>; });
+        return type_t<C<iterable_value_t<Seq>>>{};
     }
 }
 
@@ -161,7 +161,8 @@ template <typename Container, iterable It, typename... Args>
     || iterable<iterable_element_t<It>>
 constexpr auto to(It&& it, Args&&... args) -> Container
 {
-    if constexpr (std::convertible_to<element_t<It>, detail::container_value_t<Container>>) {
+    if constexpr (std::convertible_to<iterable_element_t<It>,
+                                      detail::container_value_t<Container>>) {
         if constexpr (detail::direct_iterable_constructible<Container, It, Args...>) {
             return Container(FLUX_FWD(it), FLUX_FWD(args)...);
         } else if constexpr (detail::from_iterable_constructible<Container, It, Args...>) {
@@ -193,13 +194,13 @@ constexpr auto to(It&& it, Args&&... args) -> Container
 }
 
 FLUX_EXPORT
-template <template <typename...> typename Container, sequence Seq, typename... Args>
-    requires detail::can_deduce_container_type<Container, Seq, Args...> &&
-             detail::container_convertible<
-                 detail::deduced_container_t<Container, Seq, Args...>, Seq, Args...>
-constexpr auto to(Seq&& seq, Args&&... args)
+template <template <typename...> typename Container, iterable It, typename... Args>
+    requires detail::can_deduce_container_type<Container, It, Args...>
+    && detail::container_convertible<detail::deduced_container_t<Container, It, Args...>, It,
+                                     Args...>
+constexpr auto to(It&& seq, Args&&... args)
 {
-    using C_ = detail::deduced_container_t<Container, Seq, Args...>;
+    using C_ = detail::deduced_container_t<Container, It, Args...>;
     return flux::to<C_>(FLUX_FWD(seq), FLUX_FWD(args)...);
 }
 

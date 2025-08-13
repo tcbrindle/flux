@@ -87,52 +87,53 @@ public:
         };
 
     public:
-        using value_type = value_t<Base>;
+        using value_type = iterable_value_t<Base>;
 
         static constexpr bool disable_multipass = !multipass_sequence<Base>;
 
-        static constexpr auto first(auto& self) -> cursor_type
+        static constexpr auto first(auto& self)
+            requires sequence<Base>
         {
             return cursor_type{flux::find_if(self.base_, std::ref(self.pred_))};
         }
 
-        static constexpr auto is_last(auto& self, cursor_type const& cur) -> bool
+        static constexpr auto is_last(auto& self, auto const& cur) -> bool
         {
             return flux::is_last(self.base_, cur.base_cur);
         }
 
-        static constexpr auto read_at(auto& self, cursor_type const& cur)
+        static constexpr auto read_at(auto& self, auto const& cur)
             -> decltype(flux::read_at(self.base_, cur.base_cur))
         {
             return flux::read_at(self.base_, cur.base_cur);
         }
 
-        static constexpr auto read_at_unchecked(auto& self, cursor_type const& cur)
+        static constexpr auto read_at_unchecked(auto& self, auto const& cur)
             -> decltype(flux::read_at_unchecked(self.base_, cur.base_cur))
         {
             return flux::read_at_unchecked(self.base_, cur.base_cur);
         }
 
-        static constexpr auto move_at(auto& self, cursor_type const& cur)
+        static constexpr auto move_at(auto& self, auto const& cur)
             -> decltype(flux::move_at(self.base_, cur.base_cur))
         {
             return flux::move_at(self.base_, cur.base_cur);
         }
 
-        static constexpr auto move_at_unchecked(auto& self, cursor_type const& cur)
+        static constexpr auto move_at_unchecked(auto& self, auto const& cur)
             -> decltype(flux::move_at_unchecked(self.base_, cur.base_cur))
         {
             return flux::move_at_unchecked(self.base_, cur.base_cur);
         }
 
-        static constexpr auto inc(auto& self, cursor_type& cur) -> void
+        static constexpr auto inc(auto& self, auto& cur) -> void
         {
             flux::inc(self.base_, cur.base_cur);
             cur.base_cur = flux::slice(self.base_, std::move(cur).base_cur, flux::last)
                                .find_if(std::ref(self.pred_));
         }
 
-        static constexpr auto dec(auto& self, cursor_type& cur) -> void
+        static constexpr auto dec(auto& self, auto& cur) -> void
             requires bidirectional_sequence<Base>
         {
             do {
@@ -140,14 +141,13 @@ public:
             } while(!std::invoke(self.pred_, flux::read_at(self.base_, cur.base_cur)));
         }
 
-        static constexpr auto last(auto& self) -> cursor_type
+        static constexpr auto last(auto& self)
             requires bounded_sequence<Base>
         {
             return cursor_type{flux::last(self.base_)};
         }
 
         static constexpr auto for_each_while(auto& self, auto&& func)
-            -> cursor_type
         {
             return cursor_type {flux::seq_for_each_while(self.base_, [&](auto&& elem) {
                 if (std::invoke(self.pred_, elem)) {

@@ -516,6 +516,29 @@ FLUX_EXPORT template <typename I>
 concept adaptable_iterable = iterable<std::decay_t<I>>
     && (detail::movable_rvalue<I> || detail::trivially_copyable_lvalue<I>);
 
+/*
+ * MARK: Default implementations
+ */
+template <iterable It>
+struct iterable_traits<std::reference_wrapper<It>> {
+
+    using self_t = std::reference_wrapper<It>;
+
+    static constexpr auto iterate(self_t self) { return flux::iterate(self.get()); }
+
+    static constexpr auto reverse_iterate(self_t self)
+        requires reverse_iterable<It>
+    {
+        return flux::reverse_iterate(self.get());
+    }
+
+    static constexpr auto size(self_t self)
+        requires sized_iterable<It>
+    {
+        return flux::iterable_size(self.get());
+    }
+};
+
 } // namespace flux
 
 #endif // FLUX_CORE_ITERABLE_CONCEPTS_HPP_INCLUDED
