@@ -127,7 +127,7 @@ FLUX_EXPORT inline constexpr auto take_while = detail::take_while_fn{};
 
 template <typename D>
 template <typename Pred>
-    requires std::predicate<Pred&, element_t<D>>
+    requires std::predicate<Pred&, iterable_element_t<D>>
 constexpr auto inline_sequence_base<D>::take_while(Pred pred) &&
 {
     return flux::take_while(std::move(derived()), std::move(pred));

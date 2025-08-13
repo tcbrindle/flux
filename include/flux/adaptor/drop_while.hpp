@@ -106,7 +106,7 @@ FLUX_EXPORT inline constexpr auto drop_while = detail::drop_while_fn{};
 
 template <typename D>
 template <typename Pred>
-    requires std::predicate<Pred&, element_t<D>>
+    requires std::predicate<Pred&, iterable_element_t<D>>
 constexpr auto inline_sequence_base<D>::drop_while(Pred pred) &&
 {
     return flux::drop_while(std::move(derived()), std::move(pred));

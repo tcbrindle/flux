@@ -366,7 +366,7 @@ FLUX_EXPORT inline constexpr auto flatten = detail::flatten_fn{};
 
 template <typename Derived>
 constexpr auto inline_sequence_base<Derived>::flatten() &&
-        requires sequence<element_t<Derived>>
+    requires sequence<iterable_element_t<Derived>>
 {
     return flux::flatten(std::move(derived()));
 }

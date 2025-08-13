@@ -68,7 +68,7 @@ constexpr auto inline_sequence_base<D>::count()
 
 template <typename D>
 template <typename Value>
-    requires std::equality_comparable_with<element_t<D>, Value const&>
+    requires std::equality_comparable_with<iterable_element_t<D>, Value const&>
 constexpr auto inline_sequence_base<D>::count_eq(Value const& value)
 {
     return flux::count_eq(derived(), value);
@@ -76,7 +76,7 @@ constexpr auto inline_sequence_base<D>::count_eq(Value const& value)
 
 template <typename D>
 template <typename Pred>
-    requires std::predicate<Pred&, element_t<D>>
+    requires std::predicate<Pred&, iterable_element_t<D>>
 constexpr auto inline_sequence_base<D>::count_if(Pred pred)
 {
     return flux::count_if(derived(), std::move(pred));

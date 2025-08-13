@@ -134,7 +134,7 @@ FLUX_EXPORT inline constexpr auto map = detail::map_fn{};
 
 template <typename Derived>
 template <typename Func>
-    requires std::invocable<Func&, element_t<Derived>>
+    requires std::invocable<Func&, iterable_element_t<Derived>>
 constexpr auto inline_sequence_base<Derived>::map(Func func) &&
 {
     return detail::map_adaptor<Derived, Func>(std::move(derived()), std::move(func));

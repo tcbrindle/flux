@@ -54,7 +54,7 @@ FLUX_EXPORT inline constexpr any_t any {};
 
 template <typename D>
 template <typename Pred>
-    requires std::predicate<Pred&, element_t<D>>
+    requires std::predicate<Pred&, iterable_element_t<D>>
 constexpr auto inline_sequence_base<D>::all(Pred pred)
 {
     return flux::all(derived(), std::move(pred));
@@ -62,7 +62,7 @@ constexpr auto inline_sequence_base<D>::all(Pred pred)
 
 template <typename D>
 template <typename Pred>
-    requires std::predicate<Pred&, element_t<D>>
+    requires std::predicate<Pred&, iterable_element_t<D>>
 constexpr auto inline_sequence_base<D>::any(Pred pred)
 {
     return flux::any(derived(), std::move(pred));
@@ -70,7 +70,7 @@ constexpr auto inline_sequence_base<D>::any(Pred pred)
 
 template <typename D>
 template <typename Pred>
-    requires std::predicate<Pred&, element_t<D>>
+    requires std::predicate<Pred&, iterable_element_t<D>>
 constexpr auto inline_sequence_base<D>::none(Pred pred)
 {
     return flux::none(derived(), std::move(pred));

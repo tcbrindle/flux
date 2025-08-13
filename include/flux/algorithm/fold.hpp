@@ -14,9 +14,9 @@ FLUX_EXPORT
 struct fold_t {
     template <iterable It, typename Func, std::movable Init = iterable_value_t<It>,
               typename R = fold_result_t<It, Func, Init>>
-        requires std::invocable<Func&, Init, element_t<It>>
-        && std::invocable<Func&, R, element_t<It>> && std::convertible_to<Init, R>
-        && std::assignable_from<Init&, std::invoke_result_t<Func&, R, element_t<It>>>
+        requires std::invocable<Func&, Init, iterable_element_t<It>>
+        && std::invocable<Func&, R, iterable_element_t<It>> && std::convertible_to<Init, R>
+        && std::assignable_from<Init&, std::invoke_result_t<Func&, R, iterable_element_t<It>>>
     [[nodiscard]]
     constexpr auto operator()(It&& it, Func func, Init init = Init{}) const -> R
     {
@@ -131,8 +131,9 @@ constexpr auto inline_sequence_base<Derived>::fold(Func func, Init init)
 
 template <typename Derived>
 template <typename D, typename Func>
-    requires std::invocable<Func&, value_t<D>, element_t<D>>
-    && std::assignable_from<value_t<D>&, std::invoke_result_t<Func&, value_t<D>, element_t<D>>>
+    requires std::invocable<Func&, iterable_value_t<D>, iterable_element_t<D>>
+    && std::assignable_from<iterable_value_t<D>&,
+                            std::invoke_result_t<Func&, iterable_value_t<D>, iterable_element_t<D>>>
 constexpr auto inline_sequence_base<Derived>::fold_first(Func func)
 {
     return flux::fold_first(derived(), std::move(func));
@@ -140,14 +141,16 @@ constexpr auto inline_sequence_base<Derived>::fold_first(Func func)
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::sum()
-    requires foldable<D, std::plus<>, value_t<D>> && std::default_initializable<value_t<D>>
+    requires foldable<D, std::plus<>, iterable_value_t<D>>
+    && std::default_initializable<iterable_value_t<D>>
 {
     return flux::sum(derived());
 }
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::product()
-    requires foldable<D, std::multiplies<>, value_t<D>> && requires { value_t<D>(1); }
+    requires foldable<D, std::multiplies<>, iterable_value_t<D>>
+    && requires { iterable_value_t<D>(1); }
 {
     return flux::product(derived());
 }

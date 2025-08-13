@@ -174,7 +174,7 @@ FLUX_EXPORT inline constexpr auto scan_first = detail::scan_first_fn{};
 
 template <typename Derived>
 template <typename Func>
-    requires foldable<Derived, Func, element_t<Derived>>
+    requires foldable<Derived, Func, iterable_element_t<Derived>>
 constexpr auto inline_sequence_base<Derived>::scan_first(Func func) &&
 {
     return flux::scan_first(std::move(derived()), std::move(func));

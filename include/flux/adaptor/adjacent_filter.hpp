@@ -189,8 +189,8 @@ FLUX_EXPORT inline constexpr auto dedup = detail::dedup_fn{};
 
 template <typename D>
 template <typename Pred>
-    requires multipass_sequence<D> &&
-             std::predicate<Pred&, element_t<D>, element_t<D>>
+    requires multipass_sequence<D>
+    && std::predicate<Pred&, iterable_element_t<D>, iterable_element_t<D>>
 constexpr auto inline_sequence_base<D>::adjacent_filter(Pred pred) &&
 {
     return flux::adjacent_filter(std::move(derived()), std::move(pred));
@@ -198,8 +198,7 @@ constexpr auto inline_sequence_base<D>::adjacent_filter(Pred pred) &&
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::dedup() &&
-    requires multipass_sequence<D> &&
-             std::equality_comparable<element_t<D>>
+    requires multipass_sequence<D> && std::equality_comparable<iterable_element_t<D>>
 {
     return flux::dedup(std::move(derived()));
 }

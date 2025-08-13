@@ -44,9 +44,9 @@ FLUX_EXPORT inline constexpr auto ends_with = ends_with_t{};
 
 template <typename Derived>
 template <sequence Needle, typename Cmp>
-    requires std::predicate<Cmp&, element_t<Derived>, element_t<Needle>> &&
-             (multipass_sequence<Derived> || sized_sequence<Derived>) &&
-             (multipass_sequence<Needle> || sized_sequence<Needle>)
+    requires std::predicate<Cmp&, iterable_element_t<Derived>, iterable_element_t<Needle>>
+    && (multipass_sequence<Derived> || sized_sequence<Derived>)
+    && (multipass_sequence<Needle> || sized_sequence<Needle>)
 constexpr auto inline_sequence_base<Derived>::ends_with(Needle&& needle, Cmp cmp) -> bool
 {
     return flux::ends_with(derived(), FLUX_FWD(needle), std::move(cmp));

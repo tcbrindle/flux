@@ -196,7 +196,7 @@ FLUX_EXPORT inline constexpr auto mask = detail::mask_fn{};
 
 template <typename D>
 template <adaptable_sequence Mask>
-    requires detail::boolean_testable<element_t<Mask>>
+    requires detail::boolean_testable<iterable_element_t<Mask>>
 constexpr auto inline_sequence_base<D>::mask(Mask&& mask_) &&
 {
     return flux::mask(std::move(derived()), FLUX_FWD(mask_));

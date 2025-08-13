@@ -87,7 +87,7 @@ FLUX_EXPORT inline constexpr auto find_if_not = detail::find_if_not_fn{};
 
 template <typename D>
 template <typename Value>
-    requires std::equality_comparable_with<element_t<D>, Value const&>
+    requires std::equality_comparable_with<iterable_element_t<D>, Value const&>
 constexpr auto inline_sequence_base<D>::find(Value const& val)
 {
     return flux::find(derived(), val);
@@ -95,7 +95,7 @@ constexpr auto inline_sequence_base<D>::find(Value const& val)
 
 template <typename D>
 template <typename Pred>
-    requires std::predicate<Pred&, element_t<D>>
+    requires std::predicate<Pred&, iterable_element_t<D>>
 constexpr auto inline_sequence_base<D>::find_if(Pred pred)
 {
     return flux::find_if(derived(), std::ref(pred));
@@ -103,7 +103,7 @@ constexpr auto inline_sequence_base<D>::find_if(Pred pred)
 
 template <typename D>
 template <typename Pred>
-    requires std::predicate<Pred&, element_t<D>>
+    requires std::predicate<Pred&, iterable_element_t<D>>
 constexpr auto inline_sequence_base<D>::find_if_not(Pred pred)
 {
     return flux::find_if_not(derived(), std::ref(pred));
