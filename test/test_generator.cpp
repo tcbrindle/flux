@@ -36,10 +36,12 @@ auto fib(int a, int b) -> generator<int const&>
     }
 }
 
-auto pythagorean_triples() -> generator<std::tuple<int, int, int>> {
-    for (int z : ints(1)) {
-        for (int y : ints(1, z)) {
-            for (int x : ints(1, y)) {
+auto pythagorean_triples() -> generator<std::tuple<int, int, int>>
+{
+    // TODO: Remove as_range from here when iterables can use range-for directly
+    for (int z : flux::as_range(ints(1))) {
+        for (int y : flux::as_range(ints(1, z))) {
+            for (int x : flux::as_range(ints(1, y))) {
                 if (x*x + y*y == z*z) {
                     co_yield {x, y, z};
                 }
@@ -65,14 +67,10 @@ TEST_CASE("generator")
 
         using I = decltype(ints);
 
-        static_assert(flux::sequence<I>);
-        static_assert(not flux::multipass_sequence<I>);
-        static_assert(not flux::sized_sequence<I>);
-        static_assert(not flux::bounded_sequence<I>);
+        static_assert(flux::iterable<I>);
 
-        static_assert(std::same_as<flux::element_t<I>, int const&>);
-        static_assert(std::same_as<flux::value_t<I>, int>);
-        static_assert(std::same_as<flux::rvalue_element_t<I>, int const&&>);
+        static_assert(std::same_as<flux::iterable_element_t<I>, int const&>);
+        static_assert(std::same_as<flux::iterable_value_t<I>, int>);
 
         CHECK(check_equal(std::move(ints).take(5), {0, 1, 2, 3, 4}));
     }
@@ -83,32 +81,30 @@ TEST_CASE("generator")
 
         using G = decltype(gen);
 
-        static_assert(std::same_as<flux::element_t<G>, std::unique_ptr<int>&&>);
-        static_assert(std::same_as<flux::value_t<G>, std::unique_ptr<int>>);
-        static_assert(std::same_as<flux::rvalue_element_t<G>, std::unique_ptr<int>&&>);
+        static_assert(std::same_as<flux::iterable_element_t<G>, std::unique_ptr<int>&&>);
+        static_assert(std::same_as<flux::iterable_value_t<G>, std::unique_ptr<int>>);
 
         int i = 0;
-        for (auto cur = gen.first(); !gen.is_last(cur); gen.inc(cur)) {
-            CHECK(*gen[cur] == i++);
+        auto ctx = gen.iterate();
+        while (auto opt = flux::next_element(ctx)) {
+            CHECK(**opt == i++);
         }
         CHECK(i == 5);
     }
 
     SUBCASE("ranges integration")
     {
-        auto view = ints();
+        auto view = flux::as_range(ints());
 
         using V = decltype(view);
 
         static_assert(std::ranges::input_range<V>);
-        static_assert(std::ranges::view<V>);
         static_assert(not std::ranges::forward_range<V>);
         static_assert(std::same_as<std::ranges::range_reference_t<V>, int const&>);
         static_assert(std::same_as<std::ranges::range_value_t<V>, int>);
         static_assert(std::same_as<std::ranges::range_rvalue_reference_t<V>, int const&&>);
 
-        CHECK(std::ranges::equal(std::views::take(std::move(view), 5),
-                                 std::views::iota(0, 5)));
+        CHECK(std::ranges::equal(std::views::take(view, 5), std::views::iota(0, 5)));
     }
 
     SUBCASE("fibonacci sequence")
@@ -122,12 +118,13 @@ TEST_CASE("generator")
     {
         auto triples = pythagorean_triples().take(5);
 
-        auto cur = triples.first();
+        auto ctx = flux::iterate(triples);
 
-        CHECK((triples[cur] == std::tuple{3, 4, 5}));
-        CHECK((triples[triples.inc(cur)] == std::tuple{6, 8, 10}));
-        CHECK((triples[triples.inc(cur)] == std::tuple{5, 12, 13}));
-        CHECK((triples[triples.inc(cur)] == std::tuple{9, 12, 15}));
-        CHECK((triples[triples.inc(cur)] == std::tuple{8, 15, 17}));
+        CHECK((flux::next_element(ctx).value() == std::tuple{3, 4, 5}));
+        CHECK((flux::next_element(ctx).value() == std::tuple{6, 8, 10}));
+        CHECK((flux::next_element(ctx).value() == std::tuple{5, 12, 13}));
+        CHECK((flux::next_element(ctx).value() == std::tuple{9, 12, 15}));
+        CHECK((flux::next_element(ctx).value() == std::tuple{8, 15, 17}));
+        CHECK(!flux::next_element(ctx).has_value());
     }
 }

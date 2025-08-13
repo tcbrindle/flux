@@ -48,6 +48,26 @@ struct generator : inline_sequence_base<generator<ElemT>> {
         std::add_pointer_t<yielded_type> ptr_;
     };
 
+    struct iteration_context_type : immovable {
+        handle_type* coro_;
+
+        explicit iteration_context_type(handle_type& coro) : coro_(std::addressof(coro)) { }
+
+        using element_type = yielded_type;
+
+        auto run_while(auto&& pred) -> iteration_result
+        {
+            coro_->resume();
+            while (!coro_->done()) {
+                if (!std::invoke(pred, static_cast<element_type>(*coro_->promise().ptr_))) {
+                    return iteration_result::incomplete;
+                }
+                coro_->resume();
+            }
+            return iteration_result::complete;
+        }
+    };
+
 private:
     handle_type coro_;
 
@@ -70,43 +90,8 @@ public:
     {
         if (coro_) { coro_.destroy(); }
     }
-};
 
-template <typename T>
-struct sequence_traits<generator<T>> : default_sequence_traits
-{
-private:
-    struct cursor_type {
-        cursor_type(cursor_type&&) = default;
-        cursor_type& operator=(cursor_type&&) = default;
-    private:
-        cursor_type() = default;
-        friend struct sequence_traits;
-    };
-
-    using self_t = generator<T>;
-
-public:
-    static auto first(self_t& self) {
-        self.coro_.resume();
-        return cursor_type{};
-    }
-
-    static auto is_last(self_t& self, cursor_type const&) -> bool
-    {
-        return self.coro_.done();
-    }
-
-    static auto inc(self_t& self, cursor_type& cur) -> cursor_type&
-    {
-        self.coro_.resume();
-        return cur;
-    }
-
-    static auto read_at(self_t& self, cursor_type const&) -> decltype(auto)
-    {
-        return static_cast<typename self_t::yielded_type>(*self.coro_.promise().ptr_);
-    }
+    auto iterate() -> iteration_context_type { return iteration_context_type(coro_); }
 };
 
 } // namespace flux

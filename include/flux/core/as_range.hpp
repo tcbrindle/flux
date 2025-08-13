@@ -77,7 +77,7 @@ struct as_range_t {
             if constexpr (std::is_lvalue_reference_v<It>) {
                 return detail::iterable_range<std::reference_wrapper<It>>(std::ref(it));
             } else {
-                return detail::iterable_range<It>(it);
+                return detail::iterable_range<It>(FLUX_FWD(it));
             }
         }
     }
