@@ -33,7 +33,14 @@ struct generator : inline_sequence_base<generator<ElemT>> {
             return generator(handle_type::from_promise(*this));
         }
 
-        auto yield_value(yielded_type elem)
+        auto yield_value(ElemT& elem)
+        {
+            ptr_ = std::addressof(elem);
+            return std::suspend_always{};
+        }
+
+        auto yield_value(ElemT&& elem)
+            requires(!std::is_lvalue_reference_v<ElemT>)
         {
             ptr_ = std::addressof(elem);
             return std::suspend_always{};
