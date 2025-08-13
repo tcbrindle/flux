@@ -30,7 +30,7 @@ private:
     static consteval auto can_memcpy() -> bool
     {
         return contiguous_sequence<Seq> && sized_sequence<Seq> && std::contiguous_iterator<Iter>
-            && std::is_trivially_copyable_v<value_t<Seq>>;
+            && std::is_trivially_copyable_v<iterable_value_t<Seq>>;
     }
 
     template <typename Seq, typename Iter>

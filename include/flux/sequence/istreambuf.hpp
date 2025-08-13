@@ -20,62 +20,46 @@ void derives_from_streambuf_test(std::basic_streambuf<CharT, Traits>&);
 template <typename T>
 concept derives_from_streambuf = requires (T& t) { derives_from_streambuf_test(t); };
 
-struct from_istreambuf_fn {
-    template <typename CharT, typename Traits>
-    [[nodiscard]]
-    auto operator()(std::basic_streambuf<CharT, Traits>* streambuf) const -> sequence auto
-    {
-        FLUX_ASSERT(streambuf != nullptr);
-        return flux::mut_ref(*streambuf);
-    }
-
-    template <typename CharT, typename Traits>
-    [[nodiscard]]
-    auto operator()(std::basic_istream<CharT, Traits>& istream) const -> sequence auto
-    {
-        return flux::mut_ref(*istream.rdbuf());
-    }
-};
-
 } // namespace detail
 
 template <detail::derives_from_streambuf Streambuf>
-struct sequence_traits<Streambuf> : default_sequence_traits
-{
-private:
-    struct cursor_type {
-        cursor_type(cursor_type&&) = default;
-        cursor_type& operator=(cursor_type&&) = default;
+struct iterable_traits<Streambuf> {
+
+    template <typename CharT, typename Traits>
+    struct context_type : immovable {
     private:
-        friend struct sequence_traits;
-        cursor_type() = default;
+        using streambuf_type = std::basic_streambuf<CharT, Traits>;
+        using char_type = CharT;
+        using traits_type = Traits;
+
+        streambuf_type* streambuf_;
+
+    public:
+        using element_type = char_type;
+
+        explicit context_type(streambuf_type& streambuf) : streambuf_(std::addressof(streambuf)) { }
+
+        auto run_while(auto&& pred) -> iteration_result
+        {
+            while (true) {
+                auto c = streambuf_->sbumpc();
+                if (c == traits_type::eof()) {
+                    return iteration_result::complete;
+                }
+                if (!std::invoke(pred, traits_type::to_char_type(c))) {
+                    return iteration_result::incomplete;
+                }
+            }
+        }
     };
 
-    using traits_type = typename Streambuf::traits_type;
-    using char_type = typename Streambuf::char_type;
-
-public:
-    static auto first(Streambuf&) -> cursor_type { return {}; }
-
-    static auto is_last(Streambuf& self, cursor_type const&) -> bool
+    template <typename CharT, typename Traits>
+    static auto iterate(std::basic_streambuf<CharT, Traits>& streambuf)
+        -> context_type<CharT, Traits>
     {
-        return self.sgetc() == traits_type::eof();
-    }
-
-    static auto inc(Streambuf& self, cursor_type& cur) -> cursor_type&
-    {
-        self.sbumpc();
-        return cur;
-    }
-
-    static auto read_at(Streambuf& self, cursor_type const&) -> char_type
-    {
-        return traits_type::to_char_type(self.sgetc());
+        return context_type<CharT, Traits>(streambuf);
     }
 };
-
-FLUX_EXPORT
-inline constexpr auto from_istreambuf = detail::from_istreambuf_fn{};
 
 } // namespace flux
 
