@@ -111,7 +111,7 @@ struct passthrough_traits_base : default_sequence_traits {
     }
 };
 
-template <sequence Base>
+template <iterable Base>
 struct ref_adaptor : inline_sequence_base<ref_adaptor<Base>> {
 private:
     Base* base_;
@@ -144,6 +144,7 @@ public:
     constexpr Base& base() const noexcept { return *base_; }
 
     constexpr auto iterate() const { return flux::iterate(*base_); }
+
     constexpr auto reverse_iterate() const
         requires reverse_iterable<Base>
     {
@@ -162,33 +163,34 @@ template <typename T>
 inline constexpr bool is_ref_adaptor<ref_adaptor<T>> = true;
 
 struct mut_ref_fn {
-    template <sequence Seq>
-        requires (!std::is_const_v<Seq>)
+    template <iterable It>
+        requires(!std::is_const_v<It>)
     [[nodiscard]]
-    constexpr auto operator()(Seq& seq) const
+    constexpr auto operator()(It& it) const
     {
-        if constexpr (is_ref_adaptor<Seq>) {
-            return seq;
+        if constexpr (is_ref_adaptor<It>) {
+            return it;
         } else {
-            return ref_adaptor<Seq>(seq);
+            return ref_adaptor<It>(it);
         }
     }
 };
 
 struct ref_fn {
-    template <const_iterable_sequence Seq>
-        requires (!is_ref_adaptor<Seq>)
+    template <iterable It>
+        requires(iterable<It const> && !is_ref_adaptor<It>)
     [[nodiscard]]
-    constexpr auto operator()(Seq const& seq) const
+    constexpr auto operator()(It const& it) const
     {
-        return ref_adaptor<Seq const>(seq);
+        return ref_adaptor<It const>(it);
     }
 
-    template <const_iterable_sequence Seq>
+    template <iterable It>
+        requires iterable<It const>
     [[nodiscard]]
-    constexpr auto operator()(ref_adaptor<Seq> ref) const
+    constexpr auto operator()(ref_adaptor<It> ref) const
     {
-        return ref_adaptor<Seq const>(ref.base());
+        return ref_adaptor<It const>(ref.base());
     }
 
     template <typename T>
