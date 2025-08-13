@@ -50,7 +50,7 @@ auto pythagorean_triples() -> generator<std::tuple<int, int, int>>
     }
 }
 
-auto move_only() ->  generator<std::unique_ptr<int>&&>
+auto move_only() -> generator<std::unique_ptr<int>>
 {
     for (int i = 0; i < 5; i++) {
         co_yield std::make_unique<int>(i);
@@ -69,7 +69,7 @@ TEST_CASE("generator")
 
         static_assert(flux::iterable<I>);
 
-        static_assert(std::same_as<flux::iterable_element_t<I>, int const&>);
+        static_assert(std::same_as<flux::iterable_element_t<I>, int&&>);
         static_assert(std::same_as<flux::iterable_value_t<I>, int>);
 
         CHECK(check_equal(std::move(ints).take(5), {0, 1, 2, 3, 4}));
@@ -100,9 +100,9 @@ TEST_CASE("generator")
 
         static_assert(std::ranges::input_range<V>);
         static_assert(not std::ranges::forward_range<V>);
-        static_assert(std::same_as<std::ranges::range_reference_t<V>, int const&>);
+        static_assert(std::same_as<std::ranges::range_reference_t<V>, int&&>);
         static_assert(std::same_as<std::ranges::range_value_t<V>, int>);
-        static_assert(std::same_as<std::ranges::range_rvalue_reference_t<V>, int const&&>);
+        static_assert(std::same_as<std::ranges::range_rvalue_reference_t<V>, int&&>);
 
         CHECK(std::ranges::equal(std::views::take(view, 5), std::views::iota(0, 5)));
     }

@@ -17,9 +17,7 @@ FLUX_EXPORT
 template <typename ElemT>
 struct generator : inline_sequence_base<generator<ElemT>> {
 
-    using yielded_type = std::conditional_t<std::is_reference_v<ElemT>,
-                                            ElemT,
-                                            ElemT const&>;
+    using yielded_type = ElemT&&;
 
     struct promise_type;
 
