@@ -12,10 +12,8 @@
 
 namespace flux::detail {
 
-template <sequence Base1, sequence Base2, typename Cmp>
-struct set_union_adaptor
-    : flux::inline_sequence_base<set_union_adaptor<Base1, Base2, Cmp>>
-{
+template <multipass_sequence Base1, multipass_sequence Base2, typename Cmp>
+struct set_union_adaptor : flux::inline_sequence_base<set_union_adaptor<Base1, Base2, Cmp>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base1 base1_;
     FLUX_NO_UNIQUE_ADDRESS Base2 base2_;
@@ -145,10 +143,9 @@ public:
     };
 };
 
-template <sequence Base1, sequence Base2, typename Cmp>
+template <multipass_sequence Base1, multipass_sequence Base2, typename Cmp>
 struct set_difference_adaptor
-    : flux::inline_sequence_base<set_difference_adaptor<Base1, Base2, Cmp>>
-{
+    : flux::inline_sequence_base<set_difference_adaptor<Base1, Base2, Cmp>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base1 base1_;
     FLUX_NO_UNIQUE_ADDRESS Base2 base2_;
@@ -248,10 +245,9 @@ public:
     };
 };
 
-template <sequence Base1, sequence Base2, typename Cmp>
+template <multipass_sequence Base1, multipass_sequence Base2, typename Cmp>
 struct set_symmetric_difference_adaptor
-    : flux::inline_sequence_base<set_symmetric_difference_adaptor<Base1, Base2, Cmp>>
-{
+    : flux::inline_sequence_base<set_symmetric_difference_adaptor<Base1, Base2, Cmp>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base1 base1_;
     FLUX_NO_UNIQUE_ADDRESS Base2 base2_;
@@ -398,10 +394,9 @@ public:
     };
 };
 
-template <sequence Base1, sequence Base2, typename Cmp>
+template <multipass_sequence Base1, multipass_sequence Base2, typename Cmp>
 struct set_intersection_adaptor
-    : flux::inline_sequence_base<set_intersection_adaptor<Base1, Base2, Cmp>>
-{
+    : flux::inline_sequence_base<set_intersection_adaptor<Base1, Base2, Cmp>> {
 private:
     FLUX_NO_UNIQUE_ADDRESS Base1 base1_;
     FLUX_NO_UNIQUE_ADDRESS Base2 base2_;
@@ -507,10 +502,11 @@ concept set_op_compatible =
     requires { typename std::common_type_t<value_t<T1>, value_t<T2>>; };
 
 struct set_union_fn {
-    template <adaptable_sequence Seq1, adaptable_sequence Seq2, typename Cmp = std::compare_three_way>
-        requires set_op_compatible<Seq1, Seq2> &&
-                 weak_ordering_for<Cmp, Seq1> &&
-                 weak_ordering_for<Cmp, Seq2>
+    template <adaptable_sequence Seq1, adaptable_sequence Seq2,
+              typename Cmp = std::compare_three_way>
+        requires multipass_sequence<Seq1> && multipass_sequence<Seq2>
+        && set_op_compatible<Seq1, Seq2> && weak_ordering_for<Cmp, Seq1>
+        && weak_ordering_for<Cmp, Seq2>
     [[nodiscard]]
     constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const
     {
@@ -519,9 +515,10 @@ struct set_union_fn {
 };
 
 struct set_difference_fn {
-    template <adaptable_sequence Seq1, adaptable_sequence Seq2, typename Cmp = std::compare_three_way>
-        requires weak_ordering_for<Cmp, Seq1> &&
-                 weak_ordering_for<Cmp, Seq2>
+    template <adaptable_sequence Seq1, adaptable_sequence Seq2,
+              typename Cmp = std::compare_three_way>
+        requires multipass_sequence<Seq1> && multipass_sequence<Seq2>
+        && weak_ordering_for<Cmp, Seq1> && weak_ordering_for<Cmp, Seq2>
     [[nodiscard]]
     constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const
     {
@@ -530,10 +527,11 @@ struct set_difference_fn {
 };
 
 struct set_symmetric_difference_fn {
-    template <adaptable_sequence Seq1, adaptable_sequence Seq2, typename Cmp = std::compare_three_way>
-        requires set_op_compatible<Seq1, Seq2> &&
-                 weak_ordering_for<Cmp, Seq1> &&
-                 weak_ordering_for<Cmp, Seq2>
+    template <adaptable_sequence Seq1, adaptable_sequence Seq2,
+              typename Cmp = std::compare_three_way>
+        requires multipass_sequence<Seq1> && multipass_sequence<Seq2>
+        && set_op_compatible<Seq1, Seq2> && weak_ordering_for<Cmp, Seq1>
+        && weak_ordering_for<Cmp, Seq2>
     [[nodiscard]]
     constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const
     {
@@ -542,9 +540,10 @@ struct set_symmetric_difference_fn {
 };
 
 struct set_intersection_fn {
-    template <adaptable_sequence Seq1, adaptable_sequence Seq2, typename Cmp = std::compare_three_way>
-        requires weak_ordering_for<Cmp, Seq1> &&
-                 weak_ordering_for<Cmp, Seq2>
+    template <adaptable_sequence Seq1, adaptable_sequence Seq2,
+              typename Cmp = std::compare_three_way>
+        requires multipass_sequence<Seq1> && multipass_sequence<Seq2>
+        && weak_ordering_for<Cmp, Seq1> && weak_ordering_for<Cmp, Seq2>
     [[nodiscard]]
     constexpr auto operator()(Seq1&& seq1, Seq2&& seq2, Cmp cmp = {}) const
     {
