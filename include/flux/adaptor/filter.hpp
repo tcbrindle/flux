@@ -92,6 +92,7 @@ public:
         static constexpr bool disable_multipass = !multipass_sequence<Base>;
 
         static constexpr auto first(auto& self)
+            -> decltype(cursor_type{flux::find_if(self.base_, std::ref(self.pred_))})
             requires sequence<Base>
         {
             return cursor_type{flux::find_if(self.base_, std::ref(self.pred_))};
