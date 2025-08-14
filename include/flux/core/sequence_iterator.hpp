@@ -6,6 +6,7 @@
 #define FLUX_CORE_SEQUENCE_ITERATOR_HPP_INCLUDED
 
 #include <flux/core/concepts.hpp>
+#include <flux/core/iterable_concepts.hpp>
 #include <flux/core/sequence_access.hpp>
 
 namespace flux {
@@ -27,6 +28,40 @@ consteval auto get_iterator_tag()
         return std::input_iterator_tag{};
     }
 }
+
+/*
+ * As this type is not copyable or movable, it does not satsify the
+ * `std::input_iterator` requirements, and so cannot be used with
+ * standard algorithms.
+ *
+ * It is intended to be used with range-for loops, which do not
+ * need to copy or move the iterator.
+ */
+template <iterable It>
+struct pseudoiterator {
+private:
+    It* iterable_;
+    iteration_context_t<It> ctx_ = iterate(*iterable_);
+    using opt_t = decltype(next_element(ctx_));
+    opt_t next_ = next_element(ctx_);
+    using elem_t = iterable_element_t<It>;
+
+public:
+    constexpr pseudoiterator(It& iterable) : iterable_(std::addressof(iterable)) { }
+
+    constexpr auto operator*() -> elem_t { return static_cast<elem_t>(next_.value()); };
+
+    constexpr auto operator++() -> pseudoiterator&
+    {
+        next_ = next_element(ctx_);
+        return *this;
+    }
+
+    constexpr auto operator==(std::default_sentinel_t) const -> bool
+    {
+        return !static_cast<bool>(next_);
+    }
+};
 
 template <sequence S>
 struct sequence_iterator {
@@ -180,20 +215,28 @@ public:
 };
 
 struct begin_fn {
-    template <sequence S>
-    constexpr auto operator()(S& seq) const
+    template <iterable It>
+    constexpr auto operator()(It& it) const
     {
-        return sequence_iterator<S>(seq, flux::first(seq));
+        if constexpr (sequence<It>) {
+            return sequence_iterator<It>(it, flux::first(it));
+        } else {
+            return pseudoiterator<It>(it);
+        }
     }
 };
 
 struct end_fn {
-    template <sequence S>
-    constexpr auto operator()(S& seq) const
+    template <iterable It>
+    constexpr auto operator()(It& it) const
     {
         // Ranges requires sentinels to be copy-constructible
-        if constexpr (bounded_sequence<S> && std::copy_constructible<cursor_t<S>>) {
-            return sequence_iterator(seq, flux::last(seq));
+        if constexpr (bounded_sequence<It>) {
+            if constexpr (std::copy_constructible<cursor_t<It>>) {
+                return sequence_iterator(it, flux::last(it));
+            } else {
+                return std::default_sentinel;
+            }
         } else {
             return std::default_sentinel;
         }
@@ -207,28 +250,26 @@ FLUX_EXPORT inline constexpr auto end = detail::end_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::begin() &
-    requires sequence<D>
 {
     return flux::begin(derived());
 }
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::begin() const&
-    requires sequence<D const>
+    requires iterable<D const>
 {
     return flux::begin(derived());
 };
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::end() &
-    requires sequence<D>
 {
     return flux::end(derived());
 }
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::end() const&
-requires sequence<D const>
+    requires iterable<D const>
 {
     return flux::end(derived());
 };

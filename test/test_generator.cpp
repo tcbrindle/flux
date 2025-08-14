@@ -38,10 +38,9 @@ auto fib(int a, int b) -> generator<int const&>
 
 auto pythagorean_triples() -> generator<std::tuple<int, int, int>>
 {
-    // TODO: Remove as_range from here when iterables can use range-for directly
-    for (int z : flux::as_range(ints(1))) {
-        for (int y : flux::as_range(ints(1, z))) {
-            for (int x : flux::as_range(ints(1, y))) {
+    for (int z : ints(1)) {
+        for (int y : ints(1, z)) {
+            for (int x : ints(1, y)) {
                 if (x*x + y*y == z*z) {
                     co_yield {x, y, z};
                 }

@@ -132,7 +132,7 @@ concept has_member_iterate = requires(T& t) {
 
 template <typename T>
 concept can_iterate = has_valid_iter_traits<T> || has_member_iterate<T> || sequence<T>
-    || std::ranges::input_range<T>;
+    || (!derived_from_inline_sequence_base<T> && std::ranges::input_range<T>);
 
 template <std::ranges::input_range R>
 struct range_iteration_context : immovable {

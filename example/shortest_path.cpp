@@ -142,8 +142,7 @@ public:
 void print_side_by_side(std::istream& s1, std::istream& s2)
 {
     // FIXME: Remove as_range when we can
-    for (auto [line1, line2] :
-         flux::as_range(flux::zip(flux::getlines(s1, '\n'), flux::getlines(s2, '\n')))) {
+    for (auto [line1, line2] : flux::zip(flux::getlines(s1, '\n'), flux::getlines(s2, '\n'))) {
         std::cout << line1 << "  " << line2 << '\n';
     }
 }

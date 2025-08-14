@@ -212,15 +212,15 @@ public:
     /*
      * Iterator support
      */
-    constexpr auto begin() &
-        requires sequence<Derived>;
+    constexpr auto begin() &;
 
-    constexpr auto begin() const& requires sequence<Derived const>;
+    constexpr auto begin() const&
+        requires iterable<Derived const>;
 
-    constexpr auto end() &
-        requires sequence<Derived>;
+    constexpr auto end() &;
 
-    constexpr auto end() const& requires sequence<Derived const>;
+    constexpr auto end() const&
+        requires iterable<Derived const>;
 
     /*
      * Adaptors
