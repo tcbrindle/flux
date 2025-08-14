@@ -69,7 +69,7 @@ public:
 FLUX_EXPORT
 struct as_range_t {
     template <iterable It>
-    constexpr auto operator()(It&& it) const -> std::ranges::input_range decltype(auto)
+    constexpr auto operator()(It&& it) const -> decltype(auto)
     {
         if constexpr (std::ranges::input_range<It>) {
             return FLUX_FWD(it);

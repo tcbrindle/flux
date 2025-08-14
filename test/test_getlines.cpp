@@ -18,20 +18,14 @@ TEST_CASE("getlines")
 
     auto seq = flux::getlines(iss);
 
-    static_assert(flux::sequence<decltype(seq)>);
+    static_assert(flux::iterable<decltype(seq)>);
     static_assert(!flux::multipass_sequence<decltype(seq)>);
 
-    auto cur = seq.first();
-    REQUIRE(seq[cur] == "Line1");
-    seq.inc(cur);
-    REQUIRE(seq[cur] == "Line2");
-    seq.inc(cur);
-    REQUIRE(seq[cur] == "Line3");
-    seq.inc(cur);
-    REQUIRE(seq.is_last(cur));
-
-    // Make sure assertion fires
-    REQUIRE_THROWS_AS(seq.inc(cur), flux::unrecoverable_error);
+    auto ctx = seq.iterate();
+    REQUIRE(flux::next_element(ctx).value() == "Line1");
+    REQUIRE(flux::next_element(ctx).value() == "Line2");
+    REQUIRE(flux::next_element(ctx).value() == "Line3");
+    REQUIRE(flux::next_element(ctx).has_value() == false);
 }
 
 TEST_CASE("getlines to vector")

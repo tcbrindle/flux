@@ -329,9 +329,8 @@ struct zip_map_fn {
 
 } // namespace detail
 
-template <typename... Bases>
-struct sequence_traits<detail::zip_adaptor<Bases...>> : zip_traits_base<Bases...>
-{
+template <sequence... Bases>
+struct sequence_traits<detail::zip_adaptor<Bases...>> : zip_traits_base<Bases...> {
 private:
     using base = zip_traits_base<Bases...>;
 
@@ -380,7 +379,6 @@ public:
     {
         return read_(flux::move_at_unchecked, self, cur);
     }
-
 };
 
 template <typename Func, typename... Bases>

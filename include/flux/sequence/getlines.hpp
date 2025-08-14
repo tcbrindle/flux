@@ -16,78 +16,58 @@ namespace flux {
 namespace detail {
 
 template <typename CharT, typename Traits>
-struct getlines_sequence : inline_sequence_base<getlines_sequence<CharT, Traits>> {
+struct getlines_iterable : inline_sequence_base<getlines_iterable<CharT, Traits>> {
 private:
     using istream_type = std::basic_istream<CharT, Traits>;
     using string_type = std::basic_string<CharT, Traits>;
     using char_type = CharT;
 
     istream_type* is_ = nullptr;
-    string_type str_;
     char_type delim_{};
 
-public:
-    getlines_sequence() = default;
+    struct context_type : immovable {
+        istream_type* is_;
+        string_type str_;
+        char_type delim_;
 
-    getlines_sequence(istream_type& is, char_type delim)
-        : is_(std::addressof(is)),
-          delim_(delim)
-    {}
+        using element_type = string_type const&;
 
-    getlines_sequence(getlines_sequence&&) = default;
-    getlines_sequence& operator=(getlines_sequence&&) = default;
-
-    struct flux_sequence_traits : default_sequence_traits {
-    private:
-        struct cursor_type {
-            explicit cursor_type() = default;
-            cursor_type(cursor_type&&) = default;
-            cursor_type& operator=(cursor_type&&) = default;
-        };
-
-        using self_t = getlines_sequence;
-
-    public:
-        static constexpr auto first(self_t& self) -> cursor_type
+        explicit context_type(getlines_iterable& iterable)
+            : is_(iterable.is_),
+              delim_(iterable.delim_)
         {
-            cursor_type cur{};
-            inc(self, cur);
-            return cur;
         }
 
-        static constexpr auto is_last(self_t& self, cursor_type const&) -> bool
+        auto run_while(auto&& pred) -> iteration_result
         {
-            return !(self.is_ && static_cast<bool>(*self.is_));
-        }
-
-        static constexpr auto inc(self_t& self, cursor_type& cur) -> cursor_type&
-        {
-            flux::assert_(self.is_ != nullptr,
-                         "flux::getlines::inc(): attempt to iterate after stream EOF");
-            if (!std::getline(*self.is_, self.str_, self.delim_)) {
-                self.is_ = nullptr;
+            while (std::getline(*is_, str_, delim_)) {
+                if (!std::invoke(pred, static_cast<element_type>(str_))) {
+                    return iteration_result::incomplete;
+                }
             }
-            return cur;
-        }
-
-        static constexpr auto read_at(self_t& self, cursor_type const&) -> string_type const&
-        {
-            return self.str_;
+            return iteration_result::complete;
         }
     };
+
+public:
+    getlines_iterable(istream_type& is, char_type delim)
+        : is_(std::addressof(is)),
+          delim_(delim) { }
+
+    auto iterate() { return context_type{*this}; }
 };
 
 struct getlines_fn {
     template <typename CharT, typename Traits>
     constexpr auto operator()(std::basic_istream<CharT, Traits>& istream, CharT delim) const
     {
-        return getlines_sequence<CharT, Traits>(istream, delim);
+        return getlines_iterable<CharT, Traits>(istream, delim);
     }
 
     template <typename CharT, typename Traits>
     constexpr auto operator()(std::basic_istream<CharT, Traits>& istream) const
     {
-        return getlines_sequence<CharT, Traits>(istream, istream.widen('\n'));
+        return getlines_iterable<CharT, Traits>(istream, istream.widen('\n'));
     }
 };
 
