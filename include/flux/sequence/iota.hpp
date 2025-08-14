@@ -30,11 +30,8 @@ concept decrementable =
     };
 
 template <typename T>
-concept advancable =
-    decrementable<T> &&
-    std::totally_ordered<T> &&
-    std::weakly_incrementable<T> && // iter_difference_t exists
-    requires (T t, T const u, std::iter_difference_t<T> o) {
+concept advancable = decrementable<T> && std::weakly_incrementable<T> && // iter_difference_t exists
+    requires(T t, T const u, std::iter_difference_t<T> o) {
         { t += o } -> std::same_as<T&>;
         { t -= o } -> std::same_as<T&>;
         T(u + o);
@@ -43,144 +40,172 @@ concept advancable =
         { u - u } -> std::convertible_to<int_t>;
     };
 
-struct iota_traits {
-    bool has_start;
-    bool has_end;
+template <incrementable T>
+struct iota_iterable : inline_sequence_base<iota_iterable<T>> {
+    T from;
+
+    struct iteration_context : immovable {
+        T value;
+
+        using element_type = T;
+
+        constexpr auto run_while(auto&& pred) -> iteration_result
+        {
+            while (true) {
+                if (!pred(value++)) {
+                    return iteration_result::incomplete;
+                }
+            }
+        }
+    };
+
+    constexpr auto iterate() const -> iteration_context { return iteration_context{.value = from}; }
 };
 
-template <incrementable T, iota_traits Traits>
-struct iota_sequence_traits : default_sequence_traits {
-    using cursor_type = T;
+template <incrementable T>
+struct bounded_iota_iterable : inline_sequence_base<bounded_iota_iterable<T>> {
+    T from;
+    T to;
 
-    static constexpr bool is_infinite = !Traits.has_end;
+    struct iteration_context : immovable {
+        T value;
+        T last;
 
-    static constexpr auto first(auto& self) -> cursor_type
-    {
-        if constexpr (Traits.has_start) {
-            return self.start_;
-        } else {
-            return cursor_type{};
+        using element_type = T;
+
+        constexpr auto run_while(auto&& pred) -> iteration_result
+        {
+            while (value != last) {
+                if (!pred(value++)) {
+                    return iteration_result::incomplete;
+                }
+            }
+            return iteration_result::complete;
         }
-    }
+    };
 
-    static constexpr auto is_last(auto& self, cursor_type const& cur) -> bool
-    {
-        if constexpr (Traits.has_end) {
-            return cur == self.end_;
-        } else {
-            return false;
+    struct reverse_iteration_context : immovable {
+        T value;
+        T first;
+
+        using element_type = T;
+
+        constexpr auto run_while(auto&& pred) -> iteration_result
+        {
+            while (value != first) {
+                if (!pred(static_cast<T>(--value))) {
+                    return iteration_result::incomplete;
+                }
+            }
+            return iteration_result::complete;
         }
-    }
+    };
 
-    static constexpr auto inc(auto&, cursor_type& cur) -> cursor_type&
+    constexpr auto iterate() const -> iteration_context
     {
-        return ++cur;
+        return iteration_context{.value = from, .last = to};
     }
 
-    static constexpr auto read_at(auto&, cursor_type const& cur) -> T
-    {
-        return cur;
-    }
-
-    static constexpr auto last(auto& self) -> cursor_type
-        requires (Traits.has_end)
-    {
-        return self.end_;
-    }
-
-    static constexpr auto dec(auto&, cursor_type& cur) -> cursor_type&
+    constexpr auto reverse_iterate() const -> reverse_iteration_context
         requires decrementable<T>
     {
-        return --cur;
+        return reverse_iteration_context{.value = to, .first = from};
     }
 
-    static constexpr auto inc(auto&, cursor_type& cur, int_t offset) -> cursor_type&
+    constexpr auto size() const -> int_t
         requires advancable<T>
     {
-        return cur += num::cast<std::iter_difference_t<T>>(offset);
-    }
-
-    static constexpr auto distance(auto&, cursor_type const& from, cursor_type const& to)
-        requires advancable<T>
-    {
-        return from <= to ? num::cast<int_t>(to - from) : -num::cast<int_t>(from - to);
-    }
-
-    static constexpr auto size(auto& self) -> int_t
-        requires advancable<T> && (Traits.has_start && Traits.has_end)
-    {
-        return num::cast<int_t>(self.end_ - self.start_);
+        return num::cast<int_t>(to - from);
     }
 };
 
-template <typename T>
-struct basic_iota_sequence : inline_sequence_base<basic_iota_sequence<T>> {
-    using flux_sequence_traits = iota_sequence_traits<T, iota_traits{}>;
-    friend flux_sequence_traits;
-};
-
-template <typename T>
+template <incrementable T>
+    requires std::totally_ordered<T>
 struct iota_sequence : inline_sequence_base<iota_sequence<T>> {
-private:
-    T start_;
+    T from;
+    T to;
 
-    static constexpr iota_traits traits{.has_start = true, .has_end = false};
+    struct flux_sequence_traits : default_sequence_traits {
+        using self_t = iota_sequence;
 
-public:
-    inline constexpr explicit iota_sequence(T from)
-        : start_(std::move(from))
-    {}
+        struct cursor_type {
+            T current;
 
-    using flux_sequence_traits = iota_sequence_traits<T, traits>;
-    friend flux_sequence_traits;
+            friend auto operator<=>(cursor_type const&, cursor_type const&) -> std::strong_ordering
+                = default;
+        };
+
+        static constexpr auto first(self_t const& self) -> cursor_type { return {self.from}; }
+
+        static constexpr auto last(self_t const& self) -> cursor_type { return {self.to}; }
+
+        static constexpr auto is_last(self_t const& self, cursor_type const& cur) -> bool
+        {
+            return cur.current == self.to;
+        }
+
+        static constexpr void inc(self_t const&, cursor_type& cur) { ++cur.current; }
+
+        static constexpr void dec(self_t const&, cursor_type& cur)
+            requires decrementable<T>
+        {
+            --cur.current;
+        }
+
+        static constexpr auto read_at(self_t const&, cursor_type const& cur) -> T
+        {
+            return cur.current;
+        }
+
+        static constexpr void inc(self_t const&, cursor_type& cur, int_t offset)
+            requires advancable<T>
+        {
+            cur.current += num::cast<std::iter_difference_t<T>>(offset);
+        }
+
+        static constexpr auto distance(self_t const&, cursor_type const& from,
+                                       cursor_type const& to) -> int_t
+            requires advancable<T>
+        {
+            return num::cast<int_t>(to.current - from.current);
+        }
+    };
 };
 
-template <typename T>
-struct bounded_iota_sequence : inline_sequence_base<bounded_iota_sequence<T>> {
-    T start_;
-    T end_;
-
-    static constexpr iota_traits traits{.has_start = true, .has_end = true};
-
-public:
-    inline constexpr bounded_iota_sequence(T from, T to)
-        : start_(std::move(from)),
-          end_(std::move(to))
-    {}
-
-    using flux_sequence_traits = iota_sequence_traits<T, traits>;
-    friend flux_sequence_traits;
-};
-
-struct iota_fn {
-    template <incrementable T>
-    constexpr auto operator()(T from) const
-    {
-        return iota_sequence<T>(std::move(from));
-    }
-
+struct iota_t {
     template <incrementable T>
     constexpr auto operator()(T from, T to) const
     {
-        return bounded_iota_sequence<T>(std::move(from), std::move(to));
+        if constexpr (std::three_way_comparable<T, std::strong_ordering>) {
+            return iota_sequence<T>{.from = from, .to = to};
+        } else {
+            return bounded_iota_iterable<T>{.from = from, .to = to};
+        }
+    }
+
+    template <incrementable T>
+    constexpr auto operator()(T from) const
+    {
+        if constexpr (std::is_arithmetic_v<T>) {
+            return (*this)(from, std::numeric_limits<T>::max());
+        } else {
+            return iota_iterable<T>{.from = from};
+        }
     }
 };
 
-struct ints_fn {
-    inline constexpr auto operator()() const { return basic_iota_sequence<int_t>(); }
+struct ints_t {
+    inline constexpr auto operator()() const { return iota_t{}(int_t{}); }
 
-    inline constexpr auto operator()(int_t from) const { return iota_sequence<int_t>(from); }
+    inline constexpr auto operator()(int_t from) const { return iota_t{}(from); }
 
-    inline constexpr auto operator()(int_t from, int_t to) const
-    {
-        return bounded_iota_sequence<int_t>(from, to);
-    }
+    inline constexpr auto operator()(int_t from, int_t to) const { return iota_t{}(from, to); }
 };
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto iota = detail::iota_fn{};
-FLUX_EXPORT inline constexpr auto ints = detail::ints_fn{};
+FLUX_EXPORT inline constexpr auto iota = detail::iota_t{};
+FLUX_EXPORT inline constexpr auto ints = detail::ints_t{};
 
 } // namespace flux
 

@@ -401,30 +401,54 @@ constexpr bool test_cartesian_product()
 
         STATIC_CHECK(flux::distance(cart, cart.first(), cart.last()) == 4 * 2 * 3);
 
-        {
-            STATIC_CHECK(flux::next(cart, cart.first(), 6) == std::tuple{1, 0, 0});
-            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 6),  1) == std::tuple{1, 0, 1});
-            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 6),  2) == std::tuple{1, 0, 2});
-            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 6),  3) == std::tuple{1, 1, 0});
-            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 6),  4) == std::tuple{1, 1, 1});
-            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 6),  5) == std::tuple{1, 1, 2});
-            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 6), -1) == std::tuple{0, 1, 2});
-            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 6), -2) == std::tuple{0, 1, 1});
-            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 6), -3) == std::tuple{0, 1, 0});
-            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 6), -4) == std::tuple{0, 0, 2});
-            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 6), -5) == std::tuple{0, 0, 1});
+        using pos_t = flux::cursor_t<decltype(flux::ints(0, 4))>;
 
-            STATIC_CHECK(flux::next(cart, cart.first(), 11) == std::tuple{1, 1, 2});
-            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 11),  1) == std::tuple{2, 0, 0});
-            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 11),  2) == std::tuple{2, 0, 1});
-            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 11),  3) == std::tuple{2, 0, 2});
-            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 11),  4) == std::tuple{2, 1, 0});
-            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 11),  5) == std::tuple{2, 1, 1});
-            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 11), -1) == std::tuple{1, 1, 1});
-            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 11), -2) == std::tuple{1, 1, 0});
-            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 11), -3) == std::tuple{1, 0, 2});
-            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 11), -4) == std::tuple{1, 0, 1});
-            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 11), -5) == std::tuple{1, 0, 0});
+        {
+            STATIC_CHECK(flux::next(cart, cart.first(), 6)
+                         == std::tuple(pos_t{1}, pos_t{0}, pos_t{0}));
+            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 6), 1)
+                         == std::tuple{pos_t{1}, pos_t{0}, pos_t{1}});
+            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 6), 2)
+                         == std::tuple{pos_t{1}, pos_t{0}, pos_t{2}});
+            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 6), 3)
+                         == std::tuple{pos_t{1}, pos_t{1}, pos_t{0}});
+            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 6), 4)
+                         == std::tuple{pos_t{1}, pos_t{1}, pos_t{1}});
+            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 6), 5)
+                         == std::tuple{pos_t{1}, pos_t{1}, pos_t{2}});
+            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 6), -1)
+                         == std::tuple{pos_t{0}, pos_t{1}, pos_t{2}});
+            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 6), -2)
+                         == std::tuple{pos_t{0}, pos_t{1}, pos_t{1}});
+            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 6), -3)
+                         == std::tuple{pos_t{0}, pos_t{1}, pos_t{0}});
+            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 6), -4)
+                         == std::tuple{pos_t{0}, pos_t{0}, pos_t{2}});
+            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 6), -5)
+                         == std::tuple{pos_t{0}, pos_t{0}, pos_t{1}});
+
+            STATIC_CHECK(flux::next(cart, cart.first(), 11)
+                         == std::tuple{pos_t{1}, pos_t{1}, pos_t{2}});
+            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 11), 1)
+                         == std::tuple{pos_t{2}, pos_t{0}, pos_t{0}});
+            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 11), 2)
+                         == std::tuple{pos_t{2}, pos_t{0}, pos_t{1}});
+            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 11), 3)
+                         == std::tuple{pos_t{2}, pos_t{0}, pos_t{2}});
+            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 11), 4)
+                         == std::tuple{pos_t{2}, pos_t{1}, pos_t{0}});
+            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 11), 5)
+                         == std::tuple{pos_t{2}, pos_t{1}, pos_t{1}});
+            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 11), -1)
+                         == std::tuple{pos_t{1}, pos_t{1}, pos_t{1}});
+            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 11), -2)
+                         == std::tuple{pos_t{1}, pos_t{1}, pos_t{0}});
+            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 11), -3)
+                         == std::tuple{pos_t{1}, pos_t{0}, pos_t{2}});
+            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 11), -4)
+                         == std::tuple{pos_t{1}, pos_t{0}, pos_t{1}});
+            STATIC_CHECK(flux::next(cart, flux::next(cart, cart.first(), 11), -5)
+                         == std::tuple{pos_t{1}, pos_t{0}, pos_t{0}});
         }
 
         flux::int_t sum_i = 0;

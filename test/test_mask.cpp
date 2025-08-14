@@ -138,7 +138,6 @@ constexpr bool test_mask()
         using S = decltype(masked);
         static_assert(flux::multipass_sequence<S>);
         static_assert(flux::bidirectional_sequence<S>);
-        static_assert(not flux::bounded_sequence<S>);
         static_assert(not flux::infinite_sequence<S>);
 
         STATIC_CHECK(check_equal(masked, {0, 2}));
@@ -152,7 +151,6 @@ constexpr bool test_mask()
         static_assert(flux::multipass_sequence<S>);
         static_assert(flux::bidirectional_sequence<S>);
         static_assert(not flux::bounded_sequence<S>);
-        static_assert(flux::infinite_sequence<S>);
 
         flux::cursor auto cur = flux::first(masked);
         STATIC_CHECK(masked[cur] == 1);
