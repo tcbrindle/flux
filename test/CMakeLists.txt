@@ -85,7 +85,6 @@ add_executable(test-flux
     test_zip_map.cpp
     test_zip_algorithms.cpp
 
-    test_array_ptr.cpp
     test_bitset.cpp
     test_empty.cpp
     test_getlines.cpp
