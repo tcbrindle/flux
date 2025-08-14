@@ -32,7 +32,7 @@ private:
 
         iterator() = default;
 
-        explicit iterator(iterable_range& parent) : parent_(std::addressof(parent)) { }
+        constexpr explicit iterator(iterable_range& parent) : parent_(std::addressof(parent)) { }
 
         iterator(iterator&&) = default;
         iterator& operator=(iterator&&) = default;

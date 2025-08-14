@@ -224,9 +224,9 @@ TEST_CASE("drop")
     {
         std::list list{1, 2, 3, 4, 5};
 
-        REQUIRE_THROWS_AS(flux::drop(flux::from_range(list), -1), flux::unrecoverable_error);
+        REQUIRE_THROWS_AS(flux::drop(flux::ref(list), -1), flux::unrecoverable_error);
 
-        REQUIRE_THROWS_AS(flux::from_range(list).drop(-1000), flux::unrecoverable_error);
+        REQUIRE_THROWS_AS(flux::ref(list).drop(-1000), flux::unrecoverable_error);
     }
 
     issue_132b();

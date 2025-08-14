@@ -152,7 +152,7 @@ public:
     }
 
     struct flux_sequence_traits : passthrough_traits_base {
-        using value_type = value_t<Base>;
+        using value_type = iterable_value_t<Base>;
     };
 };
 

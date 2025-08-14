@@ -116,21 +116,20 @@ constexpr bool test_range_iface()
         STATIC_CHECK(rng::equal(seq, arr));
     }
 
-
-    // Range -> Sequence -> View -> Sequence -> View (!)
     {
-        auto arr = std::array{1, 2, 3, 4, 5};
-        auto view1 = arr | std::views::filter([](int i) { return i % 2 == 0; });
-        auto seq = flux::from_range(view1);
-        auto view2 = seq | std::views::transform([](int i) { return i * 2; });
-        auto view3 = flux::from_range(std::move(view2));
+        auto iter = iterable_only(std::array{1, 2, 3, 4, 5});
 
-        using V = decltype(view3);
+        auto r = flux::as_range(iter);
 
-        static_assert(rng::view<V>);
-        static_assert(rng::bidirectional_range<V>);
+        using R = decltype(r);
+        static_assert(rng::input_range<R>);
+        static_assert(not rng::forward_range<R>);
+        static_assert(std::same_as<rng::range_reference_t<R>, int&>);
+        static_assert(std::same_as<rng::range_value_t<R>, int>);
+        static_assert(std::same_as<rng::range_rvalue_reference_t<R>, int&&>);
+        static_assert(std::same_as<rng::range_difference_t<R>, flux::int_t>);
 
-        STATIC_CHECK(rng::equal(view3, std::array{4, 8}));
+        STATIC_CHECK(rng::equal(r, std::array{1, 2, 3, 4, 5}));
     }
 
     return true;

@@ -430,21 +430,6 @@ TEST_CASE("stride")
     res = test_stride_bidir();
     REQUIRE(res);
 
-    // Test with bidir-but-not-RA sequence
-    {
-        auto list = std::list<int>{1, 2, 3, 4, 5, 6, 7, 8, 9};
-        auto seq = flux::from_range(list).stride(3);
-
-        REQUIRE(seq.size() == 3);
-        REQUIRE(check_equal(seq, {1, 4, 7}));
-        REQUIRE(seq.sum() == 12);
-
-        auto rev = std::move(seq).reverse();
-
-        REQUIRE(check_equal(rev, {7, 4, 1}));
-        REQUIRE(rev.sum() == 12);
-    }
-
 #ifndef USE_MODULES
     // detail::advance tests to keep CodeCov happy
     {

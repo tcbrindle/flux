@@ -197,8 +197,8 @@ TEST_CASE("take")
     {
         std::list list{1, 2, 3, 4, 5};
 
-        REQUIRE_THROWS_AS(flux::take(flux::from_range(list), -1000), flux::unrecoverable_error);
+        REQUIRE_THROWS_AS(flux::take(flux::ref(list), -1000), flux::unrecoverable_error);
 
-        REQUIRE_THROWS_AS(flux::from_range(list).take(-1000), flux::unrecoverable_error);
+        REQUIRE_THROWS_AS(flux::ref(list).take(-1000), flux::unrecoverable_error);
     }
 }

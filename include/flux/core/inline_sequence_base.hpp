@@ -338,7 +338,7 @@ public:
 
     [[nodiscard]]
     constexpr auto reverse() &&
-            requires bidirectional_sequence<Derived> && bounded_sequence<Derived>;
+        requires reverse_iterable<Derived>;
 
     template <typename D = Derived, typename Func, typename Init = iterable_value_t<D>>
         requires foldable<Derived, Func, Init>

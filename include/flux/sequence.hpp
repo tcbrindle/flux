@@ -14,7 +14,6 @@
 #include <flux/sequence/iota.hpp>
 #include <flux/sequence/istream.hpp>
 #include <flux/sequence/istreambuf.hpp>
-#include <flux/sequence/range.hpp>
 #include <flux/sequence/repeat.hpp>
 #include <flux/sequence/single.hpp>
 #include <flux/sequence/unfold.hpp>

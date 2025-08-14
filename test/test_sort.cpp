@@ -180,6 +180,8 @@ void test_heapsort(unsigned sz)
 }
 #endif
 
+// FIXME: Re-enable when deque becomes a collection
+#if 0
 void test_adapted_deque_sort(unsigned sz)
 {
     std::deque<std::string> deque(sz);
@@ -196,7 +198,7 @@ void test_adapted_deque_sort(unsigned sz)
 
     CHECK(std::is_sorted(deque.cbegin(), deque.cbegin() + sz/2));
 }
-
+#endif
 }
 
 TEST_CASE("sort")
@@ -218,7 +220,8 @@ TEST_CASE("sort")
     test_sort_projected(100);
     test_sort_projected(100'000);
 
-    test_adapted_deque_sort(100'000);
+    // FIXME
+    // test_adapted_deque_sort(100'000);
 
 #ifndef USE_MODULES
     // Test our heapsort implementation, because I don't know how to

@@ -148,14 +148,14 @@ TEST_CASE("to")
             {
                 std::istringstream iss{"1 2 3 4 5"};
                 auto list = flux::from_istream<int>(iss).to<std::list<int>>();
-                CHECK(check_equal(flux::from_range(list), {1, 2, 3, 4, 5}));
+                CHECK(check_equal(list, {1, 2, 3, 4, 5}));
             }
 
             SUBCASE("...to set")
             {
                 std::istringstream iss{"5 4 3 2 1"};
                 auto set = flux::from_istream<int>(iss).to<std::set<int>>();
-                CHECK(check_equal(flux::from_range(set), {1, 2, 3, 4, 5}));
+                CHECK(check_equal(set, {1, 2, 3, 4, 5}));
             }
         }
 
@@ -174,7 +174,7 @@ TEST_CASE("to")
             {
                 std::istringstream iss{"1 2 3 4 5"};
                 auto list = flux::from_istream<int>(iss).to<std::list<int, A>>(A{});
-                CHECK(check_equal(flux::from_range(list), {1, 2, 3, 4, 5}));
+                CHECK(check_equal(list, {1, 2, 3, 4, 5}));
             }
 
             SUBCASE("...to set")
@@ -182,7 +182,7 @@ TEST_CASE("to")
                 std::istringstream iss{"5 4 3 2 1"};
                 auto set = flux::from_istream<int>(iss)
                               .to<std::set<int, std::less<>, A>>(A{});
-                CHECK(check_equal(flux::from_range(set), {1, 2, 3, 4, 5}));
+                CHECK(check_equal(set, {1, 2, 3, 4, 5}));
             }
         }
 
@@ -330,7 +330,7 @@ TEST_CASE("to")
                 auto list = flux::from_istream<int>(iss).to<std::list>();
                 using L = decltype(list);
                 static_assert(std::same_as<typename L::value_type, int>);
-                CHECK(check_equal(flux::from_range(list), {1, 2, 3, 4, 5}));
+                CHECK(check_equal(list, {1, 2, 3, 4, 5}));
             }
 
             SUBCASE("...to set")
@@ -339,7 +339,7 @@ TEST_CASE("to")
                 auto set = flux::from_istream<int>(iss).to<std::set>();
                 using S = decltype(set);
                 static_assert(std::same_as<typename S::value_type, int>);
-                CHECK(check_equal(flux::from_range(set), {1, 2, 3, 4, 5}));
+                CHECK(check_equal(set, {1, 2, 3, 4, 5}));
             }
         }
     }

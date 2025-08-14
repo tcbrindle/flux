@@ -529,20 +529,4 @@ TEST_CASE("chunk")
 
         REQUIRE(out.str() == "[[1, 2], [3, 4], [5]]");
     }
-
-    SUBCASE("...with bidir only sequence")
-    {
-        std::list<int> list{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-
-        auto seq = flux::from_range(list).chunk(3).reverse();
-
-        auto cur = seq.first();
-        REQUIRE(check_equal(seq[cur], {10}));
-        REQUIRE(check_equal(seq[seq.inc(cur)], {7, 8, 9}));
-        REQUIRE(check_equal(seq[seq.inc(cur)], {4, 5, 6}));
-        REQUIRE(check_equal(seq[seq.inc(cur)], {1, 2, 3}));
-
-        REQUIRE(seq.is_last(seq.inc(cur)));
-        REQUIRE(cur == seq.last());
-    }
 }
