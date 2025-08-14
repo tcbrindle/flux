@@ -13,72 +13,63 @@ namespace flux {
 namespace detail {
 
 template <typename R, typename Func>
-struct unfold_sequence : inline_sequence_base<unfold_sequence<R, Func>> {
-private:
+struct unfold_iterable : inline_sequence_base<unfold_iterable<R, Func>> {
     R state_;
-    Func func_;
+    FLUX_NO_UNIQUE_ADDRESS Func func_;
+
+    struct context_type : immovable {
+        using element_type = R const&;
+
+        R* state_;
+        std::reference_wrapper<Func> func_;
+        bool inc_next_ = false;
+
+        constexpr explicit context_type(unfold_iterable& self)
+            : state_(std::addressof(self.state_)),
+              func_(std::ref(self.func_))
+        {
+        }
+
+        constexpr auto run_while(auto&& pred) -> iteration_result
+        {
+            if (inc_next_) {
+                *state_ = std::invoke(func_, std::move(*state_));
+            }
+            while (true) {
+                if (!std::invoke(pred, *state_)) {
+                    inc_next_ = true;
+                    return iteration_result::incomplete;
+                };
+                *state_ = std::invoke(func_, std::move(*state_));
+            }
+        }
+    };
 
 public:
     template <typename T>
         requires std::constructible_from<R, T>
-    constexpr explicit unfold_sequence(Func&& func, T&& seed)
+    constexpr unfold_iterable(Func&& func, T&& seed)
         : state_(FLUX_FWD(seed)),
           func_(std::move(func))
-    {}
+    {
+    }
 
-    struct flux_sequence_traits : default_sequence_traits {
-    private:
-        struct cursor_type {
-            friend struct flux_sequence_traits;
-            cursor_type(cursor_type&&) = default;
-            cursor_type& operator=(cursor_type&&) = default;
-        private:
-            cursor_type() = default;
-        };
-
-        using self_t = unfold_sequence;
-
-    public:
-        static constexpr bool is_infinite = true;
-
-        static constexpr auto first(self_t&) -> cursor_type { return {}; }
-
-        static constexpr auto is_last(self_t&, cursor_type const&) -> bool { return false; }
-
-        static constexpr auto inc(self_t& self, cursor_type&) -> void
-        {
-            self.state_ = std::invoke(self.func_, std::move(self.state_));
-        }
-
-        static constexpr auto read_at(self_t& self, cursor_type const&) -> R const&
-        {
-            return self.state_;
-        }
-
-        static constexpr auto for_each_while(self_t& self, auto&& pred) -> cursor_type
-        {
-            while (true) {
-                if (!std::invoke(pred, self.state_)) {
-                    break;
-                }
-                self.state_ = std::invoke(self.func_, std::move(self.state_));
-            }
-
-            return {};
-        }
-    };
+    [[nodiscard]]
+    constexpr auto iterate()
+    {
+        return context_type{*this};
+    }
 };
 
 struct unfold_fn {
     template <typename Func, typename Seed,
               typename R = std::decay_t<std::invoke_result_t<Func&, Seed>>>
-        requires std::constructible_from<R, Seed> &&
-                 std::invocable<Func&, R> &&
-                 std::assignable_from<R&, std::invoke_result_t<Func&, R>>
+        requires std::constructible_from<R, Seed> && std::invocable<Func&, R>
+        && std::assignable_from<R&, std::invoke_result_t<Func&, R>>
     [[nodiscard]]
-    constexpr auto operator()(Func func, Seed&& seed) const -> sequence auto
+    constexpr auto operator()(Func func, Seed&& seed) const -> iterable auto
     {
-        return unfold_sequence<R, Func>(std::move(func), FLUX_FWD(seed));
+        return unfold_iterable<R, Func>(std::move(func), FLUX_FWD(seed));
     }
 };
 
