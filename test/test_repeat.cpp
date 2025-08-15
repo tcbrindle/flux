@@ -87,6 +87,16 @@ constexpr bool test_repeat()
         STATIC_CHECK(check_equal(seq, {S(3), S(3), S(3), S(3), S(3)}));
     }
 
+    // repeat looks the same backwards and forwards
+    {
+        auto rep = flux::repeat(3);
+
+        auto ctx = flux::reverse_iterate(rep);
+        for (int i = 0; i < 100; i++) {
+            STATIC_CHECK(flux::next_element(ctx).value() == 3);
+        }
+    }
+
     return true;
 }
 static_assert(test_repeat());

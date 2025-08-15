@@ -40,6 +40,8 @@ public:
     constexpr explicit repeat_iterable(decays_to<T> auto&& value) : obj_(FLUX_FWD(value)) { }
 
     constexpr auto iterate() const { return context_type(obj_); }
+
+    constexpr auto reverse_iterate() const { return context_type(obj_); }
 };
 
 template <typename T>
