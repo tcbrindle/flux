@@ -12,29 +12,46 @@ namespace flux {
 
 namespace detail {
 
-template <bool>
-struct repeat_data {};
-
-template <>
-struct repeat_data<false> { std::size_t count; };
-
-template <std::movable T, bool IsInfinite>
-struct repeat_sequence : inline_sequence_base<repeat_sequence<T, IsInfinite>>
-{
+template <typename T>
+struct repeat_iterable : inline_sequence_base<repeat_iterable<T>> {
 private:
     T obj_;
-    FLUX_NO_UNIQUE_ADDRESS repeat_data<IsInfinite> data_;
+
+    struct context_type : immovable {
+    private:
+        T const* ptr_;
+
+    public:
+        constexpr explicit context_type(T const& obj) : ptr_(std::addressof(obj)) { }
+
+        using element_type = T const&;
+
+        constexpr auto run_while(auto&& pred) -> iteration_result
+        {
+            while (true) {
+                if (!pred(*ptr_)) {
+                    return iteration_result::incomplete;
+                }
+            }
+        }
+    };
 
 public:
-    constexpr explicit repeat_sequence(decays_to<T> auto&& obj)
-        requires IsInfinite
-        : obj_(FLUX_FWD(obj))
-    {}
+    constexpr explicit repeat_iterable(decays_to<T> auto&& value) : obj_(FLUX_FWD(value)) { }
 
-    constexpr repeat_sequence(decays_to<T> auto&& obj, std::size_t count)
-        requires (!IsInfinite)
+    constexpr auto iterate() const { return context_type(obj_); }
+};
+
+template <typename T>
+struct repeat_sequence : inline_sequence_base<repeat_sequence<T>> {
+private:
+    T obj_;
+    int_t count_;
+
+public:
+    constexpr repeat_sequence(decays_to<T> auto&& obj, int_t count)
         : obj_(FLUX_FWD(obj)),
-          data_{count}
+          count_(count)
     {}
 
     struct flux_sequence_traits : default_sequence_traits {
@@ -42,76 +59,43 @@ public:
         using self_t = repeat_sequence;
 
     public:
-        static inline constexpr bool is_infinite = IsInfinite;
+        static constexpr auto first(self_t const&) -> int_t { return 0; }
 
-        static constexpr auto first(self_t const&) -> std::size_t { return 0; }
-
-        static constexpr auto is_last(self_t const& self, std::size_t cur) -> bool
+        static constexpr auto is_last(self_t const& self, int_t cur) -> bool
         {
-            if constexpr (IsInfinite) {
-                return false;
-            } else {
-                return cur >= self.data_.count;
-            }
+            return cur >= self.count_;
         }
 
-        static constexpr auto inc(self_t const&, std::size_t& cur) -> void
+        static constexpr auto inc(self_t const&, int_t& cur) -> void { ++cur; }
+
+        static constexpr auto read_at(self_t const& self, int_t) -> T const& { return self.obj_; }
+
+        static constexpr auto dec(self_t const&, int_t& cur) -> void { --cur; }
+
+        static constexpr auto inc(self_t const&, int_t& cur, int_t offset) -> void
         {
-            ++cur;
+            cur = num::add(cur, offset);
         }
 
-        static constexpr auto read_at(self_t const& self, std::size_t) -> T const&
+        static constexpr auto distance(self_t const&, int_t from, int_t to) -> int_t
         {
-            return self.obj_;
+            return to - from;
         }
 
-        static constexpr auto dec(self_t const&, std::size_t& cur) -> void
+        static constexpr auto for_each_while(self_t const& self, auto&& pred) -> int_t
         {
-            --cur;
-        }
-
-        static constexpr auto inc(self_t const&, std::size_t& cur, int_t offset) -> void
-        {
-            cur += static_cast<std::size_t>(offset);
-        }
-
-        static constexpr auto distance(self_t const&, std::size_t from, std::size_t to) -> int_t
-        {
-            return num::cast<int_t>(to) - num::cast<int_t>(from);
-        }
-
-        static constexpr auto for_each_while(self_t const& self, auto&& pred) -> std::size_t
-        {
-            if constexpr (IsInfinite) {
-                std::size_t idx = 0;
-                while (true) {
-                    if (!std::invoke(pred, std::as_const(self.obj_))) {
-                        return idx;
-                    }
-                    ++idx;
+            int_t idx = 0;
+            for (; idx < self.count_; ++idx) {
+                if (!std::invoke(pred, std::as_const(self.obj_))) {
+                    break;
                 }
-            } else {
-                std::size_t idx = 0;
-                for ( ; idx < self.data_.count; ++idx) {
-                    if (!std::invoke(pred, std::as_const(self.obj_))) {
-                        break;
-                    }
-                }
-                return idx;
             }
+            return idx;
         }
 
-        static constexpr auto last(self_t const& self) -> std::size_t
-            requires (!IsInfinite)
-        {
-            return self.data_.count;
-        }
+        static constexpr auto last(self_t const& self) -> int_t { return self.count_; }
 
-        static constexpr auto size(self_t const& self) -> int_t
-            requires(!IsInfinite)
-        {
-            return num::cast<int_t>(self.data_.count);
-        }
+        static constexpr auto size(self_t const& self) -> int_t { return self.count_; }
     };
 };
 
@@ -120,7 +104,7 @@ struct repeat_fn {
         requires std::movable<std::decay_t<T>>
     constexpr auto operator()(T&& obj) const
     {
-        return repeat_sequence<std::decay_t<T>, true>(FLUX_FWD(obj));
+        return repeat_iterable<std::decay_t<T>>(FLUX_FWD(obj));
     }
 
     template <typename T>
@@ -131,8 +115,7 @@ struct repeat_fn {
         if (c < 0) {
             runtime_error("Negative count passed to repeat()");
         }
-        return repeat_sequence<std::decay_t<T>, false>(
-            FLUX_FWD(obj), num::checked_cast<std::size_t>(c));
+        return repeat_sequence<std::decay_t<T>>(FLUX_FWD(obj), c);
     }
 };
 

@@ -41,26 +41,6 @@ constexpr bool test_cursors()
         STATIC_CHECK(check_equal(rev, {4, 3, 2, 1, 0}));
     }
 
-    // Cursors adaptor works with infinite sequences
-    {
-        auto seq = flux::repeat(10);
-
-        auto curs = std::move(seq).cursors();
-
-        using S = decltype(curs);
-
-        static_assert(flux::random_access_sequence<S>);
-        static_assert(not flux::bounded_sequence<S>);
-        static_assert(not flux::sized_sequence<S>);
-        static_assert(flux::infinite_sequence<S>);
-        static_assert(std::same_as<flux::element_t<S>, std::size_t>);
-        static_assert(std::same_as<flux::rvalue_element_t<S>, std::size_t>);
-        static_assert(std::same_as<flux::const_element_t<S>, std::size_t>);
-        static_assert(std::same_as<flux::value_t<S>, std::size_t>);
-
-        STATIC_CHECK(check_equal(flux::take(curs, 5), {0u, 1u, 2u, 3u, 4u}));
-    }
-
     // Cursors adaptor works with adapted sequences
     {
         auto const arr = std::array{101, 102, 103, 104, 105, 106, 107, 108, 109, 110};

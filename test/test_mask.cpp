@@ -169,7 +169,7 @@ constexpr bool test_mask()
 
     // mask with empty values sequence is empty
     {
-        auto masked = flux::mask(flux::empty<double>, flux::repeat(true));
+        auto masked = flux::mask(flux::empty<double>, flux::repeat(true, 10));
 
         STATIC_CHECK(masked.is_empty());
     }
@@ -178,7 +178,7 @@ constexpr bool test_mask()
     {
         std::array values{1, 2, 3, 4, 5};
 
-        auto masked = flux::ref(values).mask(flux::repeat(true));
+        auto masked = flux::ref(values).mask(flux::repeat(true, 10));
 
         STATIC_CHECK(check_equal(values, masked));
     }
@@ -187,7 +187,7 @@ constexpr bool test_mask()
     {
         std::array values{1, 2, 3, 4, 5};
 
-        auto masked = flux::ref(values).mask(flux::repeat(false));
+        auto masked = flux::ref(values).mask(flux::repeat(false, 10));
 
         STATIC_CHECK(masked.is_empty());
     }
