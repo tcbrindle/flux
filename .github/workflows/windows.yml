@@ -13,6 +13,7 @@ jobs:
       matrix:
         platform: [x86, x64]
         build_type: [Debug, Release]
+        test_with: [Headers, Module]
 
     steps:
     - uses: actions/checkout@master
@@ -32,6 +33,8 @@ jobs:
         cmake -G Ninja \
               -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
               -DFLUX_BUILD_BENCHMARKS=${{matrix.build_type == 'Release'}} \
+              -DFLUX_BUILD_MODULE=${{matrix.test_with == 'Module'}} \
+              -DFLUX_BUILD_TESTS_USING_MODULE=${{matrix.test_with == 'Module'}} \
               $GITHUB_WORKSPACE
 
     - name: Build
