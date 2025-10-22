@@ -20,7 +20,9 @@ struct count_t {
             return flux::iterable_size(it);
         } else {
             int_t counter = 0;
+            // LCOV_EXCL_START
             for_each(it, [&](auto&&) { counter = num::add(counter, int_t{1}); });
+            // LCOV_EXCL_STOP
             return counter;
         }
     }
