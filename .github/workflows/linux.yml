@@ -22,6 +22,8 @@ jobs:
             test_with: Module
           - compiler: GCC-14
             test_with: Module
+          - compiler: GCC-15
+            test_with: Module
           - compiler: Clang-17
             test_with: Module
 
