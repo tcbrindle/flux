@@ -45,6 +45,7 @@ struct copy_fn {
 
 FLUX_EXPORT inline constexpr auto copy = detail::copy_fn{};
 
+FLUX_EXPORT
 struct immovable {
     immovable() = default;
     ~immovable() = default;
@@ -145,6 +146,7 @@ struct emplace_from {
 template <typename Fn>
 emplace_from(Fn) -> emplace_from<Fn>;
 
+// LCOV_EXCL_START
 [[noreturn]] inline void unreachable()
 {
     if constexpr (config::enable_debug_asserts) {
@@ -161,6 +163,7 @@ emplace_from(Fn) -> emplace_from<Fn>;
     std::abort();
 #endif
 }
+// LCOV_EXCL_STOP
 
 } // namespace detail
 
