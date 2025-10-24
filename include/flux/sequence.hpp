@@ -6,7 +6,6 @@
 #ifndef FLUX_SEQUENCE_HPP_INCLUDED
 #define FLUX_SEQUENCE_HPP_INCLUDED
 
-#include <flux/sequence/bitset.hpp>
 #include <flux/sequence/empty.hpp>
 #include <flux/sequence/generator.hpp>
 #include <flux/sequence/getlines.hpp>
