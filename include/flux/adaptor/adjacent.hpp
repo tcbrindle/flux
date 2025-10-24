@@ -10,7 +10,7 @@
 
 #include <flux/adaptor/reverse.hpp>
 #include <flux/adaptor/zip.hpp>
-#include <flux/sequence/iota.hpp>
+#include <flux/factory/iota.hpp>
 
 #include <array>
 

@@ -3,8 +3,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_SEQUENCE_IOTA_HPP_INCLUDED
-#define FLUX_SEQUENCE_IOTA_HPP_INCLUDED
+#ifndef FLUX_FACTORY_IOTA_HPP_INCLUDED
+#define FLUX_FACTORY_IOTA_HPP_INCLUDED
 
 #include <flux/core.hpp>
 
@@ -14,20 +14,16 @@ namespace detail {
 
 // These concepts mirror the standard ones, except that iter_difference_t is not required
 template <typename T>
-concept incrementable =
-    std::regular<T> &&
-    requires (T t) {
-        { ++t } -> std::same_as<T&>;
-        { t++ } -> std::same_as<T>;
-    };
+concept incrementable = std::regular<T> && requires(T t) {
+    { ++t } -> std::same_as<T&>;
+    { t++ } -> std::same_as<T>;
+};
 
 template <typename T>
-concept decrementable =
-    incrementable<T> &&
-    requires (T t) {
-        { --t } -> std::same_as<T&>;
-        { t-- } -> std::same_as<T>;
-    };
+concept decrementable = incrementable<T> && requires(T t) {
+    { --t } -> std::same_as<T&>;
+    { t-- } -> std::same_as<T>;
+};
 
 template <typename T>
 concept advancable = decrementable<T> && std::weakly_incrementable<T> && // iter_difference_t exists
@@ -209,4 +205,4 @@ FLUX_EXPORT inline constexpr auto ints = detail::ints_t{};
 
 } // namespace flux
 
-#endif // FLUX_SEQUENCE_IOTA_HPP_INCLUDED
+#endif // FLUX_FACTORY_IOTA_HPP_INCLUDED

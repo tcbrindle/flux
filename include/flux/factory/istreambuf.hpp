@@ -3,8 +3,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_SEQUENCE_ISTREAMBUF_HPP_INCLUDED
-#define FLUX_SEQUENCE_ISTREAMBUF_HPP_INCLUDED
+#ifndef FLUX_FACTORY_ISTREAMBUF_HPP_INCLUDED
+#define FLUX_FACTORY_ISTREAMBUF_HPP_INCLUDED
 
 #include <flux/core.hpp>
 
@@ -18,7 +18,7 @@ template <typename CharT, typename Traits>
 void derives_from_streambuf_test(std::basic_streambuf<CharT, Traits>&);
 
 template <typename T>
-concept derives_from_streambuf = requires (T& t) { derives_from_streambuf_test(t); };
+concept derives_from_streambuf = requires(T& t) { derives_from_streambuf_test(t); };
 
 } // namespace detail
 
@@ -63,4 +63,4 @@ struct iterable_traits<Streambuf> {
 
 } // namespace flux
 
-#endif // FLUX_SEQUENCE_ISTREAMBUF_HPP_INCLUDED
+#endif // FLUX_FACTORY_ISTREAMBUF_HPP_INCLUDED

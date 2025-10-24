@@ -8,7 +8,7 @@
 
 #include <flux/core.hpp>
 
-#include <flux/sequence/single.hpp>
+#include <flux/factory/single.hpp>
 
 namespace flux {
 

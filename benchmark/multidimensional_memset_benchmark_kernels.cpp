@@ -5,7 +5,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <flux/adaptor/cartesian_product.hpp>
-#include <flux/sequence/iota.hpp>
+#include <flux/factory/iota.hpp>
 #include <flux/algorithm/for_each.hpp>
 #include <flux/adaptor/filter.hpp>
 

@@ -3,8 +3,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_SEQUENCE_GENERATOR_HPP_INCLUDED
-#define FLUX_SEQUENCE_GENERATOR_HPP_INCLUDED
+#ifndef FLUX_FACTORY_GENERATOR_HPP_INCLUDED
+#define FLUX_FACTORY_GENERATOR_HPP_INCLUDED
 
 #include <flux/core.hpp>
 
@@ -28,10 +28,7 @@ struct generator : inline_sequence_base<generator<ElemT>> {
 
         auto final_suspend() noexcept { return std::suspend_always{}; }
 
-        auto get_return_object()
-        {
-            return generator(handle_type::from_promise(*this));
-        }
+        auto get_return_object() { return generator(handle_type::from_promise(*this)); }
 
         auto yield_value(ElemT& elem)
         {
@@ -48,7 +45,7 @@ struct generator : inline_sequence_base<generator<ElemT>> {
 
         auto unhandled_exception() { throw; }
 
-        void return_void() noexcept {}
+        void return_void() noexcept { }
 
         std::add_pointer_t<yielded_type> ptr_;
     };
@@ -76,14 +73,12 @@ struct generator : inline_sequence_base<generator<ElemT>> {
 private:
     handle_type coro_;
 
-    explicit generator(handle_type&& handle) : coro_(std::move(handle)) {}
+    explicit generator(handle_type&& handle) : coro_(std::move(handle)) { }
 
     friend struct sequence_traits<generator>;
 
 public:
-    generator(generator&& other) noexcept
-        : coro_(std::exchange(other.coro_, {}))
-    {}
+    generator(generator&& other) noexcept : coro_(std::exchange(other.coro_, {})) { }
 
     generator& operator=(generator&& other) noexcept
     {
@@ -93,7 +88,9 @@ public:
 
     ~generator()
     {
-        if (coro_) { coro_.destroy(); }
+        if (coro_) {
+            coro_.destroy();
+        }
     }
 
     auto iterate() -> iteration_context_type { return iteration_context_type(coro_); }
@@ -101,4 +98,4 @@ public:
 
 } // namespace flux
 
-#endif // FLUX_SEQUENCE_GENERATOR_HPP_INCLUDED
+#endif // FLUX_FACTORY_GENERATOR_HPP_INCLUDED

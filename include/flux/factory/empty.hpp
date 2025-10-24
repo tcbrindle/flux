@@ -3,8 +3,8 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef FLUX_SEQUENCE_EMPTY_HPP_INCLUDED
-#define FLUX_SEQUENCE_EMPTY_HPP_INCLUDED
+#ifndef FLUX_FACTORY_EMPTY_HPP_INCLUDED
+#define FLUX_FACTORY_EMPTY_HPP_INCLUDED
 
 #include <flux/core.hpp>
 
@@ -31,19 +31,19 @@ struct empty_sequence : inline_sequence_base<empty_sequence<T>> {
             return cur;
         }
 
-        static constexpr auto dec(empty_sequence, cursor_type& cur) -> cursor_type&
-        {
-            return cur;
-        }
+        static constexpr auto dec(empty_sequence, cursor_type& cur) -> cursor_type& { return cur; }
 
-        static constexpr auto distance(empty_sequence, cursor_type, cursor_type)
-            -> std::ptrdiff_t
+        static constexpr auto distance(empty_sequence, cursor_type, cursor_type) -> std::ptrdiff_t
         {
             return 0;
         }
 
         static constexpr auto size(empty_sequence) -> std::ptrdiff_t { return 0; }
-        static constexpr auto data(empty_sequence) -> std::add_pointer_t<T> requires std::is_object_v<T> { return nullptr; }
+        static constexpr auto data(empty_sequence) -> std::add_pointer_t<T>
+            requires std::is_object_v<T>
+        {
+            return nullptr;
+        }
 
         [[noreturn]]
         static constexpr auto read_at(empty_sequence, cursor_type) -> T&
@@ -61,4 +61,4 @@ inline constexpr auto empty = detail::empty_sequence<T>{};
 
 } // namespace flux
 
-#endif // FLUX_SEQUENCE_EMPTY_HPP_INCLUDED
+#endif // FLUX_FACTORY_EMPTY_HPP_INCLUDED
