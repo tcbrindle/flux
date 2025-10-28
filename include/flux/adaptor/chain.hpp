@@ -15,17 +15,94 @@ namespace flux {
 
 namespace detail {
 
-template <sequence... Bases>
+template <typename... Bases>
 struct chain_adaptor : inline_sequence_base<chain_adaptor<Bases...>> {
 private:
     std::tuple<Bases...> bases_;
 
     friend struct sequence_traits<chain_adaptor>;
 
+    template <typename Parent, typename... BaseContexts>
+    struct iteration_context {
+        Parent* parent;
+        std::variant<BaseContexts...> base_context;
+
+        using element_type = std::common_reference_t<typename BaseContexts::element_type...>;
+
+        template <std::size_t I>
+        constexpr auto run_while_impl(auto&& pred) -> iteration_result
+        {
+            if constexpr (I < sizeof...(Bases) - 1) {
+                if (base_context.index() == I) {
+                    auto& ctx = std::get<I>(base_context);
+                    auto result = flux::run_while(ctx, pred);
+                    if (result == iteration_result::incomplete) {
+                        return result;
+                    } else {
+                        base_context.template emplace<I + 1>(emplace_from{
+                            [&] { return flux::iterate(std::get<I + 1>(parent->bases_)); }});
+                        return run_while_impl<I + 1>(pred);
+                    }
+                } else {
+                    return run_while_impl<I + 1>(pred);
+                }
+            } else {
+                if (base_context.index() == I) {
+                    return std::get<I>(base_context).run_while(pred);
+                } else {
+                    unreachable();
+                }
+            }
+        }
+
+        constexpr auto run_while(auto&& pred) -> iteration_result
+        {
+            auto call_with_common_ref
+                = [&pred](auto&& elem) { return pred(static_cast<element_type>(FLUX_FWD(elem))); };
+            return run_while_impl<0>(call_with_common_ref);
+        }
+    };
+
 public:
     explicit constexpr chain_adaptor(decays_to<Bases> auto&&... bases)
         : bases_(FLUX_FWD(bases)...)
-    {}
+    {
+    }
+
+    [[nodiscard]]
+    constexpr auto iterate()
+    {
+        return iteration_context<chain_adaptor, iteration_context_t<Bases>...>{
+            .parent = this,
+            .base_context = std::variant<iteration_context_t<Bases>...>(
+                std::in_place_index<0>,
+                emplace_from([&] { return flux::iterate(std::get<0>(bases_)); }))};
+    }
+
+    [[nodiscard]]
+    constexpr auto iterate() const
+        requires(iterable<Bases const> && ...)
+    {
+        return iteration_context<chain_adaptor const, iteration_context_t<Bases const>...>{
+            .parent = this,
+            .base_context = std::variant<iteration_context_t<Bases const>...>(
+                std::in_place_index<0>,
+                emplace_from([&] { return flux::iterate(std::get<0>(bases_)); }))};
+    }
+
+    [[nodiscard]] constexpr auto size() -> int_t
+        requires(sized_iterable<Bases> && ...)
+    {
+        return std::apply([](auto&... bases) { return (flux::iterable_size(bases) + ...); },
+                          bases_);
+    }
+
+    [[nodiscard]] constexpr auto size() const -> int_t
+        requires(sized_iterable<Bases const> && ...)
+    {
+        return std::apply([](auto&... bases) { return (flux::iterable_size(bases) + ...); },
+                          bases_);
+    }
 };
 
 template <typename... Ts>
@@ -34,29 +111,26 @@ concept all_have_common_ref =
     (std::convertible_to<Ts, std::common_reference_t<Ts...>> && ...);
 
 template <typename... Seqs>
-concept chainable =
-    all_have_common_ref<element_t<Seqs>...> &&
-    all_have_common_ref<rvalue_element_t<Seqs>...> &&
-    requires { typename std::common_type_t<value_t<Seqs>...>; };
+concept chainable = all_have_common_ref<iterable_element_t<Seqs>...>
+    && requires { typename std::common_type_t<iterable_value_t<Seqs>...>; };
 
 struct chain_fn {
-    template <adaptable_sequence... Seqs>
-        requires (sizeof...(Seqs) >= 1) &&
-                 chainable<Seqs...>
+    template <adaptable_iterable... Its>
+        requires(sizeof...(Its) >= 1) && chainable<Its...>
     [[nodiscard]]
-    constexpr auto operator()(Seqs&&... seqs) const
+    constexpr auto operator()(Its&&... its) const
     {
-        if constexpr (sizeof...(Seqs) == 1) {
-            return std::forward<Seqs...>(seqs...);
+        if constexpr (sizeof...(Its) == 1) {
+            return std::forward<Its...>(its...);
         } else {
-            return chain_adaptor<std::decay_t<Seqs>...>(FLUX_FWD(seqs)...);
+            return chain_adaptor<std::decay_t<Its>...>(FLUX_FWD(its)...);
         }
     }
 };
 
 } // namespace detail
 
-template <typename... Bases>
+template <sequence... Bases>
 struct sequence_traits<detail::chain_adaptor<Bases...>> : default_sequence_traits {
 
     using value_type = std::common_type_t<value_t<Bases>...>;
@@ -168,7 +242,7 @@ private:
     {
         if constexpr (N < End) {
             auto& base = std::get<N>(self.bases_);
-            auto base_cur = flux::for_each_while(base, pred);
+            auto base_cur = flux::seq_for_each_while(base, pred);
             if (!flux::is_last(base, base_cur)) {
                 return cursor_type(std::in_place_index<N>, std::move(base_cur));
             } else {
@@ -176,7 +250,7 @@ private:
             }
         } else {
             return cursor_type(std::in_place_index<N>,
-                               flux::for_each_while(std::get<N>(self.bases_), pred));
+                               flux::seq_for_each_while(std::get<N>(self.bases_), pred));
         }
     }
 
@@ -208,9 +282,7 @@ private:
     }
 
     template <std::size_t N, typename Self>
-    static constexpr auto inc_ra_impl(Self& self, cursor_type& cur,
-                                      distance_t offset)
-        -> cursor_type&
+    static constexpr auto inc_ra_impl(Self& self, cursor_type& cur, int_t offset) -> cursor_type&
     {
         if constexpr (N < End) {
             if (N < cur.index()) {
@@ -300,11 +372,10 @@ public:
     }
 
     template <typename Self>
-    static constexpr auto distance(Self& self, cursor_type const& from,
-                                   cursor_type const& to)
-        -> distance_t
-        requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
-                 (bounded_sequence<const_like_t<Self, Bases>> && ...)
+    static constexpr auto distance(Self& self, cursor_type const& from, cursor_type const& to)
+        -> int_t
+        requires(random_access_sequence<const_like_t<Self, Bases>> && ...)
+        && (bounded_sequence<const_like_t<Self, Bases>> && ...)
     {
         if (from.index() <= to.index()) {
             return distance_impl<0>(self, from, to);
@@ -314,13 +385,12 @@ public:
     }
 
     template <typename Self>
-    static constexpr auto inc(Self& self, cursor_type& cur, distance_t offset)
-        requires (random_access_sequence<const_like_t<Self, Bases>> && ...) &&
-                 (bounded_sequence<const_like_t<Self, Bases>> && ...)
+    static constexpr auto inc(Self& self, cursor_type& cur, int_t offset)
+        requires(random_access_sequence<const_like_t<Self, Bases>> && ...)
+        && (bounded_sequence<const_like_t<Self, Bases>> && ...)
     {
         inc_ra_impl<0>(self, cur, offset);
     }
-
 };
 
 FLUX_EXPORT inline constexpr auto chain = detail::chain_fn{};

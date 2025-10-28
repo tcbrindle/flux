@@ -11,7 +11,7 @@
 #ifdef USE_MODULES
 import flux;
 #else
-#include <flux/sequence/empty.hpp>
+#    include <flux/factory/empty.hpp>
 #endif
 
 namespace {

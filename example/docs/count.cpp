@@ -27,5 +27,5 @@ int main()
     std::istringstream iss("1 2 3");
     auto seq = flux::from_istream<int>(iss);
     assert(flux::count(seq) == 3);
-    assert(flux::is_last(seq, flux::first(seq))); // No more elements!
+    assert(!iss); // No more elements!
 }

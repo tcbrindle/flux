@@ -53,14 +53,14 @@ public:
             flux::dec(self.base_, cur);
         }
 
-        static constexpr auto inc(auto& self, cursor_t<Base>& cur, distance_t offset) -> void
+        static constexpr auto inc(auto& self, cursor_t<Base>& cur, int_t offset) -> void
             requires random_access_sequence<Base>
         {
             flux::inc(self.base_, cur, offset);
         }
 
         static constexpr auto distance(auto& self, cursor_t<Base> const& from,
-                                       cursor_t<Base> const& to) -> distance_t
+                                       cursor_t<Base> const& to) -> int_t
             requires random_access_sequence<Base>
         {
             return flux::distance(self.base_, from, to);
@@ -72,7 +72,7 @@ public:
             return flux::last(self.base_);
         }
 
-        static constexpr auto size(auto& self) -> distance_t
+        static constexpr auto size(auto& self) -> int_t
             requires sized_sequence<Base>
         {
             return flux::size(self.base_);

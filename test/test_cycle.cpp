@@ -52,7 +52,7 @@ constexpr bool test_cycle() {
 
         // Make sure internal iteration works as expected
         int counter = 101;
-        cur = flux::for_each_while(seq, [&counter](auto&&) { return counter-- > 0; });
+        cur = flux::seq_for_each_while(seq, [&counter](auto&&) { return counter-- > 0; });
         STATIC_CHECK(seq.distance(cur, seq.first()) == -101);
     }
 
@@ -77,7 +77,7 @@ constexpr bool test_cycle() {
         static_assert(std::same_as<flux::rvalue_element_t<C>, int const&&>);
         static_assert(std::same_as<flux::const_element_t<C>, int const&>);
 
-        STATIC_CHECK(seq.size() == 5);
+        STATIC_CHECK(flux::size(seq) == 5);
 
         STATIC_CHECK(check_equal(seq, {1, 2, 3, 1, 2}));
 
@@ -110,7 +110,7 @@ constexpr bool test_cycle() {
         static_assert(std::same_as<flux::const_element_t<C>, std::pair<int const&, double const&>>);
 #endif
 
-        STATIC_CHECK(seq.size() == 10);
+        STATIC_CHECK(flux::size(seq) == 10);
 
         auto firsts = flux::ref(seq).map([](auto p) { return p.first; });
 
@@ -187,7 +187,7 @@ constexpr bool test_cycle() {
 
         // Go a long way back from the start
         cur = seq.first();
-        seq.inc(cur, std::numeric_limits<flux::distance_t>::lowest());
+        seq.inc(cur, std::numeric_limits<flux::int_t>::lowest());
         (void) seq[cur];
     }
 
@@ -331,7 +331,7 @@ TEST_CASE("cycle")
 
     SUBCASE("over-large sizes are caught")
     {
-        constexpr auto max_dist = std::numeric_limits<flux::distance_t>::max();
+        constexpr auto max_dist = std::numeric_limits<flux::int_t>::max();
 
         auto seq = flux::ints(0, max_dist).cycle(max_dist);
 

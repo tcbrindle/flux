@@ -6,64 +6,55 @@
 #ifndef FLUX_ALGORITHM_ALL_ANY_NONE_HPP_INCLUDED
 #define FLUX_ALGORITHM_ALL_ANY_NONE_HPP_INCLUDED
 
-#include <flux/core.hpp>
+#include <flux/algorithm/for_each_while.hpp>
 
 namespace flux {
 
-namespace all_detail {
-
-struct fn {
-    template <sequence Seq, typename Pred>
-        requires std::predicate<Pred&, element_t<Seq>>
-    constexpr bool operator()(Seq&& seq, Pred pred) const
+FLUX_EXPORT
+struct all_t {
+    template <iterable It, typename Pred>
+        requires std::predicate<Pred const&, iterable_element_t<It>>
+    [[nodiscard]]
+    constexpr auto operator()(It&& it, Pred const pred) const -> bool
     {
-        return is_last(seq, for_each_while(seq, [&](auto&& elem) {
-            return std::invoke(pred, FLUX_FWD(elem));
-        }));
+        return for_each_while(it, [&](auto&& elem) { return std::invoke(pred, FLUX_FWD(elem)); })
+            == iteration_result::complete;
     }
 };
 
-} // namespace all_detail
+FLUX_EXPORT inline constexpr all_t all {};
 
-FLUX_EXPORT inline constexpr auto all = all_detail::fn{};
-
-namespace none_detail {
-
-struct fn {
-    template <sequence Seq, typename Pred>
-        requires std::predicate<Pred&, element_t<Seq>>
-    constexpr bool operator()(Seq&& seq, Pred pred) const
+FLUX_EXPORT
+struct none_t {
+    template <iterable It, typename Pred>
+        requires std::predicate<Pred&, iterable_element_t<It>>
+    [[nodiscard]]
+    constexpr auto operator()(It&& it, Pred const pred) const -> bool
     {
-        return is_last(seq, for_each_while(seq, [&](auto&& elem) {
-            return !std::invoke(pred, FLUX_FWD(elem));
-        }));
+        return for_each_while(it, [&](auto&& elem) { return !std::invoke(pred, FLUX_FWD(elem)); })
+            == iteration_result::complete;
     }
 };
 
-} // namespace none_detail
+FLUX_EXPORT inline constexpr none_t none {};
 
-FLUX_EXPORT inline constexpr auto none = none_detail::fn{};
-
-namespace any_detail {
-
-struct fn {
-    template <sequence Seq, typename Pred>
-        requires std::predicate<Pred&, element_t<Seq>>
-    constexpr bool operator()(Seq&& seq, Pred pred) const
+FLUX_EXPORT
+struct any_t {
+    template <iterable It, typename Pred>
+        requires std::predicate<Pred&, iterable_element_t<It>>
+    [[nodiscard]]
+    constexpr auto operator()(It&& it, Pred const pred) const -> bool
     {
-        return !is_last(seq, for_each_while(seq, [&](auto&& elem) {
-            return !std::invoke(pred, FLUX_FWD(elem));
-        }));
+        return for_each_while(it, [&](auto&& elem) { return !std::invoke(pred, FLUX_FWD(elem)); })
+            == iteration_result::incomplete;
     }
 };
 
-} // namespace any_detail
-
-FLUX_EXPORT inline constexpr auto any = any_detail::fn{};
+FLUX_EXPORT inline constexpr any_t any {};
 
 template <typename D>
 template <typename Pred>
-    requires std::predicate<Pred&, element_t<D>>
+    requires std::predicate<Pred&, iterable_element_t<D>>
 constexpr auto inline_sequence_base<D>::all(Pred pred)
 {
     return flux::all(derived(), std::move(pred));
@@ -71,7 +62,7 @@ constexpr auto inline_sequence_base<D>::all(Pred pred)
 
 template <typename D>
 template <typename Pred>
-    requires std::predicate<Pred&, element_t<D>>
+    requires std::predicate<Pred&, iterable_element_t<D>>
 constexpr auto inline_sequence_base<D>::any(Pred pred)
 {
     return flux::any(derived(), std::move(pred));
@@ -79,7 +70,7 @@ constexpr auto inline_sequence_base<D>::any(Pred pred)
 
 template <typename D>
 template <typename Pred>
-    requires std::predicate<Pred&, element_t<D>>
+    requires std::predicate<Pred&, iterable_element_t<D>>
 constexpr auto inline_sequence_base<D>::none(Pred pred)
 {
     return flux::none(derived(), std::move(pred));

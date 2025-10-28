@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <array>
 #include <ranges>
+#include <utility>
 
 #include "test_utils.hpp"
 
@@ -13,6 +14,55 @@ namespace {
 
 constexpr bool test_map()
 {
+    // We can map basic iterables
+    {
+        auto iter = iterable_only(std::array{1, 2, 3, 4, 5});
+
+        auto mapped = flux::map(std::move(iter), [](int& i) { return i * 2; });
+
+        using M = decltype(mapped);
+
+        static_assert(flux::iterable<M>);
+        static_assert(flux::sized_iterable<M>);
+        static_assert(std::same_as<flux::iterable_element_t<M>, int>);
+        static_assert(std::same_as<flux::iterable_value_t<M>, int>);
+
+        static_assert(not flux::iterable<M const>); // because func expects int&
+
+        STATIC_CHECK(check_equal(mapped, {2, 4, 6, 8, 10}));
+    }
+
+    // Const iteration works with iterables
+    {
+        auto iter = iterable_only(std::array{1, 2, 3, 4, 5});
+
+        auto const mapped = flux::map(std::move(iter), [](int const& i) { return i * 2; });
+
+        using M = decltype(mapped);
+
+        static_assert(flux::iterable<M>);
+        static_assert(flux::sized_iterable<M>);
+        static_assert(std::same_as<flux::iterable_element_t<M>, int>);
+        static_assert(std::same_as<flux::iterable_value_t<M>, int>);
+
+        STATIC_CHECK(check_equal(mapped, {2, 4, 6, 8, 10}));
+    }
+
+    // Reverse iteration works with iterables
+    {
+        auto iter = iterable_only(std::array{1, 2, 3, 4, 5});
+
+        auto mapped = flux::map(std::move(iter), [](int i) { return i * 2; });
+
+        using M = decltype(mapped);
+
+        static_assert(flux::reverse_iterable<M>);
+        static_assert(flux::reverse_iterable<M const>);
+
+        STATIC_CHECK(check_equal(flux::reverse(mapped), {10, 8, 6, 4, 2}));
+        STATIC_CHECK(check_equal(flux::reverse(std::as_const(mapped)), {10, 8, 6, 4, 2}));
+    }
+
     {
         int arr[] = {0, 1, 2, 3, 4};
 

@@ -19,11 +19,57 @@ private:
     FLUX_NO_UNIQUE_ADDRESS Base base_;
     FLUX_NO_UNIQUE_ADDRESS Pred pred_;
 
+    template <typename BaseCtx, typename FilterPred>
+    struct context_type : immovable {
+        BaseCtx base_ctx;
+        FilterPred filter_pred;
+        using opt_t = decltype(next_element(std::declval<BaseCtx&>()));
+        opt_t opt = nullopt;
+
+        using element_type = context_element_t<BaseCtx>;
+
+        constexpr auto run_while(auto&& pred) -> iteration_result
+        {
+            if (!opt) {
+                opt = next_element(base_ctx);
+                if (!opt) {
+                    return iteration_result::complete;
+                }
+                if (!pred(opt.value_unchecked())) {
+                    return iteration_result::incomplete;
+                }
+            }
+
+            return base_ctx.run_while([&](auto&& elem) {
+                if (!filter_pred(opt.value_unchecked(), elem)) {
+                    return loop_continue;
+                } else {
+                    opt.emplace(elem);
+                    return pred(elem);
+                }
+            });
+        }
+    };
+
 public:
     constexpr adjacent_filter_adaptor(decays_to<Base> auto&& base, Pred pred)
         : base_(FLUX_FWD(base)),
           pred_(std::move(pred))
     {}
+
+    constexpr auto iterate()
+    {
+        return context_type<iteration_context_t<Base>, copy_or_ref_t<Pred>>{
+            .base_ctx = flux::iterate(base_), .filter_pred = copy_or_ref(pred_)};
+    }
+
+    constexpr auto iterate() const
+        requires multipass_sequence<Base const>
+        && std::predicate<Pred const&, iterable_element_t<Base const>>
+    {
+        return context_type<iteration_context_t<Base>, copy_or_ref_t<Pred>>{
+            .base_ctx = flux::iterate(base_), .filter_pred = copy_or_ref(pred_)};
+    }
 
     struct flux_sequence_traits : default_sequence_traits {
     private:
@@ -143,8 +189,8 @@ FLUX_EXPORT inline constexpr auto dedup = detail::dedup_fn{};
 
 template <typename D>
 template <typename Pred>
-    requires multipass_sequence<D> &&
-             std::predicate<Pred&, element_t<D>, element_t<D>>
+    requires multipass_sequence<D>
+    && std::predicate<Pred&, iterable_element_t<D>, iterable_element_t<D>>
 constexpr auto inline_sequence_base<D>::adjacent_filter(Pred pred) &&
 {
     return flux::adjacent_filter(std::move(derived()), std::move(pred));
@@ -152,8 +198,7 @@ constexpr auto inline_sequence_base<D>::adjacent_filter(Pred pred) &&
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::dedup() &&
-    requires multipass_sequence<D> &&
-             std::equality_comparable<element_t<D>>
+    requires multipass_sequence<D> && std::equality_comparable<iterable_element_t<D>>
 {
     return flux::dedup(std::move(derived()));
 }

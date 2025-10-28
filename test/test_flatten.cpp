@@ -7,6 +7,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <utility>
 
 #include "test_utils.hpp"
 
@@ -34,6 +35,38 @@ namespace {
 
 constexpr bool test_flatten_single_pass()
 {
+    // Test flatten with basic iterable
+    {
+        std::array<std::array<int, 3>, 3> nested_array
+            = {std::array{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+
+        auto flattened = flux::flatten(iterable_only(nested_array));
+
+        using F = decltype(flattened);
+        static_assert(flux::iterable<F>);
+        static_assert(std::same_as<flux::iterable_element_t<F>, int&>);
+        STATIC_CHECK(check_equal(flattened, {1, 2, 3, 4, 5, 6, 7, 8, 9}));
+
+        static_assert(flux::iterable<F const>);
+        static_assert(std::same_as<flux::iterable_element_t<F const>, int const&>);
+        STATIC_CHECK(check_equal(std::as_const(flattened), {1, 2, 3, 4, 5, 6, 7, 8, 9}));
+    }
+
+    // If both the outer and the inner are reversible, we can reverse a flattened iterable
+    {
+        std::array<std::array<int, 3>, 3> nested_array{std::array{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+
+        auto flattened = flux::flatten(iterable_only(nested_array));
+
+        using F = decltype(flattened);
+        static_assert(flux::reverse_iterable<F>);
+        static_assert(flux::reverse_iterable<F const>);
+
+        auto reversed = flux::reverse(flattened);
+        STATIC_CHECK(check_equal(reversed, {9, 8, 7, 6, 5, 4, 3, 2, 1}));
+        STATIC_CHECK(check_equal(std::as_const(reversed), {9, 8, 7, 6, 5, 4, 3, 2, 1}));
+    }
+
     // Single-pass source sequence, inner sequence is multipass
     {
         std::array<std::array<int, 3>, 3> arr{

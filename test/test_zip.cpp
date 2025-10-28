@@ -14,6 +14,38 @@ namespace {
 constexpr bool test_zip()
 {
     {
+        auto iter1 = iterable_only(std::array{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+        auto iter2 = iterable_only(std::array{100.0, 200.0, 300.0, 400.0, 500.0});
+
+        auto zipped = flux::zip(iter1, iter2);
+
+        using Z = decltype(zipped);
+        static_assert(flux::iterable<Z>);
+        static_assert(flux::iterable<Z const>);
+
+        static_assert(flux::sized_iterable<Z>);
+        static_assert(flux::sized_iterable<Z const>);
+
+        static_assert(std::same_as<flux::iterable_element_t<Z>, std::pair<int&, double&>>);
+        static_assert(
+            std::same_as<flux::iterable_element_t<Z const>, std::pair<int const&, double const&>>);
+        static_assert(std::same_as<flux::iterable_value_t<Z>, std::pair<int, double>>);
+
+        STATIC_CHECK(flux::iterable_size(zipped) == 5);
+
+        {
+            int n = 1;
+            auto ctx = flux::iterate(zipped);
+            while (auto opt = flux::next_element(ctx)) {
+                auto [i, d] = *opt;
+                STATIC_CHECK(i == n);
+                STATIC_CHECK(d == 100.0 * n);
+                ++n;
+            }
+        }
+    }
+
+    {
         int arr1[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
         double arr2[] = {0, 100, 200, 300, 400};
 

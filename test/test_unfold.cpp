@@ -17,26 +17,11 @@ constexpr bool test_unfold()
         auto seq = flux::unfold([](int i) { return ++i; }, 0);
 
         using S = decltype(seq);
-        static_assert(flux::sequence<S>);
+        static_assert(flux::iterable<S>);
         static_assert(not flux::multipass_sequence<S>);
-        static_assert(flux::infinite_sequence<S>);
         static_assert(not flux::sized_sequence<S>);
 
         STATIC_CHECK(check_equal(flux::take(seq, 10), flux::ints().take(10)));
-    }
-
-    // unfold -> take is a finite sequence
-    {
-        auto seq = flux::unfold([](int i) { return ++i; }, 0).take(10);
-
-        using S = decltype(seq);
-        static_assert(flux::sequence<S>);
-        static_assert(not flux::multipass_sequence<S>);
-        static_assert(not flux::infinite_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
-
-        STATIC_CHECK(flux::size(seq) == 10);
-        STATIC_CHECK(check_equal(seq, flux::ints().take(10)));
     }
 
     // unfold can be used to implement repeat()
@@ -57,13 +42,11 @@ constexpr bool test_unfold()
 
     // internal iteration works as expected
     {
-        auto seq = flux::unfold([](int i) { return ++i; }, 0);
+        auto seq = flux::unfold([](int i) { return ++i; }, 1);
 
-        auto cur = seq.find(5);
+        auto sum = flux::take(seq, 5).sum();
 
-        STATIC_CHECK(seq[cur] == 5);
-        seq.inc(cur);
-        STATIC_CHECK(seq[cur] == 6);
+        STATIC_CHECK(sum == 15);
     }
 
     return true;

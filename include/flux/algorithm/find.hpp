@@ -20,9 +20,7 @@ private:
     template <typename Seq, typename Value>
     static constexpr auto impl(Seq&& seq, Value const& value) -> cursor_t<Seq>
     {
-        return for_each_while(seq, [&](auto&& elem) {
-            return FLUX_FWD(elem) != value;
-        });
+        return seq_for_each_while(seq, [&](auto&& elem) { return FLUX_FWD(elem) != value; });
     }
 
 public:
@@ -30,10 +28,10 @@ public:
         requires std::equality_comparable_with<element_t<Seq>, Value const&>
     constexpr auto operator()(Seq&& seq, Value const& value) const -> cursor_t<Seq>
     {
-        constexpr auto can_memchr = 
-            contiguous_sequence<Seq> && sized_sequence<Seq> && 
-            std::same_as<Value, value_t<Seq>> &&
-            flux::detail::any_of<value_t<Seq>, char, signed char, unsigned char, char8_t, std::byte>;
+        constexpr auto can_memchr = contiguous_sequence<Seq> && sized_sequence<Seq>
+            && std::same_as<Value, value_t<Seq>>
+            && flux::detail::any_of<value_t<Seq>, char, signed char, unsigned char, char8_t,
+                                    std::byte>;
 
         if constexpr (can_memchr) {
             if (std::is_constant_evaluated()) {
@@ -65,9 +63,8 @@ struct find_if_fn {
     constexpr auto operator()(Seq&& seq, Pred pred) const
         -> cursor_t<Seq>
     {
-        return for_each_while(seq, [&](auto&& elem) {
-            return !std::invoke(pred, FLUX_FWD(elem));
-        });
+        return seq_for_each_while(seq,
+                                  [&](auto&& elem) { return !std::invoke(pred, FLUX_FWD(elem)); });
     }
 };
 
@@ -77,9 +74,8 @@ struct find_if_not_fn {
     constexpr auto operator()(Seq&& seq, Pred pred) const
         -> cursor_t<Seq>
     {
-        return for_each_while(seq, [&](auto&& elem) {
-            return std::invoke(pred, FLUX_FWD(elem));
-        });
+        return seq_for_each_while(seq,
+                                  [&](auto&& elem) { return std::invoke(pred, FLUX_FWD(elem)); });
     }
 };
 
@@ -91,7 +87,7 @@ FLUX_EXPORT inline constexpr auto find_if_not = detail::find_if_not_fn{};
 
 template <typename D>
 template <typename Value>
-    requires std::equality_comparable_with<element_t<D>, Value const&>
+    requires std::equality_comparable_with<iterable_element_t<D>, Value const&>
 constexpr auto inline_sequence_base<D>::find(Value const& val)
 {
     return flux::find(derived(), val);
@@ -99,7 +95,7 @@ constexpr auto inline_sequence_base<D>::find(Value const& val)
 
 template <typename D>
 template <typename Pred>
-    requires std::predicate<Pred&, element_t<D>>
+    requires std::predicate<Pred&, iterable_element_t<D>>
 constexpr auto inline_sequence_base<D>::find_if(Pred pred)
 {
     return flux::find_if(derived(), std::ref(pred));
@@ -107,7 +103,7 @@ constexpr auto inline_sequence_base<D>::find_if(Pred pred)
 
 template <typename D>
 template <typename Pred>
-    requires std::predicate<Pred&, element_t<D>>
+    requires std::predicate<Pred&, iterable_element_t<D>>
 constexpr auto inline_sequence_base<D>::find_if_not(Pred pred)
 {
     return flux::find_if_not(derived(), std::ref(pred));

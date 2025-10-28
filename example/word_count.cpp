@@ -17,11 +17,9 @@ struct stats_t
     bool is_last_space = true;
 };
 
-auto collect_stats = [](flux::sequence auto&& seq)
-{
+auto collect_stats = [](flux::iterable auto&& seq) {
     stats_t stats;
-    flux::for_each(FLUX_FWD(seq), [&stats](char val) 
-    {
+    flux::for_each(FLUX_FWD(seq), [&stats](char val) {
         stats.chars++;
         if (not stats.is_last_space and std::isspace(val)) {
             stats.words++;

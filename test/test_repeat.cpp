@@ -28,30 +28,20 @@ constexpr bool test_repeat()
 
         using S = decltype(seq);
 
-        static_assert(flux::random_access_sequence<S>);
-        static_assert(flux::infinite_sequence<S>);
+        static_assert(flux::iterable<S>);
+        static_assert(not flux::sequence<S>);
         static_assert(not flux::sized_sequence<S>);
         static_assert(not flux::bounded_sequence<S>);
-        static_assert(std::same_as<flux::element_t<S>, int const&>);
-        static_assert(std::same_as<flux::value_t<S>, int>);
-        static_assert(std::same_as<flux::rvalue_element_t<S>, int const&&>);
-        static_assert(std::same_as<flux::const_element_t<S>, int const&>);
+        static_assert(std::same_as<flux::iterable_element_t<S>, int const&>);
+        static_assert(std::same_as<flux::iterable_value_t<S>, int>);
+        static_assert(std::same_as<flux::iterable_const_element_t<S>, int const&>);
 
         static_assert(std::is_trivially_copyable_v<S>);
 
         // Check a few elements just to make sure
-        auto cur = flux::first(seq);
+        auto ctx = flux::iterate(seq);
         for (int i = 0; i < 100; i++) {
-            STATIC_CHECK(seq[cur] == 3);
-            seq.inc(cur);
-        }
-
-        // Check that internal iteration works as expected
-        {
-            auto counter = 0;
-            auto inner_cur =
-                flux::for_each_while(seq, [&](int) { return counter++ < 5; });
-            STATIC_CHECK(inner_cur == 5);
+            STATIC_CHECK(flux::next_element(ctx).value() == 3);
         }
     }
 
@@ -61,22 +51,20 @@ constexpr bool test_repeat()
 
         using S = decltype(seq);
 
-        static_assert(flux::random_access_sequence<S>);
-        static_assert(flux::infinite_sequence<S>);
+        static_assert(flux::iterable<S>);
+        static_assert(not flux::sequence<S>);
         static_assert(not flux::sized_sequence<S>);
         static_assert(not flux::bounded_sequence<S>);
-        static_assert(std::same_as<flux::element_t<S>, int const&>);
-        static_assert(std::same_as<flux::value_t<S>, int>);
-        static_assert(std::same_as<flux::rvalue_element_t<S>, int const&&>);
-        static_assert(std::same_as<flux::const_element_t<S>, int const&>);
+        static_assert(std::same_as<flux::iterable_element_t<S>, int const&>);
+        static_assert(std::same_as<flux::iterable_value_t<S>, int>);
+        static_assert(std::same_as<flux::iterable_const_element_t<S>, int const&>);
 
         static_assert(std::is_trivially_copyable_v<S>);
 
         // Check a few elements just to make sure
-        auto cur = flux::first(seq);
+        auto ctx = flux::iterate(seq);
         for (int i = 0; i < 100; i++) {
-            STATIC_CHECK(flux::read_at(seq, cur) == 3);
-            flux::inc(seq, cur);
+            STATIC_CHECK(flux::next_element(ctx).value() == 3);
         }
     }
 
@@ -86,45 +74,10 @@ constexpr bool test_repeat()
 
         using S = decltype(seq);
 
-        static_assert(flux::random_access_sequence<S>);
-        static_assert(flux::sized_sequence<S>);
-        static_assert(flux::bounded_sequence<S>);
+        static_assert(flux::iterable<S>);
+        static_assert(not flux::sequence<S>);
 
         STATIC_CHECK(check_equal(seq, {3, 3, 3, 3, 3}));
-    }
-
-    // repeat can wrap around safely
-    {
-        auto seq = flux::repeat(std::string_view("test"));
-
-        auto cur = std::numeric_limits<std::size_t>::max();
-
-        STATIC_CHECK(seq[cur] == "test");
-
-        seq.inc(cur);
-        STATIC_CHECK(cur == std::numeric_limits<std::size_t>::lowest());
-        STATIC_CHECK(seq[cur] == "test");
-
-        seq.dec(cur);
-        STATIC_CHECK(cur == std::numeric_limits<std::size_t>::max());
-        STATIC_CHECK(seq[cur] == "test");
-    }
-
-    // random-access increment works
-    {
-        auto seq = flux::repeat(1.0);
-
-        constexpr auto max_idx = std::numeric_limits<flux::distance_t>::max();
-        constexpr auto min_idx = std::numeric_limits<flux::distance_t>::lowest();
-
-        auto cur = flux::next(seq, seq.first(), max_idx);
-
-        STATIC_CHECK(seq[cur] == 1.0);
-        STATIC_CHECK(seq.distance(cur, seq.first()) == -max_idx);
-
-        cur = flux::next(seq, seq.first(), min_idx);
-
-        STATIC_CHECK(seq[cur] == 1.0);
     }
 
     // repeat works with move-only types
@@ -132,6 +85,16 @@ constexpr bool test_repeat()
         auto seq = flux::repeat(S(3)).take(5);
 
         STATIC_CHECK(check_equal(seq, {S(3), S(3), S(3), S(3), S(3)}));
+    }
+
+    // repeat looks the same backwards and forwards
+    {
+        auto rep = flux::repeat(3);
+
+        auto ctx = flux::reverse_iterate(rep);
+        for (int i = 0; i < 100; i++) {
+            STATIC_CHECK(flux::next_element(ctx).value() == 3);
+        }
     }
 
     return true;
@@ -164,15 +127,14 @@ constexpr bool test_repeat_bounded()
 
         // Check that internal iteration works as expected
         {
-            auto cur = flux::for_each_while(seq, flux::pred::true_);
+            auto cur = flux::seq_for_each_while(seq, flux::pred::true_);
             STATIC_CHECK(cur == seq.last());
         }
 
         // ...and again with early termination
         {
             auto counter = 0;
-            auto cur =
-                flux::for_each_while(seq, [&](int) { return counter++ < 3; });
+            auto cur = flux::seq_for_each_while(seq, [&](int) { return counter++ < 3; });
             STATIC_CHECK(cur == 3);
         }
     }
@@ -259,17 +221,5 @@ TEST_CASE("repeat")
     {
         REQUIRE_THROWS_AS(flux::repeat(3, -100),
                           flux::unrecoverable_error);
-    }
-
-    SUBCASE("Unrepresentable distance is caught debug mode")
-    {
-        if constexpr (flux::config::enable_debug_asserts) {
-            auto seq = flux::repeat(3);
-
-            auto cur = std::numeric_limits<std::size_t>::max();
-
-            REQUIRE_THROWS_AS(flux::distance(seq, 0, cur),
-                              flux::unrecoverable_error);
-        }
     }
 }

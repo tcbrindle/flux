@@ -5,9 +5,7 @@
 #include "test_utils.hpp"
 
 // We don't have an in-place rotate yet, so let's borrow the STL's
-auto rotate_by = []<flux::random_access_sequence Seq>(Seq&& seq, flux::distance_t places)
-    -> Seq&&
-{
+auto rotate_by = []<flux::random_access_sequence Seq>(Seq&& seq, flux::int_t places) -> Seq&& {
     auto const sz = flux::size(seq);
 
     while (places < 0) {
@@ -21,7 +19,6 @@ auto rotate_by = []<flux::random_access_sequence Seq>(Seq&& seq, flux::distance_
 
     return FLUX_FWD(seq);
 };
-
 
 constexpr bool test_apply()
 {

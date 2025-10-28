@@ -51,7 +51,7 @@ struct passthrough_traits_base : default_sequence_traits {
     }
 
     template <typename Self>
-    static constexpr auto inc(Self& self, auto& cur, distance_t dist)
+    static constexpr auto inc(Self& self, auto& cur, int_t dist)
         -> decltype(flux::inc(self.base(), cur, dist))
     {
         return flux::inc(self.base(), cur, dist);
@@ -105,13 +105,13 @@ struct passthrough_traits_base : default_sequence_traits {
 
     template <typename Self>
     static constexpr auto for_each_while(Self& self, auto&& pred)
-        -> decltype(flux::for_each_while(self.base(), FLUX_FWD(pred)))
+        -> decltype(flux::seq_for_each_while(self.base(), FLUX_FWD(pred)))
     {
-        return flux::for_each_while(self.base(), FLUX_FWD(pred));
+        return flux::seq_for_each_while(self.base(), FLUX_FWD(pred));
     }
 };
 
-template <sequence Base>
+template <iterable Base>
 struct ref_adaptor : inline_sequence_base<ref_adaptor<Base>> {
 private:
     Base* base_;
@@ -143,8 +143,16 @@ public:
 
     constexpr Base& base() const noexcept { return *base_; }
 
+    constexpr auto iterate() const { return flux::iterate(*base_); }
+
+    constexpr auto reverse_iterate() const
+        requires reverse_iterable<Base>
+    {
+        return flux::reverse_iterate(*base_);
+    }
+
     struct flux_sequence_traits : passthrough_traits_base {
-        using value_type = value_t<Base>;
+        using value_type = iterable_value_t<Base>;
     };
 };
 
@@ -155,33 +163,34 @@ template <typename T>
 inline constexpr bool is_ref_adaptor<ref_adaptor<T>> = true;
 
 struct mut_ref_fn {
-    template <sequence Seq>
-        requires (!std::is_const_v<Seq>)
+    template <iterable It>
+        requires(!std::is_const_v<It>)
     [[nodiscard]]
-    constexpr auto operator()(Seq& seq) const
+    constexpr auto operator()(It& it) const
     {
-        if constexpr (is_ref_adaptor<Seq>) {
-            return seq;
+        if constexpr (is_ref_adaptor<It>) {
+            return it;
         } else {
-            return ref_adaptor<Seq>(seq);
+            return ref_adaptor<It>(it);
         }
     }
 };
 
 struct ref_fn {
-    template <const_iterable_sequence Seq>
-        requires (!is_ref_adaptor<Seq>)
+    template <iterable It>
+        requires(iterable<It const> && !is_ref_adaptor<It>)
     [[nodiscard]]
-    constexpr auto operator()(Seq const& seq) const
+    constexpr auto operator()(It const& it) const
     {
-        return ref_adaptor<Seq const>(seq);
+        return ref_adaptor<It const>(it);
     }
 
-    template <const_iterable_sequence Seq>
+    template <iterable It>
+        requires iterable<It const>
     [[nodiscard]]
-    constexpr auto operator()(ref_adaptor<Seq> ref) const
+    constexpr auto operator()(ref_adaptor<It> ref) const
     {
-        return ref_adaptor<Seq const>(ref.base());
+        return ref_adaptor<It const>(ref.base());
     }
 
     template <typename T>
@@ -210,32 +219,32 @@ public:
 };
 
 struct from_fn {
-    template <adaptable_sequence Seq>
+    template <adaptable_iterable It>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const
+    constexpr auto operator()(It&& it) const
     {
-        if constexpr (derived_from_inline_sequence_base<Seq>) {
-            return FLUX_FWD(seq);
+        if constexpr (derived_from_inline_sequence_base<It>) {
+            return FLUX_FWD(it);
         } else {
-            return owning_adaptor<std::decay_t<Seq>>(FLUX_FWD(seq));
+            return owning_adaptor<std::decay_t<It>>(FLUX_FWD(it));
         }
     }
 };
 
 struct from_fwd_ref_fn {
-    template <sequence Seq>
-        requires adaptable_sequence<Seq> || std::is_lvalue_reference_v<Seq>
+    template <iterable It>
+        requires adaptable_iterable<It> || std::is_lvalue_reference_v<It>
     [[nodiscard]]
-    constexpr auto operator()(Seq&& seq) const
+    constexpr auto operator()(It&& it) const
     {
-        if constexpr (std::is_lvalue_reference_v<Seq>) {
-            if constexpr (std::is_const_v<std::remove_reference_t<Seq>>) {
-                return ref_fn{}(seq);
+        if constexpr (std::is_lvalue_reference_v<It>) {
+            if constexpr (std::is_const_v<std::remove_reference_t<It>>) {
+                return ref_fn{}(it);
             } else {
-                return mut_ref_fn{}(seq);
+                return mut_ref_fn{}(it);
             }
         } else {
-            return from_fn{}(seq);
+            return from_fn{}(it);
         }
     }
 };

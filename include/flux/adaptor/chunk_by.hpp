@@ -136,8 +136,8 @@ FLUX_EXPORT inline constexpr auto chunk_by = detail::chunk_by_fn{};
 
 template <typename Derived>
 template <typename Pred>
-    requires multipass_sequence<Derived> &&
-             std::predicate<Pred&, element_t<Derived>, element_t<Derived>>
+    requires multipass_sequence<Derived>
+    && std::predicate<Pred&, iterable_element_t<Derived>, iterable_element_t<Derived>>
 constexpr auto inline_sequence_base<Derived>::chunk_by(Pred pred) &&
 {
     return flux::chunk_by(std::move(derived()), std::move(pred));

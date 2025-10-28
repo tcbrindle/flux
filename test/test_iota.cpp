@@ -9,94 +9,163 @@
 
 namespace {
 
-constexpr bool test_iota_basic()
+struct incrementable_only {
+    int i = 0;
+
+    bool operator==(incrementable_only const&) const = default;
+    constexpr auto& operator++()
+    {
+        ++i;
+        return *this;
+    }
+    constexpr auto operator++(int)
+    {
+        auto tmp = *this;
+        ++*this;
+        return tmp;
+    }
+};
+
+struct decrementable {
+    int i = 0;
+
+    bool operator==(decrementable const&) const = default;
+    constexpr auto& operator++()
+    {
+        ++i;
+        return *this;
+    }
+    constexpr auto operator++(int)
+    {
+        auto tmp = *this;
+        ++*this;
+        return tmp;
+    }
+    constexpr auto& operator--()
+    {
+        --i;
+        return *this;
+    }
+    constexpr auto operator--(int)
+    {
+        auto tmp = *this;
+        --*this;
+        return tmp;
+    }
+};
+
+constexpr bool test_iota_unbounded()
 {
-    auto f = flux::ints();
+    {
+        auto f = flux::iota(incrementable_only{0});
 
-    using F = decltype(f);
+        using F = decltype(f);
 
-    static_assert(sizeof(f) == 1);
-    static_assert(flux::sequence<F>);
-    static_assert(flux::bidirectional_sequence<F>);
-    static_assert(flux::random_access_sequence<F>);
-    static_assert(flux::infinite_sequence<F>);
-    static_assert(not flux::bounded_sequence<F>);
-    static_assert(not flux::sized_sequence<F>);
+        static_assert(flux::iterable<F>);
+        static_assert(not flux::sized_iterable<F>);
+        static_assert(not flux::reverse_iterable<F>);
+        static_assert(not flux::multipass_sequence<F>);
+        static_assert(std::same_as<flux::iterable_element_t<F>, incrementable_only>);
 
-    STATIC_CHECK(check_equal(flux::take(f, 5), {0, 1, 2, 3, 4}));
+        using I = incrementable_only;
+        STATIC_CHECK(check_equal(flux::take(f, 5), {I{0}, I{1}, I{2}, I{3}, I{4}}));
+    }
+
+    {
+        auto f = flux::iota(decrementable{0});
+
+        using F = decltype(f);
+
+        static_assert(flux::iterable<F>);
+        static_assert(not flux::sized_iterable<F>);
+        static_assert(not flux::reverse_iterable<F>); // Unbounded
+        static_assert(not flux::multipass_sequence<F>);
+        static_assert(std::same_as<flux::iterable_element_t<F>, decrementable>);
+
+        using D = decrementable;
+        STATIC_CHECK(check_equal(flux::take(f, 5), {D{0}, D{1}, D{2}, D{3}, D{4}}));
+    }
 
     return true;
 }
-static_assert(test_iota_basic());
-
-constexpr bool test_iota_from()
-{
-    auto f = flux::iota(1u);
-
-    using F = decltype(f);
-
-    static_assert(sizeof(f) == sizeof(unsigned));
-    static_assert(flux::sequence<F>);
-    static_assert(flux::bidirectional_sequence<F>);
-    static_assert(flux::random_access_sequence<F>);
-    static_assert(flux::infinite_sequence<F>);
-    static_assert(not flux::bounded_sequence<F>);
-    static_assert(not flux::sized_sequence<F>);
-
-    STATIC_CHECK(check_equal(flux::take(f, 5), {1u, 2u, 3u, 4u, 5u}));
-
-    return true;
-}
-static_assert(test_iota_from());
+static_assert(test_iota_unbounded());
 
 constexpr bool test_iota_bounded()
 {
-    auto f = flux::iota(1u, 6u);
+    {
+        using I = incrementable_only;
+        auto f = flux::iota(I{0}, I{5});
 
-    using F = decltype(f);
+        using F = decltype(f);
 
-    static_assert(flux::sequence<F>);
-    static_assert(flux::bidirectional_sequence<F>);
-    static_assert(flux::random_access_sequence<F>);
-    static_assert(not flux::infinite_sequence<F>);
-    static_assert(flux::bounded_sequence<F>);
-    static_assert(flux::sized_sequence<F>);
+        static_assert(flux::iterable<F>);
+        static_assert(not flux::sized_iterable<F>);
+        static_assert(not flux::reverse_iterable<F>);
+        static_assert(not flux::multipass_sequence<F>);
+        static_assert(std::same_as<flux::iterable_element_t<F>, I>);
 
-    STATIC_CHECK(f.size() == 5);
-    STATIC_CHECK(check_equal(f, {1u, 2u, 3u, 4u, 5u}));
+        STATIC_CHECK(check_equal(f, {I{0}, I{1}, I{2}, I{3}, I{4}}));
+    }
+
+    {
+        using D = decrementable;
+        auto f = flux::iota(D{0}, D{5});
+
+        using F = decltype(f);
+
+        static_assert(flux::iterable<F>);
+        static_assert(not flux::sized_iterable<F>);
+        static_assert(flux::reverse_iterable<F>);
+        static_assert(not flux::multipass_sequence<F>);
+        static_assert(std::same_as<flux::iterable_element_t<F>, D>);
+
+        STATIC_CHECK(check_equal(flux::reverse(f), {D{4}, D{3}, D{2}, D{1}, D{0}}));
+    }
 
     return true;
 }
 static_assert(test_iota_bounded());
 
-constexpr bool test_iota_custom_type()
+constexpr bool test_iota_sequence()
 {
-    using namespace std::chrono_literals;
+    {
+        auto f = flux::ints();
 
-    auto f = flux::iota(1s, 6s);
+        using F = decltype(f);
 
-    using F = decltype(f);
+        static_assert(flux::iterable<F>);
+        static_assert(flux::sized_iterable<F>);
+        static_assert(flux::reverse_iterable<F>);
+        static_assert(flux::random_access_sequence<F>);
+        static_assert(std::same_as<flux::iterable_element_t<F>, flux::int_t>);
 
-    static_assert(flux::sequence<F>);
-    static_assert(flux::bidirectional_sequence<F>);
-    static_assert(not flux::random_access_sequence<F>); // no iter_difference_t
-    static_assert(not flux::infinite_sequence<F>);
-    static_assert(flux::bounded_sequence<F>);
-    static_assert(not flux::sized_sequence<F>); // !
+        STATIC_CHECK(check_equal(flux::take(f, 5), {0, 1, 2, 3, 4}));
+    }
 
-    STATIC_CHECK(f.count() == 5);
-    STATIC_CHECK(check_equal(f, {1s, 2s, 3s, 4s, 5s}));
+    {
+        using namespace std::chrono_literals;
+
+        auto f = flux::iota(0s, 5s);
+
+        using F = decltype(f);
+
+        static_assert(flux::iterable<F>);
+        static_assert(not flux::sized_iterable<F>); // no difference_type
+        static_assert(flux::reverse_iterable<F>);
+        static_assert(not flux::random_access_sequence<F>); // no difference_type
+        static_assert(std::same_as<flux::iterable_element_t<F>, std::chrono::seconds>);
+
+        STATIC_CHECK(check_equal(flux::reverse(f), {4s, 3s, 2s, 1s, 0s}));
+    }
 
     return true;
 }
-static_assert(test_iota_custom_type());
-
+static_assert(test_iota_sequence());
 }
 
 TEST_CASE("iota")
 {
-    REQUIRE(test_iota_basic());
-    REQUIRE(test_iota_from());
+    REQUIRE(test_iota_unbounded());
     REQUIRE(test_iota_bounded());
-    REQUIRE(test_iota_custom_type());
+    REQUIRE(test_iota_sequence());
 }

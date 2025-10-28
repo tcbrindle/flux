@@ -156,15 +156,13 @@ TEST_CASE("reverse")
 
     {
         auto list = std::list{0, 1, 2, 3, 4};
-        auto rlist = flux::reverse(flux::from_range(list));
+        auto rlist = flux::reverse(std::move(list));
 
         using R = decltype(rlist);
 
-        static_assert(flux::regular_cursor<flux::cursor_t<R>>);
-        static_assert(flux::bidirectional_sequence<R>);
-        static_assert(not flux::random_access_sequence<R>);
-        static_assert(flux::sized_sequence<R>);
-        static_assert(flux::bounded_sequence<R>);
+        static_assert(flux::iterable<R>);
+        static_assert(flux::reverse_iterable<R>);
+        static_assert(flux::sized_iterable<R>);
 
         REQUIRE(check_equal(rlist, {4, 3, 2, 1, 0}));
     }

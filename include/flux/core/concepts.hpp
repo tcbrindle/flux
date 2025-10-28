@@ -91,7 +91,7 @@ template <typename Seq>
 using value_t = typename detail::value_type<Seq>::type;
 
 FLUX_EXPORT
-using distance_t = flux::config::int_type;
+using int_t = flux::config::int_type;
 
 FLUX_EXPORT
 using index_t = flux::config::int_type;
@@ -198,11 +198,11 @@ namespace detail {
 template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
 concept random_access_sequence_requirements =
     ordered_cursor<cursor_t<Seq>> &&
-    requires (Seq& seq, cursor_t<Seq>& cur, distance_t offset) {
+    requires (Seq& seq, cursor_t<Seq>& cur, int_t offset) {
         { Traits::inc(seq, cur, offset) };
     } &&
     requires (Seq& seq, cursor_t<Seq> const& cur) {
-        { Traits::distance(seq, cur, cur) } -> std::convertible_to<distance_t>;
+        { Traits::distance(seq, cur, cur) } -> std::convertible_to<int_t>;
     };
 
 } // namespace detail
@@ -251,7 +251,7 @@ namespace detail {
 template <typename Seq, typename Traits = sequence_traits<std::remove_cvref_t<Seq>>>
 concept sized_sequence_requirements =
     requires (Seq& seq) {
-        { Traits::size(seq) } -> std::convertible_to<distance_t>;
+        { Traits::size(seq) } -> std::convertible_to<int_t>;
     };
 
 } // namespace detail
@@ -324,26 +324,25 @@ template <typename T, typename E>
 constexpr bool is_ilist<T, std::initializer_list<E>> = true;
 
 template <typename Seq>
-concept rvalue_sequence =
+concept movable_rvalue =
     std::is_object_v<Seq> &&
-    std::move_constructible<Seq> &&
-    sequence<Seq>;
+    std::same_as<std::decay_t<Seq>, Seq> &&
+    std::move_constructible<Seq>;
 
 template <typename Seq>
-concept trivially_copyable_sequence =
-    std::copyable<Seq> &&
-    std::is_trivially_copyable_v<Seq> &&
-    sequence<Seq>;
+concept trivially_copyable_lvalue =
+    std::is_lvalue_reference_v<Seq> &&
+    std::copyable<std::decay_t<Seq>> &&
+    std::is_trivially_copyable_v<std::decay_t<Seq>>;
 
 }
 
 FLUX_EXPORT
 template <typename Seq>
 concept adaptable_sequence =
-    (detail::rvalue_sequence<Seq>
-         || (std::is_lvalue_reference_v<Seq> &&
-             detail::trivially_copyable_sequence<std::decay_t<Seq>>)) &&
-    !detail::is_ilist<Seq>;
+    sequence<std::decay_t<Seq>> &&
+    (detail::movable_rvalue<Seq> || detail::trivially_copyable_lvalue<Seq>) &&
+    !(detail::is_ilist<Seq>);
 
 FLUX_EXPORT
 template <typename D>
@@ -403,7 +402,7 @@ struct default_sequence_traits {
     template <typename Self>
         requires detail::random_access_sequence_requirements<Self> &&
                  detail::bounded_sequence_requirements<Self>
-    static constexpr auto size(Self& self) -> distance_t
+    static constexpr auto size(Self& self) -> int_t
     {
         using Traits = detail::traits_t<Self>;
         return Traits::distance(self, Traits::first(self), Traits::last(self));

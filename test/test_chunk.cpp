@@ -52,6 +52,50 @@ struct NotBidir : flux::inline_sequence_base<NotBidir<Base>> {
 
 constexpr bool test_chunk_single_pass()
 {
+    // Iterable chunk
+    {
+        auto iter = iterable_only(std::array{1, 2, 3, 4, 5});
+
+        auto chunked = flux::chunk(iter, 2);
+
+        using C = decltype(chunked);
+        static_assert(flux::iterable<C>);
+        static_assert(flux::sized_iterable<C>);
+
+        using Inner = flux::iterable_element_t<C>;
+        static_assert(flux::iterable<Inner>);
+
+        STATIC_CHECK(flux::iterable_size(chunked) == 3);
+
+        auto ctx = flux::iterate(chunked);
+        STATIC_CHECK(check_equal(flux::next_element(ctx).value(), {1, 2}));
+        STATIC_CHECK(check_equal(flux::next_element(ctx).value(), {3, 4}));
+        STATIC_CHECK(check_equal(flux::next_element(ctx).value(), {5}));
+        STATIC_CHECK(flux::next_element(ctx).has_value() == false);
+    }
+
+    // Const iterable chunk
+    {
+        auto iter = iterable_only(std::array{1, 2, 3, 4, 5});
+
+        auto const chunked = flux::chunk(iter, 2);
+
+        using C = decltype(chunked);
+        static_assert(flux::iterable<C>);
+        static_assert(flux::sized_iterable<C>);
+
+        using Inner = flux::iterable_element_t<C>;
+        static_assert(flux::iterable<Inner>);
+
+        STATIC_CHECK(flux::iterable_size(chunked) == 3);
+
+        auto ctx = flux::iterate(chunked);
+        STATIC_CHECK(check_equal(flux::next_element(ctx).value(), {1, 2}));
+        STATIC_CHECK(check_equal(flux::next_element(ctx).value(), {3, 4}));
+        STATIC_CHECK(check_equal(flux::next_element(ctx).value(), {5}));
+        STATIC_CHECK(flux::next_element(ctx).has_value() == false);
+    }
+
     // Basic single-pass chunk
     {
         std::array arr{1, 2, 3, 4, 5};
@@ -243,7 +287,7 @@ constexpr bool test_chunk_multipass()
     {
         std::array arr{1, 2, 3, 4, 5};
 
-        constexpr auto max = std::numeric_limits<flux::distance_t>::max();
+        constexpr auto max = std::numeric_limits<flux::int_t>::max();
 
         auto seq = NotBidir(arr).chunk(max);
 
@@ -372,7 +416,7 @@ constexpr bool test_chunk_bidir()
     {
         std::array arr{1, 2, 3, 4, 5};
 
-        constexpr auto max = std::numeric_limits<flux::distance_t>::max();
+        constexpr auto max = std::numeric_limits<flux::int_t>::max();
 
         auto seq = flux::chunk(arr,max);
 
@@ -484,21 +528,5 @@ TEST_CASE("chunk")
                 .write_to(out);
 
         REQUIRE(out.str() == "[[1, 2], [3, 4], [5]]");
-    }
-
-    SUBCASE("...with bidir only sequence")
-    {
-        std::list<int> list{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-
-        auto seq = flux::from_range(list).chunk(3).reverse();
-
-        auto cur = seq.first();
-        REQUIRE(check_equal(seq[cur], {10}));
-        REQUIRE(check_equal(seq[seq.inc(cur)], {7, 8, 9}));
-        REQUIRE(check_equal(seq[seq.inc(cur)], {4, 5, 6}));
-        REQUIRE(check_equal(seq[seq.inc(cur)], {1, 2, 3}));
-
-        REQUIRE(seq.is_last(seq.inc(cur)));
-        REQUIRE(cur == seq.last());
     }
 }

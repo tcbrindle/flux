@@ -9,7 +9,7 @@
 #include <flux/core.hpp>
 #include <flux/algorithm/find.hpp>
 #include <flux/algorithm/search.hpp>
-#include <flux/sequence/single.hpp>
+#include <flux/factory/single.hpp>
 
 namespace flux {
 
@@ -207,9 +207,8 @@ FLUX_EXPORT inline constexpr auto split = detail::split_fn{};
 
 template <typename Derived>
 template <typename Pattern>
-    requires multipass_sequence<Derived> &&
-             multipass_sequence<Pattern> &&
-             std::equality_comparable_with<element_t<Derived>, element_t<Pattern>>
+    requires multipass_sequence<Derived> && multipass_sequence<Pattern>
+    && std::equality_comparable_with<iterable_element_t<Derived>, iterable_element_t<Pattern>>
 constexpr auto inline_sequence_base<Derived>::split(Pattern&& pattern) &&
 {
     return flux::split(std::move(derived()), FLUX_FWD(pattern));
@@ -217,8 +216,8 @@ constexpr auto inline_sequence_base<Derived>::split(Pattern&& pattern) &&
 
 template <typename Derived>
 template <typename Delim>
-    requires multipass_sequence<Derived> &&
-             std::equality_comparable_with<element_t<Derived>, Delim const&>
+    requires multipass_sequence<Derived>
+    && std::equality_comparable_with<iterable_element_t<Derived>, Delim const&>
 constexpr auto inline_sequence_base<Derived>::split(Delim&& delim) &&
 {
     return flux::split(std::move(derived()), FLUX_FWD(delim));
@@ -226,8 +225,7 @@ constexpr auto inline_sequence_base<Derived>::split(Delim&& delim) &&
 
 template <typename Derived>
 template <typename Pred>
-    requires multipass_sequence<Derived> &&
-             std::predicate<Pred const&, element_t<Derived>>
+    requires multipass_sequence<Derived> && std::predicate<Pred const&, iterable_element_t<Derived>>
 constexpr auto inline_sequence_base<Derived>::split(Pred pred) &&
 {
     return flux::split(std::move(derived()), std::move(pred));

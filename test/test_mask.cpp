@@ -5,6 +5,7 @@
 
 #include <array>
 #include <iostream>
+#include <utility>
 
 #include "test_utils.hpp"
 
@@ -12,6 +13,24 @@ namespace {
 
 constexpr bool test_mask()
 {
+    // Mask with non-sequence iterables
+    {
+        auto iter = iterable_only(std::array{1, 2, 3, 4, 5});
+        auto mask = iterable_only(std::array{true, false, true, false, true});
+
+        auto masked = flux::mask(iter, mask);
+
+        using S = decltype(masked);
+        static_assert(flux::iterable<S>);
+        static_assert(std::same_as<flux::iterable_element_t<S>, int&>);
+
+        static_assert(flux::iterable<S const>);
+        static_assert(std::same_as<flux::iterable_element_t<S const>, int const&>);
+
+        STATIC_CHECK(check_equal(masked, {1, 3, 5}));
+        STATIC_CHECK(check_equal(std::as_const(masked), {1, 3, 5}));
+    }
+
     // Basic mask
     {
         std::array values{1, 2, 3, 4, 5};
@@ -119,7 +138,6 @@ constexpr bool test_mask()
         using S = decltype(masked);
         static_assert(flux::multipass_sequence<S>);
         static_assert(flux::bidirectional_sequence<S>);
-        static_assert(not flux::bounded_sequence<S>);
         static_assert(not flux::infinite_sequence<S>);
 
         STATIC_CHECK(check_equal(masked, {0, 2}));
@@ -133,7 +151,6 @@ constexpr bool test_mask()
         static_assert(flux::multipass_sequence<S>);
         static_assert(flux::bidirectional_sequence<S>);
         static_assert(not flux::bounded_sequence<S>);
-        static_assert(flux::infinite_sequence<S>);
 
         flux::cursor auto cur = flux::first(masked);
         STATIC_CHECK(masked[cur] == 1);
@@ -152,7 +169,7 @@ constexpr bool test_mask()
 
     // mask with empty values sequence is empty
     {
-        auto masked = flux::mask(flux::empty<double>, flux::repeat(true));
+        auto masked = flux::mask(flux::empty<double>, flux::repeat(true, 10));
 
         STATIC_CHECK(masked.is_empty());
     }
@@ -161,7 +178,7 @@ constexpr bool test_mask()
     {
         std::array values{1, 2, 3, 4, 5};
 
-        auto masked = flux::ref(values).mask(flux::repeat(true));
+        auto masked = flux::ref(values).mask(flux::repeat(true, 10));
 
         STATIC_CHECK(check_equal(values, masked));
     }
@@ -170,7 +187,7 @@ constexpr bool test_mask()
     {
         std::array values{1, 2, 3, 4, 5};
 
-        auto masked = flux::ref(values).mask(flux::repeat(false));
+        auto masked = flux::ref(values).mask(flux::repeat(false, 10));
 
         STATIC_CHECK(masked.is_empty());
     }

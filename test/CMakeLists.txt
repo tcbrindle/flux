@@ -19,6 +19,7 @@ add_executable(test-flux
     num/test_checked_ops.cpp
     num/test_default_ops.cpp
 
+    test_iterable_concepts.cpp
     test_concepts.cpp
     test_optional.cpp
     test_predicates.cpp
@@ -51,6 +52,7 @@ add_executable(test-flux
     test_filter.cpp
     test_filter_map.cpp
     test_find.cpp
+    test_find_element.cpp
     test_find_if.cpp
     test_find_if_not.cpp
     test_find_min_max.cpp
@@ -83,10 +85,8 @@ add_executable(test-flux
     test_zip_map.cpp
     test_zip_algorithms.cpp
 
-    test_array_ptr.cpp
     test_bitset.cpp
     test_empty.cpp
-    test_from_range.cpp
     test_getlines.cpp
     test_iota.cpp
     test_istream.cpp

@@ -6,34 +6,29 @@
 #ifndef FLUX_ALGORITHM_FOR_EACH_HPP_INCLUDED
 #define FLUX_ALGORITHM_FOR_EACH_HPP_INCLUDED
 
-#include <flux/core.hpp>
+#include <flux/algorithm/for_each_while.hpp>
 
 namespace flux {
 
-namespace detail {
-
-struct for_each_fn {
-
-    template <sequence Seq, typename Func>
-        requires (std::invocable<Func&, element_t<Seq>> &&
-                  !infinite_sequence<Seq>)
-    constexpr auto operator()(Seq&& seq, Func func) const -> Func
+FLUX_EXPORT
+struct for_each_t {
+    template <iterable It, typename Func>
+        requires std::invocable<Func&, iterable_element_t<It>>
+    constexpr auto operator()(It&& it, Func func) const -> Func
     {
-        (void) flux::for_each_while(FLUX_FWD(seq), [&](auto&& elem) {
-            std::invoke(func, FLUX_FWD(elem));
-            return true;
+        for_each_while(it, [&](auto&& elem) {
+            static_cast<void>(std::invoke(func, FLUX_FWD(elem)));
+            return loop_continue;
         });
         return func;
     }
 };
 
-} // namespace detail
-
-FLUX_EXPORT inline constexpr auto for_each = detail::for_each_fn{};
+FLUX_EXPORT inline constexpr for_each_t for_each {};
 
 template <typename D>
 template <typename Func>
-    requires std::invocable<Func&, element_t<D>>
+    requires std::invocable<Func&, iterable_element_t<D>>
 constexpr auto inline_sequence_base<D>::for_each(Func func) -> Func
 {
     return flux::for_each(derived(), std::move(func));

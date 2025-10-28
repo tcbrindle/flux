@@ -9,6 +9,6 @@
 #include <flux/adaptor.hpp>
 #include <flux/algorithm.hpp>
 #include <flux/core.hpp>
-#include <flux/sequence.hpp>
+#include <flux/factory.hpp>
 
 #endif

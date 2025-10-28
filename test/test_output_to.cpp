@@ -73,11 +73,11 @@ TEST_CASE("output to")
         std::istringstream iss(" hello world!! ");
         std::ostringstream oss;
 
-        flux::from_istreambuf(iss).output_to(std::ostreambuf_iterator(oss));
+        flux::output_to(*iss.rdbuf(), std::ostreambuf_iterator(oss));
 
         REQUIRE(oss.str() == " hello world!! ");
     }
-    
+
     SUBCASE("...with empty input sequences")
     {
         std::vector<int> const in;
