@@ -6,6 +6,9 @@ on:
       - main
   pull_request:
 
+env:
+  CXXFLAGS: /utf-8 /Zc:__cplusplus /Zc:throwingNew /Zc:inline /Zc:externConstexpr /Zc:templateScope /Zc:checkGwOdr /Zc:enumTypes /W4
+
 jobs:
   build:
     runs-on: windows-2025

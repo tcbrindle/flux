@@ -6,6 +6,9 @@ on:
       - main
   pull_request:
 
+env:
+  CXXFLAGS: -Wall -Wextra -Wconversion -Wsign-conversion -pedantic -fno-omit-frame-pointer
+
 jobs:
   build:
     runs-on: ubuntu-latest
