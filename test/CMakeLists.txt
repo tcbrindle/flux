@@ -96,7 +96,7 @@ add_executable(test-flux
     test_unfold.cpp
 )
 
-target_link_libraries(test-flux flux-internal doctest::doctest_with_main)
+target_link_libraries(test-flux flux::flux doctest::doctest_with_main)
 target_compile_definitions(test-flux PUBLIC
     FLUX_UNWIND_ON_ERROR
     FLUX_ERROR_ON_OVERFLOW
