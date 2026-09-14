@@ -14,31 +14,17 @@ jobs:
     runs-on: macos-26
     strategy:
       matrix:
-        compiler: [AppleClang, LLVM-Clang-16, LLVM-Clang-17, LLVM-Clang-18, LLVM-Clang-19, LLVM-Clang-20, LLVM-Clang-21, LLVM-Clang-22, LLVM-Clang-23]
+        compiler: [AppleClang, LLVM-Clang-19, LLVM-Clang-20, LLVM-Clang-21, LLVM-Clang-22, LLVM-Clang-23]
         test_with: [Headers, Module]
         build_type: [Debug, Release]
 
         exclude:
           - compiler: AppleClang
             test_with: Module
-          - compiler: LLVM-Clang-16
-            test_with: Module
 
         include:
           - compiler: AppleClang
             cxx: clang++
-          - compiler: LLVM-Clang-16
-            cxx: $(brew --prefix llvm@16)/bin/clang++
-            install: |
-              brew install llvm@16
-          - compiler: LLVM-Clang-17
-            cxx: $(brew --prefix llvm@17)/bin/clang++
-            install: |
-              brew install llvm@17
-          - compiler: LLVM-Clang-18
-            cxx: $(brew --prefix llvm@18)/bin/clang++
-            install: |
-              brew install llvm@18
           - compiler: LLVM-Clang-19
             cxx: $(brew --prefix llvm@19)/bin/clang++
             install: |
