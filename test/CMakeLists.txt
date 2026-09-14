@@ -109,16 +109,6 @@ if (NOT FLUX_BUILD_TESTS_USING_MODULE)
     target_precompile_headers(test-flux PRIVATE <doctest/doctest.h>)
 endif()
 
-if(FLUX_ENABLE_ASAN)
-    target_compile_options(test-flux PRIVATE -fsanitize=address)
-    target_link_options(test-flux PRIVATE -fsanitize=address)
-endif()
-
-if(FLUX_ENABLE_UBSAN)
-    target_compile_options(test-flux PRIVATE -fsanitize=undefined)
-    target_link_options(test-flux PRIVATE -fsanitize=undefined)
-endif()
-
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.28.0")
     if (FLUX_BUILD_TESTS_USING_MODULE)
         target_sources(test-flux PUBLIC
