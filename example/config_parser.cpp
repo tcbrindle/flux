@@ -12,7 +12,7 @@
 #include <string>
 #include <string_view>
 #include <variant>
-
+#include <vector>
 
 struct comment_t
 {
@@ -67,9 +67,11 @@ token_t parse_line(const std::string& line)
 
 context_t add_to_config(context_t ctx, token_t tok)
 {
-    std::visit(overloaded{[&ctx](const section_t& s) { ctx.curr_section = s.name; },
-                          [&ctx](const option_t& o) { ctx.config[ctx.curr_section + "." + o.key] = o.value; },
-                          [](auto) { /* skip other tokens */}}, 
+    std::visit(overloaded {[&ctx](const section_t& s) { ctx.curr_section = s.name; },
+                           [&ctx](const option_t& o) {
+                               ctx.config[ctx.curr_section + "." + o.key] = o.value;
+                           },
+                           [](auto) { /* skip other tokens */ }},
                tok);
     return ctx;
 }

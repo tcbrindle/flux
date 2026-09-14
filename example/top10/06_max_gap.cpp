@@ -14,6 +14,8 @@
 
 #include <flux.hpp>
 
+#include <vector>
+
 namespace {
 
 // std::abs is not constexpr in C++20

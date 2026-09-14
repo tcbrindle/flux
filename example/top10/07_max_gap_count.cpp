@@ -11,6 +11,8 @@
 
 #include <flux.hpp>
 
+#include <vector>
+
 // std::abs is not constexpr in C++20
 auto const c_abs = [](std::signed_integral auto i) { return i < 0 ? -i : i; };
 
