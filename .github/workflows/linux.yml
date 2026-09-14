@@ -28,6 +28,8 @@ jobs:
             test_with: Module
           - compiler: Clang-17
             test_with: Module
+          - compiler: Clang-18
+            test_with: Module
 
         include:
           - compiler: GCC-12

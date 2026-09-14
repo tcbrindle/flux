@@ -105,8 +105,10 @@ target_compile_definitions(test-flux PUBLIC
     DOCTEST_CONFIG_VOID_CAST_EXPRESSIONS
 )
 
-if (NOT FLUX_BUILD_TESTS_USING_MODULE)
+if (FLUX_BUILD_TESTS_USING_MODULE)
     target_precompile_headers(test-flux PRIVATE <doctest/doctest.h>)
+else()
+    target_precompile_headers(test-flux PRIVATE <doctest/doctest.h> <flux.hpp>)
 endif()
 
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.28.0")
