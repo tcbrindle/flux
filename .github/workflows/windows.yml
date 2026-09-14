@@ -27,9 +27,7 @@ jobs:
         cmake -B build -G Ninja \
               -DCMAKE_BUILD_TYPE=${{matrix.build_type}} \
               -DCMAKE_CXX_EXTENSIONS=Off \
-              -DFLUX_BUILD_BENCHMARKS=${{matrix.build_type == 'Release'}} \
-              -DFLUX_BUILD_MODULE=On \
-              -DFLUX_BUILD_TESTS_USING_MODULE=On
+              -DFLUX_BUILD_BENCHMARKS=${{matrix.build_type == 'Release'}}
 
     - name: Build
       run: cmake --build build --config ${{matrix.build_type}}
