@@ -19,23 +19,21 @@ jobs:
         with:
           token: ${{ secrets.PAT }}
 
-      - name: Set up Homebrew
-        uses: Homebrew/actions/setup-homebrew@master
+     # - name: Set up Homebrew
+     #   uses: Homebrew/actions/setup-homebrew@1f8e202ffddf94def7f42f6fa3a482e821489f9c
 
       - name: Build
         run: |
-          brew install gcc@15 binutils
-          brew link --force binutils
           cmake -B build -DCMAKE_CXX_COMPILER=g++-14 -DFLUX_BUILD_TOOLS=On
           cmake --build build --target make_single_header
 
       - name: Run
         working-directory: ${{github.workspace}}/build
         run: |
-          ./tools/make_single_header ${GITHUB_WORKSPACE}/include/flux.hpp ${GITHUB_WORKSPACE}/single_include/flux.hpp
+          ./tools/make_single_header ${{github.workspace}}/include/flux.hpp ${{github.workspace}}/single_include/flux.hpp
 
       - name: Upload
-        uses: stefanzweifel/git-auto-commit-action@v6
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: Update single header
           file_pattern: 'single_include/*'
