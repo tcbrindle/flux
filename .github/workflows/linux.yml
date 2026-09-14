@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compiler: [GCC-12, GCC-13, GCC-14, GCC-15, Clang-17, Clang-18, Clang-19, Clang-20, Clang-21]
+        compiler: [GCC-12, GCC-13, GCC-14, GCC-15, GCC-16, Clang-17, Clang-18, Clang-19, Clang-20, Clang-21, Clang-22, Clang-23]
         test_with: [Headers, Module]
         build_type: [Debug, Release]
 
@@ -44,6 +44,10 @@ jobs:
             cxx: g++-15
             install: |
               brew install gcc@15 ninja binutils
+          - compiler: GCC-16
+            cxx: g++-16
+            install: |
+              brew install gcc@16 ninja binutils
           - compiler: Clang-17
             cxx: $(brew --prefix llvm@17)/bin/clang++
             install: |
@@ -64,6 +68,14 @@ jobs:
             cxx: $(brew --prefix llvm@21)/bin/clang++
             install: |
               brew install llvm@21 ninja binutils
+          - compiler: Clang-22
+            cxx: $(brew --prefix llvm@22)/bin/clang++
+            install: |
+              brew install llvm@22 ninja binutils
+          - compiler: Clang-23
+            cxx: $(brew --prefix llvm@23)/bin/clang++
+            install: |
+              brew install llvm@23 ninja binutils
 
     steps:
     - uses: actions/checkout@master
