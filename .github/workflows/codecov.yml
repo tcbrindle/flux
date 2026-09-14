@@ -21,10 +21,9 @@ jobs:
 
     - name: Build
       run: |
-        brew install gcc@15 lcov ninja binutils
-        brew link --force binutils
+        brew install gcc@16 lcov ninja binutils
         cmake -B build -GNinja \
-          -DCMAKE_CXX_COMPILER=g++-15 \
+          -DCMAKE_CXX_COMPILER=g++-16 \
           -DCMAKE_CXX_FLAGS="--coverage" \
           -DCMAKE_EXE_LINKER_FLAGS="--coverage" \
           -DFLUX_BUILD_EXAMPLES=Off
@@ -37,7 +36,7 @@ jobs:
     - name: Generate coverage report
       working-directory: ${{github.workspace}}/build/test/CMakeFiles/test-flux.dir
       run: |
-        lcov --directory . --capture --gcov gcov-15 --output-file coverage.info
+        lcov --directory . --capture --gcov gcov-16 --output-file coverage.info
         lcov --remove coverage.info '*/test/*' --output-file coverage.info
 
     - name: Upload coverage report
