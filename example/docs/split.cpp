@@ -5,6 +5,7 @@
 
 #include "assert.hpp"
 #include <array>
+#include <cctype>
 #include <functional>
 #include <string_view>
 #include <vector>

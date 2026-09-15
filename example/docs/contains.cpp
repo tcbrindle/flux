@@ -4,6 +4,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include "assert.hpp"
+#include <string>
 #include <vector>
 
 #include "../import_or_include_flux.hpp"
