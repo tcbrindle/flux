@@ -264,7 +264,7 @@ struct stride_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto stride = detail::stride_fn{};
+inline constexpr auto stride = detail::stride_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::stride(num::integral auto by) &&

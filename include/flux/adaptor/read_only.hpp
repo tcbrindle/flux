@@ -74,7 +74,7 @@ struct read_only_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto read_only = detail::read_only_fn{};
+inline constexpr auto read_only = detail::read_only_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::read_only() &&

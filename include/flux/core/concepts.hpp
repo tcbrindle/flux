@@ -32,15 +32,15 @@ namespace flux {
 /*
  * Cursor concepts
  */
-FLUX_EXPORT
+
 template <typename Cur>
 concept cursor = std::movable<Cur>;
 
-FLUX_EXPORT
+
 template <typename Cur>
 concept regular_cursor = cursor<Cur> && std::regular<Cur>;
 
-FLUX_EXPORT
+
 template <typename Cur>
 concept ordered_cursor =
     regular_cursor<Cur> &&
@@ -50,11 +50,11 @@ concept ordered_cursor =
  * Sequence concepts and associated types
  */
 
-FLUX_EXPORT
+
 template <typename T>
 struct sequence_traits;
 
-FLUX_EXPORT
+
 struct default_sequence_traits;
 
 namespace detail {
@@ -64,11 +64,11 @@ using traits_t = sequence_traits<std::remove_cvref_t<T>>;
 
 } // namespace detail
 
-FLUX_EXPORT
+
 template <typename Seq>
 using cursor_t = decltype(detail::traits_t<Seq>::first(FLUX_DECLVAL(Seq&)));
 
-FLUX_EXPORT
+
 template <typename Seq>
 using element_t = decltype(detail::traits_t<Seq>::read_at(FLUX_DECLVAL(Seq&), FLUX_DECLVAL(cursor_t<Seq> const&)));
 
@@ -86,25 +86,25 @@ struct value_type<T> { using type = typename traits_t<T>::value_type; };
 
 } // namespace detail
 
-FLUX_EXPORT
+
 template <typename Seq>
 using value_t = typename detail::value_type<Seq>::type;
 
-FLUX_EXPORT
+
 using distance_t = flux::config::int_type;
 
-FLUX_EXPORT
+
 using index_t = flux::config::int_type;
 
-FLUX_EXPORT
+
 template <typename Seq>
 using rvalue_element_t = decltype(detail::traits_t<Seq>::move_at(FLUX_DECLVAL(Seq&), FLUX_DECLVAL(cursor_t<Seq> const&)));
 
-FLUX_EXPORT
+
 template <typename Seq>
 using common_element_t = std::common_reference_t<element_t<Seq>, value_t<Seq>&>;
 
-FLUX_EXPORT
+
 template <typename Seq>
 using const_element_t = std::common_reference_t<value_t<Seq> const&&, element_t<Seq>>;
 
@@ -157,7 +157,7 @@ concept sequence_concept =
 
 } // namespace detail
 
-FLUX_EXPORT
+
 template <typename Seq>
 concept sequence = detail::sequence_concept<Seq>;
 
@@ -173,7 +173,7 @@ inline constexpr bool disable_multipass<T> = T::disable_multipass;
 
 } // namespace detail
 
-FLUX_EXPORT
+
 template <typename Seq>
 concept multipass_sequence =
     sequence<Seq> && regular_cursor<cursor_t<Seq>> &&
@@ -189,7 +189,7 @@ concept bidirectional_sequence_requirements =
 
 } // namespace detail
 
-FLUX_EXPORT
+
 template <typename Seq>
 concept bidirectional_sequence = multipass_sequence<Seq> && detail::bidirectional_sequence_requirements<Seq>;
 
@@ -207,7 +207,7 @@ concept random_access_sequence_requirements =
 
 } // namespace detail
 
-FLUX_EXPORT
+
 template <typename Seq>
 concept random_access_sequence =
     bidirectional_sequence<Seq> &&
@@ -223,7 +223,7 @@ concept bounded_sequence_requirements =
 
 } // namespace detail
 
-FLUX_EXPORT
+
 template <typename Seq>
 concept bounded_sequence = sequence<Seq> && detail::bounded_sequence_requirements<Seq>;
 
@@ -239,7 +239,7 @@ concept contiguous_sequence_requirements =
 
 } // namespace detail
 
-FLUX_EXPORT
+
 template <typename Seq>
 concept contiguous_sequence =
     random_access_sequence<Seq> &&
@@ -256,11 +256,11 @@ concept sized_sequence_requirements =
 
 } // namespace detail
 
-FLUX_EXPORT
+
 template <typename Seq>
 concept sized_sequence = sequence<Seq> && detail::sized_sequence_requirements<Seq>;
 
-FLUX_EXPORT
+
 template <typename Seq, typename T>
 concept writable_sequence_of =
     sequence<Seq> &&
@@ -280,19 +280,19 @@ inline constexpr bool is_infinite_seq<T> = T::is_infinite;
 
 }
 
-FLUX_EXPORT
+
 template <typename Seq>
 concept infinite_sequence =
     sequence<Seq> &&
     detail::is_infinite_seq<detail::traits_t<Seq>>;
 
-FLUX_EXPORT
+
 template <typename Seq>
 concept read_only_sequence =
     sequence<Seq> &&
     std::same_as<element_t<Seq>, const_element_t<Seq>>;
 
-FLUX_EXPORT
+
 template <typename Seq>
 concept const_iterable_sequence =
     // Seq and Seq const must both be sequences
@@ -337,7 +337,7 @@ concept trivially_copyable_sequence =
 
 }
 
-FLUX_EXPORT
+
 template <typename Seq>
 concept adaptable_sequence =
     (detail::rvalue_sequence<Seq>
@@ -345,7 +345,7 @@ concept adaptable_sequence =
              detail::trivially_copyable_sequence<std::decay_t<Seq>>)) &&
     !detail::is_ilist<Seq>;
 
-FLUX_EXPORT
+
 template <typename D>
 struct inline_sequence_base;
 

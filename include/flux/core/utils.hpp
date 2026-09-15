@@ -17,11 +17,11 @@ namespace flux {
 /*
  * Useful helpers
  */
-FLUX_EXPORT
+
 template <typename From, typename To>
 concept decays_to = std::same_as<std::remove_cvref_t<From>, To>;
 
-FLUX_EXPORT
+
 template <typename T, typename U>
 concept same_decayed = std::same_as<std::remove_cvref_t<T>,
                                     std::remove_cvref_t<U>>;
@@ -41,7 +41,7 @@ struct copy_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto copy = detail::copy_fn{};
+inline constexpr auto copy = detail::copy_fn{};
 
 namespace detail {
 
@@ -58,7 +58,7 @@ concept ordering_invocable_ =
 
 } // namespace detail
 
-FLUX_EXPORT
+
 template <typename Fn, typename T, typename U, typename Cat = std::partial_ordering>
 concept ordering_invocable =
     detail::ordering_invocable_<Fn, T, U, Cat> &&

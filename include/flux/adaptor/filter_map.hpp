@@ -35,7 +35,7 @@ struct filter_map_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto filter_map = detail::filter_map_fn{};
+inline constexpr auto filter_map = detail::filter_map_fn{};
 
 template <typename D>
 template <typename Func>
@@ -60,7 +60,7 @@ struct filter_deref_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto filter_deref = detail::filter_deref_fn{};
+inline constexpr auto filter_deref = detail::filter_deref_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::filter_deref() && requires detail::optional_like<value_t<D>>

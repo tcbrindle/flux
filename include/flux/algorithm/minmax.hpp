@@ -12,7 +12,7 @@
 
 namespace flux {
 
-FLUX_EXPORT
+
 template <typename T>
 struct minmax_result {
     T min;
@@ -86,9 +86,9 @@ struct minmax_op {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto min = detail::min_op{};
-FLUX_EXPORT inline constexpr auto max = detail::max_op{};
-FLUX_EXPORT inline constexpr auto minmax = detail::minmax_op{};
+inline constexpr auto min = detail::min_op{};
+inline constexpr auto max = detail::max_op{};
+inline constexpr auto minmax = detail::minmax_op{};
 
 template <typename Derived>
 template <typename Cmp>

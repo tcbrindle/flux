@@ -92,7 +92,7 @@ struct cursors_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto cursors = detail::cursors_fn{};
+inline constexpr auto cursors = detail::cursors_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::cursors() &&

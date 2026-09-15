@@ -161,7 +161,7 @@ struct reverse_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto reverse = detail::reverse_fn{};
+inline constexpr auto reverse = detail::reverse_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::reverse() &&

@@ -242,7 +242,7 @@ struct flatten_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto flatten = detail::flatten_fn{};
+inline constexpr auto flatten = detail::flatten_fn{};
 
 template <typename Derived>
 constexpr auto inline_sequence_base<Derived>::flatten() &&

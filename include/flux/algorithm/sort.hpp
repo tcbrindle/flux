@@ -24,7 +24,7 @@ struct sort_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto sort = detail::sort_fn{};
+inline constexpr auto sort = detail::sort_fn{};
 
 template <typename D>
 template <typename Cmp>

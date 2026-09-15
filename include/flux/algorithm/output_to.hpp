@@ -59,7 +59,7 @@ public:
 
 }
 
-FLUX_EXPORT inline constexpr auto output_to = detail::output_to_fn{};
+inline constexpr auto output_to = detail::output_to_fn{};
 
 template <typename D>
 template <typename Iter>

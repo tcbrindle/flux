@@ -56,7 +56,7 @@ struct empty_sequence : inline_sequence_base<empty_sequence<T>> {
 
 } // namespace detail
 
-FLUX_EXPORT
+
 template <typename T>
 inline constexpr auto empty = detail::empty_sequence<T>{};
 

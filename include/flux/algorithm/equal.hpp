@@ -94,7 +94,7 @@ public:
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto equal = detail::equal_fn{};
+inline constexpr auto equal = detail::equal_fn{};
 
 } // namespace flux
 

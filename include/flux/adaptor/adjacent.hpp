@@ -228,19 +228,19 @@ struct adjacent_map_fn {
 
 } // namespace detail
 
-FLUX_EXPORT
+
 template <distance_t N>
     requires (N > 0)
 inline constexpr auto adjacent = detail::adjacent_fn<N>{};
 
-FLUX_EXPORT inline constexpr auto pairwise = adjacent<2>;
+inline constexpr auto pairwise = adjacent<2>;
 
-FLUX_EXPORT
+
 template <distance_t N>
     requires (N > 0)
 inline constexpr auto adjacent_map = detail::adjacent_map_fn<N>{};
 
-FLUX_EXPORT inline constexpr auto pairwise_map = adjacent_map<2>;
+inline constexpr auto pairwise_map = adjacent_map<2>;
 
 template <typename D>
 template <distance_t N>

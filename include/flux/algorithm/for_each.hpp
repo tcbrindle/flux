@@ -29,7 +29,7 @@ struct for_each_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto for_each = detail::for_each_fn{};
+inline constexpr auto for_each = detail::for_each_fn{};
 
 template <typename D>
 template <typename Func>

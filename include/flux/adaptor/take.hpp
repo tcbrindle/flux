@@ -159,7 +159,7 @@ struct take_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto take = detail::take_fn{};
+inline constexpr auto take = detail::take_fn{};
 
 template <typename Derived>
 constexpr auto inline_sequence_base<Derived>::take(num::integral auto count) &&

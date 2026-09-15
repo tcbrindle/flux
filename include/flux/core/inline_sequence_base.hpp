@@ -11,7 +11,7 @@
 
 namespace flux {
 
-FLUX_EXPORT
+
 template <cursor Cur>
 struct bounds {
     FLUX_NO_UNIQUE_ADDRESS Cur from;
@@ -23,7 +23,7 @@ struct bounds {
 template <cursor Cur>
 bounds(Cur, Cur) -> bounds<Cur>;
 
-FLUX_EXPORT
+
 template <sequence Seq>
 using bounds_t = bounds<cursor_t<Seq>>;
 

@@ -83,7 +83,7 @@ struct sequence_traits<detail::take_while_adaptor<Base, Pred>>
     }
 };
 
-FLUX_EXPORT inline constexpr auto take_while = detail::take_while_fn{};
+inline constexpr auto take_while = detail::take_while_fn{};
 
 template <typename D>
 template <typename Pred>

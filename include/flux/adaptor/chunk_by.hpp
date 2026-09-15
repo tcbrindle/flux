@@ -132,7 +132,7 @@ struct chunk_by_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto chunk_by = detail::chunk_by_fn{};
+inline constexpr auto chunk_by = detail::chunk_by_fn{};
 
 template <typename Derived>
 template <typename Pred>

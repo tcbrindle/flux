@@ -14,8 +14,8 @@
 
 namespace flux {
 
-FLUX_EXPORT using nullopt_t = std::nullopt_t;
-FLUX_EXPORT inline constexpr nullopt_t const& nullopt = std::nullopt;
+using nullopt_t = std::nullopt_t;
+inline constexpr nullopt_t const& nullopt = std::nullopt;
 
 namespace detail {
 
@@ -27,7 +27,7 @@ concept can_optional =
 
 }
 
-FLUX_EXPORT
+
 template <typename T>
 class optional;
 

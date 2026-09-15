@@ -203,7 +203,7 @@ struct split_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto split = detail::split_fn{};
+inline constexpr auto split = detail::split_fn{};
 
 template <typename Derived>
 template <typename Pattern>

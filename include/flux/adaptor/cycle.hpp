@@ -239,7 +239,7 @@ struct cycle_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto cycle = detail::cycle_fn{};
+inline constexpr auto cycle = detail::cycle_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::cycle() &&

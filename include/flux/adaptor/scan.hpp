@@ -179,8 +179,8 @@ struct prescan_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto scan = detail::scan_fn{};
-FLUX_EXPORT inline constexpr auto prescan = detail::prescan_fn{};
+inline constexpr auto scan = detail::scan_fn{};
+inline constexpr auto prescan = detail::prescan_fn{};
 
 template <typename Derived>
 template <typename D, typename Func, typename Init>

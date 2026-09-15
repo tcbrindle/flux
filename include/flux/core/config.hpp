@@ -123,27 +123,27 @@
 
 namespace flux {
 
-FLUX_EXPORT
+
 enum class error_policy {
     terminate = FLUX_ERROR_POLICY_TERMINATE,
     unwind = FLUX_ERROR_POLICY_UNWIND,
     fail_fast = FLUX_ERROR_POLICY_FAIL_FAST
 };
 
-FLUX_EXPORT
+
 enum class overflow_policy {
     ignore = FLUX_OVERFLOW_POLICY_IGNORE,
     wrap = FLUX_OVERFLOW_POLICY_WRAP,
     error = FLUX_OVERFLOW_POLICY_ERROR
 };
 
-FLUX_EXPORT
+
 enum class divide_by_zero_policy {
     ignore = FLUX_DIVIDE_BY_ZERO_POLICY_IGNORE,
     error = FLUX_DIVIDE_BY_ZERO_POLICY_ERROR
 };
 
-FLUX_EXPORT
+
 enum class integer_cast_policy {
     checked = FLUX_INTEGER_CAST_POLICY_CHECKED,
     unchecked = FLUX_INTEGER_CAST_POLICY_UNCHECKED
@@ -151,27 +151,27 @@ enum class integer_cast_policy {
 
 namespace config {
 
-FLUX_EXPORT
+
 using int_type = FLUX_INT_TYPE;
 static_assert(std::signed_integral<int_type> && (sizeof(int_type) >= sizeof(std::ptrdiff_t)),
               "Custom FLUX_INT_TYPE must be a signed integer type at least as large as ptrdiff_t");
 
-FLUX_EXPORT
+
 inline constexpr error_policy on_error = static_cast<error_policy>(FLUX_ERROR_POLICY);
 
-FLUX_EXPORT
+
 inline constexpr overflow_policy on_overflow = static_cast<overflow_policy>(FLUX_OVERFLOW_POLICY);
 
-FLUX_EXPORT
+
 inline constexpr divide_by_zero_policy on_divide_by_zero = static_cast<divide_by_zero_policy>(FLUX_DIVIDE_BY_ZERO_POLICY);
 
-FLUX_EXPORT
+
 inline constexpr integer_cast_policy on_integer_cast = static_cast<integer_cast_policy>(FLUX_INTEGER_CAST_POLICY);
 
-FLUX_EXPORT
+
 inline constexpr bool print_error_on_terminate = FLUX_PRINT_ERROR_ON_TERMINATE;
 
-FLUX_EXPORT
+
 inline constexpr bool enable_debug_asserts = FLUX_ENABLE_DEBUG_ASSERTS;
 
 } // namespace config
