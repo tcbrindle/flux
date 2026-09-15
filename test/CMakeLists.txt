@@ -96,33 +96,41 @@ add_executable(test-flux
     test_unfold.cpp
 )
 
-target_link_libraries(test-flux flux::flux doctest::doctest_with_main)
-target_compile_definitions(test-flux PUBLIC
-    FLUX_UNWIND_ON_ERROR
-    FLUX_ERROR_ON_OVERFLOW
-    FLUX_ERROR_ON_DIVIDE_BY_ZERO
-    FLUX_DISABLE_STATIC_BOUNDS_CHECKING
-    DOCTEST_CONFIG_VOID_CAST_EXPRESSIONS
-)
+target_link_libraries(test-flux PRIVATE doctest::doctest_with_main)
+target_compile_definitions(test-flux PRIVATE DOCTEST_CONFIG_VOID_CAST_EXPRESSIONS)
 
 if (FLUX_BUILD_MODULE)
+    add_library(flux.test.module)
+    target_sources(flux.test.module PUBLIC
+        FILE_SET CXX_MODULES
+            BASE_DIRS ${PROJECT_SOURCE_DIR}/module
+            FILES ${PROJECT_SOURCE_DIR}/module/flux.cpp
+        FILE_SET HEADERS
+            BASE_DIRS ${PROJECT_SOURCE_DIR}/include
+            FILES ${PROJECT_SOURCE_DIR}/include/flux/macros.hpp
+    )
+    target_compile_definitions(flux.test.module PUBLIC
+        FLUX_UNWIND_ON_ERROR
+        FLUX_ERROR_ON_OVERFLOW
+        FLUX_ERROR_ON_DIVIDE_BY_ZERO
+        FLUX_DISABLE_STATIC_BOUNDS_CHECKING
+    )
+    target_link_libraries(flux.test.module PRIVATE flux::flux)
+
+    target_link_libraries(test-flux PRIVATE flux.test.module)
     target_precompile_headers(test-flux PRIVATE <doctest/doctest.h>)
+
 else()
+    target_compile_definitions(test-flux PUBLIC
+        FLUX_UNWIND_ON_ERROR
+        FLUX_ERROR_ON_OVERFLOW
+        FLUX_ERROR_ON_DIVIDE_BY_ZERO
+        FLUX_DISABLE_STATIC_BOUNDS_CHECKING
+    )
+    target_link_libraries(test-flux PRIVATE flux::flux)
     target_precompile_headers(test-flux PRIVATE <doctest/doctest.h> <flux.hpp>)
 endif()
 
-if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.28.0")
-    if (FLUX_BUILD_MODULE)
-        target_sources(test-flux PUBLIC
-            FILE_SET CXX_MODULES
-            BASE_DIRS ${PROJECT_SOURCE_DIR}/module
-            FILES ${PROJECT_SOURCE_DIR}/module/flux.cpp
-        )
-
-        target_compile_definitions(test-flux PRIVATE -DUSE_MODULES)
-        set_target_properties(test-flux PROPERTIES CXX_SCAN_FOR_MODULES On)
-    endif()
-endif()
 
 if(FLUX_BUILD_MODULE)
     add_executable(test-module-import test_module_import.cpp)
