@@ -81,7 +81,7 @@ struct map_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto map = detail::map_fn{};
+inline constexpr auto map = detail::map_fn{};
 
 template <typename Derived>
 template <typename Func>

@@ -17,21 +17,21 @@
 
 namespace flux::num {
 
-FLUX_EXPORT
+
 template <typename T>
 concept integral =
     std::integral<T> &&
     !flux::detail::any_of<T, bool, char, wchar_t, char8_t, char16_t, char32_t>;
 
-FLUX_EXPORT
+
 template <typename T>
 concept signed_integral = integral<T> && std::signed_integral<T>;
 
-FLUX_EXPORT
+
 template <typename T>
 concept unsigned_integral = integral<T> && std::unsigned_integral<T>;
 
-FLUX_EXPORT
+
 template <integral T>
 struct overflow_result {
     T value;
@@ -474,60 +474,60 @@ struct default_ops<overflow_policy::error> {
 
 } // namespace detail
 
-FLUX_EXPORT
+
 template <integral To>
 inline constexpr auto unchecked_cast = detail::unchecked_cast_fn<To>{};
 
-FLUX_EXPORT
+
 template <integral To>
 inline constexpr auto overflowing_cast = detail::overflowing_cast_fn<To>{};
 
-FLUX_EXPORT
+
 template <integral To>
 inline constexpr auto checked_cast = detail::checked_cast_fn<To>{};
 
-FLUX_EXPORT
+
 template <integral To>
 inline constexpr auto cast = detail::cast_fn<To>{};
 
-FLUX_EXPORT inline constexpr auto unchecked_add = detail::unchecked_add_fn{};
-FLUX_EXPORT inline constexpr auto unchecked_sub = detail::unchecked_sub_fn{};
-FLUX_EXPORT inline constexpr auto unchecked_mul = detail::unchecked_mul_fn{};
-FLUX_EXPORT inline constexpr auto unchecked_div = detail::unchecked_div_fn{};
-FLUX_EXPORT inline constexpr auto unchecked_mod = detail::unchecked_mod_fn{};
-FLUX_EXPORT inline constexpr auto unchecked_neg = detail::unchecked_neg_fn{};
-FLUX_EXPORT inline constexpr auto unchecked_shl = detail::unchecked_shl_fn{};
-FLUX_EXPORT inline constexpr auto unchecked_shr = detail::unchecked_shr_fn{};
+inline constexpr auto unchecked_add = detail::unchecked_add_fn{};
+inline constexpr auto unchecked_sub = detail::unchecked_sub_fn{};
+inline constexpr auto unchecked_mul = detail::unchecked_mul_fn{};
+inline constexpr auto unchecked_div = detail::unchecked_div_fn{};
+inline constexpr auto unchecked_mod = detail::unchecked_mod_fn{};
+inline constexpr auto unchecked_neg = detail::unchecked_neg_fn{};
+inline constexpr auto unchecked_shl = detail::unchecked_shl_fn{};
+inline constexpr auto unchecked_shr = detail::unchecked_shr_fn{};
 
-FLUX_EXPORT inline constexpr auto wrapping_add = detail::wrapping_add_fn{};
-FLUX_EXPORT inline constexpr auto wrapping_sub = detail::wrapping_sub_fn{};
-FLUX_EXPORT inline constexpr auto wrapping_mul = detail::wrapping_mul_fn{};
-FLUX_EXPORT inline constexpr auto wrapping_neg = detail::wrapping_neg_fn{};
+inline constexpr auto wrapping_add = detail::wrapping_add_fn{};
+inline constexpr auto wrapping_sub = detail::wrapping_sub_fn{};
+inline constexpr auto wrapping_mul = detail::wrapping_mul_fn{};
+inline constexpr auto wrapping_neg = detail::wrapping_neg_fn{};
 
-FLUX_EXPORT inline constexpr auto overflowing_add = detail::overflowing_add_fn{};
-FLUX_EXPORT inline constexpr auto overflowing_sub = detail::overflowing_sub_fn{};
-FLUX_EXPORT inline constexpr auto overflowing_mul = detail::overflowing_mul_fn{};
-FLUX_EXPORT inline constexpr auto overflowing_neg = detail::overflowing_neg_fn{};
+inline constexpr auto overflowing_add = detail::overflowing_add_fn{};
+inline constexpr auto overflowing_sub = detail::overflowing_sub_fn{};
+inline constexpr auto overflowing_mul = detail::overflowing_mul_fn{};
+inline constexpr auto overflowing_neg = detail::overflowing_neg_fn{};
 
-FLUX_EXPORT inline constexpr auto checked_add = detail::checked_add_fn{};
-FLUX_EXPORT inline constexpr auto checked_sub = detail::checked_sub_fn{};
-FLUX_EXPORT inline constexpr auto checked_mul = detail::checked_mul_fn{};
-FLUX_EXPORT inline constexpr auto checked_div = detail::checked_div_fn{};
-FLUX_EXPORT inline constexpr auto checked_mod = detail::checked_mod_fn{};
-FLUX_EXPORT inline constexpr auto checked_neg = detail::checked_neg_fn{};
-FLUX_EXPORT inline constexpr auto checked_shl = detail::checked_shl_fn{};
-FLUX_EXPORT inline constexpr auto checked_shr = detail::checked_shr_fn{};
+inline constexpr auto checked_add = detail::checked_add_fn{};
+inline constexpr auto checked_sub = detail::checked_sub_fn{};
+inline constexpr auto checked_mul = detail::checked_mul_fn{};
+inline constexpr auto checked_div = detail::checked_div_fn{};
+inline constexpr auto checked_mod = detail::checked_mod_fn{};
+inline constexpr auto checked_neg = detail::checked_neg_fn{};
+inline constexpr auto checked_shl = detail::checked_shl_fn{};
+inline constexpr auto checked_shr = detail::checked_shr_fn{};
 
-FLUX_EXPORT inline constexpr auto add = detail::default_ops<config::on_overflow>::add_fn{};
-FLUX_EXPORT inline constexpr auto sub = detail::default_ops<config::on_overflow>::sub_fn{};
-FLUX_EXPORT inline constexpr auto mul = detail::default_ops<config::on_overflow>::mul_fn{};
-FLUX_EXPORT inline constexpr auto div =
+inline constexpr auto add = detail::default_ops<config::on_overflow>::add_fn{};
+inline constexpr auto sub = detail::default_ops<config::on_overflow>::sub_fn{};
+inline constexpr auto mul = detail::default_ops<config::on_overflow>::mul_fn{};
+inline constexpr auto div =
     detail::checked_div_fn<config::on_overflow, config::on_divide_by_zero>{};
-FLUX_EXPORT inline constexpr auto mod =
+inline constexpr auto mod =
     detail::checked_mod_fn<config::on_overflow, config::on_divide_by_zero>{};
-FLUX_EXPORT inline constexpr auto neg = detail::default_ops<config::on_overflow>::neg_fn{};
-FLUX_EXPORT inline constexpr auto shl = detail::default_ops<config::on_overflow>::shl_fn{};
-FLUX_EXPORT inline constexpr auto shr = detail::default_ops<config::on_overflow>::shr_fn{};
+inline constexpr auto neg = detail::default_ops<config::on_overflow>::neg_fn{};
+inline constexpr auto shl = detail::default_ops<config::on_overflow>::shl_fn{};
+inline constexpr auto shr = detail::default_ops<config::on_overflow>::shr_fn{};
 
 } // namespace flux::num
 

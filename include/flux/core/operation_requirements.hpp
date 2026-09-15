@@ -10,7 +10,7 @@
 
 namespace flux {
 
-FLUX_EXPORT
+
 template <typename Seq, typename Func, typename Init>
 using fold_result_t = std::decay_t<std::invoke_result_t<Func&, Init, element_t<Seq>>>;
 
@@ -44,14 +44,14 @@ concept flatten_with_compatible =
 
 } // namespace detail
 
-FLUX_EXPORT
+
 template <typename Seq, typename Func, typename Init>
 concept foldable =
     sequence<Seq> &&
     std::invocable<Func&, Init, element_t<Seq>> &&
     detail::foldable_<Seq, Func, Init>;
 
-FLUX_EXPORT
+
 template <typename Fn, typename Seq1, typename Seq2 = Seq1>
 concept weak_ordering_for =
     sequence<Seq1> &&

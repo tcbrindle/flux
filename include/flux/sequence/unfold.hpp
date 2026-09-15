@@ -84,7 +84,7 @@ struct unfold_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto unfold = detail::unfold_fn{};
+inline constexpr auto unfold = detail::unfold_fn{};
 
 } // namespace flux
 

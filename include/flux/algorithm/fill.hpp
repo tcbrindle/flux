@@ -55,7 +55,7 @@ public:
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto fill = detail::fill_fn{};
+inline constexpr auto fill = detail::fill_fn{};
 
 template <typename D>
 template <typename Value>

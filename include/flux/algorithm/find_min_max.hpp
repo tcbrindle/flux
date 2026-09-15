@@ -79,9 +79,9 @@ struct find_minmax_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto find_min = detail::find_min_fn{};
-FLUX_EXPORT inline constexpr auto find_max = detail::find_max_fn{};
-FLUX_EXPORT inline constexpr auto find_minmax = detail::find_minmax_fn{};
+inline constexpr auto find_min = detail::find_min_fn{};
+inline constexpr auto find_max = detail::find_max_fn{};
+inline constexpr auto find_minmax = detail::find_minmax_fn{};
 
 template <typename D>
 template <typename Cmp>

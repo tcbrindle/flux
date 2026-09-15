@@ -25,7 +25,7 @@ struct fn {
 
 } // namespace all_detail
 
-FLUX_EXPORT inline constexpr auto all = all_detail::fn{};
+inline constexpr auto all = all_detail::fn{};
 
 namespace none_detail {
 
@@ -42,7 +42,7 @@ struct fn {
 
 } // namespace none_detail
 
-FLUX_EXPORT inline constexpr auto none = none_detail::fn{};
+inline constexpr auto none = none_detail::fn{};
 
 namespace any_detail {
 
@@ -59,7 +59,7 @@ struct fn {
 
 } // namespace any_detail
 
-FLUX_EXPORT inline constexpr auto any = any_detail::fn{};
+inline constexpr auto any = any_detail::fn{};
 
 template <typename D>
 template <typename Pred>

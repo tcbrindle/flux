@@ -97,7 +97,7 @@ public:
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto compare = detail::compare_fn{};
+inline constexpr auto compare = detail::compare_fn{};
 
 } // namespace flux
 

@@ -243,10 +243,10 @@ struct from_fwd_ref_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto mut_ref = detail::mut_ref_fn{};
-FLUX_EXPORT inline constexpr auto ref = detail::ref_fn{};
-FLUX_EXPORT inline constexpr auto from = detail::from_fn{};
-FLUX_EXPORT inline constexpr auto from_fwd_ref = detail::from_fwd_ref_fn{};
+inline constexpr auto mut_ref = detail::mut_ref_fn{};
+inline constexpr auto ref = detail::ref_fn{};
+inline constexpr auto from = detail::from_fn{};
+inline constexpr auto from_fwd_ref = detail::from_fwd_ref_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::ref() const&

@@ -44,10 +44,4 @@
 
 #define FLUX_DEBUG_ASSERT(cond) (::flux::assert_(!::flux::config::enable_debug_asserts || (cond), "assertion '" #cond "' failed"));
 
-#ifdef FLUX_MODULE_INTERFACE
-#define FLUX_EXPORT export
-#else
-#define FLUX_EXPORT
-#endif
-
 #endif // FLUX_MACROS_HPP_INCLUDED

@@ -364,7 +364,7 @@ struct flatten_with_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto flatten_with = detail::flatten_with_fn{};
+inline constexpr auto flatten_with = detail::flatten_with_fn{};
 
 template <typename Derived>
 template <adaptable_sequence Pattern>

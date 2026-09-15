@@ -285,8 +285,8 @@ public:
     using default_sequence_traits::move_at_unchecked;
 };
 
-FLUX_EXPORT inline constexpr auto zip = detail::zip_fn{};
-FLUX_EXPORT inline constexpr auto zip_map = detail::zip_map_fn{};
+inline constexpr auto zip = detail::zip_fn{};
+inline constexpr auto zip_map = detail::zip_map_fn{};
 
 } // namespace flux
 

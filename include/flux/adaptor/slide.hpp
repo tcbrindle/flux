@@ -124,7 +124,7 @@ struct slide_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto slide = detail::slide_fn{};
+inline constexpr auto slide = detail::slide_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::slide(num::integral auto win_sz) &&

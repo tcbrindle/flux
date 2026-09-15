@@ -77,7 +77,7 @@ struct drop_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto drop = detail::drop_fn{};
+inline constexpr auto drop = detail::drop_fn{};
 
 template <typename Derived>
 constexpr auto inline_sequence_base<Derived>::drop(num::integral auto count) &&

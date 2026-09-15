@@ -127,7 +127,7 @@ public:
 
 };
 
-FLUX_EXPORT inline constexpr auto single = detail::single_fn{};
+inline constexpr auto single = detail::single_fn{};
 
 } // namespace flux
 

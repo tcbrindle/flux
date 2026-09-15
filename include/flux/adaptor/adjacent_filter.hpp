@@ -138,8 +138,8 @@ struct dedup_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto adjacent_filter = detail::adjacent_filter_fn{};
-FLUX_EXPORT inline constexpr auto dedup = detail::dedup_fn{};
+inline constexpr auto adjacent_filter = detail::adjacent_filter_fn{};
+inline constexpr auto dedup = detail::dedup_fn{};
 
 template <typename D>
 template <typename Pred>

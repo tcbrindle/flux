@@ -93,7 +93,7 @@ struct getlines_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto getlines = detail::getlines_fn{};
+inline constexpr auto getlines = detail::getlines_fn{};
 
 } // namespace flux
 

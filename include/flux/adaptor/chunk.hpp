@@ -308,7 +308,7 @@ struct chunk_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto chunk = detail::chunk_fn{};
+inline constexpr auto chunk = detail::chunk_fn{};
 
 template <typename D>
 constexpr auto inline_sequence_base<D>::chunk(num::integral auto chunk_sz) &&

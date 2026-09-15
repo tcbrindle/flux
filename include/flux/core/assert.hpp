@@ -25,7 +25,7 @@
 
 namespace flux {
 
-FLUX_EXPORT
+
 struct unrecoverable_error : std::logic_error {
     explicit inline unrecoverable_error(char const* msg) : std::logic_error(msg) {}
 };
@@ -84,7 +84,7 @@ public:
 
 }
 
-FLUX_EXPORT inline constexpr auto runtime_error = detail::runtime_error_fn{};
+inline constexpr auto runtime_error = detail::runtime_error_fn{};
 
 #ifdef FLUX_HAVE_GCC_STATIC_BOUNDS_CHECKING
 [[gnu::error("out-of-bounds sequence access detected")]]
@@ -134,9 +134,9 @@ struct indexed_bounds_check_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto assert_ = detail::assert_fn{};
-FLUX_EXPORT inline constexpr auto bounds_check = detail::bounds_check_fn{};
-FLUX_EXPORT inline constexpr auto indexed_bounds_check = detail::indexed_bounds_check_fn{};
+inline constexpr auto assert_ = detail::assert_fn{};
+inline constexpr auto bounds_check = detail::bounds_check_fn{};
+inline constexpr auto indexed_bounds_check = detail::indexed_bounds_check_fn{};
 
 } // namespace flux
 

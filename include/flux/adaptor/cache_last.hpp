@@ -76,7 +76,7 @@ struct cache_last_fn {
 
 } // namespace detail
 
-FLUX_EXPORT inline constexpr auto cache_last = detail::cache_last_fn{};
+inline constexpr auto cache_last = detail::cache_last_fn{};
 
 template <typename Derived>
 constexpr auto inline_sequence_base<Derived>::cache_last() &&

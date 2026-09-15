@@ -138,7 +138,7 @@ struct sequence_traits<subsequence<Base, Bounded>>
     using default_sequence_traits::for_each_while;
 };
 
-FLUX_EXPORT inline constexpr auto slice = detail::slice_fn{};
+inline constexpr auto slice = detail::slice_fn{};
 
 #if 0
 template <typename Derived>
