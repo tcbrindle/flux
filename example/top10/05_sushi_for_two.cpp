@@ -7,7 +7,10 @@
  * https://codeforces.com/contest/1138/problem/A
  */
 
-#include <flux.hpp>
+#include <functional>
+#include <initializer_list>
+
+#include "../import_or_include_flux.hpp"
 
 auto const sushi_for_two = [](std::initializer_list<int> sushi)
 {

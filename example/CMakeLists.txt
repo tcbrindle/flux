@@ -1,7 +1,13 @@
 
 function(ADD_EXAMPLE NAME SOURCE)
     add_executable(flux.example.${NAME} ${SOURCE})
-    target_link_libraries(flux.example.${NAME} flux::flux)
+    if (FLUX_BUILD_MODULE)
+      target_compile_definitions(flux.example.${NAME} PUBLIC USE_MODULES)
+      set_target_properties(flux.example.${NAME} PROPERTIES CXX_SCAN_FOR_MODULES On)
+      target_link_libraries(flux.example.${NAME} flux::module)
+    else()
+      target_link_libraries(flux.example.${NAME} flux::flux)
+    endif()
     if(${${NAME}_SKIP_TEST})
       #pass
     else()

@@ -1,9 +1,9 @@
 
-#include <flux.hpp>
-
 #include "assert.hpp"
 #include <string>
 #include <vector>
+
+#include "../import_or_include_flux.hpp"
 
 int main()
 {

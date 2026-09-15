@@ -9,9 +9,9 @@
  * Also discussed on ADSP episode 116 (https://adspthepodcast.com/2023/02/03/Episode-116.html)
  */
 
-#include <flux.hpp>
-
 #include <vector>
+
+#include "../import_or_include_flux.hpp"
 
 // std::abs is not constexpr in C++20
 auto const c_abs = [](std::signed_integral auto i) { return i < 0 ? -i : i; };

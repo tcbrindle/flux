@@ -2,12 +2,12 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include <flux.hpp>
-
 #include <cstddef>
 #include <ios>
 #include <iostream>
 #include <ostream>
+
+#include "import_or_include_flux.hpp"
 
 struct stats_t
 {
@@ -20,8 +20,7 @@ struct stats_t
 auto collect_stats = [](flux::sequence auto&& seq)
 {
     stats_t stats;
-    flux::for_each(FLUX_FWD(seq), [&stats](char val) 
-    {
+    flux::for_each(FLUX_FWD(seq), [&stats](char val) {
         stats.chars++;
         if (not stats.is_last_space and std::isspace(val)) {
             stats.words++;

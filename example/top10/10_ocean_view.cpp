@@ -16,7 +16,7 @@
 
 #include <vector>
 
-#include <flux.hpp>
+#include "../import_or_include_flux.hpp"
 
 using index_vec = std::vector<flux::index_t>;
 
