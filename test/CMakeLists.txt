@@ -115,6 +115,7 @@ if (FLUX_BUILD_MODULE)
         FLUX_ERROR_ON_DIVIDE_BY_ZERO
         FLUX_DISABLE_STATIC_BOUNDS_CHECKING
     )
+    target_compile_features(flux.test.module PUBLIC $<IF:$<CXX_COMPILER_ID:MSVC>,cxx_std_23,cxx_std_20>)
     target_link_libraries(flux.test.module PRIVATE flux::flux)
 
     target_link_libraries(flux.test PRIVATE flux.test.module)
