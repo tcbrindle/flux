@@ -101,8 +101,7 @@ jobs:
               -DCMAKE_CXX_COMPILER=${{matrix.cxx}} \
               -DCMAKE_CXX_EXTENSIONS=Off \
               -DFLUX_BUILD_BENCHMARKS=${{matrix.build_type == 'Release'}} \
-              -DFLUX_BUILD_MODULE=${{matrix.test_with == 'Module'}} \
-              -DFLUX_BUILD_TESTS_USING_MODULE=${{matrix.test_with == 'Module'}}
+              -DFLUX_BUILD_MODULE=${{matrix.test_with == 'Module'}}
 
     - name: Build
       run: cmake --build build

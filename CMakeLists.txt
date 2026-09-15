@@ -29,7 +29,6 @@ option(FLUX_BUILD_TESTS "Build Flux tests" ${PROJECT_IS_TOP_LEVEL})
 option(FLUX_BUILD_BENCHMARKS "Build Flux benchmarks" Off)
 option(FLUX_BUILD_TOOLS "Build single-header generator tool" Off)
 option(FLUX_BUILD_MODULE "Build C++20 module (experimental)" Off)
-option(FLUX_BUILD_TESTS_USING_MODULE "Build tests using modules (experimental)" Off)
 
 if (FLUX_BUILD_DOCS)
     add_subdirectory(docs)
