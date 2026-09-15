@@ -24,8 +24,6 @@ jobs:
         exclude:
           - compiler: AppleClang
             test_with: Module
-          - compiler: LLVM-Clang-19
-            test_with: Module
 
         include:
           - compiler: AppleClang
