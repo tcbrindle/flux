@@ -4,7 +4,7 @@ include(FetchContent)
 FetchContent_Declare(
     nanobench
     GIT_REPOSITORY https://github.com/martinus/nanobench.git
-    GIT_TAG v4.3.11
+    GIT_TAG b709728dba4df0356d467abfb0ba20781a8031c0 # v4.6.0
 )
 
 FetchContent_MakeAvailable(nanobench)
