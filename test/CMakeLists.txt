@@ -9,7 +9,7 @@ FetchContent_Declare(doctest
 
 FetchContent_MakeAvailable(doctest)
 
-add_executable(test-flux
+add_executable(flux.test
 
     num/test_concepts.cpp
     num/test_casts.cpp
@@ -96,8 +96,8 @@ add_executable(test-flux
     test_unfold.cpp
 )
 
-target_link_libraries(test-flux PRIVATE doctest::doctest_with_main)
-target_compile_definitions(test-flux PRIVATE DOCTEST_CONFIG_VOID_CAST_EXPRESSIONS)
+target_link_libraries(flux.test PRIVATE doctest::doctest_with_main)
+target_compile_definitions(flux.test PRIVATE DOCTEST_CONFIG_VOID_CAST_EXPRESSIONS)
 
 if (FLUX_BUILD_MODULE)
     add_library(flux.test.module)
@@ -117,29 +117,26 @@ if (FLUX_BUILD_MODULE)
     )
     target_link_libraries(flux.test.module PRIVATE flux::flux)
 
-    target_link_libraries(test-flux PRIVATE flux.test.module)
-    target_precompile_headers(test-flux PRIVATE <doctest/doctest.h>)
-
+    target_link_libraries(flux.test PRIVATE flux.test.module)
+    target_precompile_headers(flux.test PRIVATE <doctest/doctest.h>)
 else()
-    target_compile_definitions(test-flux PUBLIC
+    target_compile_definitions(flux.test PUBLIC
         FLUX_UNWIND_ON_ERROR
         FLUX_ERROR_ON_OVERFLOW
         FLUX_ERROR_ON_DIVIDE_BY_ZERO
         FLUX_DISABLE_STATIC_BOUNDS_CHECKING
     )
-    target_link_libraries(test-flux PRIVATE flux::flux)
-    target_precompile_headers(test-flux PRIVATE <doctest/doctest.h> <flux.hpp>)
+    target_link_libraries(flux.test PRIVATE flux::flux)
+    target_precompile_headers(flux.test PRIVATE <doctest/doctest.h> <flux.hpp>)
 endif()
 
-
 if(FLUX_BUILD_MODULE)
-    add_executable(test-module-import test_module_import.cpp)
-    target_link_libraries(test-module-import PUBLIC flux-mod)
-    set_target_properties(test-module-import PROPERTIES
-                          CXX_EXTENSIONS Off
-                          CXX_SCAN_FOR_MODULES On)
+    add_executable(flux.test.module_import test_module_import.cpp)
+    target_link_libraries(flux.test.module_import PUBLIC flux::module)
+    set_target_properties(flux.test.module_import PROPERTIES CXX_SCAN_FOR_MODULES On)
+    add_test(NAME "flux.test.module_import" COMMAND flux.test.module_import)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH ${doctest_SOURCE_DIR}/scripts/cmake)
 include(doctest)
-doctest_discover_tests(test-flux)
+doctest_discover_tests(flux.test)
