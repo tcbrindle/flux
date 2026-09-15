@@ -13,7 +13,7 @@
 
 #include <functional> // for std::minus
 
-#include <flux.hpp>
+#include "../import_or_include_flux.hpp"
 
 auto const rain_water = [](std::initializer_list<int> heights)
 {

@@ -2,11 +2,11 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include <flux.hpp>
-
 #include <cstddef>
 #include <iostream>
 #include <vector>
+
+#include "import_or_include_flux.hpp"
 
 struct interval_t
 {
@@ -42,7 +42,7 @@ int main()
          .chunk_by(is_overlapped)
          .map(merge)
          .write_to(std::cout);
-                
+
     std::cout << std::endl;
 
     // prints [(0,4), (6,9), (11,13)]

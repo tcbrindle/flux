@@ -4,6 +4,7 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
+#include <algorithm>
 #include <deque>
 #include <iostream>
 #include <filesystem>
@@ -35,9 +36,9 @@ struct include_processor {
 
 private:
     struct replacement {
-        std::ptrdiff_t pos;
-        std::ptrdiff_t len;
-        std::string text;
+        std::ptrdiff_t pos = 0;
+        std::ptrdiff_t len = 0;
+        std::string text {};
     };
 
     include_processor(fs::path&& start_path)
@@ -84,10 +85,11 @@ private:
         while (!replacements.empty()) {
             auto rep = std::move(replacements.front());
             replacements.pop_front();
-            str.replace(rep.pos, rep.len, rep.text);
+            str.replace(static_cast<std::size_t>(rep.pos), static_cast<std::size_t>(rep.len),
+                        rep.text);
 
             for (auto& r : replacements) {
-                r.pos -= rep.len - rep.text.length();
+                r.pos -= rep.len - std::ssize(rep.text);
             }
         }
     }

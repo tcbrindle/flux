@@ -24,6 +24,7 @@ inline namespace test_utils {
 
 inline constexpr struct {
 private:
+    [[maybe_unused]]
     static constexpr bool impl(flux::sequence auto&& seq1, flux::sequence auto&& seq2)
     {
         using namespace flux;
@@ -43,14 +44,14 @@ private:
 
 public:
     template <typename T>
-    constexpr bool operator()(flux::sequence auto&& seq,
-                              std::initializer_list<T> ilist) const
+    [[maybe_unused]]
+    constexpr bool operator()(flux::sequence auto&& seq, std::initializer_list<T> ilist) const
     {
         return impl(FLUX_FWD(seq), ilist);
     }
 
-    constexpr bool operator()(flux::sequence auto&& seq1,
-                              flux::sequence auto&& seq2) const
+    [[maybe_unused]]
+    constexpr bool operator()(flux::sequence auto&& seq1, flux::sequence auto&& seq2) const
     {
         return impl(FLUX_FWD(seq1), FLUX_FWD(seq2));
     }

@@ -2,18 +2,18 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include <flux.hpp>
-
+#include <coroutine>
 #include <cstddef>
 #include <iostream>
 #include <vector>
 
+#include "import_or_include_flux.hpp"
+
 flux::generator<long long> primes()
 {
     std::vector<long long> history;
-    auto is_prime = [&](auto x) { 
-        return flux::none(history, [x](auto prime) { return (x % prime) == 0; });
-    };
+    auto is_prime
+        = [&](auto x) { return flux::none(history, [x](auto prime) { return (x % prime) == 0; }); };
 
     for (auto p : flux::ints(2).filter(is_prime))
     {

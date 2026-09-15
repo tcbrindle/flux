@@ -11,14 +11,15 @@
  *
  */
 
-#include <flux.hpp>
+#include <initializer_list>
 
-auto const kadanes = [](std::initializer_list<int> nums)
-{
+#include "../import_or_include_flux.hpp"
+
+auto const kadanes = [](std::initializer_list<int> nums) {
     return flux::ref(nums)
-            .scan([](int sum, int i) { return std::max(i, sum + i); })
-            .max()
-            .value_or(0);
+        .scan([](int sum, int i) { return flux::cmp::max(i, sum + i); })
+        .max()
+        .value_or(0);
 };
 
 static_assert(kadanes({-2, 1, -3, 4, -1, 2, 1, -5, 4}) == 6);

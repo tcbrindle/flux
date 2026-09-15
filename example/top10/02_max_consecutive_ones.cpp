@@ -9,7 +9,10 @@
  * https://leetcode.com/problems/max-consecutive-ones/
  */
 
-#include <flux.hpp>
+#include <functional>
+#include <initializer_list>
+
+#include "../import_or_include_flux.hpp"
 
 namespace version1 {
 

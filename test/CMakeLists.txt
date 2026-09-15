@@ -3,13 +3,13 @@ include(FetchContent)
 
 FetchContent_Declare(doctest
     GIT_REPOSITORY https://github.com/doctest/doctest.git
-    GIT_TAG 1da23a3e8119ec5cce4f9388e91b065e20bf06f5 # v2.4.12
+    GIT_TAG 2d0a9359a60c51affe2a9bebb1be1dca47868151 # v2.5.3
     FIND_PACKAGE_ARGS
 )
 
 FetchContent_MakeAvailable(doctest)
 
-add_executable(test-flux
+add_executable(flux.test
 
     num/test_concepts.cpp
     num/test_casts.cpp
@@ -96,50 +96,48 @@ add_executable(test-flux
     test_unfold.cpp
 )
 
-target_link_libraries(test-flux flux-internal doctest::doctest_with_main)
-target_compile_definitions(test-flux PUBLIC
-    FLUX_UNWIND_ON_ERROR
-    FLUX_ERROR_ON_OVERFLOW
-    FLUX_ERROR_ON_DIVIDE_BY_ZERO
-    FLUX_DISABLE_STATIC_BOUNDS_CHECKING
-    DOCTEST_CONFIG_VOID_CAST_EXPRESSIONS
-)
+target_link_libraries(flux.test PRIVATE doctest::doctest_with_main)
+target_compile_definitions(flux.test PRIVATE DOCTEST_CONFIG_VOID_CAST_EXPRESSIONS)
 
-if (NOT FLUX_BUILD_TESTS_USING_MODULE)
-    target_precompile_headers(test-flux PRIVATE <doctest/doctest.h>)
-endif()
-
-if(FLUX_ENABLE_ASAN)
-    target_compile_options(test-flux PRIVATE -fsanitize=address)
-    target_link_options(test-flux PRIVATE -fsanitize=address)
-endif()
-
-if(FLUX_ENABLE_UBSAN)
-    target_compile_options(test-flux PRIVATE -fsanitize=undefined)
-    target_link_options(test-flux PRIVATE -fsanitize=undefined)
-endif()
-
-if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.28.0")
-    if (FLUX_BUILD_TESTS_USING_MODULE)
-        target_sources(test-flux PUBLIC
-            FILE_SET CXX_MODULES
+if (FLUX_BUILD_MODULE)
+    add_library(flux.test.module)
+    target_sources(flux.test.module PUBLIC
+        FILE_SET CXX_MODULES
             BASE_DIRS ${PROJECT_SOURCE_DIR}/module
             FILES ${PROJECT_SOURCE_DIR}/module/flux.cpp
-        )
+        FILE_SET HEADERS
+            BASE_DIRS ${PROJECT_SOURCE_DIR}/include
+            FILES ${PROJECT_SOURCE_DIR}/include/flux/macros.hpp
+    )
+    target_compile_definitions(flux.test.module PUBLIC
+        FLUX_UNWIND_ON_ERROR
+        FLUX_ERROR_ON_OVERFLOW
+        FLUX_ERROR_ON_DIVIDE_BY_ZERO
+        FLUX_DISABLE_STATIC_BOUNDS_CHECKING
+    )
+    target_compile_features(flux.test.module PUBLIC $<IF:$<CXX_COMPILER_ID:MSVC>,cxx_std_23,cxx_std_20>)
+    target_link_libraries(flux.test.module PRIVATE flux::flux)
 
-        target_compile_definitions(test-flux PRIVATE -DUSE_MODULES)
-        set_target_properties(test-flux PROPERTIES CXX_SCAN_FOR_MODULES On)
-    endif()
+    target_link_libraries(flux.test PRIVATE flux.test.module)
+    target_precompile_headers(flux.test PRIVATE <doctest/doctest.h>)
+else()
+    target_compile_definitions(flux.test PUBLIC
+        FLUX_UNWIND_ON_ERROR
+        FLUX_ERROR_ON_OVERFLOW
+        FLUX_ERROR_ON_DIVIDE_BY_ZERO
+        FLUX_DISABLE_STATIC_BOUNDS_CHECKING
+    )
+    target_link_libraries(flux.test PRIVATE flux::flux)
+    target_precompile_headers(flux.test PRIVATE <doctest/doctest.h> <flux.hpp>)
 endif()
 
 if(FLUX_BUILD_MODULE)
-    add_executable(test-module-import test_module_import.cpp)
-    target_link_libraries(test-module-import PUBLIC flux-mod)
-    set_target_properties(test-module-import PROPERTIES
-                          CXX_EXTENSIONS Off
-                          CXX_SCAN_FOR_MODULES On)
+    add_executable(flux.test.module_import test_module_import.cpp)
+    target_link_libraries(flux.test.module_import PUBLIC flux::module)
+    set_target_properties(flux.test.module_import PROPERTIES CXX_SCAN_FOR_MODULES On)
+    add_test(NAME "flux.test.module_import" COMMAND flux.test.module_import)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH ${doctest_SOURCE_DIR}/scripts/cmake)
 include(doctest)
-doctest_discover_tests(test-flux)
+doctest_discover_tests(flux.test)

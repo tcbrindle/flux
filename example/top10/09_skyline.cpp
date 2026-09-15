@@ -12,7 +12,9 @@
  * https://youtu.be/6AWSPC6qQB4?t=560
  */
 
-#include <flux.hpp>
+#include <initializer_list>
+
+#include "../import_or_include_flux.hpp"
 
 auto const skyline = [](std::initializer_list<int> heights)
 {

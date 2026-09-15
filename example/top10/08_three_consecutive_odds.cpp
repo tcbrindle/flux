@@ -10,7 +10,9 @@
  * https://leetcode.com/problems/three-consecutive-odds/
  */
 
-#include <flux.hpp>
+#include <initializer_list>
+
+#include "../import_or_include_flux.hpp"
 
 namespace version1 {
 

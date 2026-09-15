@@ -9,54 +9,50 @@ on:
       - main
   pull_request:
 
+env:
+  CXXFLAGS: -Wall -Wextra -Wconversion -Wsign-conversion -pedantic -fno-omit-frame-pointer
+
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-26
     strategy:
       matrix:
-        compiler: [AppleClang, LLVM-Clang-16, LLVM-Clang-17, LLVM-Clang-18, LLVM-Clang-19, LLVM-Clang-20, LLVM-Clang-21]
+        compiler: [AppleClang, LLVM-Clang-19, LLVM-Clang-20, LLVM-Clang-21, LLVM-Clang-22, LLVM-Clang-23]
         test_with: [Headers, Module]
         build_type: [Debug, Release]
 
         exclude:
           - compiler: AppleClang
             test_with: Module
-          - compiler: LLVM-Clang-16
+          - compiler: LLVM-Clang-19
             test_with: Module
 
         include:
           - compiler: AppleClang
             cxx: clang++
-            install: |
-              brew install ninja
-          - compiler: LLVM-Clang-16
-            cxx: $(brew --prefix llvm@16)/bin/clang++
-            install: |
-              brew install llvm@16 ninja
-          - compiler: LLVM-Clang-17
-            cxx: $(brew --prefix llvm@17)/bin/clang++
-            install: |
-              brew install llvm@17 ninja
-          - compiler: LLVM-Clang-18
-            cxx: $(brew --prefix llvm@18)/bin/clang++
-            install: |
-              brew install llvm@18 ninja
           - compiler: LLVM-Clang-19
             cxx: $(brew --prefix llvm@19)/bin/clang++
             install: |
-              brew install llvm@19 ninja
+              brew install llvm@19
           - compiler: LLVM-Clang-20
             cxx: $(brew --prefix llvm@20)/bin/clang++
             install: |
-              brew update
-              brew install llvm@20 ninja
+              brew install llvm@20
           - compiler: LLVM-Clang-21
             cxx: $(brew --prefix llvm@21)/bin/clang++
             ldflags: -L$(brew --prefix llvm@21)/lib/c++
             install: |
-              brew update
-              brew install llvm@21 ninja
-
+              brew install llvm@21
+          - compiler: LLVM-Clang-22
+            cxx: $(brew --prefix llvm@22)/bin/clang++
+            ldflags: -L$(brew --prefix llvm@22)/lib/c++
+            install: |
+              brew install llvm@22
+          - compiler: LLVM-Clang-23
+            cxx: $(brew --prefix llvm@23)/bin/clang++
+            ldflags: -L$(brew --prefix llvm@23)/lib/c++
+            install: |
+              brew install llvm@23
 
     steps:
     - uses: actions/checkout@master
@@ -74,8 +70,7 @@ jobs:
               -DCMAKE_OSX_SYSROOT=$(xcrun --sdk macosx --show-sdk-path) \
               -DCMAKE_CXX_EXTENSIONS=Off \
               -DFLUX_BUILD_BENCHMARKS=${{matrix.build_type == 'Release'}} \
-              -DFLUX_BUILD_MODULE=${{matrix.test_with == 'Module'}} \
-              -DFLUX_BUILD_TESTS_USING_MODULE=${{matrix.test_with == 'Module'}}
+              -DFLUX_BUILD_MODULE=${{matrix.test_with == 'Module'}}
 
     - name: Build
       run: cmake --build build --config ${{matrix.build_type}}

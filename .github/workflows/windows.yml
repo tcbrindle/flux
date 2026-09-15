@@ -6,6 +6,9 @@ on:
       - main
   pull_request:
 
+env:
+  CXXFLAGS: /utf-8 /Zc:__cplusplus /Zc:throwingNew /Zc:inline /Zc:externConstexpr /Zc:templateScope /Zc:checkGwOdr /Zc:enumTypes /W4 /wd4459 /wd4702
+
 jobs:
   build:
     runs-on: windows-2025
@@ -16,8 +19,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@master
-    - uses: seanmiddleditch/gha-setup-ninja@master
-    - uses: TheMrMilchmann/setup-msvc-dev@v3
+    - uses: TheMrMilchmann/setup-msvc-dev@v4
       with:
         arch: ${{matrix.platform}}
 

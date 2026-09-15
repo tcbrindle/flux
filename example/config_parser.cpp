@@ -3,8 +3,6 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include <flux.hpp>
-
 #include <cassert>
 #include <map>
 #include <sstream>
@@ -12,7 +10,9 @@
 #include <string>
 #include <string_view>
 #include <variant>
+#include <vector>
 
+#include "import_or_include_flux.hpp"
 
 struct comment_t
 {
@@ -67,9 +67,11 @@ token_t parse_line(const std::string& line)
 
 context_t add_to_config(context_t ctx, token_t tok)
 {
-    std::visit(overloaded{[&ctx](const section_t& s) { ctx.curr_section = s.name; },
-                          [&ctx](const option_t& o) { ctx.config[ctx.curr_section + "." + o.key] = o.value; },
-                          [](auto) { /* skip other tokens */}}, 
+    std::visit(overloaded {[&ctx](const section_t& s) { ctx.curr_section = s.name; },
+                           [&ctx](const option_t& o) {
+                               ctx.config[ctx.curr_section + "." + o.key] = o.value;
+                           },
+                           [](auto) { /* skip other tokens */ }},
                tok);
     return ctx;
 }

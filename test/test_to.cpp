@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <array>
+#include <iterator>
 #include <list>
 #include <map>
 #include <set>
@@ -62,7 +63,6 @@ private:
 
 template <flux::sequence Seq, typename A>
 test_vector(flux::from_sequence_t, Seq&&, A const&) -> test_vector<flux::value_t<Seq>, A>;
-
 }
 
 TEST_CASE("to")

@@ -15,7 +15,7 @@
 
 
 #include <array>
-#include <iostream>
+#include <functional>
 
 #include "test_utils.hpp"
 

@@ -12,7 +12,9 @@
  * The NlogN version still passes the time limit constraints on leetcode, however.
  */
 
-#include <flux.hpp>
+#include "../import_or_include_flux.hpp"
+
+#include <vector>
 
 namespace {
 

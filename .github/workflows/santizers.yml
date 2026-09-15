@@ -14,16 +14,15 @@ jobs:
         sanitizer: [address, undefined]
         build_type: [Debug, Release]
         include:
-          - cxx: g++-15
+          - cxx: g++-16
             install: |
-              brew install gcc@15 ninja binutils
-              brew link --force binutils
+              brew install gcc@16 ninja binutils
 
     steps:
       - uses: actions/checkout@master
 
       - name: Set up Homebrew
-        uses: Homebrew/actions/setup-homebrew@master
+        uses: Homebrew/actions/setup-homebrew@1f8e202ffddf94def7f42f6fa3a482e821489f9c
 
       - name: Create Build Environment
         run: |

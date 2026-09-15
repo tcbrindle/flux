@@ -11,7 +11,10 @@
  * https://leetcode.com/problems/longest-continuous-increasing-subsequence/
  */
 
-#include <flux.hpp>
+#include <functional>
+#include <initializer_list>
+
+#include "../import_or_include_flux.hpp"
 
 auto const lcis = [](std::initializer_list<int> nums)
 {
